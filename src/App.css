@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #FAF8F4;
+  --white: #fff;
+  --dark: #1a1a1a;
+  --gray: #6b6b6b;
+  --light: #f0ede8;
+  --border: #e8e4de;
+  --green: #2d7a4f;
+  --red: #cc0000;
+  --font-en: 'Cormorant Garamond', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-ar: 'Noto Kufi Arabic', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--dark);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+button { font-family: inherit; }
+input, textarea { font-family: inherit; }
