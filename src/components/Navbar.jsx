@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 
 export default function Navbar({ user, profile, lang, setLang, setUser, setProfile }) {
@@ -21,6 +21,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
   const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
+  const location = useLocation();
+const isHome = location.pathname === '/';
 
   const links = isSupplier
     ? [{ label: isAr ? 'الرئيسية' : 'Home', path: '/' }, { label: isAr ? 'الطلبات' : 'Requests', path: '/requests' }, { label: isAr ? 'لوحتي' : 'Dashboard', path: '/dashboard' }, { label: isAr ? 'عن مَعبر' : 'About', path: '/about' }]
@@ -28,7 +30,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
   return (
     <>
-      <nav className={scrolled ? 'scrolled' : ''}>
+      <nav className={scrolled || !isHome ? 'scrolled' : ''}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <button className="nav-logo" onClick={() => nav('/')}>
             MAABAR <span className="ar-part">| مَعبر</span>
