@@ -7,7 +7,8 @@ import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import DashboardBuyer from './pages/DashboardBuyer';
+import DashboardSupplier from './pages/DashboardSupplier';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Requests from './pages/Requests';
@@ -59,7 +60,7 @@ function App() {
           <Route path="/products/:id" element={<ProductDetail {...sharedProps} />} />
           <Route path="/login/:role" element={<Login {...sharedProps} />} />
           <Route path="/login" element={<Login {...sharedProps} />} />
-          <Route path="/dashboard" element={<Dashboard {...sharedProps} />} />
+          <Route path="/dashboard" element={profile?.role === 'supplier' ? <DashboardSupplier {...sharedProps} /> : <DashboardBuyer {...sharedProps} />} />
           <Route path="/about" element={<About {...sharedProps} />} />
           <Route path="/contact" element={<Contact {...sharedProps} />} />
           <Route path="/requests" element={<Requests {...sharedProps} />} />
