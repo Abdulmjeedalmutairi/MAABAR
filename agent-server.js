@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new Anthropic({ apiKey: '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' });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const PROJECT_DIR = 'C:/Users/Mje_0/maabar';
 
 const SYSTEM_PROMPT = `You are a Senior Frontend Developer specialized in B2B platforms.
