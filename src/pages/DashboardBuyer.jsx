@@ -15,8 +15,8 @@ export default function DashboardBuyer({ user, profile, lang }) {
   const [myRequests, setMyRequests] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [pendingActions, setPendingActions] = useState([]);
 
-  // نخبر الـ Navbar إنه يصير scrolled
   useEffect(() => {
     const nav_ = document.querySelector('nav');
     if (nav_) nav_.classList.add('scrolled');
@@ -26,6 +26,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
     loadStats();
+    loadPendingActions();
   }, [user]);
 
   useEffect(() => {
@@ -40,6 +41,27 @@ export default function DashboardBuyer({ user, profile, lang }) {
       sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending'),
     ]);
     setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0 });
+  };
+
+  const loadPendingActions = async () => {
+    const actions = [];
+    const { data: reqs } = await sb.from('requests').select('*, offers(id,status)').eq('buyer_id', user.id);
+    if (reqs) {
+      reqs.forEach(r => {
+        const pendingOffers = r.offers?.filter(o => o.status === 'pending') || [];
+        if (pendingOffers.length > 0) {
+          actions.push({ type: 'offers', request: r, count: pendingOffers.length });
+        }
+        if (r.status === 'shipping') {
+          actions.push({ type: 'delivery', request: r });
+        }
+      });
+    }
+    const { data: msgs } = await sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false);
+    if (msgs?.length > 0) {
+      actions.push({ type: 'messages', count: msgs.length });
+    }
+    setPendingActions(actions);
   };
 
   const loadMyRequests = async () => {
@@ -73,13 +95,14 @@ export default function DashboardBuyer({ user, profile, lang }) {
     await sb.from('offers').update({ status: 'rejected' }).eq('request_id', requestId).neq('id', offerId);
     await sb.from('notifications').insert({ user_id: supplierId, type: 'offer_accepted', title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受', ref_id: offerId, is_read: false });
     loadMyRequests();
+    loadPendingActions();
   };
 
   const confirmDelivery = async (requestId, supplierId) => {
     await sb.from('requests').update({ status: 'delivered', shipping_status: 'delivered' }).eq('id', requestId);
     await sb.from('notifications').insert({ user_id: supplierId, type: 'delivery_confirmed', title_ar: 'التاجر أكد الاستلام', title_en: 'Buyer confirmed delivery', title_zh: '买家已确认收货', ref_id: requestId, is_read: false });
-    alert(isAr ? 'تم تأكيد الاستلام' : 'Delivery confirmed');
     loadMyRequests();
+    loadPendingActions();
   };
 
   const StatusBar = ({ status }) => {
@@ -120,39 +143,36 @@ export default function DashboardBuyer({ user, profile, lang }) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'transparent', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'transparent' }}>
 
-      {/* HERO HEADER — شفاف داكن زي الـ Home */}
+      {/* HEADER — نفس الـ Home */}
       <div style={{
         padding: '60px 60px 0',
-        background: 'rgba(0,0,0,0.52)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(0,0,0,0.38)', 
         borderBottom: '1px solid rgba(255,255,255,0.06)',
-        position: 'relative'
       }}>
         <p style={{
-          fontSize: 10, letterSpacing: 5, textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.4)', marginBottom: 12,
+          fontSize: 11, letterSpacing: 4, textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.55)', marginBottom: 24,
           fontFamily: 'var(--font-body)'
         }}>
-          {isAr ? 'أهلاً بك' : 'Welcome back'}
+          {isAr ? 'مَعبر · لوحة التاجر' : 'Maabar · Trader Dashboard'}
         </p>
         <h1 style={{
-          fontSize: 60, fontWeight: 300,
+          fontSize: isAr ? 56 : 72, fontWeight: 300,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
-          marginBottom: 8, color: '#F7F5F2',
-          letterSpacing: isAr ? 0 : -2, lineHeight: 1
+          marginBottom: 16, color: '#F7F5F2',
+          letterSpacing: isAr ? 0 : -1, lineHeight: 1.1
         }}>
-          {name}
+          {isAr ? `أهلاً، ${name}` : `Welcome, ${name}`}
         </h1>
         <p style={{
-          fontSize: 11, color: 'rgba(255,255,255,0.3)',
-          marginBottom: 40, letterSpacing: 4,
-          textTransform: 'uppercase',
-          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)'
+          fontSize: 16, color: 'rgba(255,255,255,0.72)',
+          marginBottom: 44, fontWeight: 300, lineHeight: 1.7,
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
+          maxWidth: 460
         }}>
-          {isAr ? 'لوحة التاجر' : 'Trader Dashboard'}
+          {isAr ? 'تابع طلباتك وعروضك ورسائلك من مكان واحد' : 'Track your requests, offers and messages in one place'}
         </p>
 
         {/* TABS */}
@@ -160,8 +180,8 @@ export default function DashboardBuyer({ user, profile, lang }) {
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               padding: '12px 24px', background: 'none', border: 'none',
-              borderBottom: activeTab === t.id ? '1px solid rgba(255,255,255,0.6)' : '1px solid transparent',
-              color: activeTab === t.id ? '#F7F5F2' : 'rgba(255,255,255,0.3)',
+              borderBottom: activeTab === t.id ? '1px solid rgba(255,255,255,0.7)' : '1px solid transparent',
+              color: activeTab === t.id ? '#F7F5F2' : 'rgba(255,255,255,0.35)',
               fontSize: 11, cursor: 'pointer', transition: 'all 0.2s',
               position: 'relative', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
               letterSpacing: 2, textTransform: 'uppercase'
@@ -181,38 +201,72 @@ export default function DashboardBuyer({ user, profile, lang }) {
         </div>
       </div>
 
-      {/* CONTENT — overlay فاتح كريمي */}
-      <div style={{
-        background: 'rgba(247,245,242,0.88)',
-        backdropFilter: 'blur(8px)',
-        minHeight: 'calc(100vh - 280px)'
-      }}>
+      {/* CONTENT */}
+      <div style={{ background: 'rgba(247,245,242,0.92)', backdropFilter: 'blur(8px)', minHeight: 'calc(100vh - 300px)' }}>
         <div style={{ padding: '48px 60px', maxWidth: 960, margin: '0 auto' }}>
 
           {/* OVERVIEW */}
           {activeTab === 'overview' && (
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
 
+              {/* IMPORTANT ACTIONS */}
+              {pendingActions.length > 0 && (
+                <div style={{ marginBottom: 48 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>
+                    {isAr ? 'يحتاج انتباهك' : 'Needs Attention'} ({pendingActions.length})
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#E5E0D8' }}>
+                    {pendingActions.map((action, i) => (
+                      <div key={i} onClick={() => setActiveTab(action.type === 'messages' ? 'messages' : 'requests')} style={{
+                        background: '#F7F5F2', padding: '16px 24px',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        cursor: 'pointer', transition: 'background 0.2s'
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#EFECE7'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#F7F5F2'}>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2C', fontFamily: isAr ? 'var(--font-ar)' : 'inherit', marginBottom: 3 }}>
+                            {action.type === 'offers' && (isAr ? `${action.count} عرض ينتظر مراجعتك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`)}
+                            {action.type === 'delivery' && (isAr ? `تأكيد استلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`)}
+                            {action.type === 'messages' && (isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`)}
+                          </p>
+                          <p style={{ fontSize: 11, color: '#7a7a7a', letterSpacing: 1 }}>
+                            {action.type === 'offers' && (isAr ? 'قارن العروض واختر الأفضل' : 'Compare offers and choose the best')}
+                            {action.type === 'delivery' && (isAr ? 'الطلب وصل — أكد الاستلام' : 'Order arrived — confirm receipt')}
+                            {action.type === 'messages' && (isAr ? 'اضغط للاطلاع' : 'Tap to view')}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: 18, color: '#2C2C2C', opacity: 0.4 }}>←</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* STATS */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, marginBottom: 56, background: '#E5E0D8' }}>
-                <StatCard label={isAr ? 'طلبات مرفوعة' : 'Requests Posted'} value={stats.requests} onClick={() => setActiveTab('requests')} />
-                <StatCard label={isAr ? 'عروض مستلمة' : 'Offers Received'} value={stats.offers} onClick={() => setActiveTab('requests')} highlight={stats.offers > 0} />
-                <StatCard label={isAr ? 'رسائل جديدة' : 'New Messages'} value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
+              <div style={{ marginBottom: 48 }}>
+                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>
+                  {isAr ? 'الإحصائيات' : 'Overview'}
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#E5E0D8' }}>
+                  <StatCard label={isAr ? 'طلبات مرفوعة' : 'Requests Posted'} value={stats.requests} onClick={() => setActiveTab('requests')} />
+                  <StatCard label={isAr ? 'عروض مستلمة' : 'Offers Received'} value={stats.offers} onClick={() => setActiveTab('requests')} highlight={stats.offers > 0} />
+                  <StatCard label={isAr ? 'رسائل جديدة' : 'New Messages'} value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
+                </div>
               </div>
 
               {/* QUICK ACTIONS */}
-              <div style={{ marginBottom: 56 }}>
-                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 20 }}>
+              <div style={{ marginBottom: 48 }}>
+                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>
                   {isAr ? 'الإجراءات السريعة' : 'Quick Actions'}
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#E5E0D8' }}>
-                  <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف المنتجات المتاحة من الموردين الصينيين' : 'Explore products from Chinese suppliers'} onClick={() => nav('/products')} primary />
+                  <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف المنتجات من الموردين الصينيين' : 'Explore products from Chinese suppliers'} onClick={() => nav('/products')} primary />
                   <QuickAction title={isAr ? 'رفع طلب جديد' : 'Post New Request'} sub={isAr ? 'اطلب منتجاً وانتظر عروض الموردين' : 'Request a product and receive supplier offers'} onClick={() => nav('/requests')} />
                   <QuickAction title={isAr ? 'طلباتي' : 'My Requests'} sub={isAr ? 'تابع طلباتك الحالية وعروضها' : 'Track your current orders and offers'} onClick={() => setActiveTab('requests')} />
                 </div>
               </div>
 
-              {/* HOME LINK */}
               <button onClick={() => nav('/')} style={{
                 background: 'none', border: 'none', color: '#7a7a7a',
                 fontSize: 11, cursor: 'pointer', letterSpacing: 2,
@@ -236,8 +290,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
                 <button onClick={() => nav('/requests')} style={{
                   background: '#2C2C2C', color: '#F7F5F2', border: 'none',
                   padding: '10px 22px', fontSize: 10, letterSpacing: 2,
-                  textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
-                  transition: 'opacity 0.2s'
+                  textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2
                 }}>
                   {isAr ? 'طلب جديد' : 'New Request'}
                 </button>
@@ -278,37 +331,70 @@ export default function DashboardBuyer({ user, profile, lang }) {
                     </div>
                   )}
 
-                  {r.offers.length > 0 ? r.offers.map(o => (
-                    <div key={o.id} style={{ borderTop: '1px solid #E5E0D8', padding: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                      <div>
-                        <p style={{ fontWeight: 500, marginBottom: 4, fontSize: 13, color: '#2C2C2C', letterSpacing: 0.5 }}>{o.profiles?.company_name || ''}</p>
-                        <p style={{ fontSize: 28, fontWeight: 300, color: '#2C2C2C', fontFamily: 'var(--font-en)', lineHeight: 1, marginBottom: 4 }}>
-                          {o.price} <span style={{ fontSize: 12, color: '#7a7a7a', fontWeight: 400 }}>SAR</span>
+                  {/* OFFERS COMPARISON */}
+                  {r.offers.length > 0 && (
+                    <div>
+                      {r.offers.length > 1 && (
+                        <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 12 }}>
+                          {isAr ? `${r.offers.length} عروض — قارن واختر` : `${r.offers.length} Offers — Compare & Choose`}
                         </p>
-                        <p style={{ color: '#7a7a7a', fontSize: 11, letterSpacing: 1 }}>MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'days'}</p>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                        <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#7a7a7a' }}>
-                          {isAr ? OFFER_STATUS_AR[o.status] : OFFER_STATUS_EN[o.status]}
-                        </span>
-                        {o.status === 'pending' && (
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '9px 20px', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }} onClick={() => acceptOffer(o.id, o.supplier_id, r.id)}>
-                              {isAr ? 'قبول' : 'Accept'}
-                            </button>
-                            <button style={{ background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '9px 16px', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }} onClick={() => nav(`/chat/${o.supplier_id}`)}>
-                              {isAr ? 'تواصل' : 'Chat'}
-                            </button>
+                      )}
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(r.offers.length, 3)}, 1fr)`, gap: 1, background: '#E5E0D8' }}>
+                        {r.offers.map(o => (
+                          <div key={o.id} style={{
+                            background: o.status === 'accepted' ? '#2C2C2C' : '#F7F5F2',
+                            padding: '20px',
+                            position: 'relative'
+                          }}>
+                            <p style={{ fontSize: 11, fontWeight: 500, color: o.status === 'accepted' ? 'rgba(247,245,242,0.6)' : '#7a7a7a', marginBottom: 8, letterSpacing: 0.5 }}>
+                              {o.profiles?.company_name || '—'}
+                            </p>
+                            <p style={{ fontSize: 32, fontWeight: 300, color: o.status === 'accepted' ? '#F7F5F2' : '#2C2C2C', fontFamily: 'var(--font-en)', lineHeight: 1, marginBottom: 4 }}>
+                              {o.price}
+                              <span style={{ fontSize: 12, fontWeight: 400, marginRight: 4, opacity: 0.6 }}>SAR</span>
+                            </p>
+                            <p style={{ fontSize: 11, color: o.status === 'accepted' ? 'rgba(247,245,242,0.5)' : '#7a7a7a', letterSpacing: 0.5, marginBottom: 16 }}>
+                              MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}
+                            </p>
+                            {o.status === 'pending' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} style={{
+                                  background: '#2C2C2C', color: '#F7F5F2', border: 'none',
+                                  padding: '9px', fontSize: 10, letterSpacing: 1.5,
+                                  textTransform: 'uppercase', cursor: 'pointer', width: '100%'
+                                }}>
+                                  {isAr ? 'قبول' : 'Accept'}
+                                </button>
+                                <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={{
+                                  background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C',
+                                  padding: '8px', fontSize: 10, letterSpacing: 1.5,
+                                  textTransform: 'uppercase', cursor: 'pointer', width: '100%'
+                                }}>
+                                  {isAr ? 'تواصل' : 'Chat'}
+                                </button>
+                              </div>
+                            )}
+                            {o.status === 'accepted' && (
+                              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(247,245,242,0.5)' }}>
+                                {isAr ? 'مقبول' : 'Accepted'}
+                              </p>
+                            )}
+                            {r.status === 'shipping' && o.status === 'accepted' && (
+                              <button onClick={() => confirmDelivery(r.id, o.supplier_id)} style={{
+                                marginTop: 8, background: '#F7F5F2', color: '#2C2C2C', border: 'none',
+                                padding: '9px', fontSize: 10, letterSpacing: 1.5,
+                                textTransform: 'uppercase', cursor: 'pointer', width: '100%'
+                              }}>
+                                {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
+                              </button>
+                            )}
                           </div>
-                        )}
-                        {r.status === 'shipping' && (
-                          <button style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '9px 20px', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }} onClick={() => confirmDelivery(r.id, o.supplier_id)}>
-                            {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
-                          </button>
-                        )}
+                        ))}
                       </div>
                     </div>
-                  )) : (
+                  )}
+
+                  {r.offers.length === 0 && (
                     <p style={{ color: '#7a7a7a', fontSize: 12, letterSpacing: 0.5 }}>
                       {isAr ? 'لا توجد عروض بعد' : 'No offers yet'}
                     </p>
@@ -337,16 +423,16 @@ export default function DashboardBuyer({ user, profile, lang }) {
                   <div key={m.id} onClick={() => nav(`/chat/${m.sender_id}`)} style={{
                     display: 'flex', alignItems: 'center', gap: 20,
                     padding: '20px 0', borderTop: '1px solid #E5E0D8',
-                    cursor: 'pointer', transition: 'all 0.2s',
+                    cursor: 'pointer', transition: 'opacity 0.2s',
                     animation: `fadeIn 0.4s ease ${idx * 0.05}s both`
                   }}
-                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
-                    onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
                     <div style={{
-                      width: 38, height: 38,
+                      width: 38, height: 38, borderRadius: '50%',
                       background: '#2C2C2C', color: '#F7F5F2',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, fontWeight: 500, flexShrink: 0, borderRadius: '50%'
+                      fontSize: 13, fontWeight: 500, flexShrink: 0
                     }}>
                       {senderName.charAt(0).toUpperCase()}
                     </div>
@@ -379,8 +465,8 @@ function StatCard({ label, value, onClick, highlight }) {
       background: highlight ? '#2C2C2C' : '#F7F5F2',
       padding: '32px 28px', cursor: 'pointer', transition: 'all 0.25s'
     }}
-      onMouseEnter={e => { e.currentTarget.style.background = highlight ? '#3a3a3a' : '#EFECE7'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = highlight ? '#2C2C2C' : '#F7F5F2'; }}>
+      onMouseEnter={e => e.currentTarget.style.background = highlight ? '#3a3a3a' : '#EFECE7'}
+      onMouseLeave={e => e.currentTarget.style.background = highlight ? '#2C2C2C' : '#F7F5F2'}>
       <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: highlight ? 'rgba(255,255,255,0.4)' : '#7a7a7a', marginBottom: 20 }}>{label}</p>
       <p style={{ fontSize: 64, fontWeight: 300, color: highlight ? '#F7F5F2' : '#2C2C2C', lineHeight: 1, fontFamily: 'var(--font-en)' }}>{value}</p>
     </div>
@@ -394,9 +480,9 @@ function QuickAction({ title, sub, onClick, primary }) {
       background: primary ? '#2C2C2C' : '#F7F5F2',
       cursor: 'pointer', transition: 'all 0.2s'
     }}
-      onMouseEnter={e => { e.currentTarget.style.background = primary ? '#3a3a3a' : '#EFECE7'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = primary ? '#2C2C2C' : '#F7F5F2'; }}>
-      <p style={{ fontSize: 13, fontWeight: 500, color: primary ? '#F7F5F2' : '#2C2C2C', marginBottom: 10, fontFamily: 'var(--font-ar)', letterSpacing: 0.3 }}>{title}</p>
+      onMouseEnter={e => e.currentTarget.style.background = primary ? '#3a3a3a' : '#EFECE7'}
+      onMouseLeave={e => e.currentTarget.style.background = primary ? '#2C2C2C' : '#F7F5F2'}>
+      <p style={{ fontSize: 13, fontWeight: 500, color: primary ? '#F7F5F2' : '#2C2C2C', marginBottom: 10, fontFamily: 'var(--font-ar)' }}>{title}</p>
       <p style={{ fontSize: 12, color: primary ? 'rgba(255,255,255,0.45)' : '#7a7a7a', fontFamily: 'var(--font-ar)', lineHeight: 1.6 }}>{sub}</p>
     </div>
   );
