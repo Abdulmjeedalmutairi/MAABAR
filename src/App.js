@@ -18,6 +18,7 @@ import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
 import FAQ from './pages/FAQ';
 import AdminSeed from './pages/AdminSeed';
+import AgentPanel from './pages/AgentPanel';
 
 // Components
 import Navbar from './components/Navbar';
@@ -69,6 +70,7 @@ function App() {
           <Route path="/terms" element={<Terms {...sharedProps} />} />
           <Route path="/faq" element={<FAQ {...sharedProps} />} />
           <Route path="/admin-seed" element={<AdminSeed {...sharedProps} />} />
+          <Route path="/agent" element={<AgentPanel />} />
         </Routes>
         {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
         {user && profile?.role === 'buyer' && <IdeaToProduct {...sharedProps} />}
