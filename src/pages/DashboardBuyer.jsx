@@ -148,7 +148,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
       {/* HEADER — نفس الـ Home */}
       <div style={{
         padding: '60px 60px 0',
-        background: 'rgba(0,0,0,0.38)', 
+        background: 'rgba(0,0,0,0.52)', 
         borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
         <p style={{
