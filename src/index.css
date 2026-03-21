@@ -32,7 +32,7 @@ body{background:transparent;color:var(--dark);font-family:var(--font-body);overf
 
 /* ===== BACKGROUND ===== */
 body::before{content:'';position:fixed;inset:0;background-image:url('https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/hero-image/hero.png');background-size:cover;background-position:center;z-index:-2;}
-body::after{content:'';position:fixed;inset:0;background:rgba(247,245,242,0.85);z-index:-1;}
+body::after{content:'';position:fixed;inset:0;background:rgba(247,245,242,0.78);z-index:-1;}
 
 /* ===== NAV ===== */
 nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 60px;height:72px;display:flex;align-items:center;justify-content:space-between;transition:var(--transition);background:transparent;min-height:72px;}

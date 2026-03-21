@@ -85,7 +85,10 @@ const isHome = location.pathname === '/';
           <div className="mobile-menu-auth">
             {user
               ? <><button className="btn-dark-sm" onClick={() => { nav('/dashboard'); setMenuOpen(false); }}>{isAr ? 'لوحتي' : 'Dashboard'}</button><button className="btn-outline" onClick={() => { doSignOut(); setMenuOpen(false); }}>{isAr ? 'خروج' : 'Logout'}</button></>
-              : <button className="btn-dark-sm" onClick={() => { nav('/login/buyer'); setMenuOpen(false); }}>{isAr ? 'دخول / تسجيل' : 'Login'}</button>
+              : <>
+    <button className="btn-dark-sm" onClick={() => { nav('/login/buyer'); setMenuOpen(false); }}>{isAr ? 'دخول / تسجيل' : 'Login'}</button>
+    <button className="btn-outline" onClick={() => { nav('/login/supplier'); setMenuOpen(false); }}>{isAr ? 'بوابة الموردين' : 'Supplier Portal'}</button>
+  </>
             }
           </div>
         </div>
