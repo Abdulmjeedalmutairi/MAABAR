@@ -74,7 +74,7 @@ function App() {
           <Route path="/agent" element={<AgentPanel />} />
         </Routes>
         {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
-        {user && profile?.role === 'buyer' && <IdeaToProduct {...sharedProps} />}
+
       </div>
     </Router>
   );
