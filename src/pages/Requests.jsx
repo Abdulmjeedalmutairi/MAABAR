@@ -2,37 +2,52 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 
+const SkeletonCard = () => (
+  <div style={{ border: '1px solid #E5E0D8', padding: '24px 28px', marginBottom: 14, borderRadius: 6, background: 'rgba(247,245,242,0.82)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ width: '30%', height: 12, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ width: '60%', height: 18, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ width: '45%', height: 12, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+      </div>
+      <div style={{ width: 110, height: 38, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite', flexShrink: 0 }} />
+    </div>
+  </div>
+);
+
 export default function Requests({ lang, user, profile }) {
   const nav = useNavigate();
   const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers] = useState({});
-  const [showNewRequest, setShowNewRequest] = useState(false);
   const [newReq, setNewReq] = useState({ title_ar: '', title_en: '', quantity: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
-  const isBuyer = user && profile?.role === 'buyer';
 
   useEffect(() => {
-    // الطلبات تحمل فقط للمورد المسجل
     if (isSupplier) loadRequests();
   }, [user, profile]);
 
   const loadRequests = async () => {
-    const { data } = await sb.from('requests')
+    setLoading(true);
+    const { data } = await sb
+      .from('requests')
       .select('*,profiles(full_name,company_name)')
       .eq('status', 'open')
       .order('created_at', { ascending: false });
     if (data) setRequests(data);
+    setLoading(false);
   };
 
   const submitNewRequest = async () => {
     // التسجيل يُطلب هنا فقط — عند الإرسال
     if (!user) { nav('/login/buyer'); return; }
     if (!newReq.title_ar || !newReq.quantity) {
-      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields'); return;
+      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields');
+      return;
     }
     setSubmitting(true);
     const { error } = await sb.from('requests').insert({
@@ -48,7 +63,6 @@ export default function Requests({ lang, user, profile }) {
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     alert(isAr ? '✅ تم رفع طلبك! سيتواصل معك الموردون قريباً' : '✅ Request posted! Suppliers will contact you soon');
     setNewReq({ title_ar: '', title_en: '', quantity: '', description: '' });
-    setShowNewRequest(false);
   };
 
   const toggleOfferForm = (id) => {
@@ -58,7 +72,10 @@ export default function Requests({ lang, user, profile }) {
 
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId];
-    if (!o?.price || !o?.moq || !o?.days) { alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields'); return; }
+    if (!o?.price || !o?.moq || !o?.days) {
+      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields');
+      return;
+    }
     const { error } = await sb.from('offers').insert({
       request_id: requestId,
       supplier_id: user.id,
@@ -73,9 +90,9 @@ export default function Requests({ lang, user, profile }) {
     await sb.from('notifications').insert({
       user_id: buyerId,
       type: 'new_offer',
-      title_ar: '📦 وصلك عرض جديد على طلبك',
-      title_en: '📦 You received a new offer',
-      title_zh: '📦 您收到了新报价',
+      title_ar: 'وصلك عرض جديد على طلبك',
+      title_en: 'You received a new offer',
+      title_zh: '您收到了新报价',
       ref_id: requestId,
       is_read: false
     });
@@ -85,7 +102,8 @@ export default function Requests({ lang, user, profile }) {
   };
 
   const filtered = requests.filter(r =>
-    (r.title_ar || '').includes(search) || (r.title_en || '').toLowerCase().includes(search.toLowerCase())
+    (r.title_ar || '').includes(search) ||
+    (r.title_en || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const fmtDate = (d) => {
@@ -98,6 +116,9 @@ export default function Requests({ lang, user, profile }) {
 
   return (
     <div className="supplier-req-wrap">
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+
+      {/* HEADER */}
       <div className="page-header">
         <div>
           <h1 className={`page-title${isAr ? ' ar' : ''}`}>
@@ -113,57 +134,154 @@ export default function Requests({ lang, user, profile }) {
         </div>
       </div>
 
-      {/* ── واجهة التاجر: فورم رفع طلب فقط ── */}
+      {/* ── واجهة التاجر / الزائر ── */}
       {!isSupplier && (
         <div style={{ padding: '40px 60px' }}>
-          <div style={{ background: '#fff', border: '1px solid #e8e4de', padding: 40, maxWidth: 680, borderRadius: 4 }}>
-            <h3 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8 }}>
+
+          {/* إرشاد للزائر غير المسجل */}
+          {!user && (
+            <div style={{
+              background: 'rgba(44,44,44,0.04)', border: '1px solid #E5E0D8',
+              padding: '20px 24px', borderRadius: 4, marginBottom: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: 12,
+            }}>
+              <div>
+                <p style={{
+                  fontSize: 13, fontWeight: 500, color: '#2C2C2C', marginBottom: 4,
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
+                }}>
+                  {isAr ? 'كيف يشتغل مَعبر؟' : 'How does Maabar work?'}
+                </p>
+                <p style={{
+                  fontSize: 12, color: '#7a7a7a', lineHeight: 1.6,
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
+                }}>
+                  {isAr
+                    ? 'اكتب طلبك ← موردون صينيون يرسلون عروضهم ← اختر الأفضل ← استلم بضاعتك'
+                    : 'Post request ← Suppliers send offers ← Choose the best ← Receive your order'}
+                </p>
+              </div>
+              <button
+                onClick={() => nav('/login/buyer')}
+                style={{
+                  background: '#2C2C2C', color: '#F7F5F2', border: 'none',
+                  padding: '10px 22px', fontSize: 11, letterSpacing: 2,
+                  textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
+                  fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                }}>
+                {isAr ? 'تسجيل مجاني' : 'Free Sign Up'}
+              </button>
+            </div>
+          )}
+
+          {/* فورم الطلب */}
+          <div style={{
+            background: '#fff', border: '1px solid #E5E0D8',
+            padding: 40, maxWidth: 680, borderRadius: 4,
+          }}>
+            <h3 style={{
+              fontSize: 22, fontWeight: 400, marginBottom: 8,
+              fontFamily: isAr ? 'var(--font-ar)' : 'inherit',
+            }}>
               {isAr ? 'طلب تسعيرة جديد' : 'New Sourcing Request'}
             </h3>
-            <p style={{ color: '#6b6b6b', fontSize: 14, marginBottom: 28 }}>
-              {isAr ? 'أكتب تفاصيل المنتج اللي تبيه وسيتواصل معك الموردون بأفضل الأسعار' : 'Describe what you need and suppliers will send you their best prices'}
+            <p style={{
+              color: '#6b6b6b', fontSize: 14, marginBottom: 28,
+              fontFamily: isAr ? 'var(--font-ar)' : 'inherit', lineHeight: 1.7,
+            }}>
+              {isAr
+                ? 'أكتب تفاصيل المنتج اللي تبيه وسيتواصل معك الموردون بأفضل الأسعار'
+                : 'Describe what you need and suppliers will send you their best prices'}
             </p>
+
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{isAr ? 'اسم المنتج بالعربي *' : 'Product Name *'}</label>
-                <input className="form-input" value={newReq.title_ar} onChange={e => setNewReq({ ...newReq, title_ar: e.target.value })} placeholder={isAr ? 'مثال: كراسي مكتب' : 'e.g. Office Chairs'} />
+                <input
+                  className="form-input"
+                  value={newReq.title_ar}
+                  onChange={e => setNewReq({ ...newReq, title_ar: e.target.value })}
+                  placeholder={isAr ? 'مثال: كراسي مكتب' : 'e.g. Office Chairs'}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">{isAr ? 'اسم المنتج بالإنجليزي' : 'Product Name (English)'}</label>
-                <input className="form-input" value={newReq.title_en} onChange={e => setNewReq({ ...newReq, title_en: e.target.value })} placeholder="e.g. Office Chairs" />
+                <input
+                  className="form-input"
+                  value={newReq.title_en}
+                  onChange={e => setNewReq({ ...newReq, title_en: e.target.value })}
+                  placeholder="e.g. Office Chairs"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">{isAr ? 'الكمية المطلوبة *' : 'Quantity *'}</label>
-                <input className="form-input" value={newReq.quantity} onChange={e => setNewReq({ ...newReq, quantity: e.target.value })} placeholder={isAr ? 'مثال: 500 قطعة' : 'e.g. 500 units'} />
+                <input
+                  className="form-input"
+                  value={newReq.quantity}
+                  onChange={e => setNewReq({ ...newReq, quantity: e.target.value })}
+                  placeholder={isAr ? 'مثال: 500 قطعة' : 'e.g. 500 units'}
+                />
               </div>
             </div>
+
             <div className="form-group">
               <label className="form-label">{isAr ? 'تفاصيل إضافية' : 'Additional Details'}</label>
-              <textarea className="form-input" rows={3} style={{ resize: 'vertical' }} value={newReq.description} onChange={e => setNewReq({ ...newReq, description: e.target.value })} placeholder={isAr ? 'المواصفات، اللون، الجودة، الميزانية...' : 'Specs, color, quality, budget...'} />
+              <textarea
+                className="form-input"
+                rows={3}
+                style={{ resize: 'vertical' }}
+                value={newReq.description}
+                onChange={e => setNewReq({ ...newReq, description: e.target.value })}
+                placeholder={isAr ? 'المواصفات، اللون، الجودة، الميزانية...' : 'Specs, color, quality, budget...'}
+              />
             </div>
+
+            {/* إشعار خفيف للزائر */}
             {!user && (
-              <p style={{ fontSize: 12, color: '#6b6b6b', marginBottom: 16, padding: '10px 14px', background: '#f0ede8', borderRadius: 3 }}>
+              <p style={{
+                fontSize: 12, color: '#7a7a7a', marginBottom: 16,
+                padding: '10px 14px', background: '#f0ede8', borderRadius: 3,
+                fontFamily: isAr ? 'var(--font-ar)' : 'inherit',
+              }}>
                 {isAr ? '💡 سيُطلب منك تسجيل الدخول عند إرسال الطلب' : '💡 You\'ll be asked to sign in when submitting'}
               </p>
             )}
-            <button className="btn-dark-sm" onClick={submitNewRequest} disabled={submitting} style={{ padding: '13px 32px', fontSize: 14 }}>
+
+            <button
+              className="btn-dark-sm"
+              onClick={submitNewRequest}
+              disabled={submitting}
+              style={{ padding: '13px 32px', fontSize: 14 }}>
               {submitting ? '...' : isAr ? 'إرسال الطلب ←' : 'Submit Request →'}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── واجهة المورد: قائمة الطلبات ── */}
+      {/* ── واجهة المورد ── */}
       {isSupplier && (
         <div className="list-wrap">
           <div className="search-bar">
-            <input className="search-input" placeholder={isAr ? 'ابحث...' : 'Search...'} value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              className="search-input"
+              placeholder={isAr ? 'ابحث...' : 'Search...'}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
-          <p style={{ color: '#6b6b6b', fontSize: 14, marginBottom: 24 }}>
-            {filtered.length} {isAr ? 'طلبات مفتوحة' : 'open requests'}
-          </p>
 
-          {filtered.map(r => (
+          {!loading && (
+            <p style={{ color: '#6b6b6b', fontSize: 14, marginBottom: 24 }}>
+              {filtered.length} {isAr ? 'طلبات مفتوحة' : 'open requests'}
+            </p>
+          )}
+
+          {/* SKELETON */}
+          {loading && [1, 2, 3].map(i => <SkeletonCard key={i} />)}
+
+          {/* REQUESTS */}
+          {!loading && filtered.map(r => (
             <div key={r.id}>
               <div className="request-card">
                 <div style={{ flex: 1 }}>
@@ -177,7 +295,11 @@ export default function Requests({ lang, user, profile }) {
                   <div className="req-meta">
                     <span>👤 {r.profiles?.full_name || r.profiles?.company_name || ''}</span>
                     <span>📦 {r.quantity || '—'}</span>
-                    {r.description && <span style={{ color: '#6b6b6b', fontSize: 12 }}>{r.description.substring(0, 60)}...</span>}
+                    {r.description && (
+                      <span style={{ color: '#6b6b6b', fontSize: 12 }}>
+                        {r.description.substring(0, 60)}...
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button className="btn-quote" onClick={() => toggleOfferForm(r.id)}>
@@ -186,42 +308,61 @@ export default function Requests({ lang, user, profile }) {
               </div>
 
               {offerForms[r.id] && (
-                <div className="offer-form">
+                <div className="offer-form" style={{
+                  background: '#F7F5F2', border: '1px solid #E5E0D8',
+                  borderTop: 'none', padding: 24, marginBottom: 14, borderRadius: '0 0 6px 6px',
+                }}>
                   <div className="form-grid">
                     <div className="form-group">
                       <label className="form-label">{isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *'}</label>
-                      <input className="form-input" type="number" value={offers[r.id]?.price || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))} />
+                      <input className="form-input" type="number"
+                        value={offers[r.id]?.price || ''}
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">{isAr ? 'الحد الأدنى للكمية *' : 'MOQ *'}</label>
-                      <input className="form-input" value={offers[r.id]?.moq || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], moq: e.target.value } }))} />
+                      <input className="form-input"
+                        value={offers[r.id]?.moq || ''}
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], moq: e.target.value } }))} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">{isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *'}</label>
-                      <input className="form-input" type="number" value={offers[r.id]?.days || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], days: e.target.value } }))} />
+                      <input className="form-input" type="number"
+                        value={offers[r.id]?.days || ''}
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], days: e.target.value } }))} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">{isAr ? 'بلد المنشأ *' : 'Country of Origin *'}</label>
-                      <input className="form-input" value={offers[r.id]?.origin || 'China'} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], origin: e.target.value } }))} />
+                      <input className="form-input"
+                        value={offers[r.id]?.origin || 'China'}
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], origin: e.target.value } }))} />
                     </div>
                   </div>
                   <div className="form-group">
                     <label className="form-label">{isAr ? 'ملاحظة' : 'Note'}</label>
-                    <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={offers[r.id]?.note || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} />
+                    <textarea className="form-input" rows={2} style={{ resize: 'none' }}
+                      value={offers[r.id]?.note || ''}
+                      onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} />
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}>{isAr ? 'إرسال العرض' : 'Send Offer'}</button>
-                    <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}>{isAr ? 'إلغاء' : 'Cancel'}</button>
+                    <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}>
+                      {isAr ? 'إرسال العرض' : 'Send Offer'}
+                    </button>
+                    <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}>
+                      {isAr ? 'إلغاء' : 'Cancel'}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
           ))}
 
-          {filtered.length === 0 && (
-            <p style={{ color: '#6b6b6b', textAlign: 'center', padding: 40 }}>
-              {isAr ? 'لا توجد طلبات بعد' : 'No requests yet'}
-            </p>
+          {!loading && filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <p style={{ color: '#6b6b6b', fontSize: 14 }}>
+                {isAr ? 'لا توجد طلبات بعد' : 'No requests yet'}
+              </p>
+            </div>
           )}
         </div>
       )}

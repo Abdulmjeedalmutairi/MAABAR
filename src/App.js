@@ -9,6 +9,7 @@ import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
+import PendingApproval from './pages/PendingApproval';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Requests from './pages/Requests';
@@ -24,21 +25,27 @@ import AgentPanel from './pages/AgentPanel';
 // Components
 import Navbar from './components/Navbar';
 import AIAssistant from './components/AIAssistant';
-import IdeaToProduct from './components/IdeaToProduct';
+import LandingCostCalculator from './components/LandingCostCalculator';
 
 function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [lang, setLang] = useState('ar');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) { setUser(session.user); loadProfile(session.user.id); }
+      if (session) {
+        setUser(session.user);
+        loadProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
-      else setProfile(null);
+      else { setProfile(null); setLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -46,9 +53,36 @@ function App() {
   const loadProfile = async (id) => {
     const { data } = await sb.from('profiles').select('*').eq('id', id).single();
     if (data) setProfile(data);
+    setLoading(false);
+  };
+
+  // Dashboard router — يعرض pending لو المورد لسا ما اعتمد
+  const DashboardRouter = () => {
+    if (loading) return <div className="loading">...</div>;
+    if (!profile) return <DashboardBuyer {...sharedProps} />;
+    if (profile.role === 'supplier' && profile.status === 'pending')
+      return <PendingApproval {...sharedProps} />;
+    if (profile.role === 'supplier')
+      return <DashboardSupplier {...sharedProps} />;
+    return <DashboardBuyer {...sharedProps} />;
   };
 
   const sharedProps = { user, profile, lang, setLang, setUser, setProfile };
+
+  if (loading) return (
+    <div style={{
+      minHeight: '100vh', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#FAF8F4'
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-en)', fontSize: 20,
+        fontWeight: 600, letterSpacing: 3, color: '#2C2C2C'
+      }}>
+        MAABAR
+      </div>
+    </div>
+  );
 
   return (
     <Router>
@@ -60,7 +94,7 @@ function App() {
           <Route path="/products/:id" element={<ProductDetail {...sharedProps} />} />
           <Route path="/login/:role" element={<Login {...sharedProps} />} />
           <Route path="/login" element={<Login {...sharedProps} />} />
-          <Route path="/dashboard" element={profile?.role === 'supplier' ? <DashboardSupplier {...sharedProps} /> : <DashboardBuyer {...sharedProps} />} />
+          <Route path="/dashboard" element={<DashboardRouter />} />
           <Route path="/about" element={<About {...sharedProps} />} />
           <Route path="/contact" element={<Contact {...sharedProps} />} />
           <Route path="/requests" element={<Requests {...sharedProps} />} />
@@ -73,8 +107,12 @@ function App() {
           <Route path="/admin-seed" element={<AdminSeed {...sharedProps} />} />
           <Route path="/agent" element={<AgentPanel />} />
         </Routes>
+
+        {/* AI Assistant — للتاجر فقط */}
         {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
 
+        {/* Landing Cost Calculator — للجميع */}
+        <LandingCostCalculator lang={lang} />
       </div>
     </Router>
   );
