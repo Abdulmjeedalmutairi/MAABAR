@@ -21,6 +21,8 @@ import Terms from './pages/Terms';
 import FAQ from './pages/FAQ';
 import AdminSeed from './pages/AdminSeed';
 import AgentPanel from './pages/AgentPanel';
+import Checkout from './pages/Checkout';
+import PaymentSuccess from './pages/PaymentSuccess';
 
 // Components
 import Navbar from './components/Navbar';
@@ -56,7 +58,6 @@ function App() {
     setLoading(false);
   };
 
-  // Dashboard router — يعرض pending لو المورد لسا ما اعتمد
   const DashboardRouter = () => {
     if (loading) return <div className="loading">...</div>;
     if (!profile) return <DashboardBuyer {...sharedProps} />;
@@ -106,12 +107,11 @@ function App() {
           <Route path="/faq" element={<FAQ {...sharedProps} />} />
           <Route path="/admin-seed" element={<AdminSeed {...sharedProps} />} />
           <Route path="/agent" element={<AgentPanel />} />
+          <Route path="/checkout" element={<Checkout {...sharedProps} />} />
+          <Route path="/payment-success" element={<PaymentSuccess {...sharedProps} />} />
         </Routes>
 
-        {/* AI Assistant — للتاجر فقط */}
         {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
-
-        {/* Landing Cost Calculator — للجميع */}
         <LandingCostCalculator lang={lang} />
       </div>
     </Router>
