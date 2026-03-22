@@ -15,6 +15,7 @@ import Contact from './pages/Contact';
 import Requests from './pages/Requests';
 import SupplierLanding from './pages/SupplierLanding';
 import SupplierProfile from './pages/SupplierProfile';
+import Suppliers from './pages/Suppliers';
 import Chat from './pages/Chat';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
@@ -28,6 +29,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import Navbar from './components/Navbar';
 import AIAssistant from './components/AIAssistant';
 import LandingCostCalculator from './components/LandingCostCalculator';
+import NegotiationAgent from './components/NegotiationAgent';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -101,6 +103,7 @@ function App() {
           <Route path="/requests" element={<Requests {...sharedProps} />} />
           <Route path="/supplier" element={<SupplierLanding {...sharedProps} />} />
           <Route path="/supplier/:id" element={<SupplierProfile {...sharedProps} />} />
+          <Route path="/suppliers" element={<Suppliers {...sharedProps} />} />
           <Route path="/chat/:partnerId" element={<Chat {...sharedProps} />} />
           <Route path="/inbox" element={<Inbox {...sharedProps} />} />
           <Route path="/terms" element={<Terms {...sharedProps} />} />
@@ -111,8 +114,14 @@ function App() {
           <Route path="/payment-success" element={<PaymentSuccess {...sharedProps} />} />
         </Routes>
 
+        {/* AI Assistant — للتاجر فقط */}
         {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
+
+        {/* Landing Cost Calculator — للجميع */}
         <LandingCostCalculator lang={lang} />
+
+        {/* Negotiation Agent — للتاجر المسجل فقط */}
+        {user && profile?.role === 'buyer' && <NegotiationAgent lang={lang} />}
       </div>
     </Router>
   );

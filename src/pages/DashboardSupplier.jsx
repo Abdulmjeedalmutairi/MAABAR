@@ -46,7 +46,7 @@ const T = {
     welcome: 'أهلاً،',
     desc: 'تابع عروضك ومنتجاتك ورسائلك من مكان واحد',
     overview: 'نظرة عامة', myProducts: 'منتجاتي', offers: 'عروضي',
-    addProduct: 'إضافة منتج', messages: 'الرسائل',
+    addProduct: 'إضافة منتج', messages: 'الرسائل', settings: 'إعداداتي',
     offersCount: 'عروض مقدمة', productsCount: 'منتجات نشطة', messagesCount: 'رسائل جديدة',
     browseRequests: 'تصفح طلبات التجار', addNewProduct: 'إضافة منتج جديد',
     quickActions: 'الإجراءات السريعة', stats: 'الإحصائيات',
@@ -67,12 +67,16 @@ const T = {
     uploadingImage: 'جاري رفع الصورة...', uploadingVideo: 'جاري رفع الفيديو...',
     imageUploaded: 'تم رفع الصورة', videoUploaded: 'تم رفع الفيديو',
     maxVideo: 'الحد الأقصى للفيديو 50MB',
-    sampleSettings: 'إعدادات العينة',
-    sampleAvailable: 'متاح للعينة',
-    samplePrice: 'سعر العينة (ريال) *',
-    sampleShipping: 'تكلفة الشحن (ريال)',
-    sampleMaxQty: 'الحد الأقصى للكمية',
-    sampleNote: 'ملاحظة للعينة',
+    sampleSettings: 'إعدادات العينة', sampleAvailable: 'متاح للعينة',
+    samplePrice: 'سعر العينة (ريال) *', sampleShipping: 'تكلفة الشحن (ريال)',
+    sampleMaxQty: 'الحد الأقصى للكمية', sampleNote: 'ملاحظة للعينة',
+    settingsTitle: 'إعدادات الحساب',
+    companyName: 'اسم الشركة', bioAr: 'وصف الشركة بالعربي', bioEn: 'وصف الشركة بالإنجليزي', bioZh: 'وصف الشركة بالصيني',
+    whatsapp: 'واتساب', wechat: 'WeChat', city: 'المدينة', country: 'الدولة',
+    tradeLink: 'رابط صفحتك التجارية', speciality: 'تخصص الشركة', minOrder: 'أقل قيمة طلب (ريال)',
+    logo: 'لوقو / صورة الشركة', factoryImages: 'صور المصنع (حتى 3)',
+    uploadLogo: 'رفع اللوقو', uploadFactory: 'إضافة صورة', uploadingLogo: 'جاري الرفع...',
+    saveSettings: 'حفظ الإعدادات', settingsSaved: '✅ تم حفظ التغييرات',
     footer: 'مَعبر © 2026', days: 'يوم',
   },
   en: {
@@ -80,7 +84,7 @@ const T = {
     welcome: 'Welcome,',
     desc: 'Manage your offers, products and messages in one place',
     overview: 'Overview', myProducts: 'My Products', offers: 'My Offers',
-    addProduct: 'Add Product', messages: 'Messages',
+    addProduct: 'Add Product', messages: 'Messages', settings: 'Settings',
     offersCount: 'Offers Submitted', productsCount: 'Active Products', messagesCount: 'New Messages',
     browseRequests: 'Browse Trader Requests', addNewProduct: 'Add New Product',
     quickActions: 'Quick Actions', stats: 'Overview',
@@ -101,12 +105,16 @@ const T = {
     uploadingImage: 'Uploading image...', uploadingVideo: 'Uploading video...',
     imageUploaded: 'Image uploaded', videoUploaded: 'Video uploaded',
     maxVideo: 'Max video size: 50MB',
-    sampleSettings: 'Sample Settings',
-    sampleAvailable: 'Available for Sample',
-    samplePrice: 'Sample Price (SAR) *',
-    sampleShipping: 'Shipping Cost (SAR)',
-    sampleMaxQty: 'Max Sample Quantity',
-    sampleNote: 'Sample Note',
+    sampleSettings: 'Sample Settings', sampleAvailable: 'Available for Sample',
+    samplePrice: 'Sample Price (SAR) *', sampleShipping: 'Shipping Cost (SAR)',
+    sampleMaxQty: 'Max Sample Quantity', sampleNote: 'Sample Note',
+    settingsTitle: 'Account Settings',
+    companyName: 'Company Name', bioAr: 'Company Description (Arabic)', bioEn: 'Company Description (English)', bioZh: 'Company Description (Chinese)',
+    whatsapp: 'WhatsApp', wechat: 'WeChat', city: 'City', country: 'Country',
+    tradeLink: 'Business Profile Link', speciality: 'Company Specialty', minOrder: 'Min Order Value (SAR)',
+    logo: 'Company Logo', factoryImages: 'Factory Images (up to 3)',
+    uploadLogo: 'Upload Logo', uploadFactory: 'Add Image', uploadingLogo: 'Uploading...',
+    saveSettings: 'Save Settings', settingsSaved: '✅ Changes saved',
     footer: 'Maabar © 2026', days: 'days',
   },
   zh: {
@@ -114,7 +122,7 @@ const T = {
     welcome: '欢迎，',
     desc: '在一个地方管理您的报价、产品和消息',
     overview: '概览', myProducts: '我的产品', offers: '我的报价',
-    addProduct: '添加产品', messages: '消息',
+    addProduct: '添加产品', messages: '消息', settings: '账户设置',
     offersCount: '已提交报价', productsCount: '活跃产品', messagesCount: '新消息',
     browseRequests: '浏览采购商需求', addNewProduct: '添加新产品',
     quickActions: '快速操作', stats: '数据概览',
@@ -135,12 +143,16 @@ const T = {
     uploadingImage: '上传图片中...', uploadingVideo: '上传视频中...',
     imageUploaded: '图片已上传', videoUploaded: '视频已上传',
     maxVideo: '视频最大50MB',
-    sampleSettings: '样品设置',
-    sampleAvailable: '可提供样品',
-    samplePrice: '样品价格 (SAR) *',
-    sampleShipping: '运费 (SAR)',
-    sampleMaxQty: '最大样品数量',
-    sampleNote: '样品备注',
+    sampleSettings: '样品设置', sampleAvailable: '可提供样品',
+    samplePrice: '样品价格 (SAR) *', sampleShipping: '运费 (SAR)',
+    sampleMaxQty: '最大样品数量', sampleNote: '样品备注',
+    settingsTitle: '账户设置',
+    companyName: '公司名称', bioAr: '公司介绍（阿拉伯语）', bioEn: '公司介绍（英语）', bioZh: '公司介绍（中文）',
+    whatsapp: 'WhatsApp', wechat: 'WeChat', city: '城市', country: '国家',
+    tradeLink: '商业主页链接', speciality: '公司专业领域', minOrder: '最小订单金额 (SAR)',
+    logo: '公司Logo', factoryImages: '工厂图片（最多3张）',
+    uploadLogo: '上传Logo', uploadFactory: '添加图片', uploadingLogo: '上传中...',
+    saveSettings: '保存设置', settingsSaved: '✅ 保存成功',
     footer: 'Maabar © 2026', days: '天',
   }
 };
@@ -185,10 +197,24 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers] = useState({});
+
+  // Settings state
+  const [settings, setSettings] = useState({
+    bio_ar: '', bio_en: '', bio_zh: '', company_name: '',
+    whatsapp: '', wechat: '', city: '', country: '',
+    trade_link: '', speciality: '', min_order_value: '',
+    avatar_url: '', factory_images: [],
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFactory, setUploadingFactory] = useState(false);
+
   const imageRef = useRef(null);
   const videoRef = useRef(null);
   const editImageRef = useRef(null);
   const editVideoRef = useRef(null);
+  const logoRef = useRef(null);
+  const factoryRef = useRef(null);
 
   useEffect(() => {
     const navEl = document.querySelector('nav');
@@ -208,6 +234,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (activeTab === 'messages') loadInbox();
     if (activeTab === 'my-products') loadMyProducts();
     if (activeTab === 'requests') loadRequests();
+    if (activeTab === 'settings') loadSettings();
     if (activeTab === 'add-product') { setEditingProduct(null); setProduct(emptyProduct); }
   }, [activeTab]);
 
@@ -236,6 +263,72 @@ export default function DashboardSupplier({ user, profile, lang }) {
       .select('*,requests(title_ar,title_en,title_zh)')
       .eq('supplier_id', user.id).eq('status', 'rejected').eq('seen', false);
     if (data) setRejectedOffers(data);
+  };
+
+  const loadSettings = async () => {
+    const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (data) {
+      setSettings({
+        bio_ar: data.bio_ar || '', bio_en: data.bio_en || '', bio_zh: data.bio_zh || '',
+        company_name: data.company_name || '', whatsapp: data.whatsapp || '',
+        wechat: data.wechat || '', city: data.city || '', country: data.country || '',
+        trade_link: data.trade_link || '', speciality: data.speciality || '',
+        min_order_value: data.min_order_value || '', avatar_url: data.avatar_url || '',
+        factory_images: data.factory_images || [],
+      });
+    }
+  };
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    await sb.from('profiles').update({
+      bio_ar: settings.bio_ar, bio_en: settings.bio_en, bio_zh: settings.bio_zh,
+      company_name: settings.company_name, whatsapp: settings.whatsapp,
+      wechat: settings.wechat, city: settings.city, country: settings.country,
+      trade_link: settings.trade_link, speciality: settings.speciality,
+      min_order_value: settings.min_order_value ? parseFloat(settings.min_order_value) : null,
+    }).eq('id', user.id);
+    setSavingSettings(false);
+    alert(t.settingsSaved);
+  };
+
+  const uploadLogo = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    const path = `${user.id}/logo_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
+    if (!error) {
+      const url = STORAGE_URL + path;
+      await sb.from('profiles').update({ avatar_url: url }).eq('id', user.id);
+      setSettings(prev => ({ ...prev, avatar_url: url }));
+    }
+    setUploadingLogo(false);
+  };
+
+  const uploadFactoryImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if ((settings.factory_images || []).length >= 3) {
+      alert(isAr ? 'الحد الأقصى 3 صور' : 'Max 3 images');
+      return;
+    }
+    setUploadingFactory(true);
+    const path = `${user.id}/factory_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
+    if (!error) {
+      const url = STORAGE_URL + path;
+      const newImages = [...(settings.factory_images || []), url];
+      await sb.from('profiles').update({ factory_images: newImages }).eq('id', user.id);
+      setSettings(prev => ({ ...prev, factory_images: newImages }));
+    }
+    setUploadingFactory(false);
+  };
+
+  const removeFactoryImage = async (url) => {
+    const newImages = (settings.factory_images || []).filter(img => img !== url);
+    await sb.from('profiles').update({ factory_images: newImages }).eq('id', user.id);
+    setSettings(prev => ({ ...prev, factory_images: newImages }));
   };
 
   const dismissRejected = async (offerId) => {
@@ -280,8 +373,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
     }
   };
 
-  // رفع صورة
-  const uploadFile = async (file, type, isEdit = false) => {
+  const uploadFile = async (file, type) => {
     if (!file) return null;
     const isVideo = type === 'video';
     if (isVideo && file.size > 50 * 1024 * 1024) { alert(t.maxVideo); return null; }
@@ -297,7 +389,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const handleImageUpload = async (e, isEdit = false) => {
     const file = e.target.files[0];
     if (!file) return;
-    const url = await uploadFile(file, 'image', isEdit);
+    const url = await uploadFile(file, 'image');
     if (!url) return;
     if (isEdit) setEditingProduct(prev => ({ ...prev, image_url: url }));
     else setProduct(prev => ({ ...prev, image_url: url }));
@@ -306,7 +398,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const handleVideoUpload = async (e, isEdit = false) => {
     const file = e.target.files[0];
     if (!file) return;
-    const url = await uploadFile(file, 'video', isEdit);
+    const url = await uploadFile(file, 'video');
     if (!url) return;
     if (isEdit) setEditingProduct(prev => ({ ...prev, video_url: url }));
     else setProduct(prev => ({ ...prev, video_url: url }));
@@ -321,16 +413,13 @@ export default function DashboardSupplier({ user, profile, lang }) {
       name_en: product.name_en || product.name_zh,
       name_zh: product.name_zh,
       price_from: parseFloat(product.price_from),
-      moq: product.moq,
-      desc_ar: product.desc_ar,
-      image_url: product.image_url || null,
-      video_url: product.video_url || null,
+      moq: product.moq, desc_ar: product.desc_ar,
+      image_url: product.image_url || null, video_url: product.video_url || null,
       sample_available: product.sample_available,
       sample_price: product.sample_available ? parseFloat(product.sample_price) : null,
       sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null,
       sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null,
-      sample_note: product.sample_note || null,
-      is_active: true,
+      sample_note: product.sample_note || null, is_active: true,
     });
     setSaving(false);
     setProduct(emptyProduct);
@@ -342,14 +431,9 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (!editingProduct) return;
     setSaving(true);
     await sb.from('products').update({
-      name_ar: editingProduct.name_ar,
-      name_en: editingProduct.name_en,
-      name_zh: editingProduct.name_zh,
-      price_from: parseFloat(editingProduct.price_from),
-      moq: editingProduct.moq,
-      desc_ar: editingProduct.desc_ar,
-      image_url: editingProduct.image_url || null,
-      video_url: editingProduct.video_url || null,
+      name_ar: editingProduct.name_ar, name_en: editingProduct.name_en, name_zh: editingProduct.name_zh,
+      price_from: parseFloat(editingProduct.price_from), moq: editingProduct.moq, desc_ar: editingProduct.desc_ar,
+      image_url: editingProduct.image_url || null, video_url: editingProduct.video_url || null,
       sample_available: editingProduct.sample_available,
       sample_price: editingProduct.sample_available ? parseFloat(editingProduct.sample_price) : null,
       sample_shipping: editingProduct.sample_available ? parseFloat(editingProduct.sample_shipping || 0) : null,
@@ -358,8 +442,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
     }).eq('id', editingProduct.id);
     setSaving(false);
     setEditingProduct(null);
-    loadMyProducts();
-    loadStats();
+    loadMyProducts(); loadStats();
   };
 
   const toggleProductActive = async (p) => {
@@ -437,6 +520,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
     { id: 'offers', label: t.offers },
     { id: 'add-product', label: t.addProduct },
     { id: 'messages', label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
+    { id: 'settings', label: t.settings },
   ];
 
   const BackBtn = () => (
@@ -451,133 +535,59 @@ export default function DashboardSupplier({ user, profile, lang }) {
     </button>
   );
 
-  // فورم المنتج — مشترك بين إضافة وتعديل
-  const ProductForm = ({ data, setData, onSave, onCancel, isEdit, imgRef, vidRef, onImgChange, onVidChange }) => (
+  const ProductForm = ({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange }) => (
     <div style={{ background: 'rgba(247,245,242,0.95)', border: '1px solid #E5E0D8', padding: 36, maxWidth: 700 }}>
-
-      {/* الصورة والفيديو */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        {/* صورة */}
         <div>
           <p style={{ fontSize: 10, letterSpacing: 2, color: '#7a7a7a', marginBottom: 10, textTransform: 'uppercase' }}>{t.uploadImage}</p>
           <input ref={imgRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onImgChange} />
-          <div onClick={() => imgRef.current?.click()} style={{
-            width: '100%', height: 120, border: '1px dashed #E5E0D8',
-            borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', overflow: 'hidden', background: '#FAFAF8', transition: 'border-color 0.2s',
-          }}
+          <div onClick={() => imgRef.current?.click()} style={{ width: '100%', height: 120, border: '1px dashed #E5E0D8', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: '#FAFAF8', transition: 'border-color 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#2C2C2C'}
             onMouseLeave={e => e.currentTarget.style.borderColor = '#E5E0D8'}>
-            {uploadingImage ? (
-              <p style={{ fontSize: 11, color: '#7a7a7a' }}>{t.uploadingImage}</p>
-            ) : data.image_url ? (
-              <img src={data.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <p style={{ fontSize: 11, color: '#7a7a7a' }}>+ {t.uploadImage}</p>
-            )}
+            {uploadingImage ? <p style={{ fontSize: 11, color: '#7a7a7a' }}>{t.uploadingImage}</p>
+              : data.image_url ? <img src={data.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <p style={{ fontSize: 11, color: '#7a7a7a' }}>+ {t.uploadImage}</p>}
           </div>
           {data.image_url && <p style={{ fontSize: 10, color: '#2d7a4f', marginTop: 6 }}>✓ {t.imageUploaded}</p>}
         </div>
-
-        {/* فيديو */}
         <div>
           <p style={{ fontSize: 10, letterSpacing: 2, color: '#7a7a7a', marginBottom: 10, textTransform: 'uppercase' }}>{t.uploadVideo}</p>
           <input ref={vidRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={onVidChange} />
-          <div onClick={() => vidRef.current?.click()} style={{
-            width: '100%', height: 120, border: '1px dashed #E5E0D8',
-            borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', background: '#FAFAF8', transition: 'border-color 0.2s',
-            flexDirection: 'column', gap: 4,
-          }}
+          <div onClick={() => vidRef.current?.click()} style={{ width: '100%', height: 120, border: '1px dashed #E5E0D8', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#FAFAF8', transition: 'border-color 0.2s', flexDirection: 'column', gap: 4 }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#2C2C2C'}
             onMouseLeave={e => e.currentTarget.style.borderColor = '#E5E0D8'}>
-            {uploadingVideo ? (
-              <p style={{ fontSize: 11, color: '#7a7a7a' }}>{t.uploadingVideo}</p>
-            ) : data.video_url ? (
-              <video src={data.video_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-            ) : (
-              <>
-                <p style={{ fontSize: 11, color: '#7a7a7a' }}>+ {t.uploadVideo}</p>
-                <p style={{ fontSize: 9, color: '#7a7a7a', opacity: 0.6 }}>{t.maxVideo}</p>
-              </>
-            )}
+            {uploadingVideo ? <p style={{ fontSize: 11, color: '#7a7a7a' }}>{t.uploadingVideo}</p>
+              : data.video_url ? <video src={data.video_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
+              : <><p style={{ fontSize: 11, color: '#7a7a7a' }}>+ {t.uploadVideo}</p><p style={{ fontSize: 9, color: '#7a7a7a', opacity: 0.6 }}>{t.maxVideo}</p></>}
           </div>
           {data.video_url && <p style={{ fontSize: 10, color: '#2d7a4f', marginTop: 6 }}>✓ {t.videoUploaded}</p>}
         </div>
       </div>
-
-      {/* حقول الاسم */}
       <div className="form-grid">
-        <div className="form-group">
-          <label className="form-label">{t.nameZh}</label>
-          <input className="form-input" value={data.name_zh || ''} onChange={e => setData({ ...data, name_zh: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t.nameEn}</label>
-          <input className="form-input" value={data.name_en || ''} onChange={e => setData({ ...data, name_en: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t.nameAr}</label>
-          <input className="form-input" value={data.name_ar || ''} onChange={e => setData({ ...data, name_ar: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t.price}</label>
-          <input className="form-input" type="number" value={data.price_from || ''} onChange={e => setData({ ...data, price_from: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t.moq}</label>
-          <input className="form-input" value={data.moq || ''} onChange={e => setData({ ...data, moq: e.target.value })} />
-        </div>
+        <div className="form-group"><label className="form-label">{t.nameZh}</label><input className="form-input" value={data.name_zh || ''} onChange={e => setData({ ...data, name_zh: e.target.value })} /></div>
+        <div className="form-group"><label className="form-label">{t.nameEn}</label><input className="form-input" value={data.name_en || ''} onChange={e => setData({ ...data, name_en: e.target.value })} /></div>
+        <div className="form-group"><label className="form-label">{t.nameAr}</label><input className="form-input" value={data.name_ar || ''} onChange={e => setData({ ...data, name_ar: e.target.value })} /></div>
+        <div className="form-group"><label className="form-label">{t.price}</label><input className="form-input" type="number" value={data.price_from || ''} onChange={e => setData({ ...data, price_from: e.target.value })} /></div>
+        <div className="form-group"><label className="form-label">{t.moq}</label><input className="form-input" value={data.moq || ''} onChange={e => setData({ ...data, moq: e.target.value })} /></div>
       </div>
-      <div className="form-group">
-        <label className="form-label">{t.descLabel}</label>
-        <textarea className="form-input" rows={2} style={{ resize: 'vertical' }} value={data.desc_ar || ''} onChange={e => setData({ ...data, desc_ar: e.target.value })} />
-      </div>
-
-      {/* إعدادات العينة */}
+      <div className="form-group"><label className="form-label">{t.descLabel}</label><textarea className="form-input" rows={2} style={{ resize: 'vertical' }} value={data.desc_ar || ''} onChange={e => setData({ ...data, desc_ar: e.target.value })} /></div>
       <div style={{ marginTop: 24, padding: '20px', background: '#F0EDE8', borderRadius: 4 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: data.sample_available ? 20 : 0 }}>
-          <input type="checkbox" id="sample_toggle" checked={data.sample_available || false}
-            onChange={e => setData({ ...data, sample_available: e.target.checked })}
-            style={{ width: 16, height: 16, cursor: 'pointer' }} />
-          <label htmlFor="sample_toggle" style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2C', cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
-            {t.sampleAvailable}
-          </label>
+          <input type="checkbox" id="sample_toggle" checked={data.sample_available || false} onChange={e => setData({ ...data, sample_available: e.target.checked })} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+          <label htmlFor="sample_toggle" style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2C', cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{t.sampleAvailable}</label>
         </div>
-
         {data.sample_available && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, animation: 'fadeIn 0.3s ease' }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">{t.samplePrice}</label>
-              <input className="form-input" type="number" value={data.sample_price || ''}
-                onChange={e => setData({ ...data, sample_price: e.target.value })} placeholder="50" />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">{t.sampleShipping}</label>
-              <input className="form-input" type="number" value={data.sample_shipping || ''}
-                onChange={e => setData({ ...data, sample_shipping: e.target.value })} placeholder="30" />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">{t.sampleMaxQty}</label>
-              <input className="form-input" type="number" value={data.sample_max_qty || '3'}
-                onChange={e => setData({ ...data, sample_max_qty: e.target.value })} placeholder="3" />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">{t.sampleNote}</label>
-              <input className="form-input" value={data.sample_note || ''}
-                onChange={e => setData({ ...data, sample_note: e.target.value })} />
-            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{t.samplePrice}</label><input className="form-input" type="number" value={data.sample_price || ''} onChange={e => setData({ ...data, sample_price: e.target.value })} placeholder="50" /></div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{t.sampleShipping}</label><input className="form-input" type="number" value={data.sample_shipping || ''} onChange={e => setData({ ...data, sample_shipping: e.target.value })} placeholder="30" /></div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{t.sampleMaxQty}</label><input className="form-input" type="number" value={data.sample_max_qty || '3'} onChange={e => setData({ ...data, sample_max_qty: e.target.value })} placeholder="3" /></div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">{t.sampleNote}</label><input className="form-input" value={data.sample_note || ''} onChange={e => setData({ ...data, sample_note: e.target.value })} /></div>
           </div>
         )}
       </div>
-
       <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-        <button onClick={onSave} disabled={saving} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '11px 28px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
-          {saving ? t.saving : t.save}
-        </button>
-        <button onClick={onCancel} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '11px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
-          {t.cancel}
-        </button>
+        <button onClick={onSave} disabled={saving} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '11px 28px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>{saving ? t.saving : t.save}</button>
+        <button onClick={onCancel} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '11px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>{t.cancel}</button>
       </div>
     </div>
   );
@@ -589,9 +599,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
       {/* HEADER */}
       <div style={{ padding: '60px 60px 0', background: 'rgba(0,0,0,0.38)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 24, fontFamily: 'var(--font-body)' }}>{t.tag}</p>
-        <h1 style={{ fontSize: 64, fontWeight: 300, fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)', marginBottom: 16, color: '#F7F5F2', letterSpacing: lang === 'ar' ? 0 : -1, lineHeight: 1.1 }}>
-          {t.welcome} {name}
-        </h1>
+        <h1 style={{ fontSize: 64, fontWeight: 300, fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)', marginBottom: 16, color: '#F7F5F2', letterSpacing: lang === 'ar' ? 0 : -1, lineHeight: 1.1 }}>{t.welcome} {name}</h1>
         <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.72)', marginBottom: 44, fontWeight: 300, lineHeight: 1.7, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'inherit', maxWidth: 460 }}>{t.desc}</p>
         <div style={{ display: 'flex', overflowX: 'auto' }}>
           {tabs.map(tab => (
@@ -635,9 +643,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     {rejectedOffers.map((o, i) => (
                       <div key={i} style={{ background: '#F7F5F2', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <p style={{ fontSize: 13, fontWeight: 500, color: '#c00', fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'inherit' }}>{t.offerRejected}: {getTitle(o.requests)}</p>
-                        <button onClick={() => dismissRejected(o.id)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#7a7a7a', padding: '6px 14px', fontSize: 10, cursor: 'pointer', borderRadius: 2 }}>
-                          {isAr ? 'تجاهل' : lang === 'zh' ? '忽略' : 'Dismiss'}
-                        </button>
+                        <button onClick={() => dismissRejected(o.id)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#7a7a7a', padding: '6px 14px', fontSize: 10, cursor: 'pointer', borderRadius: 2 }}>{isAr ? 'تجاهل' : lang === 'zh' ? '忽略' : 'Dismiss'}</button>
                       </div>
                     ))}
                   </div>
@@ -674,30 +680,13 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <h2 style={{ fontSize: 40, fontWeight: 300, marginBottom: 24, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)' }}>
                 {isAr ? 'طلبات التجار' : lang === 'zh' ? '采购需求' : 'Trader Requests'}
               </h2>
-
-              {/* فلتر الكتاغوري */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
                 {cats.map(c => (
-                  <button key={c.val} onClick={() => setActiveCat(c.val)} style={{
-                    padding: '7px 16px', fontSize: 12, borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s',
-                    background: activeCat === c.val ? '#2C2C2C' : 'transparent',
-                    color: activeCat === c.val ? '#F7F5F2' : '#7a7a7a',
-                    border: '1px solid', borderColor: activeCat === c.val ? '#2C2C2C' : '#E5E0D8',
-                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
-                  }}>
-                    {c.label}
-                  </button>
+                  <button key={c.val} onClick={() => setActiveCat(c.val)} style={{ padding: '7px 16px', fontSize: 12, borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s', background: activeCat === c.val ? '#2C2C2C' : 'transparent', color: activeCat === c.val ? '#F7F5F2' : '#7a7a7a', border: '1px solid', borderColor: activeCat === c.val ? '#2C2C2C' : '#E5E0D8', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{c.label}</button>
                 ))}
               </div>
-
               {loadingRequests && [1, 2, 3].map(i => <SkeletonCard key={i} />)}
-
-              {!loadingRequests && requests.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <p style={{ color: '#7a7a7a', fontSize: 14 }}>{isAr ? 'لا توجد طلبات' : 'No requests'}</p>
-                </div>
-              )}
-
+              {!loadingRequests && requests.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0' }}><p style={{ color: '#7a7a7a', fontSize: 14 }}>{isAr ? 'لا توجد طلبات' : 'No requests'}</p></div>}
               {!loadingRequests && requests.map(r => (
                 <div key={r.id}>
                   <div style={{ border: '1px solid #E5E0D8', padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, marginBottom: offerForms[r.id] ? 0 : 14, background: 'rgba(247,245,242,0.82)', transition: 'all 0.2s', borderRadius: offerForms[r.id] ? '6px 6px 0 0' : 6 }}
@@ -706,16 +695,10 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                         <span className="status-badge status-open">{r.status}</span>
-                        {r.category && r.category !== 'other' && (
-                          <span style={{ fontSize: 10, padding: '2px 8px', background: '#EFECE7', borderRadius: 20, color: '#7a7a7a', letterSpacing: 1 }}>
-                            {cats.find(c => c.val === r.category)?.label || r.category}
-                          </span>
-                        )}
+                        {r.category && r.category !== 'other' && <span style={{ fontSize: 10, padding: '2px 8px', background: '#EFECE7', borderRadius: 20, color: '#7a7a7a', letterSpacing: 1 }}>{cats.find(c => c.val === r.category)?.label || r.category}</span>}
                         <span style={{ color: '#6b6b6b', fontSize: 12 }}>{fmtDate(r.created_at)}</span>
                       </div>
-                      <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                        {getTitle(r)}
-                      </h3>
+                      <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{getTitle(r)}</h3>
                       <div style={{ display: 'flex', gap: 20, color: '#6b6b6b', fontSize: 13, flexWrap: 'wrap' }}>
                         <span>👤 {r.profiles?.full_name || r.profiles?.company_name || ''}</span>
                         <span>📦 {r.quantity || '—'}</span>
@@ -729,34 +712,18 @@ export default function DashboardSupplier({ user, profile, lang }) {
                       {isAr ? 'قدم عرضك ←' : lang === 'zh' ? '提交报价 →' : 'Submit Quote →'}
                     </button>
                   </div>
-
                   {offerForms[r.id] && (
                     <div style={{ background: '#F7F5F2', border: '1px solid #E5E0D8', borderTop: 'none', padding: 24, marginBottom: 14, borderRadius: '0 0 6px 6px' }}>
                       <div className="form-grid">
-                        <div className="form-group">
-                          <label className="form-label">{isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *'}</label>
-                          <input className="form-input" type="number" value={offers[r.id]?.price || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))} />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">MOQ *</label>
-                          <input className="form-input" value={offers[r.id]?.moq || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], moq: e.target.value } }))} />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">{isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *'}</label>
-                          <input className="form-input" type="number" value={offers[r.id]?.days || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], days: e.target.value } }))} />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">{isAr ? 'بلد المنشأ' : 'Origin'}</label>
-                          <input className="form-input" value={offers[r.id]?.origin || 'China'} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], origin: e.target.value } }))} />
-                        </div>
+                        <div className="form-group"><label className="form-label">{isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *'}</label><input className="form-input" type="number" value={offers[r.id]?.price || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))} /></div>
+                        <div className="form-group"><label className="form-label">MOQ *</label><input className="form-input" value={offers[r.id]?.moq || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], moq: e.target.value } }))} /></div>
+                        <div className="form-group"><label className="form-label">{isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *'}</label><input className="form-input" type="number" value={offers[r.id]?.days || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], days: e.target.value } }))} /></div>
+                        <div className="form-group"><label className="form-label">{isAr ? 'بلد المنشأ' : 'Origin'}</label><input className="form-input" value={offers[r.id]?.origin || 'China'} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], origin: e.target.value } }))} /></div>
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">{isAr ? 'ملاحظة' : 'Note'}</label>
-                        <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={offers[r.id]?.note || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} />
-                      </div>
+                      <div className="form-group"><label className="form-label">{isAr ? 'ملاحظة' : 'Note'}</label><textarea className="form-input" rows={2} style={{ resize: 'none' }} value={offers[r.id]?.note || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} /></div>
                       <div style={{ display: 'flex', gap: 12 }}>
                         <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}>{isAr ? 'إرسال العرض' : lang === 'zh' ? '发送报价' : 'Send Offer'}</button>
-                        <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}>{isAr ? 'إلغاء' : t.cancel}</button>
+                        <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}>{t.cancel}</button>
                       </div>
                     </div>
                   )}
@@ -771,35 +738,22 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <BackBtn />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 40 }}>
                 <h2 style={{ fontSize: 40, fontWeight: 300, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)' }}>{t.myProductsTitle}</h2>
-                <button onClick={() => setActiveTab('add-product')} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '10px 22px', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
-                  {isAr ? '+ إضافة' : lang === 'zh' ? '+ 添加' : '+ Add'}
-                </button>
+                <button onClick={() => setActiveTab('add-product')} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '10px 22px', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>{isAr ? '+ إضافة' : lang === 'zh' ? '+ 添加' : '+ Add'}</button>
               </div>
-
               {loadingProducts && [1, 2, 3].map(i => <SkeletonCard key={i} />)}
-
               {!loadingProducts && myProducts.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid #E5E0D8' }}>
                   <p style={{ color: '#7a7a7a', fontSize: 14, marginBottom: 24 }}>{t.noProducts}</p>
-                  <button onClick={() => setActiveTab('add-product')} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '12px 28px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
-                    {t.addNewProduct}
-                  </button>
+                  <button onClick={() => setActiveTab('add-product')} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '12px 28px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>{t.addNewProduct}</button>
                 </div>
               )}
-
               {!loadingProducts && myProducts.map((p, idx) => (
                 <div key={p.id}>
                   {editingProduct?.id === p.id ? (
                     <div style={{ borderTop: '1px solid #E5E0D8', padding: '28px 0', animation: 'fadeIn 0.3s ease' }}>
                       <input ref={editImageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, true)} />
                       <input ref={editVideoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, true)} />
-                      <ProductForm
-                        data={editingProduct} setData={setEditingProduct}
-                        onSave={updateProduct} onCancel={() => setEditingProduct(null)}
-                        isEdit={true} imgRef={editImageRef} vidRef={editVideoRef}
-                        onImgChange={e => handleImageUpload(e, true)}
-                        onVidChange={e => handleVideoUpload(e, true)}
-                      />
+                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} />
                     </div>
                   ) : (
                     <div style={{ borderTop: '1px solid #E5E0D8', padding: '20px 0', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', animation: `fadeIn 0.4s ease ${idx * 0.05}s both` }}>
@@ -808,18 +762,14 @@ export default function DashboardSupplier({ user, profile, lang }) {
                       </div>
                       <div style={{ flex: 1, minWidth: 160 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                          <p style={{ fontSize: 15, fontWeight: 500, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'inherit' }}>
-                            {lang === 'zh' ? p.name_zh || p.name_en : lang === 'ar' ? p.name_ar || p.name_en : p.name_en || p.name_ar}
-                          </p>
+                          <p style={{ fontSize: 15, fontWeight: 500, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'inherit' }}>{lang === 'zh' ? p.name_zh || p.name_en : lang === 'ar' ? p.name_ar || p.name_en : p.name_en || p.name_ar}</p>
                           {p.video_url && <span style={{ fontSize: 9, padding: '2px 8px', background: '#EFECE7', borderRadius: 10, color: '#7a7a7a', letterSpacing: 1 }}>VIDEO</span>}
                           {p.sample_available && <span style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 10, color: '#2d7a4f', letterSpacing: 1 }}>{isAr ? 'عينة' : 'SAMPLE'}</span>}
                         </div>
                         <p style={{ fontSize: 12, color: '#7a7a7a' }}>{p.price_from} SAR · MOQ: {p.moq}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 10, letterSpacing: 1, padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? '#2d7a4f' : '#E5E0D8', color: p.is_active ? '#2d7a4f' : '#7a7a7a', background: p.is_active ? 'rgba(45,122,79,0.06)' : 'transparent' }}>
-                          {p.is_active ? t.active : t.inactive}
-                        </span>
+                        <span style={{ fontSize: 10, letterSpacing: 1, padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? '#2d7a4f' : '#E5E0D8', color: p.is_active ? '#2d7a4f' : '#7a7a7a', background: p.is_active ? 'rgba(45,122,79,0.06)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
                         <button onClick={() => toggleProductActive(p)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#7a7a7a', padding: '6px 12px', fontSize: 10, cursor: 'pointer', borderRadius: 2 }}>{t.toggleActive}</button>
                         <button onClick={() => setEditingProduct(p)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '6px 12px', fontSize: 10, cursor: 'pointer', borderRadius: 2 }}>{t.edit}</button>
                         <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid #ffcccc', color: '#c00', padding: '6px 12px', fontSize: 10, cursor: 'pointer', borderRadius: 2 }}>{t.delete}</button>
@@ -847,9 +797,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                 <div key={o.id} style={{ borderTop: '1px solid #E5E0D8', padding: '28px 0', animation: `fadeIn 0.4s ease ${idx * 0.05}s both` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
                     <h3 style={{ fontSize: 18, fontWeight: 400, color: '#2C2C2C' }}>{getTitle(o.requests)}</h3>
-                    <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', padding: '3px 12px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'accepted' ? '#2d7a4f' : o.status === 'rejected' ? '#ffcccc' : '#E5E0D8', color: o.status === 'accepted' ? '#2d7a4f' : o.status === 'rejected' ? '#c00' : '#7a7a7a' }}>
-                      {OFFER_STATUS[lang]?.[o.status] || o.status}
-                    </span>
+                    <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', padding: '3px 12px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'accepted' ? '#2d7a4f' : o.status === 'rejected' ? '#ffcccc' : '#E5E0D8', color: o.status === 'accepted' ? '#2d7a4f' : o.status === 'rejected' ? '#c00' : '#7a7a7a' }}>{OFFER_STATUS[lang]?.[o.status] || o.status}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 32, color: '#7a7a7a', fontSize: 13, marginBottom: 20, flexWrap: 'wrap' }}>
                     <span style={{ color: '#2C2C2C', fontSize: 28, fontWeight: 300, fontFamily: 'var(--font-en)' }}>{o.price} <span style={{ fontSize: 13, color: '#7a7a7a' }}>SAR</span></span>
@@ -865,9 +813,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                       </div>
                     </div>
                   )}
-                  {o.requests?.tracking_number && (
-                    <p style={{ fontSize: 13, marginBottom: 12, padding: '10px 14px', background: '#EFECE7' }}>{t.tracking} <strong>{o.requests.tracking_number}</strong></p>
-                  )}
+                  {o.requests?.tracking_number && <p style={{ fontSize: 13, marginBottom: 12, padding: '10px 14px', background: '#EFECE7' }}>{t.tracking} <strong>{o.requests.tracking_number}</strong></p>}
                   {o.status === 'accepted' && o.requests?.buyer_id && (
                     <button onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '10px 20px', fontSize: 11, letterSpacing: 2, cursor: 'pointer', borderRadius: 2 }}>{t.contactTrader}</button>
                   )}
@@ -882,18 +828,14 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <BackBtn />
               <h2 style={{ fontSize: 40, fontWeight: 300, marginBottom: 40, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)' }}>{t.messagesTitle}</h2>
               {inbox.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid #E5E0D8' }}>
-                  <p style={{ color: '#7a7a7a', fontSize: 13 }}>{t.noMessages}</p>
-                </div>
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid #E5E0D8' }}><p style={{ color: '#7a7a7a', fontSize: 13 }}>{t.noMessages}</p></div>
               ) : inbox.map((m, idx) => {
                 const senderName = m.profiles?.full_name || m.profiles?.company_name || '—';
                 return (
                   <div key={m.id} onClick={() => nav(`/chat/${m.sender_id}`)} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 0', borderTop: '1px solid #E5E0D8', cursor: 'pointer', transition: 'opacity 0.2s', animation: `fadeIn 0.4s ease ${idx * 0.05}s both` }}
                     onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                     onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#2C2C2C', color: '#F7F5F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>
-                      {senderName.charAt(0).toUpperCase()}
-                    </div>
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#2C2C2C', color: '#F7F5F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{senderName.charAt(0).toUpperCase()}</div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2C', marginBottom: 4 }}>{senderName}</p>
                       <p style={{ fontSize: 12, color: '#7a7a7a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>{m.content}</p>
@@ -912,13 +854,124 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <h2 style={{ fontSize: 40, fontWeight: 300, marginBottom: 40, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)' }}>{t.addProductTitle}</h2>
               <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, false)} />
               <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, false)} />
-              <ProductForm
-                data={product} setData={setProduct}
-                onSave={addProduct} onCancel={() => setActiveTab('overview')}
-                isEdit={false} imgRef={imageRef} vidRef={videoRef}
-                onImgChange={e => handleImageUpload(e, false)}
-                onVidChange={e => handleVideoUpload(e, false)}
-              />
+              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} />
+            </div>
+          )}
+
+          {/* SETTINGS */}
+          {activeTab === 'settings' && (
+            <div style={{ animation: 'fadeIn 0.4s ease' }}>
+              <BackBtn />
+              <h2 style={{ fontSize: 40, fontWeight: 300, marginBottom: 40, color: '#2C2C2C', fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'inherit' : 'var(--font-en)' }}>
+                {t.settingsTitle}
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 700 }}>
+
+                {/* اللوقو */}
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>{t.logo}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#EFECE7', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                      {settings.avatar_url
+                        ? <img src={settings.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 28, color: '#7a7a7a' }}>🏭</span>}
+                    </div>
+                    <div>
+                      <input ref={logoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadLogo} />
+                      <button onClick={() => logoRef.current?.click()} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '10px 20px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2, marginBottom: 8, display: 'block' }}>
+                        {uploadingLogo ? t.uploadingLogo : t.uploadLogo}
+                      </button>
+                      <p style={{ fontSize: 11, color: '#7a7a7a' }}>{isAr ? 'JPG أو PNG · حتى 5MB' : 'JPG or PNG · Max 5MB'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* صور المصنع */}
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>{t.factoryImages}</p>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {(settings.factory_images || []).map((img, i) => (
+                      <div key={i} style={{ width: 100, height: 100, borderRadius: 6, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button onClick={() => removeFactoryImage(img)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                      </div>
+                    ))}
+                    {(settings.factory_images || []).length < 3 && (
+                      <div>
+                        <input ref={factoryRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadFactoryImage} />
+                        <div onClick={() => factoryRef.current?.click()} style={{ width: 100, height: 100, borderRadius: 6, border: '1px dashed #E5E0D8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'border-color 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = '#2C2C2C'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = '#E5E0D8'}>
+                          {uploadingFactory ? <p style={{ fontSize: 10, color: '#7a7a7a', textAlign: 'center', padding: 4 }}>...</p> : <p style={{ fontSize: 24, color: '#7a7a7a' }}>+</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* بيانات الشركة */}
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>{isAr ? 'بيانات الشركة' : 'Company Info'}</p>
+                  <div style={{ background: '#F7F5F2', border: '1px solid #E5E0D8', padding: 28, borderRadius: 4 }}>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label className="form-label">{t.companyName}</label>
+                        <input className="form-input" value={settings.company_name} onChange={e => setSettings({ ...settings, company_name: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.speciality}</label>
+                        <select className="form-input" value={settings.speciality} onChange={e => setSettings({ ...settings, speciality: e.target.value })}>
+                          <option value="">{isAr ? 'اختر التخصص' : 'Select'}</option>
+                          {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.city}</label>
+                        <input className="form-input" value={settings.city} onChange={e => setSettings({ ...settings, city: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.country}</label>
+                        <input className="form-input" value={settings.country} onChange={e => setSettings({ ...settings, country: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.whatsapp}</label>
+                        <input className="form-input" value={settings.whatsapp} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} placeholder="+966..." dir="ltr" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.wechat}</label>
+                        <input className="form-input" value={settings.wechat} onChange={e => setSettings({ ...settings, wechat: e.target.value })} dir="ltr" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.minOrder}</label>
+                        <input className="form-input" type="number" value={settings.min_order_value} onChange={e => setSettings({ ...settings, min_order_value: e.target.value })} placeholder="1000" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t.tradeLink}</label>
+                        <input className="form-input" value={settings.trade_link} onChange={e => setSettings({ ...settings, trade_link: e.target.value })} placeholder="https://..." dir="ltr" />
+                      </div>
+                    </div>
+
+                    {/* وصف الشركة */}
+                    <div className="form-group">
+                      <label className="form-label">{t.bioZh}</label>
+                      <textarea className="form-input" rows={2} style={{ resize: 'vertical' }} value={settings.bio_zh} onChange={e => setSettings({ ...settings, bio_zh: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">{t.bioEn}</label>
+                      <textarea className="form-input" rows={2} style={{ resize: 'vertical' }} value={settings.bio_en} onChange={e => setSettings({ ...settings, bio_en: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">{t.bioAr}</label>
+                      <textarea className="form-input" rows={2} style={{ resize: 'vertical' }} value={settings.bio_ar} onChange={e => setSettings({ ...settings, bio_ar: e.target.value })} dir="rtl" />
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={saveSettings} disabled={savingSettings} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '13px 36px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2, alignSelf: 'flex-start', transition: 'all 0.2s' }}>
+                  {savingSettings ? t.saving : t.saveSettings}
+                </button>
+              </div>
             </div>
           )}
 

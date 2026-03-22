@@ -21,7 +21,6 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // إغلاق الـ dropdown لو ضغط خارجه
   useEffect(() => {
     const handleClick = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target))
@@ -31,7 +30,6 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // تحميل الإشعارات
   useEffect(() => {
     if (!user) return;
     loadNotifs();
@@ -64,8 +62,6 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const handleNotifClick = (n) => {
     setNotifOpen(false);
     if (n.type === 'new_message') nav(`/chat/${n.ref_id}`);
-    else if (n.type === 'new_offer' || n.type === 'new_request') nav('/dashboard');
-    else if (n.type === 'shipped' || n.type === 'delivery_confirmed' || n.type === 'offer_accepted') nav('/dashboard');
     else nav('/dashboard');
   };
 
@@ -84,21 +80,23 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
   const links = isSupplier
     ? [
-        { label: isAr ? 'الرئيسية' : 'Home', path: '/' },
-        { label: isAr ? 'الطلبات' : 'Requests', path: '/requests' },
-        { label: isAr ? 'لوحتي' : 'Dashboard', path: '/dashboard' },
-        { label: isAr ? 'عن مَعبر' : 'About', path: '/about' },
+        { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页' : 'Home', path: '/' },
+        { label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests', path: '/requests' },
+        { label: isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard', path: '/dashboard' },
+        { label: isAr ? 'عن مَعبر' : lang === 'zh' ? '关于' : 'About', path: '/about' },
       ]
     : [
-        { label: isAr ? 'الرئيسية' : 'Home', path: '/' },
-        { label: isAr ? 'المنتجات' : 'Products', path: '/products' },
-        { label: isAr ? 'عن مَعبر' : 'About', path: '/about' },
-        { label: isAr ? 'تواصل' : 'Contact', path: '/contact' },
+        { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页' : 'Home', path: '/' },
+        { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', path: '/products' },
+        { label: isAr ? 'الموردون' : lang === 'zh' ? '供应商' : 'Suppliers', path: '/suppliers' },
+        { label: isAr ? 'عن مَعبر' : lang === 'zh' ? '关于' : 'About', path: '/about' },
+        { label: isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Contact', path: '/contact' },
       ];
 
   return (
     <>
       <nav className={scrolled || !isHome ? 'scrolled' : ''}>
+
         {/* LOGO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <button className="nav-logo" onClick={() => nav('/')}>
@@ -117,7 +115,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
         {/* RIGHT */}
         <div className="nav-right">
-          {/* LANG */}
+
+          {/* LANG SWITCHER */}
           <div className="lang-switcher">
             {['ar', 'en', 'zh'].map(l => (
               <button key={l} className={`lang-btn${lang === l ? ' active' : ''}`} onClick={() => setLang(l)}>
@@ -140,7 +139,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                   </span>
                 </button>
 
-                {/* DROPDOWN */}
+                {/* NOTIFICATIONS DROPDOWN */}
                 {notifOpen && (
                   <div className="notif-panel open" style={{
                     position: 'absolute',
@@ -149,24 +148,28 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                     width: 300,
                   }}>
                     <div className="notif-header">
-                      {isAr ? 'الإشعارات' : 'Notifications'}
+                      {isAr ? 'الإشعارات' : lang === 'zh' ? '通知' : 'Notifications'}
                       {unread > 0 && (
                         <span style={{
                           marginRight: isAr ? 8 : 0,
                           marginLeft: isAr ? 0 : 8,
                           background: '#2C2C2C', color: '#F7F5F2',
                           fontSize: 9, fontWeight: 700, borderRadius: '50%',
-                          width: 16, height: 16, display: 'inline-flex',
-                          alignItems: 'center', justifyContent: 'center',
-                        }}>{unread}</span>
+                          width: 16, height: 16,
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {unread}
+                        </span>
                       )}
                     </div>
+
                     {notifs.length === 0 ? (
                       <div className="notif-empty">
-                        {isAr ? 'لا توجد إشعارات' : 'No notifications'}
+                        {isAr ? 'لا توجد إشعارات' : lang === 'zh' ? '暂无通知' : 'No notifications'}
                       </div>
                     ) : notifs.map((n, i) => (
-                      <div key={i} className="notif-item" onClick={() => handleNotifClick(n)}
+                      <div key={i} className="notif-item"
+                        onClick={() => handleNotifClick(n)}
                         style={{ background: n.is_read ? 'transparent' : 'rgba(44,44,44,0.04)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                           <p style={{
@@ -181,10 +184,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                           </span>
                         </div>
                         {!n.is_read && (
-                          <div style={{
-                            width: 5, height: 5, borderRadius: '50%',
-                            background: '#2C2C2C', marginTop: 6,
-                          }} />
+                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#2C2C2C', marginTop: 6 }} />
                         )}
                       </div>
                     ))}
@@ -193,19 +193,19 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
               </div>
 
               <button className="nav-cta" onClick={() => nav('/dashboard')}>
-                {isAr ? 'لوحتي' : 'Dashboard'}
+                {isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard'}
               </button>
               <button className="nav-logout" onClick={doSignOut}>
-                {isAr ? 'خروج' : 'Logout'}
+                {isAr ? 'خروج' : lang === 'zh' ? '退出' : 'Logout'}
               </button>
             </>
           ) : (
             <>
               <button className="nav-supplier-btn" onClick={() => nav('/login/supplier')}>
-                {isAr ? 'بوابة الموردين' : 'Supplier Portal'}
+                {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
               </button>
               <button className="nav-cta" onClick={() => nav('/login/buyer')}>
-                {isAr ? 'دخول / تسجيل' : 'Login'}
+                {isAr ? 'دخول / تسجيل' : lang === 'zh' ? '登录' : 'Login'}
               </button>
             </>
           )}
@@ -229,19 +229,19 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             {user ? (
               <>
                 <button className="btn-dark-sm" onClick={() => { nav('/dashboard'); setMenuOpen(false); }}>
-                  {isAr ? 'لوحتي' : 'Dashboard'}
+                  {isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard'}
                 </button>
                 <button className="btn-outline" onClick={() => { doSignOut(); setMenuOpen(false); }}>
-                  {isAr ? 'خروج' : 'Logout'}
+                  {isAr ? 'خروج' : lang === 'zh' ? '退出' : 'Logout'}
                 </button>
               </>
             ) : (
               <>
                 <button className="btn-dark-sm" onClick={() => { nav('/login/buyer'); setMenuOpen(false); }}>
-                  {isAr ? 'دخول / تسجيل' : 'Login'}
+                  {isAr ? 'دخول / تسجيل' : lang === 'zh' ? '登录' : 'Login'}
                 </button>
                 <button className="btn-outline" onClick={() => { nav('/login/supplier'); setMenuOpen(false); }}>
-                  {isAr ? 'بوابة الموردين' : 'Supplier Portal'}
+                  {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
                 </button>
               </>
             )}
