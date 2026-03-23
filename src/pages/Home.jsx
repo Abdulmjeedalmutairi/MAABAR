@@ -391,7 +391,7 @@ export default function Home({ lang, user, profile }) {
                 {s.t}
               </h3>
               <p style={{
-                fontSize: 18, color: '#7a7a7a', lineHeight: 1.9,
+                fontSize: isAr ? 20 : 18, color: '#7a7a7a', lineHeight: 1.9,
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
               }}>
                 {s.d}
@@ -445,7 +445,7 @@ export default function Home({ lang, user, profile }) {
                 {tr.t}
               </h3>
               <p className="trust-desc" style={{
-                fontSize: 18, color: '#7a7a7a', lineHeight: 1.8,
+                fontSize: isAr ? 20 : 18, color: '#7a7a7a', lineHeight: 1.8,
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                 transition: 'color 0.25s',
               }}>
