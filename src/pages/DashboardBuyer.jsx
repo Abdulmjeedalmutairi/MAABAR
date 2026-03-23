@@ -1,7 +1,7 @@
-import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+import Footer from '../components/Footer';
 
 const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', paid: 'تم الدفع', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
 const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', paid: 'Paid', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
@@ -10,29 +10,115 @@ const STATUS_STEPS = ['open', 'offers_received', 'closed', 'paid', 'shipping', '
 const CITIES_AR = ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'تبوك', 'أبها', 'القصيم', 'حائل', 'جازان', 'نجران'];
 const CITIES_EN = ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Tabuk', 'Abha', 'Qassim', 'Hail', 'Jazan', 'Najran'];
 
+/* ─── Status Bar ─────────────────────────── */
+function StatusBar({ status, isAr }) {
+  const idx     = STATUS_STEPS.indexOf(status);
+  const current = idx === -1 ? 0 : idx;
+  const label   = isAr ? (STATUS_AR[status] || STATUS_AR.open) : (STATUS_EN[status] || STATUS_EN.open);
+  return (
+    <div style={{ margin: '12px 0 8px' }}>
+      <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+        {STATUS_STEPS.map((_, i) => (
+          <div key={i} style={{
+            flex: 1, height: 2,
+            background: i <= current ? 'var(--text-tertiary)' : 'var(--border-subtle)',
+            borderRadius: 1, transition: 'background 0.3s',
+          }} />
+        ))}
+      </div>
+      <p style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 500, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+        {label}
+      </p>
+    </div>
+  );
+}
+
+/* ─── Stat Card ──────────────────────────── */
+function StatCard({ label, value, onClick, highlight }) {
+  return (
+    <div onClick={onClick} style={{
+      background: highlight ? 'var(--bg-raised)' : 'var(--bg-subtle)',
+      border: `1px solid ${highlight ? 'var(--border-muted)' : 'var(--border-subtle)'}`,
+      padding: '24px 28px',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      borderRadius: 'var(--radius-lg)',
+    }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+      onMouseLeave={e => e.currentTarget.style.background = highlight ? 'var(--bg-raised)' : 'var(--bg-subtle)'}>
+      <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16, fontWeight: 500 }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 44, fontWeight: 300, color: highlight ? 'var(--text-primary)' : 'var(--text-secondary)', lineHeight: 1, letterSpacing: -1.5 }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/* ─── Quick Action ───────────────────────── */
+function QuickAction({ title, sub, onClick, primary, isAr }) {
+  return (
+    <div onClick={onClick} style={{
+      padding: '24px',
+      background: primary ? 'var(--bg-raised)' : 'var(--bg-subtle)',
+      border: `1px solid ${primary ? 'var(--border-muted)' : 'var(--border-subtle)'}`,
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      borderRadius: 'var(--radius-lg)',
+    }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+      onMouseLeave={e => e.currentTarget.style.background = primary ? 'var(--bg-raised)' : 'var(--bg-subtle)'}>
+      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+        {title}
+      </p>
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.6 }}>
+        {sub}
+      </p>
+    </div>
+  );
+}
+
+/* ─── Back Button ────────────────────────── */
+function BackBtn({ onClick, isAr }) {
+  return (
+    <button onClick={onClick} style={{
+      background: 'none', border: 'none',
+      color: 'var(--text-disabled)', fontSize: 11,
+      cursor: 'pointer', letterSpacing: 2,
+      textTransform: 'uppercase',
+      fontFamily: 'var(--font-sans)',
+      padding: 0, marginBottom: 32,
+      transition: 'color 0.2s',
+    }}
+      onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
+      {isAr ? 'رجوع ←' : '← Back'}
+    </button>
+  );
+}
+
+/* ─── Main ───────────────────────────────── */
 export default function DashboardBuyer({ user, profile, lang }) {
-  const nav = useNavigate();
-  const isAr = lang === 'ar';
-  const [stats, setStats] = useState({ requests: 0, messages: 0, offers: 0 });
-  const [myRequests, setMyRequests] = useState([]);
-  const [inbox, setInbox] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  const nav    = useNavigate();
+  const isAr   = lang === 'ar';
+
+  const [stats, setStats]                 = useState({ requests: 0, messages: 0, offers: 0 });
+  const [myRequests, setMyRequests]       = useState([]);
+  const [inbox, setInbox]                 = useState([]);
+  const [activeTab, setActiveTab]         = useState('overview');
   const [pendingActions, setPendingActions] = useState([]);
-  const [reviewModal, setReviewModal] = useState(null);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState('');
-  const [submittingReview, setSubmittingReview] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
-  // Settings
-  const [settings, setSettings] = useState({ full_name: '', phone: '', city: '', company_name: '' });
-  const [savingSettings, setSavingSettings] = useState(false);
+  // Review modal
+  const [reviewModal, setReviewModal]       = useState(null);
+  const [reviewRating, setReviewRating]     = useState(0);
+  const [reviewComment, setReviewComment]   = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
-    const nav_ = document.querySelector('nav');
-    if (nav_) nav_.classList.add('scrolled');
-    return () => { if (nav_) nav_.classList.remove('scrolled'); };
-  }, []);
+  // Settings
+  const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '' });
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
@@ -60,9 +146,9 @@ export default function DashboardBuyer({ user, profile, lang }) {
     const { data: reqs } = await sb.from('requests').select('*, offers(id,status)').eq('buyer_id', user.id);
     if (reqs) {
       reqs.forEach(r => {
-        const pendingOffers = r.offers?.filter(o => o.status === 'pending') || [];
-        if (pendingOffers.length > 0) actions.push({ type: 'offers', request: r, count: pendingOffers.length });
-        if (r.status === 'paid') actions.push({ type: 'payment_sent', request: r });
+        const pending = r.offers?.filter(o => o.status === 'pending') || [];
+        if (pending.length > 0) actions.push({ type: 'offers', request: r, count: pending.length });
+        if (r.status === 'paid')     actions.push({ type: 'payment_sent', request: r });
         if (r.status === 'shipping') actions.push({ type: 'delivery', request: r });
       });
     }
@@ -98,26 +184,17 @@ export default function DashboardBuyer({ user, profile, lang }) {
 
   const loadSettings = async () => {
     const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
-    if (data) {
-      setSettings({
-        full_name: data.full_name || '',
-        phone: data.phone || '',
-        city: data.city || '',
-        company_name: data.company_name || '',
-      });
-    }
+    if (data) setSettings({ full_name: data.full_name || '', phone: data.phone || '', city: data.city || '', company_name: data.company_name || '' });
   };
 
   const saveSettings = async () => {
     setSavingSettings(true);
     await sb.from('profiles').update({
-      full_name: settings.full_name,
-      phone: settings.phone,
-      city: settings.city,
-      company_name: settings.company_name,
+      full_name: settings.full_name, phone: settings.phone,
+      city: settings.city, company_name: settings.company_name,
     }).eq('id', user.id);
     setSavingSettings(false);
-    alert(isAr ? '✅ تم حفظ التغييرات' : '✅ Changes saved');
+    alert(isAr ? 'تم حفظ التغييرات' : 'Changes saved');
   };
 
   const acceptOffer = async (offerId, supplierId, requestId) => {
@@ -127,7 +204,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
     await sb.from('notifications').insert({
       user_id: supplierId, type: 'offer_accepted',
       title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
-      ref_id: offerId, is_read: false
+      ref_id: offerId, is_read: false,
     });
     loadMyRequests(); loadPendingActions();
   };
@@ -137,7 +214,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
     await sb.from('notifications').insert({
       user_id: supplierId, type: 'delivery_confirmed',
       title_ar: 'التاجر أكد الاستلام', title_en: 'Buyer confirmed delivery', title_zh: '买家已确认收货',
-      ref_id: requestId, is_read: false
+      ref_id: requestId, is_read: false,
     });
     loadMyRequests(); loadPendingActions();
     setReviewRating(0); setReviewComment('');
@@ -148,85 +225,96 @@ export default function DashboardBuyer({ user, profile, lang }) {
     if (!reviewRating || !reviewModal) return;
     setSubmittingReview(true);
     await sb.from('reviews').insert({
-      supplier_id: reviewModal.supplierId,
-      buyer_id: user.id,
-      request_id: reviewModal.requestId,
-      rating: reviewRating,
-      comment: reviewComment || '',
+      supplier_id: reviewModal.supplierId, buyer_id: user.id,
+      request_id: reviewModal.requestId, rating: reviewRating, comment: reviewComment || '',
     });
     const { data: reviews } = await sb.from('reviews').select('rating').eq('supplier_id', reviewModal.supplierId);
-    if (reviews && reviews.length > 0) {
+    if (reviews?.length > 0) {
       const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
       await sb.from('profiles').update({ rating: avg, reviews_count: reviews.length }).eq('id', reviewModal.supplierId);
     }
     setSubmittingReview(false);
     setReviewModal(null);
-    alert(isAr ? '✅ شكراً على تقييمك!' : '✅ Thank you for your review!');
-  };
-
-  const StatusBar = ({ status }) => {
-    const idx = STATUS_STEPS.indexOf(status);
-    const current = idx === -1 ? 0 : idx;
-    const label = isAr ? (STATUS_AR[status] || STATUS_AR.open) : (STATUS_EN[status] || STATUS_EN.open);
-    return (
-      <div style={{ margin: '14px 0 10px' }}>
-        <div style={{ display: 'flex', gap: 3, marginBottom: 8 }}>
-          {STATUS_STEPS.map((_, i) => (
-            <div key={i} style={{ flex: 1, height: 2, background: i <= current ? '#2C2C2C' : '#E5E0D8', transition: 'background 0.3s' }} />
-          ))}
-        </div>
-        <p style={{ fontSize: 11, color: '#2C2C2C', fontWeight: 500, letterSpacing: 1.5, textTransform: 'uppercase' }}>{label}</p>
-      </div>
-    );
+    alert(isAr ? 'شكراً على تقييمك!' : 'Thank you for your review!');
   };
 
   const name = profile?.full_name || user?.email?.split('@')[0];
+
   const tabs = [
-    { id: 'overview', label: isAr ? 'نظرة عامة' : 'Overview' },
-    { id: 'requests', label: isAr ? 'طلباتي' : 'My Requests' },
-    { id: 'messages', label: isAr ? 'الرسائل' : 'Messages', badge: stats.messages > 0 ? stats.messages : null },
-    { id: 'settings', label: isAr ? 'إعداداتي' : 'Settings' },
+    { id: 'overview',  label: isAr ? 'نظرة عامة' : 'Overview' },
+    { id: 'requests',  label: isAr ? 'طلباتي'    : 'My Requests' },
+    { id: 'messages',  label: isAr ? 'الرسائل'   : 'Messages', badge: stats.messages > 0 ? stats.messages : null },
+    { id: 'settings',  label: isAr ? 'الإعدادات' : 'Settings' },
   ];
 
-  const BackBtn = () => (
-    <button onClick={() => setActiveTab('overview')} style={{
-      background: 'none', border: 'none', color: '#7a7a7a', fontSize: 11,
-      cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase',
-      fontFamily: 'var(--font-body)', padding: 0, marginBottom: 32, transition: 'color 0.2s'
-    }}
-      onMouseEnter={e => e.currentTarget.style.color = '#2C2C2C'}
-      onMouseLeave={e => e.currentTarget.style.color = '#7a7a7a'}>
-      {isAr ? 'رجوع →' : '← Back'}
-    </button>
-  );
+  /* ── shared section style ── */
+  const section = { animation: 'fadeIn 0.35s ease' };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'transparent' }}>
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+    <div className="dashboard-wrap">
 
-      {/* HEADER */}
-      <div style={{ padding: '60px 60px 0', background: 'rgba(0,0,0,0.52)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 24, fontFamily: 'var(--font-body)' }}>
+      {/* ══════════════════════════════════════
+          HEADER
+      ══════════════════════════════════════ */}
+      <div style={{
+        background: 'var(--bg-subtle)',
+        borderBottom: '1px solid var(--border-subtle)',
+        padding: '48px 60px 0',
+      }}>
+        {/* Label */}
+        <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20, fontWeight: 500 }}>
           {isAr ? 'مَعبر · لوحة التاجر' : 'Maabar · Trader Dashboard'}
         </p>
-        <h1 style={{ fontSize: isAr ? 56 : 72, fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', marginBottom: 16, color: '#F7F5F2', letterSpacing: isAr ? 0 : -1, lineHeight: 1.1 }}>
+
+        {/* Name */}
+        <h1 style={{
+          fontSize: isAr ? 36 : 42,
+          fontWeight: 300,
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+          color: 'var(--text-primary)',
+          letterSpacing: isAr ? 0 : -1,
+          lineHeight: 1.2,
+          marginBottom: 10,
+        }}>
           {isAr ? `أهلاً، ${name}` : `Welcome, ${name}`}
         </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.72)', marginBottom: 44, fontWeight: 300, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)', maxWidth: 460 }}>
+        <p style={{
+          fontSize: 14, color: 'var(--text-tertiary)',
+          marginBottom: 36, lineHeight: 1.7,
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+          maxWidth: 420,
+        }}>
           {isAr ? 'تابع طلباتك وعروضك ورسائلك من مكان واحد' : 'Track your requests, offers and messages in one place'}
         </p>
-        <div style={{ display: 'flex' }}>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 0 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-              padding: '12px 24px', background: 'none', border: 'none',
-              borderBottom: activeTab === t.id ? '1px solid rgba(255,255,255,0.7)' : '1px solid transparent',
-              color: activeTab === t.id ? '#F7F5F2' : 'rgba(255,255,255,0.35)',
-              fontSize: 11, cursor: 'pointer', transition: 'all 0.2s', position: 'relative',
-              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)', letterSpacing: 2, textTransform: 'uppercase'
+              padding: '10px 20px',
+              background: 'none', border: 'none',
+              borderBottom: activeTab === t.id
+                ? '1px solid var(--text-primary)'
+                : '1px solid transparent',
+              color: activeTab === t.id ? 'var(--text-primary)' : 'var(--text-disabled)',
+              fontSize: 11, cursor: 'pointer',
+              transition: 'all 0.2s', position: 'relative',
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              letterSpacing: 1.5, textTransform: 'uppercase',
+              minHeight: 44,
             }}>
               {t.label}
               {t.badge && (
-                <span style={{ position: 'absolute', top: 8, right: isAr ? 'auto' : 4, left: isAr ? 4 : 'auto', background: '#F7F5F2', color: '#2C2C2C', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{
+                  position: 'absolute', top: 6,
+                  right: isAr ? 'auto' : 2, left: isAr ? 2 : 'auto',
+                  background: 'var(--bg-raised)',
+                  border: '1px solid var(--border-muted)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 8, fontWeight: 700, borderRadius: '50%',
+                  width: 14, height: 14,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
                   {t.badge}
                 </span>
               )}
@@ -235,188 +323,260 @@ export default function DashboardBuyer({ user, profile, lang }) {
         </div>
       </div>
 
-      {/* CONTENT */}
-      <div style={{ background: 'rgba(247,245,242,0.92)', backdropFilter: 'blur(8px)', minHeight: 'calc(100vh - 300px)' }}>
-        <div style={{ padding: '48px 60px', maxWidth: 960, margin: '0 auto' }}>
+      {/* ══════════════════════════════════════
+          CONTENT
+      ══════════════════════════════════════ */}
+      <div style={{ background: 'var(--bg-base)', minHeight: 'calc(100vh - 280px)' }}>
+        <div style={{ padding: '40px 60px', maxWidth: 960, margin: '0 auto' }}>
 
-          {/* OVERVIEW */}
+          {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
-            <div style={{ animation: 'fadeIn 0.4s ease' }}>
+            <div style={section}>
+
+              {/* Pending actions */}
               {pendingActions.length > 0 && (
-                <div style={{ marginBottom: 48 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>
-                    {isAr ? 'يحتاج انتباهك' : 'Needs Attention'} ({pendingActions.length})
+                <div style={{ marginBottom: 40 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
+                    {isAr ? `يحتاج انتباهك (${pendingActions.length})` : `Needs Attention (${pendingActions.length})`}
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#E5E0D8' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {pendingActions.map((action, i) => (
-                      <div key={i} onClick={() => setActiveTab(action.type === 'messages' ? 'messages' : 'requests')} style={{ background: '#F7F5F2', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#EFECE7'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#F7F5F2'}>
+                      <div key={i} onClick={() => setActiveTab(action.type === 'messages' ? 'messages' : 'requests')} style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '14px 20px',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        cursor: 'pointer', transition: 'all 0.15s', gap: 12,
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; e.currentTarget.style.borderColor = 'var(--border-muted)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}>
                         <div>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2C', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                            {action.type === 'offers' && (isAr ? `${action.count} عرض ينتظر مراجعتك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`)}
+                          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {action.type === 'offers'       && (isAr ? `${action.count} عرض ينتظر مراجعتك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`)}
                             {action.type === 'payment_sent' && (isAr ? 'تم الدفع — في انتظار شحن المورد' : 'Payment sent — Awaiting supplier shipment')}
-                            {action.type === 'delivery' && (isAr ? `تأكيد استلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`)}
-                            {action.type === 'messages' && (isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`)}
+                            {action.type === 'delivery'     && (isAr ? `تأكيد استلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`)}
+                            {action.type === 'messages'     && (isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`)}
                           </p>
-                          <p style={{ fontSize: 11, color: '#7a7a7a', letterSpacing: 1 }}>
-                            {action.type === 'offers' && (isAr ? 'قارن العروض واختر الأفضل' : 'Compare and choose the best')}
+                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>
+                            {action.type === 'offers'       && (isAr ? 'قارن العروض واختر الأفضل' : 'Compare and choose the best')}
                             {action.type === 'payment_sent' && (isAr ? 'مبلغك محجوز بأمان في مَعبر' : 'Your funds are securely held')}
-                            {action.type === 'delivery' && (isAr ? 'الطلب وصل — أكد الاستلام' : 'Order arrived — confirm receipt')}
-                            {action.type === 'messages' && (isAr ? 'اضغط للاطلاع' : 'Tap to view')}
+                            {action.type === 'delivery'     && (isAr ? 'الطلب وصل — أكد الاستلام' : 'Order arrived — confirm receipt')}
+                            {action.type === 'messages'     && (isAr ? 'اضغط للاطلاع' : 'Tap to view')}
                           </p>
                         </div>
-                        <span style={{ fontSize: 18, color: '#2C2C2C', opacity: 0.4 }}>←</span>
+                        <span style={{ color: 'var(--text-disabled)', fontSize: 14 }}>{isAr ? '←' : '→'}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div style={{ marginBottom: 48 }}>
-                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>{isAr ? 'الإحصائيات' : 'Overview'}</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#E5E0D8' }}>
-                  <StatCard label={isAr ? 'طلبات مرفوعة' : 'Requests Posted'} value={stats.requests} onClick={() => setActiveTab('requests')} />
-                  <StatCard label={isAr ? 'عروض مستلمة' : 'Offers Received'} value={stats.offers} onClick={() => setActiveTab('requests')} highlight={stats.offers > 0} />
-                  <StatCard label={isAr ? 'رسائل جديدة' : 'New Messages'} value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
+              {/* Stats */}
+              <div style={{ marginBottom: 40 }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
+                  {isAr ? 'الإحصائيات' : 'Overview'}
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  <StatCard label={isAr ? 'طلبات مرفوعة' : 'Requests Posted'}  value={stats.requests} onClick={() => setActiveTab('requests')} />
+                  <StatCard label={isAr ? 'عروض مستلمة'  : 'Offers Received'}  value={stats.offers}   onClick={() => setActiveTab('requests')} highlight={stats.offers > 0} />
+                  <StatCard label={isAr ? 'رسائل جديدة'  : 'New Messages'}     value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
                 </div>
               </div>
 
-              <div style={{ marginBottom: 48 }}>
-                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>{isAr ? 'الإجراءات السريعة' : 'Quick Actions'}</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#E5E0D8' }}>
-                  <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary />
-                  <QuickAction title={isAr ? 'رفع طلب جديد' : 'Post New Request'} sub={isAr ? 'اطلب منتجاً وانتظر عروض الموردين' : 'Request a product and get offers'} onClick={() => nav('/requests')} />
-                  <QuickAction title={isAr ? 'طلباتي' : 'My Requests'} sub={isAr ? 'تابع طلباتك الحالية' : 'Track your current orders'} onClick={() => setActiveTab('requests')} />
+              {/* Quick actions */}
+              <div style={{ marginBottom: 40 }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
+                  {isAr ? 'الإجراءات السريعة' : 'Quick Actions'}
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary isAr={isAr} />
+                  <QuickAction title={isAr ? 'رفع طلب جديد'  : 'Post New Request'} sub={isAr ? 'اطلب منتجاً وانتظر عروض الموردين' : 'Request a product and get offers'}   onClick={() => nav('/requests')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'}      sub={isAr ? 'تابع طلباتك الحالية'               : 'Track your current orders'}           onClick={() => setActiveTab('requests')} isAr={isAr} />
                 </div>
               </div>
 
-              <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: '#7a7a7a', fontSize: 11, cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase', padding: 0, transition: 'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#2C2C2C'}
-                onMouseLeave={e => e.currentTarget.style.color = '#7a7a7a'}>
-                {isAr ? 'العودة للرئيسية →' : '← Back to Home'}
+              <button onClick={() => nav('/')} style={{
+                background: 'none', border: 'none',
+                color: 'var(--text-disabled)', fontSize: 11,
+                cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase',
+                padding: 0, transition: 'color 0.2s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
+                {isAr ? 'العودة للرئيسية ←' : '← Back to Home'}
               </button>
             </div>
           )}
 
-          {/* MY REQUESTS */}
+          {/* ── MY REQUESTS ── */}
           {activeTab === 'requests' && (
-            <div style={{ animation: 'fadeIn 0.4s ease' }}>
-              <BackBtn />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 40 }}>
-                <h2 style={{ fontSize: 40, fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: '#2C2C2C', letterSpacing: isAr ? 0 : -1 }}>
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 32 }}>
+                <h2 style={{
+                  fontSize: isAr ? 28 : 34, fontWeight: 300,
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                  color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5,
+                }}>
                   {isAr ? 'طلباتي' : 'My Requests'}
                 </h2>
-                <button onClick={() => nav('/requests')} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '10px 22px', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
-                  {isAr ? 'طلب جديد' : 'New Request'}
+                <button className="btn-dark-sm" onClick={() => nav('/requests')}
+                  style={{ fontSize: 11, letterSpacing: 1, minHeight: 36 }}>
+                  {isAr ? '+ طلب جديد' : '+ New Request'}
                 </button>
               </div>
 
+              {/* Loading skeleton */}
               {loadingRequests && [1, 2].map(i => (
-                <div key={i} style={{ borderTop: '1px solid #E5E0D8', padding: '32px 0' }}>
-                  <div style={{ width: '50%', height: 20, background: '#E5E0D8', borderRadius: 3, marginBottom: 12, animation: 'pulse 1.5s ease infinite' }} />
-                  <div style={{ width: '30%', height: 14, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+                <div key={i} style={{ borderTop: '1px solid var(--border-subtle)', padding: '28px 0' }}>
+                  <div style={{ width: '45%', height: 16, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)', marginBottom: 10 }} />
+                  <div style={{ width: '25%', height: 10, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
                 </div>
               ))}
 
+              {/* Empty */}
               {!loadingRequests && myRequests.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid #E5E0D8' }}>
-                  <p style={{ fontSize: 14, color: '#7a7a7a', marginBottom: 24 }}>{isAr ? 'ما عندك طلبات بعد' : 'No requests yet'}</p>
-                  <button onClick={() => nav('/requests')} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '12px 28px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  <p style={{ fontSize: 14, color: 'var(--text-disabled)', marginBottom: 24, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'ما عندك طلبات بعد' : 'No requests yet'}
+                  </p>
+                  <button className="btn-dark-sm" onClick={() => nav('/requests')} style={{ minHeight: 40 }}>
                     {isAr ? 'ارفع أول طلب' : 'Post First Request'}
                   </button>
                 </div>
               )}
 
+              {/* Requests list */}
               {!loadingRequests && myRequests.map((r, idx) => (
-                <div key={r.id} style={{ borderTop: '1px solid #E5E0D8', padding: '32px 0', animation: `fadeIn 0.4s ease ${idx * 0.05}s both` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-                    <h3 style={{ fontSize: 20, fontWeight: 400, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', color: '#2C2C2C' }}>
+                <div key={r.id} style={{
+                  borderTop: '1px solid var(--border-subtle)',
+                  padding: '28px 0',
+                  animation: `fadeIn 0.35s ease ${idx * 0.04}s both`,
+                }}>
+                  {/* Title + status */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
+                    <h3 style={{
+                      fontSize: 17, fontWeight: 500,
+                      fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                      color: 'var(--text-primary)',
+                    }}>
                       {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
                     </h3>
-                    <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#7a7a7a' }}>
+                    <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
                       {isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status}
                     </span>
                   </div>
-                  <StatusBar status={r.shipping_status || r.status} />
-                  <p style={{ color: '#7a7a7a', fontSize: 12, marginBottom: 20, letterSpacing: 0.5 }}>
+
+                  <StatusBar status={r.shipping_status || r.status} isAr={isAr} />
+
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 12, marginBottom: 16, letterSpacing: 0.3 }}>
                     {isAr ? 'الكمية:' : 'Qty:'} {r.quantity || '—'}
                   </p>
 
+                  {/* Tracking */}
                   {r.tracking_number && (
-                    <div style={{ marginBottom: 20, padding: '12px 16px', background: '#EFECE7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, color: '#2C2C2C' }}>{isAr ? 'رقم التتبع:' : 'Tracking:'} <strong>{r.tracking_number}</strong></span>
-                      <a href={`https://t.17track.net/en#nums=${r.tracking_number}`} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#2C2C2C', letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none' }}>
-                        {isAr ? 'تتبع →' : 'Track →'}
+                    <div style={{
+                      marginBottom: 16, padding: '10px 16px',
+                      background: 'var(--bg-raised)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                        {isAr ? 'رقم التتبع: ' : 'Tracking: '}
+                        <strong style={{ color: 'var(--text-primary)' }}>{r.tracking_number}</strong>
+                      </span>
+                      <a href={`https://t.17track.net/en#nums=${r.tracking_number}`} target="_blank" rel="noreferrer" style={{
+                        fontSize: 10, color: 'var(--text-secondary)',
+                        letterSpacing: 1.5, textTransform: 'uppercase',
+                        textDecoration: 'none', transition: 'color 0.15s',
+                      }}>
+                        {isAr ? 'تتبع ←' : 'Track →'}
                       </a>
                     </div>
                   )}
 
+                  {/* Offers grid */}
                   {r.offers.length > 0 && (
                     <div>
                       {r.offers.length > 1 && (
-                        <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 12 }}>
+                        <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
                           {isAr ? `${r.offers.length} عروض — قارن واختر` : `${r.offers.length} Offers — Compare & Choose`}
                         </p>
                       )}
-                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(r.offers.length, 3)}, 1fr)`, gap: 1, background: '#E5E0D8' }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${Math.min(r.offers.length, 3)}, 1fr)`,
+                        gap: 1,
+                        background: 'var(--border-subtle)',
+                        borderRadius: 'var(--radius-lg)',
+                        overflow: 'hidden',
+                      }}>
                         {r.offers.map(o => (
-                          <div key={o.id} style={{ background: o.status === 'accepted' ? '#2C2C2C' : '#F7F5F2', padding: '20px' }}>
-                            <p style={{ fontSize: 11, fontWeight: 500, color: o.status === 'accepted' ? 'rgba(247,245,242,0.6)' : '#7a7a7a', marginBottom: 8 }}>
+                          <div key={o.id} style={{
+                            background: o.status === 'accepted' ? 'var(--bg-raised)' : 'var(--bg-subtle)',
+                            border: o.status === 'accepted' ? '0' : '0',
+                            padding: '18px 16px',
+                          }}>
+                            <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8 }}>
                               {o.profiles?.company_name || '—'}
                             </p>
-                            <p style={{ fontSize: 32, fontWeight: 300, color: o.status === 'accepted' ? '#F7F5F2' : '#2C2C2C', fontFamily: 'var(--font-en)', lineHeight: 1, marginBottom: 4 }}>
-                              {o.price} <span style={{ fontSize: 12, opacity: 0.6 }}>SAR</span>
+                            <p style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4 }}>
+                              {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>SAR</span>
                             </p>
-                            <p style={{ fontSize: 11, color: o.status === 'accepted' ? 'rgba(247,245,242,0.5)' : '#7a7a7a', marginBottom: 16 }}>
+                            <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 14 }}>
                               MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}
                             </p>
 
                             {o.status === 'pending' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '9px', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer', width: '100%' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} className="btn-primary"
+                                  style={{ padding: '8px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
                                   {isAr ? 'قبول' : 'Accept'}
                                 </button>
-                                <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '8px', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer', width: '100%' }}>
+                                <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
+                                  style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
                                   {isAr ? 'تواصل' : 'Chat'}
                                 </button>
                               </div>
                             )}
 
                             {o.status === 'accepted' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {r.status !== 'paid' && r.status !== 'shipping' && r.status !== 'arrived' && r.status !== 'delivered' && (
-                                  <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} style={{ background: '#F7F5F2', color: '#2C2C2C', border: 'none', padding: '10px', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer', width: '100%', fontWeight: 600 }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#EFECE7'}
-                                    onMouseLeave={e => e.currentTarget.style.background = '#F7F5F2'}>
-                                    {isAr ? 'ادفع الآن ←' : 'Pay Now →'}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {!['paid','shipping','arrived','delivered'].includes(r.status) && (
+                                  <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary"
+                                    style={{ padding: '9px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 36 }}>
+                                    {isAr ? 'ادفع الآن' : 'Pay Now'}
                                   </button>
                                 )}
                                 {r.status === 'paid' && (
-                                  <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(247,245,242,0.5)', textAlign: 'center' }}>
-                                    🔒 {isAr ? 'تم الدفع — محجوز' : 'Paid — Held'}
+                                  <p style={{ fontSize: 10, letterSpacing: 1, color: 'var(--text-disabled)', textAlign: 'center' }}>
+                                    {isAr ? 'تم الدفع — محجوز' : 'Paid — Held'}
                                   </p>
                                 )}
                                 {r.status === 'shipping' && (
                                   <>
-                                    <p style={{ fontSize: 10, color: 'rgba(247,245,242,0.5)', textAlign: 'center' }}>
-                                      🚢 {isAr ? 'في الطريق' : 'On the way'}
+                                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4 }}>
+                                      {isAr ? 'في الطريق' : 'On the way'}
                                     </p>
-                                    <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} style={{ background: 'rgba(247,245,242,0.15)', color: '#F7F5F2', border: '1px solid rgba(247,245,242,0.3)', padding: '9px', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer', width: '100%' }}>
+                                    <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-outline"
+                                      style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34 }}>
                                       {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
                                     </button>
                                   </>
                                 )}
                                 {r.status === 'delivered' && (
-                                  <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(45,122,79,0.8)', textAlign: 'center' }}>
-                                    ✓ {isAr ? 'تم التسليم' : 'Delivered'}
+                                  <p style={{ fontSize: 10, letterSpacing: 1, color: '#5a9a72', textAlign: 'center' }}>
+                                    {isAr ? 'تم التسليم' : 'Delivered'}
                                   </p>
                                 )}
                               </div>
                             )}
 
                             {o.status === 'rejected' && (
-                              <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#c00', textAlign: 'center' }}>
+                              <p style={{ fontSize: 10, letterSpacing: 1, color: '#a07070', textAlign: 'center' }}>
                                 {isAr ? 'مرفوض' : 'Rejected'}
                               </p>
                             )}
@@ -427,56 +587,75 @@ export default function DashboardBuyer({ user, profile, lang }) {
                   )}
 
                   {r.offers.length === 0 && (
-                    <p style={{ color: '#7a7a7a', fontSize: 12 }}>{isAr ? 'لا توجد عروض بعد' : 'No offers yet'}</p>
+                    <p style={{ color: 'var(--text-disabled)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'لا توجد عروض بعد' : 'No offers yet'}
+                    </p>
                   )}
                 </div>
               ))}
             </div>
           )}
 
-          {/* MESSAGES */}
+          {/* ── MESSAGES ── */}
           {activeTab === 'messages' && (
-            <div style={{ animation: 'fadeIn 0.4s ease' }}>
-              <BackBtn />
-              <h2 style={{ fontSize: 40, fontWeight: 300, marginBottom: 40, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: '#2C2C2C', letterSpacing: isAr ? 0 : -1 }}>
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
                 {isAr ? 'الرسائل' : 'Messages'}
               </h2>
+
               {inbox.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid #E5E0D8' }}>
-                  <p style={{ color: '#7a7a7a', fontSize: 13 }}>{isAr ? 'ما عندك رسائل بعد' : 'No messages yet'}</p>
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 13, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'ما عندك رسائل بعد' : 'No messages yet'}
+                  </p>
                 </div>
               ) : inbox.map((m, idx) => {
                 const senderName = m.profiles?.company_name || m.profiles?.full_name || '—';
                 return (
-                  <div key={m.id} onClick={() => nav(`/chat/${m.sender_id}`)} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 0', borderTop: '1px solid #E5E0D8', cursor: 'pointer', transition: 'opacity 0.2s', animation: `fadeIn 0.4s ease ${idx * 0.05}s both` }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                  <div key={m.id} onClick={() => nav(`/chat/${m.sender_id}`)} style={{
+                    display: 'flex', alignItems: 'center', gap: 16,
+                    padding: '14px 0', borderTop: '1px solid var(--border-subtle)',
+                    cursor: 'pointer', transition: 'opacity 0.15s',
+                    animation: `fadeIn 0.35s ease ${idx * 0.04}s both`,
+                    minHeight: 56,
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
                     onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#2C2C2C', color: '#F7F5F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>
+                    <div className="avatar">
                       {senderName.charAt(0).toUpperCase()}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2C', marginBottom: 4 }}>{senderName}</p>
-                      <p style={{ fontSize: 12, color: '#7a7a7a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>{m.content}</p>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3 }}>{senderName}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 380 }}>{m.content}</p>
                     </div>
-                    {!m.is_read && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#2C2C2C', flexShrink: 0 }} />}
+                    {!m.is_read && (
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, opacity: 0.8 }} />
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* SETTINGS */}
+          {/* ── SETTINGS ── */}
           {activeTab === 'settings' && (
-            <div style={{ animation: 'fadeIn 0.4s ease' }}>
-              <BackBtn />
-              <h2 style={{ fontSize: 40, fontWeight: 300, marginBottom: 40, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: '#2C2C2C', letterSpacing: isAr ? 0 : -1 }}>
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
                 {isAr ? 'إعدادات الحساب' : 'Account Settings'}
               </h2>
 
-              <div style={{ background: '#F7F5F2', border: '1px solid #E5E0D8', padding: 36, maxWidth: 600, borderRadius: 4 }}>
+              <div style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-muted)',
+                padding: '28px 32px',
+                maxWidth: 560,
+                borderRadius: 'var(--radius-xl)',
+              }}>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label className="form-label">{isAr ? 'الاسم الكامل' : 'Full Name'}</label>
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'الاسم الكامل' : 'Full Name'}</label>
                     <input className="form-input" value={settings.full_name} onChange={e => setSettings({ ...settings, full_name: e.target.value })} />
                   </div>
                   <div className="form-group">
@@ -484,19 +663,20 @@ export default function DashboardBuyer({ user, profile, lang }) {
                     <input className="form-input" value={settings.phone} onChange={e => setSettings({ ...settings, phone: e.target.value })} placeholder="+966 5x xxx xxxx" dir="ltr" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">{isAr ? 'المدينة' : 'City'}</label>
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'المدينة' : 'City'}</label>
                     <select className="form-input" value={settings.city} onChange={e => setSettings({ ...settings, city: e.target.value })}>
                       <option value="">{isAr ? 'اختر مدينة' : 'Select city'}</option>
                       {(isAr ? CITIES_AR : CITIES_EN).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">{isAr ? 'اسم الشركة / النشاط' : 'Company / Business'}</label>
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'اسم الشركة / النشاط' : 'Company / Business'}</label>
                     <input className="form-input" value={settings.company_name} onChange={e => setSettings({ ...settings, company_name: e.target.value })} placeholder={isAr ? 'اختياري' : 'Optional'} />
                   </div>
                 </div>
 
-                <button onClick={saveSettings} disabled={savingSettings} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '13px 32px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2, marginTop: 8, transition: 'all 0.2s' }}>
+                <button onClick={saveSettings} disabled={savingSettings} className="btn-primary"
+                  style={{ padding: '11px 28px', fontSize: 13, marginTop: 8, minHeight: 44 }}>
                   {savingSettings ? '...' : isAr ? 'حفظ التغييرات' : 'Save Changes'}
                 </button>
               </div>
@@ -506,33 +686,66 @@ export default function DashboardBuyer({ user, profile, lang }) {
         </div>
       </div>
 
-      {/* REVIEW MODAL */}
+      {/* ══════════════════════════════════════
+          REVIEW MODAL
+      ══════════════════════════════════════ */}
       {reviewModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, animation: 'fadeIn 0.25s ease' }}>
-          <div style={{ background: '#F7F5F2', borderRadius: 4, padding: '40px 36px', width: '100%', maxWidth: 420, animation: 'slideUp 0.3s ease' }}>
-            <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 3000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24, animation: 'fadeIn 0.2s ease',
+        }}>
+          <div style={{
+            background: 'var(--bg-overlay)',
+            border: '1px solid var(--border-muted)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '36px 32px',
+            width: '100%', maxWidth: 400,
+            animation: 'slideUp 0.25s ease',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
               {isAr ? 'تقييم المورد' : 'Rate Supplier'}
             </p>
-            <h3 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', color: '#2C2C2C' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 6, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)' }}>
               {isAr ? `كيف كانت تجربتك مع ${reviewModal.supplierName}؟` : `How was your experience with ${reviewModal.supplierName}?`}
             </h3>
-            <p style={{ fontSize: 13, color: '#7a7a7a', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+            <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 24, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.7 }}>
               {isAr ? 'تقييمك يساعد التجار الآخرين على اختيار الموردين الموثوقين' : 'Your review helps other traders choose reliable suppliers'}
             </p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, justifyContent: 'center' }}>
+
+            {/* Stars */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 24, justifyContent: 'center' }}>
               {[1, 2, 3, 4, 5].map(star => (
-                <button key={star} onClick={() => setReviewRating(star)} style={{ fontSize: 36, background: 'none', border: 'none', cursor: 'pointer', color: star <= reviewRating ? '#f5a623' : '#E5E0D8', transition: 'all 0.15s', transform: star <= reviewRating ? 'scale(1.1)' : 'scale(1)' }}>★</button>
+                <button key={star} onClick={() => setReviewRating(star)} style={{
+                  fontSize: 32, background: 'none', border: 'none', cursor: 'pointer',
+                  color: star <= reviewRating ? '#a08050' : 'var(--border-default)',
+                  transition: 'all 0.15s',
+                  transform: star <= reviewRating ? 'scale(1.1)' : 'scale(1)',
+                }}>★</button>
               ))}
             </div>
+
             <div className="form-group">
-              <label className="form-label">{isAr ? 'تعليق (اختياري)' : 'Comment (optional)'}</label>
-              <textarea className="form-input" rows={3} style={{ resize: 'none' }} value={reviewComment} onChange={e => setReviewComment(e.target.value)} placeholder={isAr ? 'شاركنا تجربتك...' : 'Share your experience...'} />
+              <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'تعليق (اختياري)' : 'Comment (optional)'}</label>
+              <textarea className="form-input" rows={3}
+                style={{ resize: 'none', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
+                value={reviewComment}
+                onChange={e => setReviewComment(e.target.value)}
+                placeholder={isAr ? 'شاركنا تجربتك...' : 'Share your experience...'}
+              />
             </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-              <button onClick={submitReview} disabled={!reviewRating || submittingReview} style={{ flex: 1, background: reviewRating ? '#2C2C2C' : '#E5E0D8', color: reviewRating ? '#F7F5F2' : '#7a7a7a', border: 'none', padding: '13px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: reviewRating ? 'pointer' : 'not-allowed', borderRadius: 2 }}>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button onClick={submitReview} disabled={!reviewRating || submittingReview} className="btn-primary"
+                style={{ flex: 1, padding: '11px', fontSize: 12, minHeight: 44, opacity: !reviewRating ? 0.4 : 1 }}>
                 {submittingReview ? '...' : isAr ? 'إرسال التقييم' : 'Submit Review'}
               </button>
-              <button onClick={() => setReviewModal(null)} style={{ background: 'none', border: '1px solid #E5E0D8', color: '#7a7a7a', padding: '13px 20px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
+              <button onClick={() => setReviewModal(null)} className="btn-outline"
+                style={{ padding: '11px 18px', fontSize: 12, minHeight: 44 }}>
                 {isAr ? 'تخطي' : 'Skip'}
               </button>
             </div>
@@ -540,34 +753,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
         </div>
       )}
 
-      <footer style={{ background: '#2C2C2C', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-en)', fontSize: 16, fontWeight: 600, color: '#F7F5F2', letterSpacing: 2 }}>
-          MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 13, opacity: 0.5 }}>| مَعبر</span>
-        </div>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, letterSpacing: 1 }}>{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
-    </div>
-  );
-}
-
-function StatCard({ label, value, onClick, highlight }) {
-  return (
-    <div onClick={onClick} style={{ background: highlight ? '#2C2C2C' : '#F7F5F2', padding: '32px 28px', cursor: 'pointer', transition: 'all 0.25s' }}
-      onMouseEnter={e => e.currentTarget.style.background = highlight ? '#3a3a3a' : '#EFECE7'}
-      onMouseLeave={e => e.currentTarget.style.background = highlight ? '#2C2C2C' : '#F7F5F2'}>
-      <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: highlight ? 'rgba(255,255,255,0.4)' : '#7a7a7a', marginBottom: 20 }}>{label}</p>
-      <p style={{ fontSize: 64, fontWeight: 300, color: highlight ? '#F7F5F2' : '#2C2C2C', lineHeight: 1, fontFamily: 'var(--font-en)' }}>{value}</p>
-    </div>
-  );
-}
-
-function QuickAction({ title, sub, onClick, primary }) {
-  return (
-    <div onClick={onClick} style={{ padding: '28px 24px', background: primary ? '#2C2C2C' : '#F7F5F2', cursor: 'pointer', transition: 'all 0.2s' }}
-      onMouseEnter={e => e.currentTarget.style.background = primary ? '#3a3a3a' : '#EFECE7'}
-      onMouseLeave={e => e.currentTarget.style.background = primary ? '#2C2C2C' : '#F7F5F2'}>
-      <p style={{ fontSize: 13, fontWeight: 500, color: primary ? '#F7F5F2' : '#2C2C2C', marginBottom: 10, fontFamily: 'var(--font-ar)' }}>{title}</p>
-      <p style={{ fontSize: 12, color: primary ? 'rgba(255,255,255,0.45)' : '#7a7a7a', fontFamily: 'var(--font-ar)', lineHeight: 1.6 }}>{sub}</p>
+      <Footer lang={lang} />
     </div>
   );
 }

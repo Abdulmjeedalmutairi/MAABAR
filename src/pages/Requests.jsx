@@ -1,64 +1,69 @@
-import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+import Footer from '../components/Footer';
 
 const CATEGORIES = {
   ar: [
     { val: 'electronics', label: 'إلكترونيات' },
-    { val: 'furniture', label: 'أثاث' },
-    { val: 'clothing', label: 'ملابس' },
-    { val: 'building', label: 'مواد بناء' },
-    { val: 'food', label: 'غذاء' },
-    { val: 'other', label: 'أخرى' },
+    { val: 'furniture',   label: 'أثاث' },
+    { val: 'clothing',    label: 'ملابس' },
+    { val: 'building',    label: 'مواد بناء' },
+    { val: 'food',        label: 'غذاء' },
+    { val: 'other',       label: 'أخرى' },
   ],
   en: [
     { val: 'electronics', label: 'Electronics' },
-    { val: 'furniture', label: 'Furniture' },
-    { val: 'clothing', label: 'Clothing' },
-    { val: 'building', label: 'Building Materials' },
-    { val: 'food', label: 'Food' },
-    { val: 'other', label: 'Other' },
+    { val: 'furniture',   label: 'Furniture' },
+    { val: 'clothing',    label: 'Clothing' },
+    { val: 'building',    label: 'Building Materials' },
+    { val: 'food',        label: 'Food' },
+    { val: 'other',       label: 'Other' },
   ],
   zh: [
     { val: 'electronics', label: '电子产品' },
-    { val: 'furniture', label: '家具' },
-    { val: 'clothing', label: '服装' },
-    { val: 'building', label: '建材' },
-    { val: 'food', label: '食品' },
-    { val: 'other', label: '其他' },
+    { val: 'furniture',   label: '家具' },
+    { val: 'clothing',    label: '服装' },
+    { val: 'building',    label: '建材' },
+    { val: 'food',        label: '食品' },
+    { val: 'other',       label: '其他' },
   ],
 };
 
+/* ─── Skeleton ───────────────────────────── */
 const SkeletonCard = () => (
-  <div style={{ border: '1px solid #E5E0D8', padding: '24px 28px', marginBottom: 14, borderRadius: 6, background: 'rgba(247,245,242,0.82)' }}>
+  <div style={{
+    border: '1px solid var(--border-subtle)',
+    padding: '20px 24px', marginBottom: 10,
+    borderRadius: 'var(--radius-lg)',
+    background: 'var(--bg-subtle)',
+  }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ width: '30%', height: 12, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ width: '60%', height: 18, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ width: '45%', height: 12, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ width: '25%', height: 10, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
+        <div style={{ width: '55%', height: 14, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
+        <div style={{ width: '40%', height: 10, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
       </div>
-      <div style={{ width: 110, height: 38, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite', flexShrink: 0 }} />
+      <div style={{ width: 96, height: 34, background: 'var(--bg-raised)', borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
     </div>
   </div>
 );
 
+/* ─── Main ───────────────────────────────── */
 export default function Requests({ lang, user, profile }) {
   const nav = useNavigate();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [requests, setRequests]   = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [search, setSearch]       = useState('');
   const [offerForms, setOfferForms] = useState({});
-  const [offers, setOffers] = useState({});
-  const [newReq, setNewReq] = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other' });
+  const [offers, setOffers]       = useState({});
+  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other' });
   const [submitting, setSubmitting] = useState(false);
-  const isAr = lang === 'ar';
+  const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
-  const cats = CATEGORIES[lang] || CATEGORIES.ar;
+  const cats       = CATEGORIES[lang] || CATEGORIES.ar;
 
-  useEffect(() => {
-    if (isSupplier) loadRequests();
-  }, [user, profile]);
+  useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile]);
 
   const loadRequests = async () => {
     setLoading(true);
@@ -86,11 +91,11 @@ export default function Requests({ lang, user, profile }) {
       quantity: newReq.quantity,
       description: newReq.description,
       category: newReq.category || 'other',
-      status: 'open'
+      status: 'open',
     });
     setSubmitting(false);
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
-    alert(isAr ? '✅ تم رفع طلبك! سيتواصل معك الموردون قريباً' : '✅ Request posted! Suppliers will contact you soon');
+    alert(isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : 'Request posted! Suppliers will contact you soon');
     setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other' });
   };
 
@@ -108,7 +113,7 @@ export default function Requests({ lang, user, profile }) {
     const { error } = await sb.from('offers').insert({
       request_id: requestId, supplier_id: user.id,
       price: parseFloat(o.price), moq: o.moq,
-      delivery_days: parseInt(o.days), origin: o.origin, note: o.note, status: 'pending'
+      delivery_days: parseInt(o.days), origin: o.origin, note: o.note, status: 'pending',
     });
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     await sb.from('notifications').insert({
@@ -116,9 +121,9 @@ export default function Requests({ lang, user, profile }) {
       title_ar: 'وصلك عرض جديد على طلبك',
       title_en: 'You received a new offer',
       title_zh: '您收到了新报价',
-      ref_id: requestId, is_read: false
+      ref_id: requestId, is_read: false,
     });
-    alert(isAr ? '✅ تم إرسال عرضك!' : '✅ Offer submitted!');
+    alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');
     toggleOfferForm(requestId);
     loadRequests();
   };
@@ -131,22 +136,21 @@ export default function Requests({ lang, user, profile }) {
   const fmtDate = (d) => {
     if (!d) return '';
     const diff = Math.floor((Date.now() - new Date(d)) / 1000);
-    if (diff < 3600) return isAr ? Math.floor(diff / 60) + ' دقيقة' : Math.floor(diff / 60) + ' min ago';
-    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' ساعة' : Math.floor(diff / 3600) + ' hr ago';
-    return isAr ? Math.floor(diff / 86400) + ' يوم' : Math.floor(diff / 86400) + ' days ago';
+    if (diff < 3600)  return isAr ? Math.floor(diff / 60) + ' دقيقة'  : Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' ساعة' : Math.floor(diff / 3600) + 'h ago';
+    return isAr ? Math.floor(diff / 86400) + ' يوم' : Math.floor(diff / 86400) + 'd ago';
   };
 
   return (
     <div className="supplier-req-wrap">
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
 
-      {/* HEADER */}
+      {/* ── Header ─────────────────────────── */}
       <div className="page-header">
         <div>
           <h1 className={`page-title${isAr ? ' ar' : ''}`}>
             {isSupplier
-              ? (isAr ? 'طلبات التجار' : 'Trader Requests')
-              : (isAr ? 'ارفع طلبك' : 'Post Your Request')}
+              ? (isAr ? 'طلبات التجار' : lang === 'zh' ? '采购需求' : 'Trader Requests')
+              : (isAr ? 'ارفع طلبك' : lang === 'zh' ? '发布需求' : 'Post Your Request')}
           </h1>
           <p className={`page-sub${isAr ? ' ar' : ''}`}>
             {isSupplier
@@ -156,31 +160,41 @@ export default function Requests({ lang, user, profile }) {
         </div>
       </div>
 
-      {/* ── واجهة التاجر / الزائر ── */}
+      {/* ════════════════════════════════════
+          واجهة التاجر / الزائر
+      ════════════════════════════════════ */}
       {!isSupplier && (
-        <div style={{ padding: '40px 60px' }}>
+        <div style={{ padding: '40px 60px', maxWidth: 820 }}>
 
           {/* إرشاد للزائر */}
           {!user && (
             <div style={{
-              background: 'rgba(44,44,44,0.04)', border: '1px solid #E5E0D8',
-              padding: '20px 24px', borderRadius: 4, marginBottom: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border-subtle)',
+              padding: '18px 22px',
+              borderRadius: 'var(--radius-lg)',
+              marginBottom: 32,
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: 12,
             }}>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2C', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {isAr ? 'كيف يشتغل مَعبر؟' : 'How does Maabar work?'}
                 </p>
-                <p style={{ fontSize: 12, color: '#7a7a7a', lineHeight: 1.6, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {isAr
                     ? 'اكتب طلبك ← موردون صينيون يرسلون عروضهم ← اختر الأفضل ← استلم بضاعتك'
                     : 'Post request ← Suppliers send offers ← Choose the best ← Receive your order'}
                 </p>
               </div>
               <button onClick={() => nav('/login/buyer')} style={{
-                background: '#2C2C2C', color: '#F7F5F2', border: 'none',
-                padding: '10px 22px', fontSize: 11, letterSpacing: 2,
-                textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2, whiteSpace: 'nowrap',
+                background: 'rgba(255,255,255,0.88)', color: '#0a0a0b',
+                border: 'none', padding: '9px 20px',
+                fontSize: 12, fontWeight: 500,
+                cursor: 'pointer', borderRadius: 'var(--radius-md)',
+                whiteSpace: 'nowrap', transition: 'all 0.15s',
+                minHeight: 36,
               }}>
                 {isAr ? 'تسجيل مجاني' : 'Free Sign Up'}
               </button>
@@ -188,25 +202,48 @@ export default function Requests({ lang, user, profile }) {
           )}
 
           {/* فورم الطلب */}
-          <div style={{ background: '#fff', border: '1px solid #E5E0D8', padding: 40, maxWidth: 680, borderRadius: 4 }}>
-            <h3 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+          <div style={{
+            background: 'var(--bg-subtle)',
+            border: '1px solid var(--border-muted)',
+            padding: '32px 36px',
+            borderRadius: 'var(--radius-xl)',
+          }}>
+            <h3 style={{
+              fontSize: 20, fontWeight: 400,
+              color: 'var(--text-primary)',
+              marginBottom: 6,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              letterSpacing: isAr ? 0 : -0.3,
+            }}>
               {isAr ? 'طلب تسعيرة جديد' : 'New Sourcing Request'}
             </h3>
-            <p style={{ color: '#6b6b6b', fontSize: 14, marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', lineHeight: 1.7 }}>
-              {isAr ? 'أكتب تفاصيل المنتج اللي تبيه وسيتواصل معك الموردون بأفضل الأسعار' : 'Describe what you need and suppliers will send you their best prices'}
+            <p style={{
+              color: 'var(--text-disabled)', fontSize: 13,
+              marginBottom: 28, lineHeight: 1.7,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+            }}>
+              {isAr
+                ? 'أكتب تفاصيل المنتج اللي تبيه وسيتواصل معك الموردون بأفضل الأسعار'
+                : 'Describe what you need and suppliers will send you their best prices'}
             </p>
 
-            {/* الكتاغوري */}
+            {/* Category */}
             <div className="form-group">
-              <label className="form-label">{isAr ? 'نوع المنتج *' : 'Product Category *'}</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <label className={`form-label${isAr ? ' ar' : ''}`}>
+                {isAr ? 'نوع المنتج *' : 'Product Category *'}
+              </label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {cats.map(c => (
                   <button key={c.val} onClick={() => setNewReq({ ...newReq, category: c.val })} style={{
-                    padding: '7px 14px', fontSize: 12, borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s',
-                    background: newReq.category === c.val ? '#2C2C2C' : 'transparent',
-                    color: newReq.category === c.val ? '#F7F5F2' : '#7a7a7a',
-                    border: '1px solid', borderColor: newReq.category === c.val ? '#2C2C2C' : '#E5E0D8',
-                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
+                    padding: '6px 14px', fontSize: 12,
+                    borderRadius: 20, cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    background: newReq.category === c.val ? 'var(--bg-raised)' : 'transparent',
+                    color: newReq.category === c.val ? 'var(--text-primary)' : 'var(--text-disabled)',
+                    border: '1px solid',
+                    borderColor: newReq.category === c.val ? 'var(--border-muted)' : 'var(--border-subtle)',
+                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                    minHeight: 32,
                   }}>
                     {c.label}
                   </button>
@@ -216,57 +253,92 @@ export default function Requests({ lang, user, profile }) {
 
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">{isAr ? 'اسم المنتج بالعربي *' : 'Product Name *'}</label>
-                <input className="form-input" value={newReq.title_ar}
+                <label className={`form-label${isAr ? ' ar' : ''}`}>
+                  {isAr ? 'اسم المنتج بالعربي *' : 'Product Name *'}
+                </label>
+                <input className="form-input"
+                  value={newReq.title_ar}
                   onChange={e => setNewReq({ ...newReq, title_ar: e.target.value })}
-                  placeholder={isAr ? 'مثال: كراسي مكتب' : 'e.g. Office Chairs'} />
+                  placeholder={isAr ? 'مثال: كراسي مكتب' : 'e.g. Office Chairs'}
+                  dir={isAr ? 'rtl' : 'ltr'}
+                />
               </div>
               <div className="form-group">
-                <label className="form-label">{isAr ? 'اسم المنتج بالإنجليزي' : 'Product Name (English)'}</label>
-                <input className="form-input" value={newReq.title_en}
+                <label className="form-label">
+                  {isAr ? 'اسم المنتج بالإنجليزي' : 'Product Name (EN)'}
+                </label>
+                <input className="form-input"
+                  value={newReq.title_en}
                   onChange={e => setNewReq({ ...newReq, title_en: e.target.value })}
-                  placeholder="e.g. Office Chairs" />
+                  placeholder="e.g. Office Chairs"
+                />
               </div>
               <div className="form-group">
-                <label className="form-label">{isAr ? 'الكمية المطلوبة *' : 'Quantity *'}</label>
-                <input className="form-input" value={newReq.quantity}
+                <label className={`form-label${isAr ? ' ar' : ''}`}>
+                  {isAr ? 'الكمية المطلوبة *' : 'Quantity *'}
+                </label>
+                <input className="form-input"
+                  value={newReq.quantity}
                   onChange={e => setNewReq({ ...newReq, quantity: e.target.value })}
-                  placeholder={isAr ? 'مثال: 500 قطعة' : 'e.g. 500 units'} />
+                  placeholder={isAr ? 'مثال: 500 قطعة' : 'e.g. 500 units'}
+                />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">{isAr ? 'تفاصيل إضافية' : 'Additional Details'}</label>
-              <textarea className="form-input" rows={3} style={{ resize: 'vertical' }}
+              <label className={`form-label${isAr ? ' ar' : ''}`}>
+                {isAr ? 'تفاصيل إضافية' : 'Additional Details'}
+              </label>
+              <textarea className="form-input" rows={3}
+                style={{ resize: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
                 value={newReq.description}
                 onChange={e => setNewReq({ ...newReq, description: e.target.value })}
-                placeholder={isAr ? 'المواصفات، اللون، الجودة، الميزانية...' : 'Specs, color, quality, budget...'} />
+                placeholder={isAr ? 'المواصفات، اللون، الجودة، الميزانية...' : 'Specs, color, quality, budget...'}
+                dir={isAr ? 'rtl' : 'ltr'}
+              />
             </div>
 
             {!user && (
-              <p style={{ fontSize: 12, color: '#6b6b6b', marginBottom: 16, padding: '10px 14px', background: '#f0ede8', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                {isAr ? '💡 سيُطلب منك تسجيل الدخول عند إرسال الطلب' : "💡 You'll be asked to sign in when submitting"}
+              <p style={{
+                fontSize: 12, color: 'var(--text-disabled)',
+                marginBottom: 20, padding: '10px 14px',
+                background: 'var(--bg-muted)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              }}>
+                {isAr ? 'سيُطلب منك تسجيل الدخول عند إرسال الطلب' : "You'll be asked to sign in when submitting"}
               </p>
             )}
 
-            <button className="btn-dark-sm" onClick={submitNewRequest} disabled={submitting} style={{ padding: '13px 32px', fontSize: 14 }}>
-              {submitting ? '...' : isAr ? 'إرسال الطلب ←' : 'Submit Request →'}
+            <button
+              className="btn-dark-sm"
+              onClick={submitNewRequest}
+              disabled={submitting}
+              style={{ padding: '12px 28px', fontSize: 14, minHeight: 46 }}>
+              {submitting ? '...' : isAr ? 'إرسال الطلب' : 'Submit Request'}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── واجهة المورد ── */}
+      {/* ════════════════════════════════════
+          واجهة المورد
+      ════════════════════════════════════ */}
       {isSupplier && (
         <div className="list-wrap">
+
           <div className="search-bar">
             <input className="search-input"
               placeholder={isAr ? 'ابحث...' : 'Search...'}
-              value={search} onChange={e => setSearch(e.target.value)} />
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              dir={isAr ? 'rtl' : 'ltr'}
+            />
           </div>
 
           {!loading && (
-            <p style={{ color: '#6b6b6b', fontSize: 14, marginBottom: 24 }}>
+            <p style={{ color: 'var(--text-disabled)', fontSize: 12, marginBottom: 20, letterSpacing: 0.3 }}>
               {filtered.length} {isAr ? 'طلبات مفتوحة' : 'open requests'}
             </p>
           )}
@@ -274,79 +346,129 @@ export default function Requests({ lang, user, profile }) {
           {loading && [1, 2, 3].map(i => <SkeletonCard key={i} />)}
 
           {!loading && filtered.map(r => (
-            <div key={r.id}>
+            <div key={r.id} style={{ marginBottom: offerForms[r.id] ? 0 : 10 }}>
+
+              {/* Request card */}
               <div style={{
-                border: '1px solid #E5E0D8', padding: '24px 28px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                gap: 20, marginBottom: offerForms[r.id] ? 0 : 14,
-                background: 'rgba(247,245,242,0.82)', transition: 'all 0.2s',
-                borderRadius: offerForms[r.id] ? '6px 6px 0 0' : 6,
+                border: '1px solid var(--border-subtle)',
+                padding: '20px 24px',
+                display: 'flex', justifyContent: 'space-between',
+                alignItems: 'center', gap: 20,
+                background: 'var(--bg-subtle)',
+                transition: 'all 0.15s',
+                borderRadius: offerForms[r.id] ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)',
+                cursor: 'default',
               }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#2C2C2C'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.09)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E0D8'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-                    <span className="status-badge status-open">{r.status}</span>
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-muted)'; e.currentTarget.style.background = 'var(--bg-muted)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-subtle)'; }}>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <span className="status-badge status-open">
+                      {isAr ? 'مفتوح' : 'open'}
+                    </span>
                     {r.category && r.category !== 'other' && (
-                      <span style={{ fontSize: 10, padding: '2px 8px', background: '#EFECE7', borderRadius: 20, color: '#7a7a7a', letterSpacing: 1 }}>
+                      <span style={{
+                        fontSize: 10, padding: '2px 8px',
+                        background: 'var(--bg-raised)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 20, color: 'var(--text-disabled)',
+                        letterSpacing: 0.5,
+                      }}>
                         {cats.find(c => c.val === r.category)?.label || r.category}
                       </span>
                     )}
-                    <span style={{ color: '#6b6b6b', fontSize: 12 }}>{fmtDate(r.created_at)}</span>
+                    <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
+                      {fmtDate(r.created_at)}
+                    </span>
                   </div>
+
                   <h3 className={`req-name${isAr ? ' ar' : ''}`}>
                     {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
                   </h3>
+
                   <div className="req-meta">
-                    <span>👤 {r.profiles?.full_name || r.profiles?.company_name || ''}</span>
-                    <span>📦 {r.quantity || '—'}</span>
-                    {r.description && <span style={{ color: '#6b6b6b', fontSize: 12 }}>{r.description.substring(0, 60)}...</span>}
+                    <span>{r.profiles?.full_name || r.profiles?.company_name || ''}</span>
+                    <span>{r.quantity || '—'}</span>
+                    {r.description && (
+                      <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
+                        {r.description.substring(0, 60)}…
+                      </span>
+                    )}
                   </div>
                 </div>
+
                 <button className="btn-quote" onClick={() => toggleOfferForm(r.id)}>
-                  {isAr ? 'قدم عرضك ←' : 'Submit Quote →'}
+                  {offerForms[r.id]
+                    ? (isAr ? 'إغلاق' : 'Close')
+                    : (isAr ? 'قدم عرضك' : 'Submit Quote')}
                 </button>
               </div>
 
+              {/* Offer form */}
               {offerForms[r.id] && (
-                <div style={{ background: '#F7F5F2', border: '1px solid #E5E0D8', borderTop: 'none', padding: 24, marginBottom: 14, borderRadius: '0 0 6px 6px' }}>
+                <div style={{
+                  background: 'var(--bg-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  borderTop: 'none',
+                  padding: '20px 24px',
+                  marginBottom: 10,
+                  borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
+                }}>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label className="form-label">{isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *'}</label>
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>
+                        {isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *'}
+                      </label>
                       <input className="form-input" type="number"
                         value={offers[r.id]?.price || ''}
-                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))} />
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label">MOQ *</label>
                       <input className="form-input"
                         value={offers[r.id]?.moq || ''}
-                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], moq: e.target.value } }))} />
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], moq: e.target.value } }))}
+                      />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">{isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *'}</label>
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>
+                        {isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *'}
+                      </label>
                       <input className="form-input" type="number"
                         value={offers[r.id]?.days || ''}
-                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], days: e.target.value } }))} />
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], days: e.target.value } }))}
+                      />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">{isAr ? 'بلد المنشأ' : 'Country of Origin'}</label>
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>
+                        {isAr ? 'بلد المنشأ' : 'Country of Origin'}
+                      </label>
                       <input className="form-input"
                         value={offers[r.id]?.origin || 'China'}
-                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], origin: e.target.value } }))} />
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], origin: e.target.value } }))}
+                      />
                     </div>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">{isAr ? 'ملاحظة' : 'Note'}</label>
-                    <textarea className="form-input" rows={2} style={{ resize: 'none' }}
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>
+                      {isAr ? 'ملاحظة' : 'Note'}
+                    </label>
+                    <textarea className="form-input" rows={2}
+                      style={{ resize: 'none', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
                       value={offers[r.id]?.note || ''}
-                      onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} />
+                      onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))}
+                    />
                   </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}
+                      style={{ minHeight: 40 }}>
                       {isAr ? 'إرسال العرض' : 'Send Offer'}
                     </button>
-                    <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}>
+                    <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}
+                      style={{ minHeight: 40 }}>
                       {isAr ? 'إلغاء' : 'Cancel'}
                     </button>
                   </div>
@@ -357,7 +479,7 @@ export default function Requests({ lang, user, profile }) {
 
           {!loading && filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <p style={{ color: '#6b6b6b', fontSize: 14 }}>
+              <p style={{ color: 'var(--text-disabled)', fontSize: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {isAr ? 'لا توجد طلبات بعد' : 'No requests yet'}
               </p>
             </div>
@@ -365,10 +487,7 @@ export default function Requests({ lang, user, profile }) {
         </div>
       )}
 
-      <footer>
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
-        <p className="footer-copy">{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
+      <Footer lang={lang} />
     </div>
   );
 }
