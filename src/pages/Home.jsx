@@ -355,7 +355,7 @@ export default function Home({ lang, user, profile }) {
                 {s.title}
               </h3>
               <p style={{
-                fontSize: 14, lineHeight: 1.8,
+                fontSize: 18, lineHeight: 1.8,
                 color: i === 0 ? 'rgba(247,245,242,0.55)' : '#7a7a7a',
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
               }}>
@@ -391,7 +391,7 @@ export default function Home({ lang, user, profile }) {
                 {s.t}
               </h3>
               <p style={{
-                fontSize: 14, color: '#7a7a7a', lineHeight: 1.9,
+                fontSize: 18, color: '#7a7a7a', lineHeight: 1.9,
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
               }}>
                 {s.d}
@@ -445,7 +445,7 @@ export default function Home({ lang, user, profile }) {
                 {tr.t}
               </h3>
               <p className="trust-desc" style={{
-                fontSize: 13, color: '#7a7a7a', lineHeight: 1.8,
+                fontSize: 18, color: '#7a7a7a', lineHeight: 1.8,
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                 transition: 'color 0.25s',
               }}>
@@ -456,45 +456,7 @@ export default function Home({ lang, user, profile }) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          STATS
-      ═══════════════════════════════════════ */}
-      <section id="stats" style={{
-        padding: '80px 60px',
-        background: '#2C2C2C',
-      }}>
-        <p style={{
-          fontSize: 11, letterSpacing: 4, textTransform: 'uppercase',
-          color: 'rgba(247,245,242,0.35)', marginBottom: 48,
-          textAlign: 'center', fontFamily: 'var(--font-body)',
-        }}>
-          {t.statsLabel}
-        </p>
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 1, background: 'rgba(247,245,242,0.08)',
-          maxWidth: 720, margin: '0 auto',
-        }}>
-          {t.stats.map((s, i) => (
-            <div key={i} style={{
-              background: '#2C2C2C', padding: '40px 32px', textAlign: 'center',
-            }}>
-              <p style={{
-                fontFamily: 'var(--font-en)', fontSize: 56, fontWeight: 300,
-                color: '#F7F5F2', lineHeight: 1, marginBottom: 12,
-              }}>
-                {s.num}
-              </p>
-              <p style={{
-                fontSize: 13, color: 'rgba(247,245,242,0.4)',
-                letterSpacing: 1, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
-              }}>
-                {s.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {/* ═══════════════════════════════════════
           FOOTER
