@@ -28,7 +28,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 // Components
 import Navbar from './components/Navbar';
 import AIAssistant from './components/AIAssistant';
-import LandingCostCalculator from './components/LandingCostCalculator';
+import TraderCalculator from './components/TraderCalculator';
 import NegotiationAgent from './components/NegotiationAgent';
 
 function App() {
@@ -117,8 +117,8 @@ function App() {
         {/* AI Assistant — للتاجر فقط */}
         {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
 
-        {/* Landing Cost Calculator — للجميع */}
-        <LandingCostCalculator lang={lang} />
+        {/* Trader Calculator — للجميع */}
+        <TraderCalculator lang={lang} />
 
         {/* Negotiation Agent — للتاجر المسجل فقط */}
         {user && profile?.role === 'buyer' && <NegotiationAgent lang={lang} />}
