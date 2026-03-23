@@ -1,3 +1,4 @@
+import Footer from '../components/Footer';
 import React, { useState } from 'react';
 
 const AGENT_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/dev-agent';

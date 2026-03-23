@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import IdeaToProduct from '../components/IdeaToProduct';
+import Footer from '../components/Footer';
 
 const T = {
   ar: {
@@ -400,49 +401,7 @@ export default function Home({ lang, user, profile }) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          PRODUCTS PREVIEW
-      ═══════════════════════════════════════ */}
-      <section id="products-preview" style={{ padding: '100px 60px', background: 'rgba(247,245,242,0.82)' }}>
-        <div className="section-header">
-          <div>
-            <p className="section-label">{t.catalogLabel}</p>
-            <h2 style={{
-              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
-              fontSize: isAr ? 36 : 44, fontWeight: 300, color: '#2C2C2C',
-              letterSpacing: isAr ? 0 : -0.5,
-            }}>
-              {t.catalogTitle}
-            </h2>
-          </div>
-          <button className="btn-outline" onClick={() => nav('/products')}>{t.viewAll}</button>
-        </div>
-        {products.length === 0 ? (
-          <p style={{ color: '#7a7a7a', fontSize: 14 }}>{t.noProducts}</p>
-        ) : (
-          products.map(p => (
-            <div key={p.id} className="product-list-item" onClick={() => nav(`/products/${p.id}`)}>
-              <div className="product-img">
-                {p.image_url ? <img src={p.image_url} alt="" /> : '📦'}
-              </div>
-              <div className="product-info">
-                <h3 className={`product-name${isAr ? ' ar' : ''}`} style={{ fontSize: 16 }}>
-                  {p.name_ar || p.name_en}
-                </h3>
-                <p className="product-price" style={{ fontSize: 18 }}>
-                  {p.price_from ? `${p.price_from} SAR` : '—'}
-                </p>
-                <p className="product-meta" style={{ fontSize: 13 }}>
-                  MOQ: {p.moq || '—'} · {p.profiles?.company_name || ''}
-                </p>
-              </div>
-              <div className="product-btns">
-                <button className="btn-dark-sm">{isAr ? 'التفاصيل' : 'Details'}</button>
-              </div>
-            </div>
-          ))
-        )}
-      </section>
+
 
       {/* ═══════════════════════════════════════
           TRUST
@@ -547,10 +506,12 @@ export default function Home({ lang, user, profile }) {
 
       {ideaOpen && <IdeaToProduct lang={lang} user={user} onClose={() => setIdeaOpen(false)} />}
 
+      <Footer lang={lang} />
+
       {/* MOBILE */}
       <style>{`
         @media (max-width: 768px) {
-          #strengths, #how, #trust, #stats, #products-preview { padding: 60px 20px !important; }
+          #strengths, #how, #trust, #stats { padding: 60px 20px !important; }
           #strengths > div, #trust > div { grid-template-columns: 1fr !important; }
           #stats > div { grid-template-columns: 1fr !important; }
         }

@@ -1,3 +1,4 @@
+import Footer from '../components/Footer';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
