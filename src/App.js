@@ -72,46 +72,70 @@ function App() {
 
   const sharedProps = { user, profile, lang, setLang, setUser, setProfile };
 
+  /* ─── Loading screen ─────────────────────────── */
   if (loading) return (
     <div style={{
-      minHeight: '100vh', display: 'flex',
-      alignItems: 'center', justifyContent: 'center',
-      background: '#FAF8F4'
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#0a0a0b',
+      gap: 12,
     }}>
+      {/* Logo mark */}
       <div style={{
-        fontFamily: 'var(--font-en)', fontSize: 20,
-        fontWeight: 600, letterSpacing: 3, color: '#2C2C2C'
+        fontFamily: "'Inter', sans-serif",
+        fontSize: 13,
+        fontWeight: 600,
+        letterSpacing: '3px',
+        color: 'rgba(255,255,255,0.35)',
       }}>
         MAABAR
       </div>
+      {/* Subtle pulse bar */}
+      <div style={{
+        width: 32,
+        height: 1,
+        background: 'rgba(255,255,255,0.12)',
+        borderRadius: 1,
+        animation: 'loadPulse 1.4s ease-in-out infinite',
+      }} />
+      <style>{`
+        @keyframes loadPulse {
+          0%, 100% { opacity: 0.3; transform: scaleX(1); }
+          50%       { opacity: 0.7; transform: scaleX(1.6); }
+        }
+      `}</style>
     </div>
   );
 
+  /* ─── App ────────────────────────────────────── */
   return (
     <Router>
       <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <Navbar {...sharedProps} />
         <Routes>
-          <Route path="/" element={<Home {...sharedProps} />} />
-          <Route path="/products" element={<Products {...sharedProps} />} />
-          <Route path="/products/:id" element={<ProductDetail {...sharedProps} />} />
-          <Route path="/login/:role" element={<Login {...sharedProps} />} />
-          <Route path="/login" element={<Login {...sharedProps} />} />
-          <Route path="/dashboard" element={<DashboardRouter />} />
-          <Route path="/about" element={<About {...sharedProps} />} />
-          <Route path="/contact" element={<Contact {...sharedProps} />} />
-          <Route path="/requests" element={<Requests {...sharedProps} />} />
-          <Route path="/supplier" element={<SupplierLanding {...sharedProps} />} />
-          <Route path="/supplier/:id" element={<SupplierProfile {...sharedProps} />} />
-          <Route path="/suppliers" element={<Suppliers {...sharedProps} />} />
-          <Route path="/chat/:partnerId" element={<Chat {...sharedProps} />} />
-          <Route path="/inbox" element={<Inbox {...sharedProps} />} />
-          <Route path="/terms" element={<Terms {...sharedProps} />} />
-          <Route path="/faq" element={<FAQ {...sharedProps} />} />
-          <Route path="/admin-seed" element={<AdminSeed {...sharedProps} />} />
-          <Route path="/agent" element={<AgentPanel />} />
-          <Route path="/checkout" element={<Checkout {...sharedProps} />} />
-          <Route path="/payment-success" element={<PaymentSuccess {...sharedProps} />} />
+          <Route path="/"               element={<Home            {...sharedProps} />} />
+          <Route path="/products"       element={<Products        {...sharedProps} />} />
+          <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
+          <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
+          <Route path="/login"          element={<Login           {...sharedProps} />} />
+          <Route path="/dashboard"      element={<DashboardRouter />} />
+          <Route path="/about"          element={<About           {...sharedProps} />} />
+          <Route path="/contact"        element={<Contact         {...sharedProps} />} />
+          <Route path="/requests"       element={<Requests        {...sharedProps} />} />
+          <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
+          <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
+          <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
+          <Route path="/chat/:partnerId"element={<Chat            {...sharedProps} />} />
+          <Route path="/inbox"          element={<Inbox           {...sharedProps} />} />
+          <Route path="/terms"          element={<Terms           {...sharedProps} />} />
+          <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
+          <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
+          <Route path="/agent"          element={<AgentPanel />} />
+          <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
+          <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
         </Routes>
 
         {/* AI Assistant — للتاجر فقط */}
