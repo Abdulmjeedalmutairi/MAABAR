@@ -148,9 +148,12 @@ export default function Home({ lang, user, profile }) {
         <div className="hero-overlay" />
         <div className="hero-content">
           <p className="hero-tag">{t.tag}</p>
-          <h1 className={`hero-title-${isAr ? 'ar' : lang === 'zh' ? 'zh' : 'en'}`}>
-            {t.title.split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
-          </h1>
+          {isAr
+            ? <h1 className="hero-title-ar">لا تبحث — دع المورد يأتيك</h1>
+            : <h1 className={`hero-title-${lang === 'zh' ? 'zh' : 'en'}`}>
+                {t.title.split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+              </h1>
+          }
           <p className={`hero-main-sub${isAr ? ' ar' : ''}`}>{t.mainSub}</p>
           <p className={`hero-sub${isAr ? ' ar' : ''}`}>{t.sub}</p>
           <div className="hero-actions">

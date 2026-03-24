@@ -27,9 +27,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 
 // Components
 import Navbar from './components/Navbar';
-import AIAssistant from './components/AIAssistant';
-import TraderCalculator from './components/TraderCalculator';
-import NegotiationAgent from './components/NegotiationAgent';
+import AIHub from './components/AIHub';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -138,14 +136,9 @@ function App() {
           <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
         </Routes>
 
-        {/* AI Assistant — للتاجر فقط */}
-        {user && profile?.role === 'buyer' && <AIAssistant {...sharedProps} />}
-
-        {/* Trader Calculator — للجميع */}
-        <TraderCalculator lang={lang} />
-
-        {/* Negotiation Agent — للتاجر المسجل فقط */}
-        {user && profile?.role === 'buyer' && <NegotiationAgent lang={lang} />}
+        {(!profile || profile?.role === 'buyer') && (
+          <AIHub lang={lang} user={user} profile={profile} />
+        )}
       </div>
     </Router>
   );

@@ -34,15 +34,15 @@ const CATEGORIES = {
 };
 
 const SkeletonCard = () => (
-  <div style={{ background: '#F7F5F2', padding: 24, borderRadius: 4, border: '1px solid #E5E0D8' }}>
+  <div style={{ background: 'var(--bg-raised)', padding: 24, borderRadius: 4, border: '1px solid var(--border-default)' }}>
     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-      <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#E5E0D8', flexShrink: 0, animation: 'pulse 1.5s ease infinite' }} />
+      <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-hover)', flexShrink: 0, animation: 'pulse 1.5s ease infinite' }} />
       <div style={{ flex: 1 }}>
-        <div style={{ width: '60%', height: 16, background: '#E5E0D8', borderRadius: 3, marginBottom: 8, animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ width: '40%', height: 12, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ width: '60%', height: 16, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 8, animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ width: '40%', height: 12, background: 'var(--bg-hover)', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
       </div>
     </div>
-    <div style={{ width: '80%', height: 12, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+    <div style={{ width: '80%', height: 12, background: 'var(--bg-hover)', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
   </div>
 );
 
@@ -114,9 +114,9 @@ export default function Suppliers({ lang, user }) {
           {cats.map(c => (
             <button key={c.val} onClick={() => setActiveCat(c.val)} style={{
               padding: '7px 16px', fontSize: 12, borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s',
-              background: activeCat === c.val ? '#2C2C2C' : 'transparent',
-              color: activeCat === c.val ? '#F7F5F2' : '#7a7a7a',
-              border: '1px solid', borderColor: activeCat === c.val ? '#2C2C2C' : '#E5E0D8',
+              background: activeCat === c.val ? 'var(--bg-raised)' : 'var(--bg-base)',
+              color: activeCat === c.val ? 'var(--text-primary)' : 'var(--text-secondary)',
+              border: '1px solid', borderColor: activeCat === c.val ? 'var(--border-strong)' : 'var(--border-default)',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
             }}>
               {c.label}
@@ -126,7 +126,7 @@ export default function Suppliers({ lang, user }) {
 
         {/* COUNT */}
         {!loading && (
-          <p style={{ color: '#7a7a7a', fontSize: 13, marginBottom: 24 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 24 }}>
             {filtered.length} {isAr ? 'مورد' : lang === 'zh' ? '供应商' : 'suppliers'}
           </p>
         )}
@@ -141,7 +141,7 @@ export default function Suppliers({ lang, user }) {
         {/* EMPTY */}
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <p style={{ color: '#7a7a7a', fontSize: 14 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
               {isAr ? 'لا يوجد موردون بعد' : 'No suppliers yet'}
             </p>
           </div>
@@ -154,28 +154,28 @@ export default function Suppliers({ lang, user }) {
               <div key={s.id}
                 onClick={() => nav(`/supplier/${s.id}`)}
                 style={{
-                  background: '#F7F5F2', border: '1px solid #E5E0D8',
+                  background: 'var(--bg-raised)', border: '1px solid var(--border-default)',
                   borderRadius: 4, padding: 24, cursor: 'pointer',
                   transition: 'all 0.2s', animation: `fadeIn 0.4s ease ${idx * 0.05}s both`,
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#2C2C2C'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E0D8'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
 
                 {/* HEADER */}
                 <div style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#EFECE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                     {s.avatar_url
                       ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 20, fontWeight: 500, color: '#7a7a7a' }}>{(s.company_name || '?')[0].toUpperCase()}</span>}
+                      : <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0].toUpperCase()}</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 15, fontWeight: 500, color: '#2C2C2C', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {s.company_name || '—'}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ color: '#f5a623', fontSize: 13 }}>{stars(s.rating)}</span>
                       {s.reviews_count > 0 && (
-                        <span style={{ fontSize: 11, color: '#7a7a7a' }}>({s.reviews_count})</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>({s.reviews_count})</span>
                       )}
                     </div>
                   </div>
@@ -183,7 +183,7 @@ export default function Suppliers({ lang, user }) {
 
                 {/* BIO */}
                 {(s.bio_ar || s.bio_en || s.bio_zh) && (
-                  <p style={{ fontSize: 12, color: '#7a7a7a', lineHeight: 1.6, marginBottom: 16, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                     {isAr ? s.bio_ar || s.bio_en : lang === 'zh' ? s.bio_zh || s.bio_en : s.bio_en || s.bio_ar}
                   </p>
                 )}
@@ -202,17 +202,17 @@ export default function Suppliers({ lang, user }) {
                 {/* TAGS */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
                   {s.speciality && s.speciality !== 'other' && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: '#EFECE7', borderRadius: 20, color: '#7a7a7a', letterSpacing: 1 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
                       {cats.find(c => c.val === s.speciality)?.label || s.speciality}
                     </span>
                   )}
                   {s.city && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: '#EFECE7', borderRadius: 20, color: '#7a7a7a', letterSpacing: 1 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
                       📍 {s.city}
                     </span>
                   )}
                   {s.products?.length > 0 && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: '#EFECE7', borderRadius: 20, color: '#7a7a7a', letterSpacing: 1 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
                       {s.products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
                     </span>
                   )}
@@ -224,13 +224,13 @@ export default function Suppliers({ lang, user }) {
                 </div>
 
                 {/* FOOTER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E0D8', paddingTop: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-default)', paddingTop: 14 }}>
                   {s.min_order_value ? (
-                    <p style={{ fontSize: 11, color: '#7a7a7a', letterSpacing: 0.5 }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
                       {isAr ? `أقل طلب: ${s.min_order_value} ريال` : `Min order: ${s.min_order_value} SAR`}
                     </p>
                   ) : <span />}
-                  <span style={{ fontSize: 12, color: '#2C2C2C', letterSpacing: 1 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-primary)', letterSpacing: 1 }}>
                     {isAr ? 'عرض الملف →' : lang === 'zh' ? '查看 →' : 'View →'}
                   </span>
                 </div>
@@ -240,10 +240,7 @@ export default function Suppliers({ lang, user }) {
         )}
       </div>
 
-      <footer>
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
-        <p className="footer-copy">{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
+      <Footer lang={lang} />
     </div>
   );
 }

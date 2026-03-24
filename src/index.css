@@ -2,6 +2,9 @@
 
 /* ===== RESET ===== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body::before { display: none !important; }
+body::after { display: none !important; }
+body { background: #0a0a0b !important; }
 
 /* ===== VARIABLES ===== */
 :root {
@@ -403,18 +406,6 @@ nav.scrolled {
   background: var(--bg-base);
 }
 
-/* subtle grid */
-#hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 56px 56px;
-  z-index: 0;
-  pointer-events: none;
-}
 
 /* gradient vignette */
 #hero::after {
@@ -426,13 +417,14 @@ nav.scrolled {
   pointer-events: none;
 }
 
-.hero-bg    { display: none; }
-.hero-overlay { display: none; }
+.hero-bg { display: none !important; }
+.hero-overlay { display: none !important; }
 
 .hero-content {
   position: relative;
   z-index: 2;
-  max-width: 640px;
+  width: 100%;
+  max-width: 720px;
   padding: 0 var(--space-8);
   animation: slideUp 0.7s ease both;
 }
@@ -448,10 +440,11 @@ nav.scrolled {
 
 .hero-title-ar {
   font-family: var(--font-ar);
-  font-size: 52px;
+  font-size: 56px;
   font-weight: 300;
   color: var(--text-primary);
-  line-height: 1.3;
+  line-height: 1.25;
+  white-space: nowrap;
   margin-bottom: var(--space-5);
 }
 .hero-title-en {

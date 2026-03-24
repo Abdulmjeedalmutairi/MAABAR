@@ -124,11 +124,11 @@ export default function ProductDetail({ lang, user, profile }) {
   if (loading) return (
     <div className="product-detail-wrap">
       <div className="product-detail-inner">
-        <div style={{ marginBottom: 32, width: 60, height: 16, background: '#E5E0D8', borderRadius: 3 }} />
-        <div style={{ width: '100%', maxWidth: 480, height: 320, background: '#E5E0D8', borderRadius: 12, marginBottom: 32, animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ width: '60%', height: 40, background: '#E5E0D8', borderRadius: 3, marginBottom: 16 }} />
-        <div style={{ width: '30%', height: 28, background: '#E5E0D8', borderRadius: 3, marginBottom: 24 }} />
-        <div style={{ width: '100%', height: 80, background: '#E5E0D8', borderRadius: 3 }} />
+        <div style={{ marginBottom: 32, width: 60, height: 16, background: 'var(--bg-hover)', borderRadius: 3 }} />
+        <div style={{ width: '100%', maxWidth: 480, height: 320, background: 'var(--bg-hover)', borderRadius: 12, marginBottom: 32, animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ width: '60%', height: 40, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 16 }} />
+        <div style={{ width: '30%', height: 28, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 24 }} />
+        <div style={{ width: '100%', height: 80, background: 'var(--bg-hover)', borderRadius: 3 }} />
         <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
       </div>
     </div>
@@ -137,7 +137,7 @@ export default function ProductDetail({ lang, user, profile }) {
   if (!product) return (
     <div className="product-detail-wrap">
       <div className="product-detail-inner">
-        <p style={{ color: '#7a7a7a', textAlign: 'center', padding: 60 }}>
+        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: 60 }}>
           {isAr ? 'المنتج غير موجود' : 'Product not found'}
         </p>
       </div>
@@ -205,7 +205,7 @@ export default function ProductDetail({ lang, user, profile }) {
         </div>
 
         {desc && (
-          <p style={{ color: '#6b6b6b', fontSize: 14, lineHeight: 1.8, marginBottom: 28 }}>{desc}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.8, marginBottom: 28 }}>{desc}</p>
         )}
 
         {/* SUPPLIER CARD */}
@@ -216,7 +216,7 @@ export default function ProductDetail({ lang, user, profile }) {
               <p style={{ fontWeight: 500, marginBottom: 4 }}>{sup.company_name || ''}</p>
               <p className="stars">{stars(Math.round(sup.rating || 0))}</p>
             </div>
-            <span style={{ color: '#6b6b6b' }}>→</span>
+            <span style={{ color: 'var(--text-secondary)' }}>→</span>
           </div>
         )}
 
@@ -262,7 +262,7 @@ export default function ProductDetail({ lang, user, profile }) {
                 value={note} onChange={e => setNote(e.target.value)} />
             </div>
             {!user && (
-              <p style={{ fontSize: 12, color: '#6b6b6b', marginBottom: 12 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
                 {isAr ? '* سيُطلب منك تسجيل الدخول عند الإرسال' : "* You'll be asked to sign in when submitting"}
               </p>
             )}
@@ -282,10 +282,10 @@ export default function ProductDetail({ lang, user, profile }) {
           <div className="buy-form" style={{ borderColor: '#2d7a4f', borderWidth: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', color: '#2C2C2C' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', color: 'var(--text-primary)' }}>
                   {isAr ? 'طلب عينة' : 'Request Sample'}
                 </h3>
-                <p style={{ fontSize: 12, color: '#7a7a7a', marginTop: 4, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                   {isAr ? `سعر الوحدة: ${fmt(product.sample_price)} ريال + شحن: ${fmt(product.sample_shipping || 0)} ريال` : `Unit: ${fmt(product.sample_price)} SAR + Shipping: ${fmt(product.sample_shipping || 0)} SAR`}
                 </p>
               </div>
@@ -302,10 +302,10 @@ export default function ProductDetail({ lang, user, profile }) {
                   value={sampleQty} onChange={e => setSampleQty(e.target.value)} />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
-                <div style={{ background: '#EFECE7', padding: '10px 16px', borderRadius: 3, width: '100%' }}>
-                  <p style={{ fontSize: 10, color: '#7a7a7a', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : 'TOTAL'}</p>
-                  <p style={{ fontSize: 20, fontWeight: 300, color: '#2C2C2C', fontFamily: 'var(--font-en)' }}>
-                    {fmt(sampleTotal)} <span style={{ fontSize: 11, color: '#7a7a7a' }}>SAR</span>
+                <div style={{ background: 'var(--bg-hover)', padding: '10px 16px', borderRadius: 3, width: '100%' }}>
+                  <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : 'TOTAL'}</p>
+                  <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-en)' }}>
+                    {fmt(sampleTotal)} <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>SAR</span>
                   </p>
                 </div>
               </div>
@@ -319,13 +319,13 @@ export default function ProductDetail({ lang, user, profile }) {
             </div>
 
             {product.sample_note && (
-              <p style={{ fontSize: 12, color: '#7a7a7a', marginBottom: 16, padding: '10px 14px', background: '#F0EDE8', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, padding: '10px 14px', background: 'var(--bg-hover)', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                 💬 {product.sample_note}
               </p>
             )}
 
             {!user && (
-              <p style={{ fontSize: 12, color: '#6b6b6b', marginBottom: 12 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
                 {isAr ? '* سيُطلب منك تسجيل الدخول عند الإرسال' : "* You'll be asked to sign in when submitting"}
               </p>
             )}
@@ -344,10 +344,7 @@ export default function ProductDetail({ lang, user, profile }) {
         )}
       </div>
 
-      <footer>
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
-        <p className="footer-copy">{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
+      <Footer lang={lang} />
     </div>
   );
 }

@@ -83,7 +83,7 @@ export default function Footer({ lang }) {
 
   return (
     <footer style={{
-      background: '#2C2C2C',
+      background: 'var(--bg-overlay)',
       padding: '64px 60px 32px',
     }}>
 
@@ -100,13 +100,13 @@ export default function Footer({ lang }) {
         <div>
           <div style={{
             fontFamily: 'var(--font-en)', fontSize: 18,
-            fontWeight: 600, color: '#F7F5F2', letterSpacing: 2,
+            fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 2,
             marginBottom: 16,
           }}>
             MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 14, opacity: 0.7 }}>| مَعبر</span>
           </div>
           <p style={{
-            fontSize: 14, color: 'rgba(247,245,242,0.4)',
+            fontSize: 14, color: 'var(--text-tertiary)',
             lineHeight: 1.8, maxWidth: 220,
             fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
           }}>
@@ -118,7 +118,7 @@ export default function Footer({ lang }) {
         <div>
           <p style={{
             fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'rgba(247,245,242,0.3)', marginBottom: 20,
+            color: 'var(--text-tertiary)', marginBottom: 20,
             fontFamily: 'var(--font-body)',
           }}>
             {t.platform}
@@ -127,13 +127,13 @@ export default function Footer({ lang }) {
             {t.links.platform.map((l, i) => (
               <button key={i} onClick={() => nav(l.path)} style={{
                 background: 'none', border: 'none',
-                color: 'rgba(247,245,242,0.55)', fontSize: 14,
+                color: 'var(--text-secondary)', fontSize: 14,
                 cursor: 'pointer', padding: 0,
                 textAlign: isAr ? 'right' : 'left',
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                 transition: 'color 0.2s',
               }}
-                onMouseEnter={e => e.currentTarget.style.color = '#F7F5F2'}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,242,0.55)'}>
                 {l.label}
               </button>
@@ -145,7 +145,7 @@ export default function Footer({ lang }) {
         <div>
           <p style={{
             fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'rgba(247,245,242,0.3)', marginBottom: 20,
+            color: 'var(--text-tertiary)', marginBottom: 20,
             fontFamily: 'var(--font-body)',
           }}>
             {t.forBuyers}
@@ -154,13 +154,13 @@ export default function Footer({ lang }) {
             {t.links.buyers.map((l, i) => (
               <button key={i} onClick={() => nav(l.path)} style={{
                 background: 'none', border: 'none',
-                color: 'rgba(247,245,242,0.55)', fontSize: 14,
+                color: 'var(--text-secondary)', fontSize: 14,
                 cursor: 'pointer', padding: 0,
                 textAlign: isAr ? 'right' : 'left',
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                 transition: 'color 0.2s',
               }}
-                onMouseEnter={e => e.currentTarget.style.color = '#F7F5F2'}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,242,0.55)'}>
                 {l.label}
               </button>
@@ -172,7 +172,7 @@ export default function Footer({ lang }) {
         <div>
           <p style={{
             fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'rgba(247,245,242,0.3)', marginBottom: 20,
+            color: 'var(--text-tertiary)', marginBottom: 20,
             fontFamily: 'var(--font-body)',
           }}>
             {t.forSuppliers}
@@ -181,13 +181,13 @@ export default function Footer({ lang }) {
             {t.links.suppliers.map((l, i) => (
               <button key={i} onClick={() => nav(l.path)} style={{
                 background: 'none', border: 'none',
-                color: 'rgba(247,245,242,0.55)', fontSize: 14,
+                color: 'var(--text-secondary)', fontSize: 14,
                 cursor: 'pointer', padding: 0,
                 textAlign: isAr ? 'right' : 'left',
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                 transition: 'color 0.2s',
               }}
-                onMouseEnter={e => e.currentTarget.style.color = '#F7F5F2'}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,242,0.55)'}>
                 {l.label}
               </button>
@@ -198,7 +198,7 @@ export default function Footer({ lang }) {
 
       {/* BOTTOM BAR */}
       <div style={{
-        borderTop: '1px solid rgba(247,245,242,0.08)',
+        borderTop: '1px solid var(--border-subtle)',
         paddingTop: 24,
         display: 'flex',
         justifyContent: 'space-between',
@@ -208,7 +208,7 @@ export default function Footer({ lang }) {
         direction: isAr ? 'rtl' : 'ltr',
       }}>
         <p style={{
-          color: 'rgba(247,245,242,0.25)', fontSize: 13,
+          color: 'var(--text-disabled)', fontSize: 13,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
         }}>
           {t.copy}
@@ -216,7 +216,7 @@ export default function Footer({ lang }) {
         <div style={{ display: 'flex', gap: 16 }}>
           {['AR', 'EN', '中文'].map((l, i) => (
             <span key={i} style={{
-              fontSize: 11, color: 'rgba(247,245,242,0.2)',
+              fontSize: 11, color: 'var(--text-disabled)',
               letterSpacing: 1,
             }}>
               {l}

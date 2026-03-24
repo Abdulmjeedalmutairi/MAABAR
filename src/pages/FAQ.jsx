@@ -48,25 +48,22 @@ export default function FAQ({ lang }) {
       </div>
       <div className="about-body">
         {faqs.map((f, i) => (
-          <div key={i} style={{ borderBottom: '1px solid #e8e4de', marginBottom: 0 }}>
+          <div key={i} style={{ borderBottom: '1px solid var(--border-muted)', marginBottom: 0 }}>
             <button
               onClick={() => setOpen(open === i ? null : i)}
-              style={{ width: '100%', textAlign: isAr ? 'right' : 'left', background: 'none', border: 'none', padding: '20px 0', fontSize: 16, fontWeight: 500, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+              style={{ width: '100%', textAlign: isAr ? 'right' : 'left', background: 'none', border: 'none', padding: '20px 0', fontSize: 16, fontWeight: 500, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
               {f.q}
-              <span style={{ fontSize: 20, color: '#6b6b6b', transition: 'transform 0.2s', transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
+              <span style={{ fontSize: 20, color: 'var(--text-secondary)', transition: 'transform 0.2s', transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
             </button>
             {open === i && (
-              <p style={{ color: '#6b6b6b', fontSize: 14, lineHeight: 1.8, paddingBottom: 20, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.8, paddingBottom: 20, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                 {f.a}
               </p>
             )}
           </div>
         ))}
       </div>
-      <footer>
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
-        <p className="footer-copy">{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
+      <Footer lang={lang} />
     </div>
   );
 }

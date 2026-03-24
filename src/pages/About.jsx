@@ -67,17 +67,17 @@ export default function About({ lang }) {
   const isAr = lang === 'ar';
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'transparent' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
 
       {/* HERO */}
       <div style={{
         padding: '80px 60px 64px',
-        background: 'rgba(0,0,0,0.52)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--bg-overlay)',
+        borderBottom: '1px solid var(--border-subtle)',
       }}>
         <p style={{
           fontSize: 11, letterSpacing: 4, textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.4)', marginBottom: 24,
+          color: 'var(--text-tertiary)', marginBottom: 24,
           fontFamily: 'var(--font-body)',
         }}>
           {t.tag}
@@ -85,13 +85,13 @@ export default function About({ lang }) {
         <h1 style={{
           fontSize: isAr ? 52 : 64, fontWeight: 300,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
-          color: '#F7F5F2', letterSpacing: isAr ? 0 : -1,
+          color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1,
           lineHeight: 1.1, marginBottom: 28, maxWidth: 640,
         }}>
           {t.title}
         </h1>
         <p style={{
-          fontSize: 16, color: 'rgba(255,255,255,0.6)',
+          fontSize: 16, color: 'var(--text-secondary)',
           maxWidth: 560, lineHeight: 1.9, fontWeight: 300,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
         }}>
@@ -100,10 +100,7 @@ export default function About({ lang }) {
       </div>
 
       {/* PROBLEMS & SOLUTIONS */}
-      <div style={{
-        background: 'rgba(247,245,242,0.92)',
-        backdropFilter: 'blur(8px)',
-      }}>
+      <div style={{ background: 'var(--bg-subtle)' }}>
         <div style={{ maxWidth: 860, margin: '0 auto', padding: '64px 60px' }}>
 
           {/* HEADER ROW */}
@@ -111,21 +108,21 @@ export default function About({ lang }) {
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 1,
-            background: '#E5E0D8',
+            background: 'var(--border-subtle)',
             marginBottom: 1,
           }}>
-            <div style={{ background: '#2C2C2C', padding: '14px 28px' }}>
+            <div style={{ background: 'var(--bg-raised)', padding: '14px 28px' }}>
               <p style={{
                 fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
-                color: 'rgba(247,245,242,0.4)', fontFamily: 'var(--font-body)',
+                color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)',
               }}>
                 {t.problemLabel}
               </p>
             </div>
-            <div style={{ background: '#2C2C2C', padding: '14px 28px' }}>
+            <div style={{ background: 'var(--bg-raised)', padding: '14px 28px' }}>
               <p style={{
                 fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
-                color: 'rgba(247,245,242,0.4)', fontFamily: 'var(--font-body)',
+                color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)',
               }}>
                 {t.solutionLabel}
               </p>
@@ -133,16 +130,16 @@ export default function About({ lang }) {
           </div>
 
           {/* ROWS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#E5E0D8' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--border-subtle)' }}>
             {problems.map((item, i) => (
               <div key={i} style={{
                 display: 'grid', gridTemplateColumns: '1fr 1fr',
-                gap: 1, background: '#E5E0D8',
+                gap: 1, background: 'var(--border-subtle)',
                 animation: `fadeIn 0.4s ease ${i * 0.06}s both`,
               }}>
                 {/* PROBLEM */}
                 <div style={{
-                  background: i % 2 === 0 ? '#F7F5F2' : '#FAFAF8',
+                  background: i % 2 === 0 ? 'var(--bg-muted)' : 'var(--bg-subtle)',
                   padding: '22px 28px',
                   display: 'flex', alignItems: 'center', gap: 14,
                 }}>
@@ -151,7 +148,7 @@ export default function About({ lang }) {
                     flexShrink: 0, letterSpacing: 1,
                   }}>✕</span>
                   <p style={{
-                    fontSize: 13, color: '#7a7a7a', lineHeight: 1.7,
+                    fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7,
                     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                   }}>
                     {item.problem}
@@ -160,7 +157,7 @@ export default function About({ lang }) {
 
                 {/* SOLUTION */}
                 <div style={{
-                  background: i % 2 === 0 ? '#F7F5F2' : '#FAFAF8',
+                  background: i % 2 === 0 ? 'var(--bg-muted)' : 'var(--bg-subtle)',
                   padding: '22px 28px',
                   display: 'flex', alignItems: 'center', gap: 14,
                 }}>
@@ -169,7 +166,7 @@ export default function About({ lang }) {
                     flexShrink: 0, letterSpacing: 1,
                   }}>✓</span>
                   <p style={{
-                    fontSize: 13, color: '#2C2C2C', lineHeight: 1.7, fontWeight: 400,
+                    fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, fontWeight: 400,
                     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                   }}>
                     {item.solution}
@@ -183,12 +180,12 @@ export default function About({ lang }) {
           <div style={{
             marginTop: 64,
             padding: '40px 48px',
-            background: '#2C2C2C',
+            background: 'var(--bg-raised)',
             borderRadius: 2,
           }}>
             <p style={{
               fontSize: isAr ? 18 : 20, fontWeight: 300,
-              color: 'rgba(247,245,242,0.85)', lineHeight: 1.9,
+              color: 'var(--text-primary)', lineHeight: 1.9,
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
               letterSpacing: isAr ? 0 : -0.3,
               maxWidth: 620,
@@ -200,19 +197,7 @@ export default function About({ lang }) {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <footer style={{
-        background: '#2C2C2C', padding: '32px 60px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-en)', fontSize: 16,
-          fontWeight: 600, color: '#F7F5F2', letterSpacing: 2,
-        }}>
-          MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 13, opacity: 0.5 }}>| مَعبر</span>
-        </div>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, letterSpacing: 1 }}>{t.copy}</p>
-      </footer>
+      <Footer lang={lang} />
 
       {/* MOBILE */}
       <style>{`

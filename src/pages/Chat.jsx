@@ -187,10 +187,10 @@ export default function Chat({ lang, user }) {
   if (loading) return (
     <div className="chat-wrap">
       <div className="chat-header">
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#E5E0D8', animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-hover)', animation: 'pulse 1.5s ease infinite' }} />
         <div style={{ flex: 1 }}>
-          <div style={{ width: 120, height: 14, background: '#E5E0D8', borderRadius: 3, marginBottom: 6, animation: 'pulse 1.5s ease infinite' }} />
-          <div style={{ width: 60, height: 10, background: '#E5E0D8', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
+          <div style={{ width: 120, height: 14, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 6, animation: 'pulse 1.5s ease infinite' }} />
+          <div style={{ width: 60, height: 10, background: 'var(--bg-hover)', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
         </div>
       </div>
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
@@ -208,7 +208,7 @@ export default function Chat({ lang, user }) {
         <div className="avatar-sm">{partnerName[0]}</div>
         <div style={{ flex: 1 }}>
           <p style={{ fontWeight: 500, fontSize: 15 }}>{partnerName}</p>
-          <p style={{ fontSize: 10, color: '#7a7a7a', letterSpacing: 1 }}>
+          <p style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 1 }}>
             {isAr ? 'ترجمة تلقائية مفعّلة' : lang === 'zh' ? '自动翻译已启用' : 'Auto-translate on'}
           </p>
         </div>
@@ -217,7 +217,7 @@ export default function Chat({ lang, user }) {
       {/* MESSAGES */}
       <div className="chat-body" ref={bodyRef}>
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#7a7a7a', fontSize: 13, padding: 40 }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, padding: 40 }}>
             {isAr ? 'ابدأ المحادثة' : lang === 'zh' ? '开始对话' : 'Start the conversation'}
           </div>
         )}
@@ -244,15 +244,15 @@ export default function Chat({ lang, user }) {
                   <div style={{
                     marginTop: 6,
                     paddingTop: 6,
-                    borderTop: '1px solid rgba(44,44,44,0.08)',
+                    borderTop: '1px solid var(--border-subtle)',
                   }}>
                     {isTranslating ? (
-                      <p style={{ fontSize: 10, color: '#7a7a7a', fontStyle: 'italic', animation: 'pulse 1s ease infinite' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-secondary)', fontStyle: 'italic', animation: 'pulse 1s ease infinite' }}>
                         {isAr ? 'جاري الترجمة...' : lang === 'zh' ? '翻译中...' : 'Translating...'}
                       </p>
                     ) : translation ? (
                       <p style={{
-                        fontSize: 11, color: '#5a5a5a', lineHeight: 1.5,
+                        fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5,
                         fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
                         fontStyle: 'italic',
                       }}>

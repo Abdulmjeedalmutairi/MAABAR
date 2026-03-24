@@ -131,7 +131,7 @@ export default function SupplierProfile({ lang, user }) {
       {/* BODY */}
       <div className="profile-body">
         {(supplier.bio_ar || supplier.bio_en) && (
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#6b6b6b', marginBottom: 32 }}>
+          <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 32 }}>
             {isAr ? supplier.bio_ar || supplier.bio_en : supplier.bio_en || supplier.bio_ar}
           </p>
         )}
@@ -207,7 +207,7 @@ export default function SupplierProfile({ lang, user }) {
                   borderTop: 'none', padding: '20px 24px', marginBottom: 14,
                   borderRadius: '0 0 6px 6px', animation: 'fadeIn 0.3s ease',
                 }}>
-                  <p style={{ fontSize: 12, color: '#7a7a7a', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                     {isAr
                       ? `سعر الوحدة: ${fmt(p.sample_price)} ريال + شحن: ${fmt(p.sample_shipping || 0)} ريال · الحد الأقصى: ${p.sample_max_qty || 3} قطع`
                       : `Unit: ${fmt(p.sample_price)} SAR + Ship: ${fmt(p.sample_shipping || 0)} SAR · Max: ${p.sample_max_qty || 3}`}
@@ -219,15 +219,15 @@ export default function SupplierProfile({ lang, user }) {
                         {isAr ? 'الكمية' : 'Quantity'}
                       </label>
                       <input
-                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #E5E0D8', background: '#F7F5F2', fontSize: 14, color: '#2C2C2C', outline: 'none', borderRadius: 3 }}
+                        style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', background: 'var(--bg-raised)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', borderRadius: 3 }}
                         type="number" min="1" max={p.sample_max_qty || 3}
                         value={sampleData[p.id]?.qty || '1'}
                         onChange={e => setSampleData(prev => ({ ...prev, [p.id]: { ...prev[p.id], qty: e.target.value } }))}
                       />
                     </div>
-                    <div style={{ background: '#EFECE7', padding: '10px 16px', borderRadius: 3, minWidth: 120 }}>
-                      <p style={{ fontSize: 10, color: '#7a7a7a', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : 'TOTAL'}</p>
-                      <p style={{ fontSize: 18, fontWeight: 300, color: '#2C2C2C', fontFamily: 'var(--font-en)' }}>
+                    <div style={{ background: 'var(--bg-hover)', padding: '10px 16px', borderRadius: 3, minWidth: 120 }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : 'TOTAL'}</p>
+                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-en)' }}>
                         {fmt((parseFloat(p.sample_price || 0) + parseFloat(p.sample_shipping || 0)) * parseInt(sampleData[p.id]?.qty || 1))} SAR
                       </p>
                     </div>
@@ -238,7 +238,7 @@ export default function SupplierProfile({ lang, user }) {
                       {isAr ? 'ملاحظة' : 'Note'}
                     </label>
                     <input
-                      style={{ width: '100%', padding: '10px 12px', border: '1px solid #E5E0D8', background: '#F7F5F2', fontSize: 13, color: '#2C2C2C', outline: 'none', borderRadius: 3, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', background: 'var(--bg-raised)', fontSize: 13, color: 'var(--text-primary)', outline: 'none', borderRadius: 3, boxSizing: 'border-box' }}
                       value={sampleData[p.id]?.note || ''}
                       onChange={e => setSampleData(prev => ({ ...prev, [p.id]: { ...prev[p.id], note: e.target.value } }))}
                       placeholder={isAr ? 'اللون، المواصفات...' : 'Color, specs...'}
@@ -246,13 +246,13 @@ export default function SupplierProfile({ lang, user }) {
                   </div>
 
                   {p.sample_note && (
-                    <p style={{ fontSize: 12, color: '#7a7a7a', marginBottom: 12, padding: '8px 12px', background: '#F0EDE8', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                       💬 {p.sample_note}
                     </p>
                   )}
 
                   {!user && (
-                    <p style={{ fontSize: 11, color: '#7a7a7a', marginBottom: 12 }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 12 }}>
                       {isAr ? '💡 سيُطلب منك تسجيل الدخول عند الإرسال' : "💡 You'll be asked to sign in when submitting"}
                     </p>
                   )}
@@ -274,10 +274,7 @@ export default function SupplierProfile({ lang, user }) {
         )}
       </div>
 
-      <footer>
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
-        <p className="footer-copy">{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
+      <Footer lang={lang} />
     </div>
   );
 }

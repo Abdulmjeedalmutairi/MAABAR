@@ -37,10 +37,8 @@ export default function Terms({ lang }) {
           {isAr ? 'تأخذ مَعبر عمولة 6% من قيمة كل صفقة مكتملة — 4% من المورد و2% من التاجر.' : 'Maabar charges a 6% commission — 4% from supplier and 2% from buyer.'}
         </p>
       </div>
-     <Footer lang={lang} />
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
-        <p className="footer-copy">{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-     
+      <Footer lang={lang} />
+
     </div>
   );
 }

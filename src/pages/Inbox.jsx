@@ -65,38 +65,38 @@ export default function Inbox({ lang, user }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'transparent' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
 
       {/* HEADER */}
       <div style={{
         padding: '60px 60px 32px',
-        background: 'rgba(0,0,0,0.38)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--bg-overlay)',
+        borderBottom: '1px solid var(--border-subtle)',
       }}>
         <button onClick={() => nav('/dashboard')} style={{
-          background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+          background: 'none', border: 'none', color: 'var(--text-tertiary)',
           fontSize: 11, cursor: 'pointer', letterSpacing: 2,
           textTransform: 'uppercase', padding: 0, marginBottom: 20,
           transition: 'color 0.2s', display: 'block'
         }}
-          onMouseEnter={e => e.currentTarget.style.color = '#F7F5F2'}
-          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}>
           {isAr ? 'لوحتي →' : '← Dashboard'}
         </button>
-        <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 16, fontFamily: 'var(--font-body)' }}>
+        <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 16, fontFamily: 'var(--font-body)' }}>
           {isAr ? 'مَعبر · الرسائل' : 'Maabar · Messages'}
         </p>
-        <h1 style={{ fontSize: 64, fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: '#F7F5F2', letterSpacing: isAr ? 0 : -1, lineHeight: 1 }}>
+        <h1 style={{ fontSize: 64, fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1 }}>
           {isAr ? 'الرسائل' : 'Messages'}
         </h1>
       </div>
 
       {/* LIST */}
-      <div style={{ background: 'rgba(247,245,242,0.92)', backdropFilter: 'blur(8px)', minHeight: 'calc(100vh - 280px)' }}>
+      <div style={{ background: 'var(--bg-subtle)', minHeight: 'calc(100vh - 280px)' }}>
         <div style={{ padding: '40px 60px', maxWidth: 760, margin: '0 auto' }}>
           {convs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <p style={{ color: '#7a7a7a', fontSize: 13, letterSpacing: 1 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13, letterSpacing: 1 }}>
                 {isAr ? 'لا توجد رسائل بعد' : 'No messages yet'}
               </p>
             </div>
@@ -105,8 +105,8 @@ export default function Inbox({ lang, user }) {
             return (
               <div key={c.partner_id} onClick={() => openChat(c.partner_id)} style={{
                 display: 'flex', alignItems: 'center', gap: 20,
-                padding: '20px 0', borderTop: idx === 0 ? '1px solid #E5E0D8' : 'none',
-                borderBottom: '1px solid #E5E0D8',
+                padding: '20px 0', borderTop: idx === 0 ? '1px solid var(--border-muted)' : 'none',
+                borderBottom: '1px solid var(--border-muted)',
                 cursor: 'pointer', transition: 'opacity 0.2s',
                 animation: `fadeIn 0.4s ease ${idx * 0.05}s both`
               }}
@@ -114,8 +114,8 @@ export default function Inbox({ lang, user }) {
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
                 <div style={{
                   width: 42, height: 42, borderRadius: '50%',
-                  background: c.unread > 0 ? '#2C2C2C' : '#E5E0D8',
-                  color: c.unread > 0 ? '#F7F5F2' : '#7a7a7a',
+                  background: c.unread > 0 ? 'var(--bg-raised)' : 'var(--bg-hover)',
+                  color: c.unread > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 14, fontWeight: 500, flexShrink: 0,
                   transition: 'all 0.2s'
@@ -123,13 +123,13 @@ export default function Inbox({ lang, user }) {
                   {name.charAt(0).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: c.unread > 0 ? 600 : 400, color: '#2C2C2C', marginBottom: 4 }}>{name}</p>
-                  <p style={{ fontSize: 12, color: '#7a7a7a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.last_msg}</p>
+                  <p style={{ fontSize: 14, fontWeight: c.unread > 0 ? 600 : 400, color: 'var(--text-primary)', marginBottom: 4 }}>{name}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.last_msg}</p>
                 </div>
                 <div style={{ textAlign: 'end', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                  <p style={{ fontSize: 11, color: '#7a7a7a', letterSpacing: 0.5 }}>{fmtDate(c.last_time)}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>{fmtDate(c.last_time)}</p>
                   {c.unread > 0 && (
-                    <div style={{ background: '#2C2C2C', color: '#F7F5F2', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: 'var(--bg-raised)', color: 'var(--text-primary)', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {c.unread}
                     </div>
                   )}
@@ -140,12 +140,7 @@ export default function Inbox({ lang, user }) {
         </div>
       </div>
 
-      <footer style={{ background: '#2C2C2C', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-en)', fontSize: 16, fontWeight: 600, color: '#F7F5F2', letterSpacing: 2 }}>
-          MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 13, opacity: 0.5 }}>| مَعبر</span>
-        </div>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, letterSpacing: 1 }}>{isAr ? 'مَعبر © 2026' : 'Maabar © 2026'}</p>
-      </footer>
+      <Footer lang={lang} />
     </div>
   );
 }
