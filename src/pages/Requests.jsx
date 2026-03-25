@@ -123,6 +123,7 @@ export default function Requests({ lang, user, profile }) {
       return;
     }
     setSubmitting(true);
+    console.log('Sending request:', JSON.stringify(newReq));
     const { error } = await sb.from('requests').insert({
       buyer_id: user.id,
       title_ar: newReq.title_ar,
@@ -137,6 +138,7 @@ export default function Requests({ lang, user, profile }) {
       sample_requirement: newReq.sample_requirement,
       image_url: newReq.image_url || null,
     });
+    console.log('Supabase error:', JSON.stringify(error));
     setSubmitting(false);
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     alert(isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : 'Request posted! Suppliers will contact you soon');
