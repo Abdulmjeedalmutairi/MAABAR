@@ -322,8 +322,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
     if (!window.confirm(isAr ? 'هل تريد حذف هذا الطلب؟' : 'Delete this request?')) return;
     const { error } = await sb.from('requests').delete().eq('id', r.id);
     if (!error) {
-      setMyRequests(prev => prev.filter(req => req.id !== r.id));
-      loadPendingActions(); loadStats();
+      loadMyRequests(); loadPendingActions(); loadStats();
     }
   };
 

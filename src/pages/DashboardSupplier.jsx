@@ -290,6 +290,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const [saving, setSaving]                 = useState(false);
   const [pendingTracking, setPendingTracking] = useState([]);
   const [rejectedOffers, setRejectedOffers] = useState([]);
+  const [completedPayments, setCompletedPayments] = useState(new Set());
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [offerForms, setOfferForms]         = useState({});
@@ -428,6 +429,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
     setLoadingOffers(true);
     const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status,quantity,description,payment_plan)').eq('supplier_id', user.id).order('created_at', { ascending: false });
     if (data) setMyOffers(data);
+    const { data: payData } = await sb.from('payments').select('request_id').eq('supplier_id', user.id).eq('status', 'completed');
+    setCompletedPayments(new Set((payData || []).map(p => p.request_id)));
     setLoadingOffers(false);
   };
 
@@ -563,7 +566,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId];
     if (!o?.price || !o?.moq || !o?.days) { alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields'); return; }
-    const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), moq: o.moq, delivery_days: parseInt(o.days), origin: o.origin, note: o.note, status: 'pending' });
+    const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), delivery_days: parseInt(o.days), note: o.note, status: 'pending' });
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
     try {
@@ -970,7 +973,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     </div>
                   )}
 
-                  {o.status === 'accepted' && o.requests?.status === 'ready_to_ship' && (
+                  {o.status === 'accepted' && completedPayments.has(o.request_id) && (
                     <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)' }}>
                       <p style={{ fontSize: 13, marginBottom: 10, color: 'var(--text-secondary)', ...arFont }}>{t.trackingPrompt}</p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
