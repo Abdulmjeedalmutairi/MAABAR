@@ -566,7 +566,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId];
     if (!o?.price || !o?.moq || !o?.days) { alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields'); return; }
-    const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), delivery_days: parseInt(o.days), note: o.note, status: 'pending' });
+    const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), delivery_days: parseInt(o.days), note: o.note || null, status: 'pending' });
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
     try {

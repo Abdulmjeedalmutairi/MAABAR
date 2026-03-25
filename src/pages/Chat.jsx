@@ -13,7 +13,7 @@ const translateText = async (text, targetLang) => {
   try {
     const res = await fetch(SUPABASE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}`, 'apikey': SUPABASE_KEY },
       body: JSON.stringify({
         system: `أنت مترجم تجاري متخصص في تجارة الاستيراد والتصدير بين السعودية والصين.
 ترجم النص التالي إلى ${langNames[targetLang]} مع مراعاة:
