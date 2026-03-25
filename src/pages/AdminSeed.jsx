@@ -32,13 +32,15 @@ export default function AdminSeed({ user, lang }) {
 
   useEffect(() => {
     if (!user || user.email !== ADMIN_EMAIL) { nav('/'); return; }
+    if (!adminAuthed) return;
     loadStats();
     loadPendingSuppliers();
-  }, [user]);
+  }, [user, adminAuthed]);
 
   useEffect(() => {
+    if (!adminAuthed) return;
     if (activeTab === 'overview') loadOverviewData();
-  }, [activeTab]);
+  }, [activeTab, adminAuthed]);
 
   const loadStats = async () => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
