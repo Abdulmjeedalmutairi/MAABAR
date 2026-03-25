@@ -22,6 +22,7 @@ import Terms from './pages/Terms';
 import FAQ from './pages/FAQ';
 import AdminSeed from './pages/AdminSeed';
 import AgentPanel from './pages/AgentPanel';
+// ApolloAgent removed — file not found
 import Checkout from './pages/Checkout';
 import PaymentSuccess from './pages/PaymentSuccess';
 
@@ -132,6 +133,7 @@ function App() {
           <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
           <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
           <Route path="/agent"          element={<AgentPanel />} />
+          {/* /apollo route removed — ApolloAgent not available */}
           <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
           <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
         </Routes>

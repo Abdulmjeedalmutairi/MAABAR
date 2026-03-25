@@ -195,6 +195,74 @@ function BackBtn({ onClick, label }) {
 
 const emptyProduct = { name_ar: '', name_en: '', name_zh: '', price_from: '', moq: '', desc_ar: '', sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '' };
 
+/* ─── Product Form (defined outside to prevent remount on parent render) ─ */
+function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange, uploadingImage, uploadingVideo, t, isAr, saving }) {
+  const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+  return (
+    <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 680, borderRadius: 'var(--radius-xl)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+        {[{ label: t.uploadImage, ref: imgRef, onChange: onImgChange, loading: uploadingImage, loadingLabel: t.uploadingImage, url: data.image_url, doneLabel: t.imageUploaded, isImg: true },
+          { label: t.uploadVideo, ref: vidRef, onChange: onVidChange, loading: uploadingVideo, loadingLabel: t.uploadingVideo, url: data.video_url, doneLabel: t.videoUploaded, isImg: false }
+        ].map((up, i) => (
+          <div key={i}>
+            <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 8, textTransform: 'uppercase' }}>{up.label}</p>
+            <input ref={up.ref} type="file" accept={up.isImg ? 'image/*' : 'video/*'} style={{ display: 'none' }} onChange={up.onChange} />
+            <div onClick={() => up.ref.current?.click()} style={{ width: '100%', height: 110, border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: 'var(--bg-muted)', transition: 'border-color 0.2s', flexDirection: 'column', gap: 4 }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}>
+              {up.loading
+                ? <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{up.loadingLabel}</p>
+                : up.url && up.isImg ? <img src={up.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : up.url && !up.isImg ? <video src={up.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
+                : <><p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>+ {up.label}</p>{!up.isImg && <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.6 }}>{t.maxVideo}</p>}</>}
+            </div>
+            {up.url && <p style={{ fontSize: 10, color: '#5a9a72', marginTop: 5 }}>✓ {up.doneLabel}</p>}
+          </div>
+        ))}
+      </div>
+
+      <div className="form-grid">
+        {[
+          [t.nameZh, 'name_zh'], [t.nameEn, 'name_en'], [t.nameAr, 'name_ar'],
+          [t.price, 'price_from', 'number'], [t.moq, 'moq'],
+        ].map(([label, key, type]) => (
+          <div key={key} className="form-group">
+            <label className="form-label">{label}</label>
+            <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
+          </div>
+        ))}
+      </div>
+
+      <div className="form-group">
+        <label className={`form-label${isAr ? ' ar' : ''}`}>{t.descLabel}</label>
+        <textarea className="form-input" rows={2} style={{ resize: 'vertical', ...arFont }} value={data.desc_ar || ''} onChange={e => setData(prev => ({ ...prev, desc_ar: e.target.value }))} />
+      </div>
+
+      <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: data.sample_available ? 18 : 0 }}>
+          <input type="checkbox" id="sample_toggle" checked={data.sample_available || false} onChange={e => setData(prev => ({ ...prev, sample_available: e.target.checked }))} style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--text-secondary)' }} />
+          <label htmlFor="sample_toggle" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer', ...arFont }}>{t.sampleAvailable}</label>
+        </div>
+        {data.sample_available && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, animation: 'fadeIn 0.25s ease' }}>
+            {[[t.samplePrice, 'sample_price', 'number'], [t.sampleShipping, 'sample_shipping', 'number'], [t.sampleMaxQty, 'sample_max_qty', 'number'], [t.sampleNote, 'sample_note']].map(([label, key, type]) => (
+              <div key={key} className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">{label}</label>
+                <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+        <button onClick={onSave} disabled={saving} className="btn-primary" style={{ padding: '11px 28px', fontSize: 12, minHeight: 44 }}>{saving ? t.saving : t.save}</button>
+        <button onClick={onCancel} className="btn-outline" style={{ padding: '11px 20px', fontSize: 12, minHeight: 44 }}>{t.cancel}</button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main ───────────────────────────────── */
 export default function DashboardSupplier({ user, profile, lang }) {
   const nav  = useNavigate();
@@ -231,6 +299,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
     avatar_url: '', factory_images: [],
   });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [productSaveMsg, setProductSaveMsg] = useState('');
   const [editOfferModal, setEditOfferModal]   = useState(null);
   const [editOfferForm, setEditOfferForm]     = useState({});
   const [savingEditOffer, setSavingEditOffer] = useState(false);
@@ -252,8 +322,23 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (activeTab === 'my-products')  loadMyProducts();
     if (activeTab === 'requests')     loadRequests();
     if (activeTab === 'settings')     loadSettings();
-    if (activeTab === 'add-product')  { setEditingProduct(null); setProduct(emptyProduct); }
+    if (activeTab === 'add-product')  {
+      setEditingProduct(null);
+      const draft = sessionStorage.getItem('maabar_product_draft');
+      if (draft) {
+        try { setProduct(JSON.parse(draft)); } catch { setProduct(emptyProduct); }
+      } else {
+        setProduct(emptyProduct);
+      }
+    }
   }, [activeTab]);
+
+  // Save product form draft to sessionStorage on every change
+  useEffect(() => {
+    if (activeTab === 'add-product' && !editingProduct) {
+      sessionStorage.setItem('maabar_product_draft', JSON.stringify(product));
+    }
+  }, [product, activeTab, editingProduct]);
 
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeCat]);
 
@@ -302,7 +387,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
     setSavingSettings(true);
     await sb.from('profiles').update({ bio_ar: settings.bio_ar, bio_en: settings.bio_en, bio_zh: settings.bio_zh, company_name: settings.company_name, whatsapp: settings.whatsapp, wechat: settings.wechat, city: settings.city, country: settings.country, trade_link: settings.trade_link, speciality: settings.speciality, min_order_value: settings.min_order_value ? parseFloat(settings.min_order_value) : null }).eq('id', user.id);
     setSavingSettings(false);
-    alert(t.settingsSaved);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 3000);
   };
 
   const uploadLogo = async (e) => {
@@ -337,7 +423,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
   const loadMyOffers = async () => {
     setLoadingOffers(true);
-    const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status)').eq('supplier_id', user.id).order('created_at', { ascending: false });
+    const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status,quantity,description,payment_plan)').eq('supplier_id', user.id).order('created_at', { ascending: false });
     if (data) setMyOffers(data);
     setLoadingOffers(false);
   };
@@ -393,10 +479,24 @@ export default function DashboardSupplier({ user, profile, lang }) {
   };
 
   const addProduct = async () => {
-    if (!product.name_zh || !product.price_from || !product.moq) return;
+    if (!product.name_zh || !product.price_from || !product.moq) {
+      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، السعر، MOQ' : 'Please fill required fields: Chinese name, price, MOQ');
+      return;
+    }
     setSaving(true);
-    await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || product.name_zh, name_en: product.name_en || product.name_zh, name_zh: product.name_zh, price_from: parseFloat(product.price_from), moq: product.moq, desc_ar: product.desc_ar, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
-    setSaving(false); setProduct(emptyProduct); setActiveTab('my-products'); loadStats();
+    setProductSaveMsg('');
+    const { error } = await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || product.name_zh, name_en: product.name_en || product.name_zh, name_zh: product.name_zh, price_from: parseFloat(product.price_from), moq: product.moq, desc_ar: product.desc_ar, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
+    setSaving(false);
+    if (error) {
+      console.error('addProduct error:', error);
+      setProductSaveMsg(isAr ? 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.' : 'Error saving product. Please try again.');
+      return;
+    }
+    sessionStorage.removeItem('maabar_product_draft');
+    setProduct(emptyProduct);
+    setProductSaveMsg(isAr ? 'تم إضافة المنتج بنجاح ✓' : 'Product added successfully ✓');
+    setTimeout(() => { setProductSaveMsg(''); setActiveTab('my-products'); }, 1500);
+    loadStats();
   };
 
   const updateProduct = async () => {
@@ -493,73 +593,6 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const section = { animation: 'fadeIn 0.35s ease' };
-
-  /* ── Product Form ─────────────────────── */
-  const ProductForm = ({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange }) => (
-    <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 680, borderRadius: 'var(--radius-xl)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        {/* Image upload */}
-        {[{ label: t.uploadImage, ref: imgRef, onChange: onImgChange, loading: uploadingImage, loadingLabel: t.uploadingImage, url: data.image_url, doneLabel: t.imageUploaded, isImg: true },
-          { label: t.uploadVideo, ref: vidRef, onChange: onVidChange, loading: uploadingVideo, loadingLabel: t.uploadingVideo, url: data.video_url, doneLabel: t.videoUploaded, isImg: false }
-        ].map((up, i) => (
-          <div key={i}>
-            <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 8, textTransform: 'uppercase' }}>{up.label}</p>
-            <input ref={up.ref} type="file" accept={up.isImg ? 'image/*' : 'video/*'} style={{ display: 'none' }} onChange={up.onChange} />
-            <div onClick={() => up.ref.current?.click()} style={{ width: '100%', height: 110, border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: 'var(--bg-muted)', transition: 'border-color 0.2s', flexDirection: 'column', gap: 4 }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}>
-              {up.loading
-                ? <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{up.loadingLabel}</p>
-                : up.url && up.isImg ? <img src={up.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : up.url && !up.isImg ? <video src={up.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-                : <><p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>+ {up.label}</p>{!up.isImg && <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.6 }}>{t.maxVideo}</p>}</>}
-            </div>
-            {up.url && <p style={{ fontSize: 10, color: '#5a9a72', marginTop: 5 }}>✓ {up.doneLabel}</p>}
-          </div>
-        ))}
-      </div>
-
-      <div className="form-grid">
-        {[
-          [t.nameZh, 'name_zh'], [t.nameEn, 'name_en'], [t.nameAr, 'name_ar'],
-          [t.price, 'price_from', 'number'], [t.moq, 'moq'],
-        ].map(([label, key, type]) => (
-          <div key={key} className="form-group">
-            <label className="form-label">{label}</label>
-            <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData({ ...data, [key]: e.target.value })} />
-          </div>
-        ))}
-      </div>
-
-      <div className="form-group">
-        <label className={`form-label${isAr ? ' ar' : ''}`}>{t.descLabel}</label>
-        <textarea className="form-input" rows={2} style={{ resize: 'vertical', ...arFont }} value={data.desc_ar || ''} onChange={e => setData({ ...data, desc_ar: e.target.value })} />
-      </div>
-
-      {/* Sample settings */}
-      <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: data.sample_available ? 18 : 0 }}>
-          <input type="checkbox" id="sample_toggle" checked={data.sample_available || false} onChange={e => setData({ ...data, sample_available: e.target.checked })} style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--text-secondary)' }} />
-          <label htmlFor="sample_toggle" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer', ...arFont }}>{t.sampleAvailable}</label>
-        </div>
-        {data.sample_available && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, animation: 'fadeIn 0.25s ease' }}>
-            {[[t.samplePrice, 'sample_price', 'number'], [t.sampleShipping, 'sample_shipping', 'number'], [t.sampleMaxQty, 'sample_max_qty', 'number'], [t.sampleNote, 'sample_note']].map(([label, key, type]) => (
-              <div key={key} className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">{label}</label>
-                <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData({ ...data, [key]: e.target.value })} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-        <button onClick={onSave} disabled={saving} className="btn-primary" style={{ padding: '11px 28px', fontSize: 12, minHeight: 44 }}>{saving ? t.saving : t.save}</button>
-        <button onClick={onCancel} className="btn-outline" style={{ padding: '11px 20px', fontSize: 12, minHeight: 44 }}>{t.cancel}</button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="dashboard-wrap">
@@ -762,7 +795,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: 'fadeIn 0.3s ease' }}>
                       <input ref={editImageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, true)} />
                       <input ref={editVideoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, true)} />
-                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} />
+                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} />
                     </div>
                   ) : (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 0', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
@@ -829,11 +862,45 @@ export default function DashboardSupplier({ user, profile, lang }) {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 24, color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                  <div style={{ display: 'flex', gap: 24, color: 'var(--text-secondary)', fontSize: 13, marginBottom: 14, flexWrap: 'wrap', alignItems: 'baseline' }}>
                     <span style={{ fontSize: 26, fontWeight: 300, color: 'var(--text-primary)' }}>{o.price} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>SAR</span></span>
                     <span>MOQ: {o.moq}</span>
                     <span>{o.delivery_days} {t.days}</span>
                   </div>
+
+                  {/* Accepted offer: full order details */}
+                  {o.status === 'accepted' && (
+                    <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {o.requests?.quantity && (
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', ...arFont }}>
+                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'الكمية: ' : 'Qty: '}</span>{o.requests.quantity}
+                        </p>
+                      )}
+                      {o.requests?.description && (
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', ...arFont }}>
+                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'المواصفات: ' : 'Specs: '}</span>{o.requests.description}
+                        </p>
+                      )}
+                      {o.requests?.payment_plan && (
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'خطة الدفع: ' : 'Payment plan: '}</span>{o.requests.payment_plan}%
+                        </p>
+                      )}
+                      <p style={{ fontSize: 12 }}>
+                        <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'حالة الدفع: ' : 'Payment: '}</span>
+                        <span style={{ color: ['paid','ready_to_ship','shipping','arrived','delivered'].includes(o.requests?.status) ? '#5a9a72' : '#a07070' }}>
+                          {['paid','ready_to_ship','shipping','arrived','delivered'].includes(o.requests?.status)
+                            ? (isAr ? 'تم الدفع' : 'Paid')
+                            : (isAr ? 'في انتظار الدفع' : 'Pending')}
+                        </span>
+                      </p>
+                      {o.updated_at && (
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                          {isAr ? 'تاريخ القبول: ' : 'Accepted: '}{new Date(o.updated_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* "Shipment Ready" button — when offer accepted and request paid */}
                   {o.status === 'accepted' && o.requests?.status === 'paid' && (
@@ -862,6 +929,14 @@ export default function DashboardSupplier({ user, profile, lang }) {
                   )}
 
                   {o.status === 'accepted' && !['paid','shipping','delivered','ready_to_ship'].includes(o.requests?.status || '') && (
+                    <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', ...arFont }}>
+                        {isAr ? 'في انتظار إتمام الدفع من التاجر' : 'Awaiting payment completion'}
+                      </p>
+                    </div>
+                  )}
+
+                  {o.status === 'accepted' && o.requests?.status === 'ready_to_ship' && (
                     <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)' }}>
                       <p style={{ fontSize: 13, marginBottom: 10, color: 'var(--text-secondary)', ...arFont }}>{t.trackingPrompt}</p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -934,7 +1009,12 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.addProductTitle}</h2>
               <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, false)} />
               <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, false)} />
-              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} />
+              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} />
+              {productSaveMsg && (
+                <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {productSaveMsg}
+                </p>
+              )}
             </div>
           )}
 
@@ -1014,6 +1094,11 @@ export default function DashboardSupplier({ user, profile, lang }) {
                 <button onClick={saveSettings} disabled={savingSettings} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46 }}>
                   {savingSettings ? t.saving : t.saveSettings}
                 </button>
+                {settingsSaved && (
+                  <p style={{ color: '#5a9a72', fontSize: 13, marginTop: 8, ...arFont }}>
+                    {t.settingsSaved} ✓
+                  </p>
+                )}
               </div>
             </div>
           )}

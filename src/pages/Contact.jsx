@@ -16,18 +16,16 @@ export default function Contact({ lang }) {
         <div style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-default)', padding: '64px 48px', width: '100%', maxWidth: 480, textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
           <h2 style={{ fontSize: 42, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>{t.title}</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 15, marginBottom: 48, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{t.sub}</p>
-          <a href="https://wa.me/9665XXXXXXXX" style={styles.btn}>
-            <span style={{ fontSize: 24 }}>💬</span>
+          <a href="https://wa.me/966504248942" style={styles.btn}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
               <p style={{ fontSize: 11, letterSpacing: 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.wa}</p>
-              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>+966 5X XXX XXXX</p>
+              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>+966 50 424 8942</p>
             </div>
           </a>
-          <a href="mailto:hello@maabar.com" style={styles.btn}>
-            <span style={{ fontSize: 24 }}>✉️</span>
+          <a href="mailto:support@maabar.io" style={styles.btn}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
               <p style={{ fontSize: 11, letterSpacing: 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.email}</p>
-              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>hello@maabar.com</p>
+              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>support@maabar.io</p>
             </div>
           </a>
         </div>

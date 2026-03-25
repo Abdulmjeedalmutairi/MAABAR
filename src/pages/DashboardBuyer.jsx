@@ -138,6 +138,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   // Settings
   const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '' });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
@@ -214,7 +215,8 @@ export default function DashboardBuyer({ user, profile, lang }) {
       city: settings.city, company_name: settings.company_name,
     }).eq('id', user.id);
     setSavingSettings(false);
-    alert(isAr ? 'تم حفظ التغييرات' : 'Changes saved');
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 3000);
   };
 
   const acceptOffer = async (offerId, supplierId, requestId) => {
@@ -290,6 +292,23 @@ export default function DashboardBuyer({ user, profile, lang }) {
     await sb.from('requests').update({ status: 'open' }).eq('id', r.id);
     if (acceptedOffer) {
       await sb.from('offers').update({ status: 'rejected' }).eq('id', acceptedOffer.id);
+      const reqNameAr = r.title_ar || r.title_en || '';
+      const reqNameEn = r.title_en || r.title_ar || '';
+      await sb.from('notifications').insert({
+        user_id: acceptedOffer.supplier_id,
+        type: 'request_cancelled',
+        title_ar: `قام التاجر بإلغاء الطلب: ${reqNameAr}`,
+        title_en: `The trader has cancelled the request: ${reqNameEn}`,
+        title_zh: `采购商已取消请求: ${reqNameEn}`,
+        ref_id: r.id,
+        is_read: false,
+      });
+      await sb.from('messages').insert({
+        sender_id: user.id,
+        receiver_id: acceptedOffer.supplier_id,
+        content: `The trader has cancelled the request: ${reqNameEn}`,
+        is_read: false,
+      });
     }
     setCancelConfirmReq(null);
     setMyRequests(prev => prev.map(req =>
@@ -816,6 +835,11 @@ export default function DashboardBuyer({ user, profile, lang }) {
                   style={{ padding: '11px 28px', fontSize: 13, marginTop: 8, minHeight: 44 }}>
                   {savingSettings ? '...' : isAr ? 'حفظ التغييرات' : 'Save Changes'}
                 </button>
+                {settingsSaved && (
+                  <p style={{ color: '#5a9a72', fontSize: 13, marginTop: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'تم حفظ التغييرات ✓' : 'Changes saved ✓'}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -982,10 +1006,15 @@ export default function DashboardBuyer({ user, profile, lang }) {
                 ? (cancelConfirmReq.title_ar || cancelConfirmReq.title_en)
                 : (cancelConfirmReq.title_en || cancelConfirmReq.title_ar)}
             </h3>
-            <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.7 }}>
               {isAr
                 ? 'سيتم إلغاء الطلب وإعادته للحالة المفتوحة. هل تريد المتابعة؟'
                 : 'This will cancel the accepted offer and re-open the request. Are you sure?'}
+            </p>
+            <p style={{ fontSize: 12, color: '#a07070', marginBottom: 20, padding: '10px 14px', background: 'rgba(138,58,58,0.08)', border: '1px solid rgba(138,58,58,0.2)', borderRadius: 'var(--radius-md)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.6 }}>
+              {isAr
+                ? 'تنبيه: بمجرد إتمام الدفع، لا يمكن الإلغاء واسترداد المبلغ.'
+                : 'Note: Once payment is made, the order cannot be cancelled or refunded.'}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button

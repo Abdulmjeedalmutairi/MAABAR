@@ -4,7 +4,7 @@ import { sb } from '../supabase';
 
 const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export default function AdminSeed({ user, lang }) {
   const nav = useNavigate();
@@ -121,9 +121,9 @@ WeChat: ${supplier.wechat || 'غير موجود'}
     await sb.from('notifications').insert({
       user_id: supplier.id,
       type: 'account_rejected',
-      title_ar: 'نأسف، لم يتم قبول حسابك. للاستفسار تواصل معنا على hello@maabar.com',
-      title_en: 'Sorry, your account was not approved. Contact hello@maabar.com for inquiries',
-      title_zh: '抱歉，您的账户未获批准。请联系hello@maabar.com',
+      title_ar: 'نأسف، لم يتم قبول حسابك. للاستفسار تواصل معنا على hello@maabar.io',
+      title_en: 'Sorry, your account was not approved. Contact hello@maabar.io for inquiries',
+      title_zh: '抱歉，您的账户未获批准。请联系hello@maabar.io',
       ref_id: supplier.id,
       is_read: false,
     });
@@ -269,6 +269,23 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 8, lineHeight: 1.6 }}>
                           {s.bio_ar || s.bio_en}
                         </p>
+                      )}
+                      {/* Documents */}
+                      {(s.license_url || s.factory_image_url) && (
+                        <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                          {s.license_url && (
+                            <a href={s.license_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                              <img src={s.license_url} alt="رخصة تجارية" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 4 }}>رخصة تجارية</p>
+                            </a>
+                          )}
+                          {s.factory_image_url && (
+                            <a href={s.factory_image_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                              <img src={s.factory_image_url} alt="صورة المصنع" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 4 }}>صورة المصنع</p>
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
 

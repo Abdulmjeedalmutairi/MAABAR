@@ -476,6 +476,20 @@ export default function Checkout({ lang, user, profile }) {
               </div>
             )}
 
+            {/* CANCELLATION POLICY */}
+            {payMethod !== 'apple_pay' && (
+              <p style={{
+                fontSize: 12,
+                color: 'rgba(220,100,80,0.85)',
+                textAlign: 'center',
+                marginBottom: 12,
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                lineHeight: 1.5,
+              }}>
+                بعد إتمام الدفع لا يمكن الإلغاء أو استرداد المبلغ
+              </p>
+            )}
+
             {/* PAY BUTTON */}
             {payMethod !== 'apple_pay' && (
               <button onClick={handleCardPay} disabled={paying} style={{

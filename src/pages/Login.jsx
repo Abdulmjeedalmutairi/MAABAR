@@ -1,33 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 
-const CATEGORIES = {
-  ar: [
-    { val: 'electronics', label: 'إلكترونيات' },
-    { val: 'furniture', label: 'أثاث' },
-    { val: 'clothing', label: 'ملابس' },
-    { val: 'building', label: 'مواد بناء' },
-    { val: 'food', label: 'غذاء' },
-    { val: 'other', label: 'أخرى' },
-  ],
-  en: [
-    { val: 'electronics', label: 'Electronics' },
-    { val: 'furniture', label: 'Furniture' },
-    { val: 'clothing', label: 'Clothing' },
-    { val: 'building', label: 'Building Materials' },
-    { val: 'food', label: 'Food' },
-    { val: 'other', label: 'Other' },
-  ],
-  zh: [
-    { val: 'electronics', label: '电子产品' },
-    { val: 'furniture', label: '家具' },
-    { val: 'clothing', label: '服装' },
-    { val: 'building', label: '建材' },
-    { val: 'food', label: '食品' },
-    { val: 'other', label: '其他' },
-  ],
-};
+const UNIFONIC_APP_SID   = import.meta.env.VITE_UNIFONIC_APP_SID;
+const SUPABASE_ANON_KEY  = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SEND_EMAILS_URL    = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
+
+const SPECIALITIES = [
+  { val: 'electronics',   ar: 'إلكترونيات',              en: 'Electronics',               zh: '电子产品' },
+  { val: 'appliances',    ar: 'أجهزة منزلية',             en: 'Home Appliances',            zh: '家用电器' },
+  { val: 'furniture',     ar: 'أثاث',                     en: 'Furniture',                  zh: '家具' },
+  { val: 'clothing',      ar: 'ملابس وأزياء',             en: 'Clothing & Fashion',         zh: '服装与时尚' },
+  { val: 'building',      ar: 'مواد بناء',                en: 'Construction Materials',     zh: '建材' },
+  { val: 'food',          ar: 'مواد غذائية',              en: 'Food & Beverages',           zh: '食品饮料' },
+  { val: 'medical',       ar: 'مستلزمات طبية',            en: 'Medical Supplies',           zh: '医疗用品' },
+  { val: 'cosmetics',     ar: 'مستحضرات التجميل',         en: 'Cosmetics & Beauty',         zh: '美妆护肤' },
+  { val: 'toys',          ar: 'ألعاب وأطفال',             en: "Toys & Children's Products", zh: '玩具儿童用品' },
+  { val: 'automotive',    ar: 'قطع غيار سيارات',          en: 'Automotive Parts',           zh: '汽车配件' },
+  { val: 'sports',        ar: 'رياضة ولياقة',             en: 'Sports & Fitness',           zh: '运动健身' },
+  { val: 'lighting',      ar: 'إضاءة',                    en: 'Lighting',                   zh: '照明' },
+  { val: 'tools',         ar: 'أدوات صناعية',             en: 'Industrial Tools',           zh: '工业工具' },
+  { val: 'gifts',         ar: 'هدايا وتذكارات',           en: 'Gifts & Souvenirs',          zh: '礼品纪念品' },
+  { val: 'other',         ar: 'أخرى',                     en: 'Other',                      zh: '其他' },
+];
 
 const L = {
   ar: {
@@ -37,11 +32,15 @@ const L = {
     firstName: 'الاسم الأول', lastName: 'الاسم الأخير',
     phone: 'رقم الجوال', city: 'المدينة',
     companyName: 'اسم الشركة / النشاط (اختياري)',
-    supCompany: 'اسم الشركة', whatsapp: 'واتساب', wechat: 'WeChat (اختياري)',
-    payMethod: 'طريقة استلام المدفوعات', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)',
-    tradeLink: 'رابط صفحتك التجارية (اختياري)', regNum: 'رقم تسجيل الشركة (اختياري)',
+    supCompany: 'اسم الشركة', whatsapp: 'واتساب (اختياري)', wechat: 'WeChat *',
+    payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)',
+    alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *',
+    tradeLink: 'رابط متجر Alibaba أو الموقع (اختياري)', regNum: 'رقم تسجيل الشركة *',
     country: 'الدولة', supCity: 'المدينة',
     speciality: 'التخصص',
+    yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)',
+    businessLicense: 'صورة رخصة الأعمال / الهوية *', factoryPhoto: 'صورة المصنع / المستودع *',
+    uploading: 'جاري الرفع...', uploaded: 'تم الرفع ✓',
     signin: 'تسجيل الدخول', signup: 'إنشاء حساب',
     toSignup: 'ما عندك حساب؟', toSignupLink: 'سجل الآن',
     toSignin: 'عندك حساب؟', toSigninLink: 'سجل دخولك',
@@ -50,8 +49,18 @@ const L = {
     termsLabel: 'أوافق على ',
     termsLink: 'الشروط والأحكام',
     mustAgreeTerms: 'يجب الموافقة على الشروط والأحكام',
-    pendingMsg: 'طلبك قيد المراجعة — نتواصل معك خلال 3-5 أيام عمل',
+    pendingMsg: 'تم استلام طلبك. يرجى تأكيد بريدك الإلكتروني لتفعيل الحساب.',
     googleLogin: 'دخول بـ Google',
+    otpTitle: 'تأكيد رقم الجوال',
+    otpSub: 'أرسلنا رمز التحقق إلى رقمك',
+    otpPlaceholder: 'أدخل الرمز المكوّن من 6 أرقام',
+    otpVerify: 'تحقق',
+    otpResend: 'إعادة الإرسال',
+    otpResendIn: 'إعادة الإرسال بعد',
+    otpWrong: 'الرمز غير صحيح، حاول مجدداً',
+    otpSending: 'جاري الإرسال...',
+    emailNotConfirmed: 'يرجى تأكيد إيميلك أولاً',
+    wrongCredentials: 'إيميل أو كلمة مرور غير صحيحة',
     cities: ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام','الخبر','تبوك','أبها','القصيم','حائل','جازان','نجران'],
   },
   en: {
@@ -61,11 +70,15 @@ const L = {
     firstName: 'First Name', lastName: 'Last Name',
     phone: 'Phone', city: 'City',
     companyName: 'Company / Business (optional)',
-    supCompany: 'Company Name', whatsapp: 'WhatsApp', wechat: 'WeChat (optional)',
-    payMethod: 'Payment Method', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)',
-    tradeLink: 'Business Profile Link (optional)', regNum: 'Company Reg. No. (optional)',
+    supCompany: 'Company Name', whatsapp: 'WhatsApp (optional)', wechat: 'WeChat *',
+    payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)',
+    alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *',
+    tradeLink: 'Alibaba Store or Website URL (optional)', regNum: 'Company Registration Number *',
     country: 'Country', supCity: 'City',
     speciality: 'Specialty',
+    yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)',
+    businessLicense: 'Business License or ID Photo *', factoryPhoto: 'Factory or Warehouse Photo *',
+    uploading: 'Uploading...', uploaded: 'Uploaded ✓',
     signin: 'Sign In', signup: 'Create Account',
     toSignup: "Don't have an account?", toSignupLink: 'Sign up',
     toSignin: 'Already have an account?', toSigninLink: 'Sign in',
@@ -74,8 +87,18 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions',
-    pendingMsg: 'Your request is under review — we will contact you within 3-5 business days',
+    pendingMsg: "We've received your application. Please check your email to activate your account.",
     googleLogin: 'Continue with Google',
+    otpTitle: 'Verify your phone',
+    otpSub: 'We sent a verification code to your number',
+    otpPlaceholder: 'Enter 6-digit code',
+    otpVerify: 'Verify',
+    otpResend: 'Resend',
+    otpResendIn: 'Resend in',
+    otpWrong: 'Incorrect code, please try again',
+    otpSending: 'Sending...',
+    emailNotConfirmed: 'Please confirm your email first',
+    wrongCredentials: 'Invalid email or password',
     cities: ['Riyadh','Jeddah','Mecca','Medina','Dammam','Khobar','Tabuk','Abha','Qassim','Hail','Jazan','Najran'],
   },
   zh: {
@@ -85,11 +108,15 @@ const L = {
     firstName: '名', lastName: '姓',
     phone: '电话', city: '城市',
     companyName: '公司/商业名称（可选）',
-    supCompany: '公司名称', whatsapp: 'WhatsApp', wechat: 'WeChat（可选）',
-    payMethod: '收款方式', alipay: 'Alipay', swift: '银行转账 (SWIFT)',
-    tradeLink: '商业主页链接（可选）', regNum: '公司注册号（可选）',
+    supCompany: '公司名称', whatsapp: 'WhatsApp（可选）', wechat: 'WeChat *',
+    payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)',
+    alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *',
+    tradeLink: '阿里巴巴店铺或网站链接（可选）', regNum: '公司注册号 *',
     country: '国家', supCity: '城市',
     speciality: '专业领域',
+    yearsExp: '从业年限 *', employees: '员工人数（可选）',
+    businessLicense: '营业执照或身份证照片 *', factoryPhoto: '工厂或仓库照片 *',
+    uploading: '上传中...', uploaded: '已上传 ✓',
     signin: '登录', signup: '创建账户',
     toSignup: '没有账户？', toSignupLink: '立即注册',
     toSignin: '已有账户？', toSigninLink: '登录',
@@ -98,8 +125,18 @@ const L = {
     termsLabel: '我同意',
     termsLink: '条款与条件',
     mustAgreeTerms: '您必须同意条款与条件',
-    pendingMsg: '您的申请正在审核中 — 我们将在3-5个工作日内与您联系',
+    pendingMsg: '我们已收到您的申请。请检查您的电子邮件以激活账户。',
     googleLogin: '使用Google登录',
+    otpTitle: '验证手机号',
+    otpSub: '我们已向您的号码发送验证码',
+    otpPlaceholder: '输入6位验证码',
+    otpVerify: '验证',
+    otpResend: '重新发送',
+    otpResendIn: '重新发送（',
+    otpWrong: '验证码错误，请重试',
+    otpSending: '发送中...',
+    emailNotConfirmed: '请先确认您的电子邮件',
+    wrongCredentials: '电子邮件或密码错误',
     cities: ['利雅得','吉达','麦加','麦地那','达曼','霍拜尔','塔布克','艾卜哈','盖西姆','哈伊勒','吉赞','纳季兰'],
   },
 };
@@ -111,7 +148,6 @@ export default function Login({ setUser, setProfile, lang }) {
   const isSupplier = role === 'supplier';
   const isAr       = lang === 'ar';
   const l          = L[lang] || L.ar;
-  const cats       = CATEGORIES[lang] || CATEGORIES.ar;
 
   const [mode, setMode]           = useState('signin');
   const [email, setEmail]         = useState('');
@@ -121,6 +157,15 @@ export default function Login({ setUser, setProfile, lang }) {
   const [loading, setLoading]     = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
 
+  // OTP state (buyer signup only)
+  const [otpScreen, setOtpScreen]       = useState(false);
+  const [otpInput, setOtpInput]         = useState('');
+  const [otpCode, setOtpCode]           = useState('');
+  const [otpTimer, setOtpTimer]         = useState(0);
+  const [otpError, setOtpError]         = useState('');
+  const [pendingSignup, setPendingSignup] = useState(null); // stores {data, profileData} for after OTP
+  const timerRef = useRef(null);
+
   // Buyer fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName]   = useState('');
@@ -129,33 +174,126 @@ export default function Login({ setUser, setProfile, lang }) {
   const [companyName, setCompanyName] = useState('');
 
   // Supplier fields
-  const [supCompany, setSupCompany] = useState('');
-  const [whatsapp, setWhatsapp]     = useState('');
-  const [wechat, setWechat]         = useState('');
-  const [payMethod, setPayMethod]   = useState('');
-  const [tradeLink, setTradeLink]   = useState('');
-  const [regNum, setRegNum]         = useState('');
-  const [country, setCountry]       = useState('');
-  const [supCity, setSupCity]       = useState('');
-  const [speciality, setSpeciality] = useState('');
+  const [supCompany, setSupCompany]   = useState('');
+  const [whatsapp, setWhatsapp]       = useState('');
+  const [wechat, setWechat]           = useState('');
+  const [payMethod, setPayMethod]     = useState('');
+  const [alipayAccount, setAlipayAccount] = useState('');
+  const [swiftCode, setSwiftCode]     = useState('');
+  const [bankName, setBankName]       = useState('');
+  const [tradeLink, setTradeLink]     = useState('');
+  const [regNum, setRegNum]           = useState('');
+  const [country, setCountry]         = useState('');
+  const [supCity, setSupCity]         = useState('');
+  const [speciality, setSpeciality]   = useState('');
+  const [yearsExp, setYearsExp]       = useState('');
+  const [employees, setEmployees]     = useState('');
+  const [licenseUrl, setLicenseUrl]   = useState('');
+  const [factoryUrl, setFactoryUrl]   = useState('');
+  const [uploadingLicense, setUploadingLicense] = useState(false);
+  const [uploadingFactory, setUploadingFactory] = useState(false);
 
   const doSignIn = async () => {
     if (!email || !pass) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     setLoading(false);
-    if (error) { setMsg(error.message); setMsgType('error'); return; }
+    if (error) {
+      const m = error.message.toLowerCase();
+      if (m.includes('email not confirmed')) {
+        setMsg(l.emailNotConfirmed);
+      } else if (m.includes('invalid login credentials') || m.includes('invalid email or password')) {
+        setMsg(l.wrongCredentials);
+      } else {
+        setMsg(error.message);
+      }
+      setMsgType('error');
+      return;
+    }
     setUser(data.user);
     const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
     if (profile) setProfile(profile);
     nav('/dashboard');
   };
 
+  // OTP helpers
+  const startTimer = () => {
+    setOtpTimer(60);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setOtpTimer(prev => {
+        if (prev <= 1) { clearInterval(timerRef.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const sendOtp = async (phoneNumber) => {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setOtpCode(code);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('AppSid', UNIFONIC_APP_SID || '');
+      formData.append('SenderID', 'Maabar');
+      formData.append('Body', `رمز التحقق من مَعبر: ${code}`);
+      formData.append('Recipient', phoneNumber.replace(/^0/, '966'));
+      await fetch('https://el.cloud.unifonic.com/rest/SMS/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+    } catch (e) {
+      console.error('Unifonic error:', e);
+    }
+    startTimer();
+  };
+
+  const verifyOtp = async () => {
+    if (otpInput.trim() !== otpCode) {
+      setOtpError(l.otpWrong);
+      return;
+    }
+    setOtpError('');
+    if (!pendingSignup) return;
+    const { authData, profileData } = pendingSignup;
+    await sb.from('profiles').insert(profileData);
+    // Send welcome email
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ type: 'trader_welcome', record: { id: authData.user.id, email: authData.user.email } }),
+      });
+    } catch (e) { console.error('email error:', e); }
+    setUser(authData.user);
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', authData.user.id).single();
+    if (profile) setProfile(profile);
+    nav('/dashboard');
+  };
+
+  const uploadSupplierDoc = async (file, type) => {
+    if (!file) return null;
+    const setter = type === 'license' ? setUploadingLicense : setUploadingFactory;
+    setter(true);
+    const path = `${Date.now()}_${type}.${file.name.split('.').pop()}`;
+    const { error } = await sb.storage.from('supplier-docs').upload(path, file, { upsert: true });
+    setter(false);
+    if (error) { console.error('upload error:', error); return null; }
+    const { data: { publicUrl } } = sb.storage.from('supplier-docs').getPublicUrl(path);
+    return publicUrl;
+  };
+
   const doSignUp = async () => {
     if (!email || !pass) { setMsg(l.fillRequired); setMsgType('error'); return; }
     if (mode === 'signup' && !agreedTerms) { setMsg(l.mustAgreeTerms); setMsgType('error'); return; }
     if (!isSupplier && (!firstName || !lastName || !phone || !city)) { setMsg(l.fillRequired); setMsgType('error'); return; }
-    if (isSupplier && (!supCompany || (!whatsapp && !wechat) || !payMethod)) { setMsg(l.fillRequired); setMsgType('error'); return; }
+    if (isSupplier && (!supCompany || !wechat || !payMethod || !yearsExp || !regNum || !licenseUrl || !factoryUrl)) {
+      setMsg(l.fillRequired); setMsgType('error'); return;
+    }
+    if (isSupplier && payMethod === 'alipay' && !alipayAccount) { setMsg(l.fillRequired); setMsgType('error'); return; }
+    if (isSupplier && payMethod === 'swift' && (!swiftCode || !bankName)) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
     const { data, error } = await sb.auth.signUp({ email, password: pass });
     setLoading(false);
@@ -164,18 +302,45 @@ export default function Login({ setUser, setProfile, lang }) {
       id: data.user.id, role,
       status: isSupplier ? 'pending' : 'active',
       ...(!isSupplier && { full_name: `${firstName} ${lastName}`, phone, city, company_name: companyName }),
-      ...(isSupplier && { company_name: supCompany, whatsapp, wechat, pay_method: payMethod, trade_link: tradeLink, reg_number: regNum, country, city: supCity, speciality }),
+      ...(isSupplier && {
+        company_name: supCompany, whatsapp, wechat,
+        pay_method: payMethod,
+        alipay_account: payMethod === 'alipay' ? alipayAccount : null,
+        swift_code: payMethod === 'swift' ? swiftCode : null,
+        bank_name: payMethod === 'swift' ? bankName : null,
+        trade_link: tradeLink, reg_number: regNum,
+        country, city: supCity, speciality,
+        years_experience: yearsExp ? parseInt(yearsExp) : null,
+        employees_count: employees ? parseInt(employees) : null,
+        license_url: licenseUrl,
+        factory_image_url: factoryUrl,
+      }),
     };
-    await sb.from('profiles').insert(profileData);
     if (isSupplier) {
+      await sb.from('profiles').insert(profileData);
+      // Send supplier welcome + admin alert emails
+      try {
+        await Promise.all([
+          fetch(SEND_EMAILS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({ type: 'supplier_welcome', record: { id: data.user.id, email: data.user.email } }),
+          }),
+          fetch(SEND_EMAILS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({ type: 'admin_alert', record: { id: data.user.id } }),
+          }),
+        ]);
+      } catch (e) { console.error('email error:', e); }
       setMsg(l.pendingMsg);
       setMsgType('success');
       return;
     }
-    setUser(data.user);
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
-    if (profile) setProfile(profile);
-    nav('/dashboard');
+    // Buyer: OTP verification via phone
+    setPendingSignup({ authData: data, profileData });
+    await sendOtp(phone);
+    setOtpScreen(true);
   };
 
   const doGoogleLogin = async () => {
@@ -292,8 +457,59 @@ export default function Login({ setUser, setProfile, lang }) {
           </div>
         )}
 
+        {/* OTP Screen */}
+        {otpScreen ? (
+          <div>
+            <h2 style={{ fontSize: isAr ? 22 : 24, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {l.otpTitle}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {l.otpSub}
+            </p>
+            {otpError && (
+              <div style={{ fontSize: 13, marginBottom: 16, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(138,58,58,0.12)', color: '#a07070', border: '1px solid rgba(138,58,58,0.2)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {otpError}
+              </div>
+            )}
+            <div style={{ marginBottom: 20 }}>
+              <input
+                style={{ ...inputStyle, fontSize: 22, letterSpacing: 8, textAlign: 'center' }}
+                type="text" maxLength={6} dir="ltr"
+                placeholder="______"
+                value={otpInput}
+                onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              />
+            </div>
+            <button onClick={verifyOtp} disabled={otpInput.length < 6} style={{
+              width: '100%', background: 'rgba(255,255,255,0.88)', color: '#0a0a0b',
+              border: 'none', padding: '14px', fontSize: 14, fontWeight: 500,
+              cursor: otpInput.length < 6 ? 'not-allowed' : 'pointer',
+              opacity: otpInput.length < 6 ? 0.5 : 1,
+              borderRadius: 'var(--radius-md)', transition: 'all 0.2s', minHeight: 48,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+            }}>
+              {l.otpVerify}
+            </button>
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              {otpTimer > 0 ? (
+                <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {l.otpResendIn} {otpTimer}s
+                </p>
+              ) : (
+                <button onClick={async () => { setOtpInput(''); setOtpError(''); await sendOtp(phone); }} style={{
+                  background: 'none', border: 'none', color: 'var(--text-secondary)',
+                  fontSize: 12, cursor: 'pointer', textDecoration: 'underline',
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                }}>
+                  {l.otpResend}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : null}
+
         {/* If supplier pending — stop here */}
-        {isSupplier && msg && msgType === 'success' ? null : (
+        {!otpScreen && isSupplier && msg && msgType === 'success' ? null : !otpScreen && (
           <>
             {/* Email */}
             <div style={fieldStyle}>
@@ -373,26 +589,30 @@ export default function Login({ setUser, setProfile, lang }) {
                 </div>
                 <div style={{ display: 'flex', gap: 14 }}>
                   <div style={{ ...fieldStyle, flex: 1 }}>
-                    <label style={labelStyle}>{l.whatsapp} *</label>
-                    <input style={inputStyle} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
+                    <label style={labelStyle}>{l.wechat}</label>
+                    <input style={inputStyle} value={wechat} onChange={e => setWechat(e.target.value)} dir="ltr" placeholder="WeChat ID" />
                   </div>
                   <div style={{ ...fieldStyle, flex: 1 }}>
-                    <label style={labelStyle}>{l.wechat}</label>
-                    <input style={inputStyle} value={wechat} onChange={e => setWechat(e.target.value)} dir="ltr" />
+                    <label style={labelStyle}>{l.whatsapp}</label>
+                    <input style={inputStyle} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
                   </div>
                 </div>
                 <div style={fieldStyle}>
                   <label style={labelStyle}>{l.speciality} *</label>
                   <select style={{ ...inputStyle, cursor: 'pointer' }} value={speciality} onChange={e => setSpeciality(e.target.value)}>
                     <option value="">{isAr ? 'اختر تخصصك' : lang === 'zh' ? '选择专业' : 'Select specialty'}</option>
-                    {cats.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
+                    {SPECIALITIES.map(s => (
+                      <option key={s.val} value={s.val}>
+                        {lang === 'zh' ? s.zh : lang === 'en' ? s.en : s.ar}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.payMethod} *</label>
+                  <label style={labelStyle}>{l.payMethod}</label>
                   <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                     {['alipay', 'swift'].map(m => (
-                      <button key={m} onClick={() => setPayMethod(m)} style={{
+                      <button key={m} type="button" onClick={() => setPayMethod(m)} style={{
                         flex: 1, padding: '10px',
                         background: payMethod === m ? 'var(--bg-raised)' : 'transparent',
                         border: '1px solid',
@@ -400,21 +620,92 @@ export default function Login({ setUser, setProfile, lang }) {
                         color: payMethod === m ? 'var(--text-primary)' : 'var(--text-disabled)',
                         fontSize: 12, cursor: 'pointer',
                         borderRadius: 'var(--radius-md)', transition: 'all 0.15s',
-                        minHeight: 40,
-                        fontFamily: 'var(--font-sans)',
+                        minHeight: 40, fontFamily: 'var(--font-sans)',
                       }}>
                         {m === 'alipay' ? l.alipay : l.swift}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.tradeLink}</label>
-                  <input style={inputStyle} value={tradeLink} onChange={e => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
+                {payMethod === 'alipay' && (
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>{l.alipayAccount}</label>
+                    <input style={inputStyle} value={alipayAccount} onChange={e => setAlipayAccount(e.target.value)} dir="ltr" />
+                  </div>
+                )}
+                {payMethod === 'swift' && (
+                  <div style={{ display: 'flex', gap: 14 }}>
+                    <div style={{ ...fieldStyle, flex: 1 }}>
+                      <label style={labelStyle}>{l.swiftCode}</label>
+                      <input style={inputStyle} value={swiftCode} onChange={e => setSwiftCode(e.target.value)} dir="ltr" />
+                    </div>
+                    <div style={{ ...fieldStyle, flex: 1 }}>
+                      <label style={labelStyle}>{l.bankName}</label>
+                      <input style={inputStyle} value={bankName} onChange={e => setBankName(e.target.value)} />
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <div style={{ ...fieldStyle, flex: 1 }}>
+                    <label style={labelStyle}>{l.yearsExp}</label>
+                    <input style={inputStyle} type="number" min="0" value={yearsExp} onChange={e => setYearsExp(e.target.value)} dir="ltr" />
+                  </div>
+                  <div style={{ ...fieldStyle, flex: 1 }}>
+                    <label style={labelStyle}>{l.employees}</label>
+                    <input style={inputStyle} type="number" min="0" value={employees} onChange={e => setEmployees(e.target.value)} dir="ltr" />
+                  </div>
                 </div>
                 <div style={fieldStyle}>
                   <label style={labelStyle}>{l.regNum}</label>
                   <input style={inputStyle} value={regNum} onChange={e => setRegNum(e.target.value)} dir="ltr" />
+                </div>
+                <div style={fieldStyle}>
+                  <label style={labelStyle}>{l.businessLicense}</label>
+                  {licenseUrl
+                    ? <p style={{ fontSize: 12, color: '#5a9a72', marginTop: 4 }}>{l.uploaded}</p>
+                    : (
+                      <label style={{
+                        display: 'inline-block', marginTop: 6,
+                        padding: '8px 16px', fontSize: 12,
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 'var(--radius-md)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}>
+                        {uploadingLicense ? l.uploading : (isAr ? 'اختر ملف' : 'Choose File')}
+                        <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
+                          onChange={async e => {
+                            const url = await uploadSupplierDoc(e.target.files[0], 'license');
+                            if (url) setLicenseUrl(url);
+                          }} />
+                      </label>
+                    )}
+                </div>
+                <div style={fieldStyle}>
+                  <label style={labelStyle}>{l.factoryPhoto}</label>
+                  {factoryUrl
+                    ? <p style={{ fontSize: 12, color: '#5a9a72', marginTop: 4 }}>{l.uploaded}</p>
+                    : (
+                      <label style={{
+                        display: 'inline-block', marginTop: 6,
+                        padding: '8px 16px', fontSize: 12,
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 'var(--radius-md)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}>
+                        {uploadingFactory ? l.uploading : (isAr ? 'اختر صورة' : 'Choose Image')}
+                        <input type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={async e => {
+                            const url = await uploadSupplierDoc(e.target.files[0], 'factory');
+                            if (url) setFactoryUrl(url);
+                          }} />
+                      </label>
+                    )}
+                </div>
+                <div style={fieldStyle}>
+                  <label style={labelStyle}>{l.tradeLink}</label>
+                  <input style={inputStyle} value={tradeLink} onChange={e => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
                 </div>
               </>
             )}

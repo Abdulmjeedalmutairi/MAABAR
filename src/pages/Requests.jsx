@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
@@ -58,8 +58,10 @@ export default function Requests({ lang, user, profile }) {
   const [budgetRange, setBudgetRange] = useState({ min: '', max: '' });
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers]       = useState({});
-  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other' });
+  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingRef, setUploadingRef] = useState(false);
+  const refImageRef = useRef(null);
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
   const cats       = CATEGORIES[lang] || CATEGORIES.ar;
@@ -77,9 +79,20 @@ export default function Requests({ lang, user, profile }) {
     setLoading(false);
   };
 
+  const uploadRefImage = async (file) => {
+    if (!file) return;
+    setUploadingRef(true);
+    const path = `requests/${Date.now()}_ref.${file.name.split('.').pop()}`;
+    const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
+    setUploadingRef(false);
+    if (error) { console.error('ref image upload error:', error); return; }
+    const { data: { publicUrl } } = sb.storage.from('product-images').getPublicUrl(path);
+    setNewReq(prev => ({ ...prev, image_url: publicUrl }));
+  };
+
   const submitNewRequest = async () => {
     if (!user) { nav('/login/buyer'); return; }
-    if (!newReq.title_ar || !newReq.quantity) {
+    if (!newReq.title_ar || !newReq.quantity || !newReq.payment_plan || !newReq.sample_requirement) {
       alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields');
       return;
     }
@@ -93,11 +106,15 @@ export default function Requests({ lang, user, profile }) {
       description: newReq.description,
       category: newReq.category || 'other',
       status: 'open',
+      budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
+      payment_plan: newReq.payment_plan ? parseInt(newReq.payment_plan) : null,
+      sample_requirement: newReq.sample_requirement,
+      image_url: newReq.image_url || null,
     });
     setSubmitting(false);
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     alert(isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : 'Request posted! Suppliers will contact you soon');
-    setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other' });
+    setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
   };
 
   const toggleOfferForm = (id) => {
@@ -291,15 +308,92 @@ export default function Requests({ lang, user, profile }) {
 
             <div className="form-group">
               <label className={`form-label${isAr ? ' ar' : ''}`}>
-                {isAr ? 'تفاصيل إضافية' : 'Additional Details'}
+                {isAr ? 'المواصفات المطلوبة' : 'Required Specifications'}
               </label>
               <textarea className="form-input" rows={3}
                 style={{ resize: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
                 value={newReq.description}
                 onChange={e => setNewReq({ ...newReq, description: e.target.value })}
-                placeholder={isAr ? 'المواصفات، اللون، الجودة، الميزانية...' : 'Specs, color, quality, budget...'}
+                placeholder={isAr ? 'المواصفات، اللون، الجودة، المعايير...' : 'Specs, color, quality, standards...'}
                 dir={isAr ? 'rtl' : 'ltr'}
               />
+            </div>
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label className={`form-label${isAr ? ' ar' : ''}`}>
+                  {isAr ? 'الميزانية لكل وحدة (ريال)' : 'Budget per Unit (SAR)'}
+                </label>
+                <input className="form-input" type="number" min="0"
+                  value={newReq.budget_per_unit}
+                  onChange={e => setNewReq({ ...newReq, budget_per_unit: e.target.value })}
+                  placeholder={isAr ? 'اختياري' : 'Optional'}
+                  dir="ltr"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className={`form-label${isAr ? ' ar' : ''}`}>
+                {isAr ? 'خطة الدفع *' : 'Payment Plan *'}
+              </label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {[
+                  { val: '30', ar: '30% مقدماً', en: '30% upfront' },
+                  { val: '50', ar: '50% مقدماً', en: '50% upfront' },
+                  { val: '100', ar: '100% مقدماً', en: '100% upfront' },
+                ].map(p => (
+                  <button key={p.val} type="button" onClick={() => setNewReq({ ...newReq, payment_plan: p.val })} style={{
+                    padding: '7px 16px', fontSize: 12, borderRadius: 20, cursor: 'pointer', transition: 'all 0.15s',
+                    background: newReq.payment_plan === p.val ? 'var(--bg-raised)' : 'transparent',
+                    color: newReq.payment_plan === p.val ? 'var(--text-primary)' : 'var(--text-disabled)',
+                    border: '1px solid',
+                    borderColor: newReq.payment_plan === p.val ? 'var(--border-muted)' : 'var(--border-subtle)',
+                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                    minHeight: 32,
+                  }}>
+                    {isAr ? p.ar : p.en}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className={`form-label${isAr ? ' ar' : ''}`}>
+                {isAr ? 'متطلبات العينة *' : 'Sample Requirement *'}
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { val: 'none',      ar: 'لا حاجة لعينة',                 en: 'No sample needed' },
+                  { val: 'preferred', ar: 'عينة مفضلة إن توفرت',           en: 'Sample preferred if available' },
+                  { val: 'required',  ar: 'عينة إلزامية',                  en: 'Sample is mandatory' },
+                ].map(s => (
+                  <label key={s.val} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    <input type="radio" name="sample_req" value={s.val} checked={newReq.sample_requirement === s.val} onChange={() => setNewReq({ ...newReq, sample_requirement: s.val })} style={{ accentColor: 'var(--text-secondary)', cursor: 'pointer' }} />
+                    {isAr ? s.ar : s.en}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className={`form-label${isAr ? ' ar' : ''}`}>
+                {isAr ? 'صورة مرجعية (اختياري)' : 'Reference Image (optional)'}
+              </label>
+              <input ref={refImageRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => uploadRefImage(e.target.files[0])} />
+              {newReq.image_url ? (
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <img src={newReq.image_url} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }} />
+                  <button type="button" onClick={() => setNewReq({ ...newReq, image_url: '' })} style={{ fontSize: 11, color: '#a07070', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    {isAr ? 'إزالة' : 'Remove'}
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => refImageRef.current?.click()} className="btn-outline" style={{ marginTop: 6, fontSize: 11, padding: '7px 16px', minHeight: 32 }}>
+                  {uploadingRef ? (isAr ? 'جاري الرفع...' : 'Uploading...') : (isAr ? 'رفع صورة' : 'Upload Image')}
+                </button>
+              )}
             </div>
 
             {!user && (
