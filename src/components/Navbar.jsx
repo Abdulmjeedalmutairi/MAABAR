@@ -80,8 +80,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     if (!notifOpen && unread > 0) {
       await sb.from('notifications').update({ is_read: true })
         .eq('user_id', user.id).eq('is_read', false);
-      setUnread(0);
-      setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
+      await loadNotifs();
     }
   };
 
