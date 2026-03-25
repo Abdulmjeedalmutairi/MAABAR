@@ -136,7 +136,7 @@ export default function Requests({ lang, user, profile }) {
       budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
       payment_plan: newReq.payment_plan ? parseInt(newReq.payment_plan) : null,
       sample_requirement: newReq.sample_requirement,
-      image_url: newReq.image_url || null,
+      reference_image: newReq.reference_image || newReq.image_url || null,
     });
     console.log('Supabase error:', JSON.stringify(error));
     setSubmitting(false);
