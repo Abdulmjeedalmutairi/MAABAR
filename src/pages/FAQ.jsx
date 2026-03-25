@@ -15,7 +15,7 @@ const FAQS = {
   en: [
     { q: 'What is Maabar?', a: 'Maabar is a B2B platform connecting Saudi buyers directly with Chinese suppliers, no middlemen.' },
     { q: 'How do I post a request?', a: 'Sign in as a buyer, click "Post Your Request", describe the product and quantity, and wait for supplier offers.' },
-    { q: 'How does payment work?', a: 'Funds are held in escrow until you confirm receipt, then automatically transferred to the supplier.' },
+    { q: 'How does payment work?', a: 'Pay what you\'re comfortable with — 30%, 50%, or the full amount. Your money moves when you decide, and your trust grows with every successful deal.' },
     { q: 'What is the commission?', a: 'Maabar charges 6% per transaction — 4% from supplier and 2% from buyer.' },
     { q: 'What if my order doesn\'t arrive?', a: 'You can raise a dispute within 14 days and Maabar will intervene as a neutral party.' },
     { q: 'How do I join as a supplier?', a: 'Click "Supplier Portal", register your account, and await approval within 48 hours.' },

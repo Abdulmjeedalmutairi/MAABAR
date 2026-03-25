@@ -55,6 +55,7 @@ export default function Requests({ lang, user, profile }) {
   const [requests, setRequests]   = useState([]);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState('');
+  const [budgetRange, setBudgetRange] = useState({ min: '', max: '' });
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers]       = useState({});
   const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other' });
@@ -128,10 +129,13 @@ export default function Requests({ lang, user, profile }) {
     loadRequests();
   };
 
-  const filtered = requests.filter(r =>
-    (r.title_ar || '').includes(search) ||
-    (r.title_en || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = requests
+    .filter(r =>
+      (r.title_ar || '').includes(search) ||
+      (r.title_en || '').toLowerCase().includes(search.toLowerCase())
+    )
+    .filter(r => !budgetRange.min || !r.budget || (parseFloat(r.budget) >= parseFloat(budgetRange.min)))
+    .filter(r => !budgetRange.max || !r.budget || (parseFloat(r.budget) <= parseFloat(budgetRange.max)));
 
   const fmtDate = (d) => {
     if (!d) return '';
@@ -335,6 +339,39 @@ export default function Requests({ lang, user, profile }) {
               onChange={e => setSearch(e.target.value)}
               dir={isAr ? 'rtl' : 'ltr'}
             />
+          </div>
+
+          {/* ── Budget Filter ─────────────── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr ? 'الميزانية:' : 'Budget:'}
+            </span>
+            <input
+              className="search-input"
+              style={{ width: 90 }}
+              type="number"
+              placeholder={isAr ? 'من' : 'Min'}
+              value={budgetRange.min}
+              onChange={e => setBudgetRange(p => ({ ...p, min: e.target.value }))}
+            />
+            <span style={{ color: 'var(--text-disabled)', fontSize: 12 }}>—</span>
+            <input
+              className="search-input"
+              style={{ width: 90 }}
+              type="number"
+              placeholder={isAr ? 'إلى' : 'Max'}
+              value={budgetRange.max}
+              onChange={e => setBudgetRange(p => ({ ...p, max: e.target.value }))}
+            />
+            <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>SAR</span>
+            {(budgetRange.min || budgetRange.max) && (
+              <button
+                className="btn-outline"
+                style={{ padding: '6px 12px', fontSize: 11, minHeight: 32 }}
+                onClick={() => setBudgetRange({ min: '', max: '' })}>
+                {isAr ? 'مسح' : 'Clear'}
+              </button>
+            )}
           </div>
 
           {!loading && (

@@ -680,14 +680,17 @@ function NegotiatorTool({ lang, onClose }) {
    TOOL 4 — Market Intelligence
 ───────────────────────────────────────── */
 function MarketTool({ lang, onClose }) {
+  const nav = useNavigate();
   const isAr = lang === 'ar';
   const [product, setProduct] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [maabarSuppliers, setMaabarSuppliers] = useState([]);
+  const [detectedCategory, setDetectedCategory] = useState('');
 
   const analyze = async () => {
     if (!product.trim()) return;
-    setLoading(true); setResult(null);
+    setLoading(true); setResult(null); setMaabarSuppliers([]);
     try {
       const text = await callAI(
         `أنت محلل سوق متخصص في السوق السعودي والتجارة مع الصين.
@@ -710,7 +713,30 @@ supplier_cities: أشهر 2-3 مدن صينية لهذا المنتج.
 opportunity_score: من 0 إلى 100.`,
         [{ role: 'user', content: `المنتج: ${product}` }]
       );
-      setResult(parseJSON(text));
+      const parsed = parseJSON(text);
+      setResult(parsed);
+      // Detect category and fetch Maabar suppliers
+      const categoryMap = {
+        electronics: ['electronics', 'electronic', 'phone', 'laptop', 'headphone', 'speaker', 'إلكترون', 'جهاز', 'سماعة', 'هاتف'],
+        furniture: ['furniture', 'chair', 'desk', 'table', 'أثاث', 'كرسي', 'طاولة'],
+        clothing: ['clothing', 'fashion', 'shirt', 'pants', 'ملابس', 'قميص'],
+        building: ['building', 'construction', 'tile', 'pipe', 'بناء', 'سيراميك'],
+        food: ['food', 'snack', 'spice', 'غذاء', 'طعام'],
+      };
+      let cat = 'other';
+      const lower = product.toLowerCase();
+      for (const [key, keywords] of Object.entries(categoryMap)) {
+        if (keywords.some(k => lower.includes(k))) { cat = key; break; }
+      }
+      setDetectedCategory(cat);
+      const { data: sups } = await sb
+        .from('profiles')
+        .select('id, company_name, city, rating, speciality, avatar_url')
+        .eq('role', 'supplier')
+        .eq('status', 'approved')
+        .eq('speciality', cat)
+        .limit(3);
+      if (sups) setMaabarSuppliers(sups);
     } catch { alert(isAr ? 'حدث خطأ' : 'Error'); }
     setLoading(false);
   };
@@ -860,20 +886,54 @@ opportunity_score: من 0 إلى 100.`,
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {result.supplier_cities.map((city, i) => (
                     <div key={i} style={{ padding: '10px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{city.city}</p>
-                        <a href={`https://www.alibaba.com/trade/search?SearchText=${encodeURIComponent(city.search_term)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: 'var(--text-disabled)', background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', padding: '3px 8px', borderRadius: 'var(--radius-md)', textDecoration: 'none', transition: 'all 0.15s', letterSpacing: 0.5 }}
-                          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
-                          Alibaba ↗
-                        </a>
-                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>{city.city}</p>
                       <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{city.reason}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Maabar Suppliers */}
+            <div>
+              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8 }}>
+                {isAr ? 'موردون معتمدون في معبر' : 'Verified Suppliers on Maabar'}
+              </p>
+              {maabarSuppliers.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {maabarSuppliers.map((s, i) => (
+                    <div key={i} onClick={() => nav(`/supplier/${s.id}`)} style={{
+                      padding: '10px 14px', background: 'var(--bg-raised)',
+                      border: '1px solid rgba(139,120,255,0.15)',
+                      borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      transition: 'all 0.15s',
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(139,120,255,0.3)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,120,255,0.15)'; e.currentTarget.style.background = 'var(--bg-raised)'; }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        {s.avatar_url
+                          ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0]}</span>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>{s.company_name}</p>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)' }}>{s.city || ''}</p>
+                      </div>
+                      <span style={{ fontSize: 10, color: 'rgba(139,120,255,0.85)', letterSpacing: 0.5 }}>
+                        {isAr ? 'عرض ←' : 'View →'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '12px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'لا يوجد موردون متخصصون في معبر بعد لهذا المنتج' : 'No specialized suppliers on Maabar yet for this product'}
+                  </p>
+                </div>
+              )}
+            </div>
 
             <ResetBtn onClick={() => { setResult(null); setProduct(''); }} label={isAr ? 'تحليل منتج جديد' : lang === 'zh' ? '分析新产品' : 'Analyze New Product'} />
           </>

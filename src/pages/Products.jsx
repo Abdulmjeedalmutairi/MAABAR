@@ -33,6 +33,7 @@ export default function Products({ lang, user, profile }) {
   const [search, setSearch]             = useState('');
   const [activeCategory, setActiveCategory] = useState(0);
   const [sortBy, setSortBy]             = useState('newest');
+  const [priceRange, setPriceRange]     = useState({ min: '', max: '' });
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
   const cats       = CATEGORIES[lang] || CATEGORIES.ar;
@@ -55,6 +56,8 @@ export default function Products({ lang, user, profile }) {
       (p.name_ar || '').includes(search) ||
       (p.name_en || '').toLowerCase().includes(search.toLowerCase())
     )
+    .filter(p => !priceRange.min || (p.price_from >= parseFloat(priceRange.min)))
+    .filter(p => !priceRange.max || (p.price_from <= parseFloat(priceRange.max)))
     .sort((a, b) => {
       if (sortBy === 'price_asc')  return (a.price_from || 0) - (b.price_from || 0);
       if (sortBy === 'price_desc') return (b.price_from || 0) - (a.price_from || 0);
@@ -132,6 +135,39 @@ export default function Products({ lang, user, profile }) {
               {c}
             </button>
           ))}
+        </div>
+
+        {/* ── Price Filter ───────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {isAr ? 'السعر:' : lang === 'zh' ? '价格:' : 'Price:'}
+          </span>
+          <input
+            className="search-input"
+            style={{ width: 90 }}
+            type="number"
+            placeholder={isAr ? 'من' : lang === 'zh' ? '最小' : 'Min'}
+            value={priceRange.min}
+            onChange={e => setPriceRange(p => ({ ...p, min: e.target.value }))}
+          />
+          <span style={{ color: 'var(--text-disabled)', fontSize: 12 }}>—</span>
+          <input
+            className="search-input"
+            style={{ width: 90 }}
+            type="number"
+            placeholder={isAr ? 'إلى' : lang === 'zh' ? '最大' : 'Max'}
+            value={priceRange.max}
+            onChange={e => setPriceRange(p => ({ ...p, max: e.target.value }))}
+          />
+          <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>SAR</span>
+          {(priceRange.min || priceRange.max) && (
+            <button
+              className="btn-outline"
+              style={{ padding: '6px 12px', fontSize: 11, minHeight: 32 }}
+              onClick={() => setPriceRange({ min: '', max: '' })}>
+              {isAr ? 'مسح' : lang === 'zh' ? '清除' : 'Clear'}
+            </button>
+          )}
         </div>
 
         {/* ── Count ──────────────────────── */}

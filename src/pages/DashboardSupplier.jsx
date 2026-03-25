@@ -213,6 +213,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [trackingInputs, setTrackingInputs] = useState({});
+  const [shippingCompany, setShippingCompany] = useState('DHL');
   const [product, setProduct]               = useState(emptyProduct);
   const [editingProduct, setEditingProduct] = useState(null);
   const [saving, setSaving]                 = useState(false);
@@ -230,6 +231,9 @@ export default function DashboardSupplier({ user, profile, lang }) {
     avatar_url: '', factory_images: [],
   });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [editOfferModal, setEditOfferModal]   = useState(null);
+  const [editOfferForm, setEditOfferForm]     = useState({});
+  const [savingEditOffer, setSavingEditOffer] = useState(false);
   const [uploadingLogo, setUploadingLogo]   = useState(false);
   const [uploadingFactory, setUploadingFactory] = useState(false);
 
@@ -254,12 +258,29 @@ export default function DashboardSupplier({ user, profile, lang }) {
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeCat]);
 
   const loadStats = async () => {
-    const [products, offersData, messages] = await Promise.all([
+    const [products, offersData, messages, acceptedOffers, payments] = await Promise.all([
       sb.from('products').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('is_active', true),
       sb.from('offers').select('id', { count: 'exact' }).eq('supplier_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
+      sb.from('offers').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'accepted'),
+      sb.from('payments').select('amount').eq('supplier_id', user.id).eq('status', 'first_paid'),
     ]);
-    setStats({ products: products.count || 0, offers: offersData.count || 0, messages: messages.count || 0 });
+    const totalSales = (payments.data || []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    // Load matching open requests
+    const profData = await sb.from('profiles').select('speciality').eq('id', user.id).single();
+    let matchingRequests = 0;
+    if (profData.data?.speciality) {
+      const { count } = await sb.from('requests').select('id', { count: 'exact' }).eq('status', 'open').eq('category', profData.data.speciality);
+      matchingRequests = count || 0;
+    }
+    setStats({
+      products: products.count || 0,
+      offers: offersData.count || 0,
+      messages: messages.count || 0,
+      acceptedOffers: acceptedOffers.count || 0,
+      totalSales: Math.round(totalSales),
+      matchingRequests,
+    });
   };
 
   const loadPendingTracking = async () => {
@@ -388,6 +409,30 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const toggleProductActive = async (p) => { await sb.from('products').update({ is_active: !p.is_active }).eq('id', p.id); loadMyProducts(); loadStats(); };
   const deleteProduct = async (id) => { if (!window.confirm(t.confirmDelete)) return; await sb.from('products').delete().eq('id', id); loadMyProducts(); loadStats(); };
 
+  const saveEditOffer = async () => {
+    if (!editOfferModal) return;
+    setSavingEditOffer(true);
+    await sb.from('offers').update({
+      price: parseFloat(editOfferForm.price),
+      moq: editOfferForm.moq,
+      delivery_days: parseInt(editOfferForm.days),
+      note: editOfferForm.note,
+    }).eq('id', editOfferModal.id);
+    setSavingEditOffer(false);
+    setEditOfferModal(null);
+    loadMyOffers();
+  };
+
+  const deleteOffer = async (o) => {
+    if (o.status !== 'pending') {
+      alert(isAr ? 'لا يمكن حذف عرض تم قبوله أو رفضه' : 'Cannot delete an accepted or rejected offer');
+      return;
+    }
+    if (!window.confirm(isAr ? 'هل تريد حذف هذا العرض؟' : 'Delete this offer?')) return;
+    await sb.from('offers').delete().eq('id', o.id);
+    loadMyOffers(); loadStats();
+  };
+
   const toggleOfferForm = (id) => {
     setOfferForms(prev => ({ ...prev, [id]: !prev[id] }));
     setOffers(prev => ({ ...prev, [id]: prev[id] || { price: '', moq: '', days: '', origin: 'China', note: '' } }));
@@ -403,9 +448,18 @@ export default function DashboardSupplier({ user, profile, lang }) {
     toggleOfferForm(requestId); loadRequests();
   };
 
-  const submitTracking = async (requestId, buyerId) => {
+  const submitTracking = async (requestId, buyerId, deliveryDays) => {
     const num = trackingInputs[requestId]; if (!num) return;
-    await sb.from('requests').update({ tracking_number: num, status: 'shipping', shipping_status: 'shipping' }).eq('id', requestId);
+    const estimatedDelivery = deliveryDays
+      ? new Date(Date.now() + (deliveryDays * 24 * 60 * 60 * 1000)).toISOString()
+      : null;
+    await sb.from('requests').update({
+      tracking_number: num,
+      shipping_company: shippingCompany,
+      status: 'shipping',
+      shipping_status: 'shipping',
+      ...(estimatedDelivery ? { estimated_delivery: estimatedDelivery } : {}),
+    }).eq('id', requestId);
     await sb.from('notifications').insert({ user_id: buyerId, type: 'shipped', title_ar: 'طلبك في الطريق — رقم التتبع: ' + num, title_en: 'Your order is on the way — Tracking: ' + num, title_zh: '您的订单已发货 — 跟踪号：' + num, ref_id: requestId, is_read: false });
     loadMyOffers(); loadPendingTracking();
   };
@@ -583,6 +637,25 @@ export default function DashboardSupplier({ user, profile, lang }) {
                   <StatCard label={t.productsCount} value={stats.products} onClick={() => setActiveTab('my-products')} />
                   <StatCard label={t.messagesCount} value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
                 </div>
+                {/* Extended Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 10 }}>
+                  <StatCard
+                    label={isAr ? 'إجمالي المبيعات' : 'Total Sales (SAR)'}
+                    value={stats.totalSales ? `${stats.totalSales.toLocaleString()} ` : '—'}
+                    onClick={() => {}}
+                  />
+                  <StatCard
+                    label={isAr ? 'نسبة قبول العروض' : 'Offer Accept Rate'}
+                    value={stats.offers > 0 ? `${Math.round((stats.acceptedOffers || 0) / stats.offers * 100)}%` : '—'}
+                    onClick={() => setActiveTab('offers')}
+                  />
+                  <StatCard
+                    label={isAr ? 'طلبات مفتوحة مناسبة' : 'Matching Open Requests'}
+                    value={stats.matchingRequests || '—'}
+                    onClick={() => setActiveTab('requests')}
+                    highlight={(stats.matchingRequests || 0) > 0}
+                  />
+                </div>
               </div>
 
               <div style={{ marginBottom: 40 }}>
@@ -735,9 +808,26 @@ export default function DashboardSupplier({ user, profile, lang }) {
                 <div key={o.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', ...arFont }}>{getTitle(o.requests)}</h3>
-                    <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'accepted' ? 'rgba(58,122,82,0.3)' : o.status === 'rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: o.status === 'accepted' ? '#5a9a72' : o.status === 'rejected' ? '#a07070' : 'var(--text-disabled)' }}>
-                      {OFFER_STATUS[lang]?.[o.status] || o.status}
-                    </span>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'accepted' ? 'rgba(58,122,82,0.3)' : o.status === 'rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: o.status === 'accepted' ? '#5a9a72' : o.status === 'rejected' ? '#a07070' : 'var(--text-disabled)' }}>
+                        {OFFER_STATUS[lang]?.[o.status] || o.status}
+                      </span>
+                      {o.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => { setEditOfferModal(o); setEditOfferForm({ price: String(o.price), moq: o.moq || '', days: String(o.delivery_days), note: o.note || '' }); }}
+                            className="btn-outline"
+                            style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
+                            {t.edit}
+                          </button>
+                          <button
+                            onClick={() => deleteOffer(o)}
+                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                            {t.delete}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: 24, color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16, flexWrap: 'wrap', alignItems: 'baseline' }}>
                     <span style={{ fontSize: 26, fontWeight: 300, color: 'var(--text-primary)' }}>{o.price} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>SAR</span></span>
@@ -745,12 +835,53 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     <span>{o.delivery_days} {t.days}</span>
                   </div>
 
-                  {o.status === 'accepted' && o.requests?.status !== 'shipping' && o.requests?.status !== 'delivered' && (
+                  {/* "Shipment Ready" button — when offer accepted and request paid */}
+                  {o.status === 'accepted' && o.requests?.status === 'paid' && (
+                    <div style={{ marginBottom: 14 }}>
+                      <button
+                        className="btn-primary"
+                        style={{ padding: '11px 24px', fontSize: 12, minHeight: 42, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
+                        onClick={async () => {
+                          await sb.from('requests')
+                            .update({ status: 'ready_to_ship' })
+                            .eq('id', o.request_id);
+                          await sb.from('notifications').insert({
+                            user_id: o.requests.buyer_id,
+                            type: 'ready_to_ship',
+                            title_ar: 'شحنتك جاهزة — ادفع الدفعة الثانية لإتمام الشحن',
+                            title_en: 'Your shipment is ready — Pay the second installment to ship',
+                            title_zh: '您的货物已准备好 — 支付尾款以完成发货',
+                            ref_id: o.request_id,
+                            is_read: false,
+                          });
+                          loadMyOffers();
+                        }}>
+                        {isAr ? 'الشحنة جاهزة' : lang === 'zh' ? '货物已备好' : 'Shipment Ready'}
+                      </button>
+                    </div>
+                  )}
+
+                  {o.status === 'accepted' && !['paid','shipping','delivered','ready_to_ship'].includes(o.requests?.status || '') && (
                     <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)' }}>
                       <p style={{ fontSize: 13, marginBottom: 10, color: 'var(--text-secondary)', ...arFont }}>{t.trackingPrompt}</p>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input className="form-input" style={{ maxWidth: 220 }} placeholder={t.trackingNum} value={trackingInputs[o.request_id] || ''} onChange={e => setTrackingInputs(prev => ({ ...prev, [o.request_id]: e.target.value }))} dir="ltr" />
-                        <button className="btn-dark-sm" onClick={() => submitTracking(o.request_id, o.requests?.buyer_id)} style={{ minHeight: 40 }}>{t.send}</button>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <select
+                          value={shippingCompany}
+                          onChange={e => setShippingCompany(e.target.value)}
+                          style={{
+                            padding: '10px 12px', fontSize: 13,
+                            border: '1px solid var(--border-subtle)',
+                            background: 'var(--bg-subtle)',
+                            color: 'var(--text-secondary)',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer', outline: 'none', minHeight: 40,
+                          }}>
+                          {['DHL','FedEx','Aramex','UPS','SMSA',isAr ? 'أخرى' : 'Other'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                        <input className="form-input" style={{ flex: 1, minWidth: 140 }} placeholder={t.trackingNum} value={trackingInputs[o.request_id] || ''} onChange={e => setTrackingInputs(prev => ({ ...prev, [o.request_id]: e.target.value }))} dir="ltr" />
+                        <button className="btn-dark-sm" onClick={() => submitTracking(o.request_id, o.requests?.buyer_id, o.delivery_days)} style={{ minHeight: 40 }}>{t.send}</button>
                       </div>
                     </div>
                   )}
@@ -889,6 +1020,71 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
         </div>
       </div>
+
+      {/* ══════════════════════════════════════
+          EDIT OFFER MODAL
+      ══════════════════════════════════════ */}
+      {editOfferModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 3000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24, animation: 'fadeIn 0.2s ease',
+        }}>
+          <div style={{
+            background: 'var(--bg-overlay)',
+            border: '1px solid var(--border-muted)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '36px 32px',
+            width: '100%', maxWidth: 440,
+            animation: 'slideUp 0.25s ease',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
+              {isAr ? 'تعديل العرض' : lang === 'zh' ? '编辑报价' : 'Edit Offer'}
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 20, ...arFont }}>
+              {getTitle(editOfferModal.requests)}
+            </p>
+
+            <div className="form-grid" style={{ marginBottom: 16 }}>
+              <div className="form-group">
+                <label className="form-label">{t.price}</label>
+                <input className="form-input" type="number" dir="ltr" value={editOfferForm.price}
+                  onChange={e => setEditOfferForm(f => ({ ...f, price: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t.moq}</label>
+                <input className="form-input" value={editOfferForm.moq}
+                  onChange={e => setEditOfferForm(f => ({ ...f, moq: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{isAr ? 'أيام التسليم' : lang === 'zh' ? '交货天数' : 'Delivery Days'}</label>
+                <input className="form-input" type="number" dir="ltr" value={editOfferForm.days}
+                  onChange={e => setEditOfferForm(f => ({ ...f, days: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'ملاحظة' : lang === 'zh' ? '备注' : 'Note'}</label>
+                <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={editOfferForm.note}
+                  onChange={e => setEditOfferForm(f => ({ ...f, note: e.target.value }))} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={saveEditOffer} disabled={savingEditOffer} className="btn-primary"
+                style={{ flex: 1, padding: '11px', fontSize: 12, minHeight: 44 }}>
+                {savingEditOffer ? t.saving : t.save}
+              </button>
+              <button onClick={() => setEditOfferModal(null)} className="btn-outline"
+                style={{ padding: '11px 18px', fontSize: 12, minHeight: 44 }}>
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer lang={lang} />
     </div>

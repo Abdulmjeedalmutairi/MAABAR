@@ -27,7 +27,7 @@ const T = {
     features: [
       { icon: '📋', t: 'See requests directly', d: 'Buyers specify exactly what they need — you just submit a price.' },
       { icon: '⚡', t: 'Compete and win', d: 'Multiple suppliers compete — best price wins.' },
-      { icon: '🔒', t: 'Guaranteed payment', d: 'Funds held in escrow until buyer confirms receipt.' },
+      { icon: '🔒', t: 'Guaranteed payment', d: 'Payment moves when the buyer decides — every deal builds trust.' },
     ],
     bottomTitle: 'Ready to start?',
     copyright: 'Maabar © 2026'

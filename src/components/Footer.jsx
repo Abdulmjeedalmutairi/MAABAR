@@ -81,34 +81,49 @@ export default function Footer({ lang }) {
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
 
+  const linkBtn = (l, i) => (
+    <button key={i} onClick={() => nav(l.path)} style={{
+      background: 'none', border: 'none',
+      color: 'var(--text-secondary)', fontSize: 13,
+      cursor: 'pointer', padding: 0,
+      textAlign: isAr ? 'right' : 'left',
+      fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+      transition: 'color 0.2s',
+    }}
+      onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+      {l.label}
+    </button>
+  );
+
   return (
     <footer style={{
       background: 'var(--bg-overlay)',
-      padding: '64px 60px 32px',
+      padding: '48px 40px 28px',
     }}>
 
-      {/* MAIN CONTENT */}
-      <div style={{
+      {/* DESKTOP GRID */}
+      <div className="footer-grid" style={{
         display: 'grid',
         gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
-        gap: 48,
-        marginBottom: 48,
+        gap: 40,
+        marginBottom: 40,
         direction: isAr ? 'rtl' : 'ltr',
       }}>
 
         {/* LOGO + TAGLINE */}
         <div>
           <div style={{
-            fontFamily: 'var(--font-en)', fontSize: 18,
+            fontFamily: 'var(--font-sans)', fontSize: 16,
             fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 2,
-            marginBottom: 16,
+            marginBottom: 12,
           }}>
-            MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 14, opacity: 0.7 }}>| مَعبر</span>
+            MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 13, opacity: 0.6 }}>| مَعبر</span>
           </div>
           <p style={{
-            fontSize: 14, color: 'var(--text-tertiary)',
+            fontSize: 13, color: 'var(--text-tertiary)',
             lineHeight: 1.8, maxWidth: 220,
-            fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
+            fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
           }}>
             {t.tagline}
           </p>
@@ -117,81 +132,42 @@ export default function Footer({ lang }) {
         {/* PLATFORM */}
         <div>
           <p style={{
-            fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'var(--text-tertiary)', marginBottom: 20,
-            fontFamily: 'var(--font-body)',
+            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: 'var(--text-disabled)', marginBottom: 16,
+            fontFamily: 'var(--font-sans)',
           }}>
             {t.platform}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {t.links.platform.map((l, i) => (
-              <button key={i} onClick={() => nav(l.path)} style={{
-                background: 'none', border: 'none',
-                color: 'var(--text-secondary)', fontSize: 14,
-                cursor: 'pointer', padding: 0,
-                textAlign: isAr ? 'right' : 'left',
-                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
-                transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,242,0.55)'}>
-                {l.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {t.links.platform.map(linkBtn)}
           </div>
         </div>
 
         {/* FOR BUYERS */}
         <div>
           <p style={{
-            fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'var(--text-tertiary)', marginBottom: 20,
-            fontFamily: 'var(--font-body)',
+            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: 'var(--text-disabled)', marginBottom: 16,
+            fontFamily: 'var(--font-sans)',
           }}>
             {t.forBuyers}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {t.links.buyers.map((l, i) => (
-              <button key={i} onClick={() => nav(l.path)} style={{
-                background: 'none', border: 'none',
-                color: 'var(--text-secondary)', fontSize: 14,
-                cursor: 'pointer', padding: 0,
-                textAlign: isAr ? 'right' : 'left',
-                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
-                transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,242,0.55)'}>
-                {l.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {t.links.buyers.map(linkBtn)}
           </div>
         </div>
 
         {/* FOR SUPPLIERS */}
         <div>
           <p style={{
-            fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'var(--text-tertiary)', marginBottom: 20,
-            fontFamily: 'var(--font-body)',
+            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: 'var(--text-disabled)', marginBottom: 16,
+            fontFamily: 'var(--font-sans)',
           }}>
             {t.forSuppliers}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {t.links.suppliers.map((l, i) => (
-              <button key={i} onClick={() => nav(l.path)} style={{
-                background: 'none', border: 'none',
-                color: 'var(--text-secondary)', fontSize: 14,
-                cursor: 'pointer', padding: 0,
-                textAlign: isAr ? 'right' : 'left',
-                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
-                transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,242,0.55)'}>
-                {l.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {t.links.suppliers.map(linkBtn)}
           </div>
         </div>
       </div>
@@ -199,24 +175,24 @@ export default function Footer({ lang }) {
       {/* BOTTOM BAR */}
       <div style={{
         borderTop: '1px solid var(--border-subtle)',
-        paddingTop: 24,
+        paddingTop: 20,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 10,
         direction: isAr ? 'rtl' : 'ltr',
       }}>
         <p style={{
-          color: 'var(--text-disabled)', fontSize: 13,
-          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)',
+          color: 'var(--text-disabled)', fontSize: 12,
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
         }}>
           {t.copy}
         </p>
-        <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ display: 'flex', gap: 14 }}>
           {['AR', 'EN', '中文'].map((l, i) => (
             <span key={i} style={{
-              fontSize: 11, color: 'var(--text-disabled)',
+              fontSize: 10, color: 'var(--text-disabled)',
               letterSpacing: 1,
             }}>
               {l}
@@ -225,13 +201,12 @@ export default function Footer({ lang }) {
         </div>
       </div>
 
-      {/* MOBILE */}
       <style>{`
         @media (max-width: 768px) {
-          .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
-        }
-        @media (max-width: 480px) {
-          .footer-grid { grid-template-columns: 1fr !important; }
+          .footer-grid {
+            grid-template-columns: 1fr !important;
+            gap: 28px !important;
+          }
         }
       `}</style>
     </footer>

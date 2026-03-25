@@ -53,6 +53,28 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     }
   };
 
+  /* ─── Realtime: new notification ─────── */
+  useEffect(() => {
+    if (!user) return;
+    const channel = sb
+      .channel(`navbar-notifs-${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => { loadNotifs(); })
+      .subscribe();
+    return () => sb.removeChannel(channel);
+  }, [user]);
+
+  /* ─── Sync counter when chat is opened ─ */
+  useEffect(() => {
+    const handler = () => { if (user) loadNotifs(); };
+    window.addEventListener('maabar:messages-read', handler);
+    return () => window.removeEventListener('maabar:messages-read', handler);
+  }, [user]);
+
   const openNotifs = async () => {
     setNotifOpen(!notifOpen);
     if (!notifOpen && unread > 0) {

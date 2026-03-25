@@ -6,10 +6,10 @@ const T = {
   ar: {
     tag: 'مَعبر · تأكيد الدفع',
     title: 'تم الدفع بنجاح',
-    sub: 'مبلغك محجوز بأمان في مَعبر',
+    sub: 'ادفع بقدر ما تثق — وزّد ثقتك مع كل صفقة',
     what: 'ماذا يحدث الآن؟',
     steps: [
-      { n: '01', t: 'تم استلام دفعتك', d: 'مبلغك محجوز في مَعبر ولن يُحوَّل للمورد إلا بعد تأكيدك.' },
+      { n: '01', t: 'تم استلام دفعتك', d: 'دفعتك وصلت — وبقدر ثقتك تكبر صفقتك القادمة.' },
       { n: '02', t: 'المورد يجهز طلبك', d: 'تم إشعار المورد وسيبدأ بتجهيز طلبك فوراً.' },
       { n: '03', t: 'تتبع الشحن', d: 'ستستلم رقم التتبع بعد شحن البضاعة.' },
       { n: '04', t: 'تأكيد الاستلام', d: 'بعد استلامك، اضغط تأكيد وسيُحوَّل المبلغ للمورد.' },
@@ -26,10 +26,10 @@ const T = {
   en: {
     tag: 'Maabar · Payment Confirmed',
     title: 'Payment Successful',
-    sub: 'Your funds are securely held by Maabar',
+    sub: 'Pay what you\'re comfortable with — your money moves when you decide',
     what: "What happens next?",
     steps: [
-      { n: '01', t: 'Payment Received', d: 'Your funds are held by Maabar and will only be released after you confirm receipt.' },
+      { n: '01', t: 'Payment Received', d: 'Your payment is in — your trust grows with every successful deal.' },
       { n: '02', t: 'Supplier Preparing', d: 'The supplier has been notified and will begin preparing your order.' },
       { n: '03', t: 'Track Shipment', d: 'You will receive a tracking number once the order is shipped.' },
       { n: '04', t: 'Confirm Receipt', d: 'After receiving your order, confirm and funds will be released to the supplier.' },
@@ -46,10 +46,10 @@ const T = {
   zh: {
     tag: 'Maabar · 付款确认',
     title: '付款成功',
-    sub: '您的资金由Maabar安全托管',
+    sub: '按您的信任程度付款 — 每次交易都在积累信任',
     what: '接下来会发生什么？',
     steps: [
-      { n: '01', t: '已收到付款', d: '您的资金由Maabar托管，仅在您确认收货后才会释放。' },
+      { n: '01', t: '已收到付款', d: '您的付款已到位 — 每次成功交易都在增加您的信任度。' },
       { n: '02', t: '供应商准备中', d: '供应商已收到通知，将立即开始准备您的订单。' },
       { n: '03', t: '跟踪货物', d: '发货后您将收到物流单号。' },
       { n: '04', t: '确认收货', d: '收到货物后，确认收货，资金将释放给供应商。' },

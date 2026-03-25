@@ -3,9 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
 
-const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', paid: 'تم الدفع', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
-const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', paid: 'Paid', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
-const STATUS_STEPS = ['open', 'offers_received', 'closed', 'paid', 'shipping', 'arrived', 'delivered'];
+const getTrackingUrl = (company, num) => {
+  const urls = {
+    'DHL':    `https://www.dhl.com/track?tracking-id=${num}`,
+    'FedEx':  `https://www.fedex.com/tracking?tracknumbers=${num}`,
+    'Aramex': `https://www.aramex.com/track/${num}`,
+    'UPS':    `https://www.ups.com/track?tracknum=${num}`,
+    'SMSA':   `https://www.smsaexpress.com/track?awbno=${num}`,
+  };
+  return urls[company] || `https://t.17track.net/en#nums=${num}`;
+};
+
+const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', paid: 'تم الدفع', ready_to_ship: 'الشحنة جاهزة', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
+const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', paid: 'Paid', ready_to_ship: 'Ready to Ship', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
+const STATUS_STEPS = ['open', 'offers_received', 'closed', 'paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'];
 
 const CITIES_AR = ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'تبوك', 'أبها', 'القصيم', 'حائل', 'جازان', 'نجران'];
 const CITIES_EN = ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Tabuk', 'Abha', 'Qassim', 'Hail', 'Jazan', 'Najran'];
@@ -116,6 +127,14 @@ export default function DashboardBuyer({ user, profile, lang }) {
   const [reviewComment, setReviewComment]   = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // Edit/Delete request
+  const [editReqModal, setEditReqModal]   = useState(null);
+  const [editReqForm, setEditReqForm]     = useState({});
+  const [savingEditReq, setSavingEditReq] = useState(false);
+
+  // Cancel request confirmation
+  const [cancelConfirmReq, setCancelConfirmReq] = useState(null);
+
   // Settings
   const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '' });
   const [savingSettings, setSavingSettings] = useState(false);
@@ -148,8 +167,9 @@ export default function DashboardBuyer({ user, profile, lang }) {
       reqs.forEach(r => {
         const pending = r.offers?.filter(o => o.status === 'pending') || [];
         if (pending.length > 0) actions.push({ type: 'offers', request: r, count: pending.length });
-        if (r.status === 'paid')     actions.push({ type: 'payment_sent', request: r });
-        if (r.status === 'shipping') actions.push({ type: 'delivery', request: r });
+        if (r.status === 'paid')          actions.push({ type: 'payment_sent', request: r });
+        if (r.status === 'ready_to_ship') actions.push({ type: 'ready_to_ship', request: r });
+        if (r.status === 'shipping')      actions.push({ type: 'delivery', request: r });
       });
     }
     const { data: msgs } = await sb.from('messages').select('id').eq('receiver_id', user.id).eq('is_read', false);
@@ -236,6 +256,49 @@ export default function DashboardBuyer({ user, profile, lang }) {
     setSubmittingReview(false);
     setReviewModal(null);
     alert(isAr ? 'شكراً على تقييمك!' : 'Thank you for your review!');
+  };
+
+  const saveEditRequest = async () => {
+    if (!editReqModal) return;
+    setSavingEditReq(true);
+    await sb.from('requests').update({
+      title_ar: editReqForm.title_ar,
+      title_en: editReqForm.title_en,
+      desc_ar: editReqForm.desc_ar,
+      quantity: editReqForm.quantity,
+    }).eq('id', editReqModal.id);
+    setSavingEditReq(false);
+    setEditReqModal(null);
+    loadMyRequests();
+  };
+
+  const deleteRequest = async (r) => {
+    if (r.status !== 'open') {
+      alert(isAr ? 'لا يمكن حذف طلب غير مفتوح' : 'Can only delete open requests');
+      return;
+    }
+    if (!window.confirm(isAr ? 'هل تريد حذف هذا الطلب؟' : 'Delete this request?')) return;
+    const { error } = await sb.from('requests').delete().eq('id', r.id);
+    if (!error) {
+      setMyRequests(prev => prev.filter(req => req.id !== r.id));
+      loadPendingActions(); loadStats();
+    }
+  };
+
+  const cancelRequest = async (r) => {
+    const acceptedOffer = r.offers.find(o => o.status === 'accepted');
+    await sb.from('requests').update({ status: 'open' }).eq('id', r.id);
+    if (acceptedOffer) {
+      await sb.from('offers').update({ status: 'rejected' }).eq('id', acceptedOffer.id);
+    }
+    setCancelConfirmReq(null);
+    setMyRequests(prev => prev.map(req =>
+      req.id !== r.id ? req : {
+        ...req,
+        status: 'open',
+        offers: req.offers.map(o => o.status === 'accepted' ? { ...o, status: 'rejected' } : o),
+      }
+    ));
   };
 
   const name = profile?.full_name || user?.email?.split('@')[0];
@@ -341,7 +404,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {pendingActions.map((action, i) => (
-                      <div key={i} onClick={() => setActiveTab(action.type === 'messages' ? 'messages' : 'requests')} style={{
+                      <div key={i} onClick={() => setActiveTab(['messages'].includes(action.type) ? 'messages' : 'requests')} style={{
                         background: 'var(--bg-subtle)',
                         border: '1px solid var(--border-subtle)',
                         borderRadius: 'var(--radius-lg)',
@@ -354,13 +417,15 @@ export default function DashboardBuyer({ user, profile, lang }) {
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                             {action.type === 'offers'       && (isAr ? `${action.count} عرض ينتظر مراجعتك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`)}
-                            {action.type === 'payment_sent' && (isAr ? 'تم الدفع — في انتظار شحن المورد' : 'Payment sent — Awaiting supplier shipment')}
+                            {action.type === 'payment_sent'   && (isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation')}
+                            {action.type === 'ready_to_ship'  && (isAr ? `شحنتك جاهزة — ادفع الدفعة الثانية` : `Shipment ready — Pay second installment`)}
                             {action.type === 'delivery'     && (isAr ? `تأكيد استلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`)}
                             {action.type === 'messages'     && (isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`)}
                           </p>
                           <p style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>
                             {action.type === 'offers'       && (isAr ? 'قارن العروض واختر الأفضل' : 'Compare and choose the best')}
-                            {action.type === 'payment_sent' && (isAr ? 'مبلغك محجوز بأمان في مَعبر' : 'Your funds are securely held')}
+                            {action.type === 'payment_sent'   && (isAr ? 'المورد يجهز شحنتك' : 'Supplier is preparing your order')}
+                            {action.type === 'ready_to_ship'  && (isAr ? 'اضغط للدفع وإتمام الشحن' : 'Tap to pay and complete shipping')}
                             {action.type === 'delivery'     && (isAr ? 'الطلب وصل — أكد الاستلام' : 'Order arrived — confirm receipt')}
                             {action.type === 'messages'     && (isAr ? 'اضغط للاطلاع' : 'Tap to view')}
                           </p>
@@ -464,9 +529,44 @@ export default function DashboardBuyer({ user, profile, lang }) {
                     }}>
                       {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
                     </h3>
-                    <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
-                      {isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status}
-                    </span>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
+                        {isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status}
+                      </span>
+                      {r.status === 'open' && (
+                        <>
+                          <button
+                            onClick={() => { setEditReqModal(r); setEditReqForm({ title_ar: r.title_ar || '', title_en: r.title_en || '', desc_ar: r.desc_ar || '', quantity: r.quantity || '' }); }}
+                            className="btn-outline"
+                            style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
+                            {isAr ? 'تعديل' : 'Edit'}
+                          </button>
+                          <button
+                            onClick={() => deleteRequest(r)}
+                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                            {isAr ? 'حذف' : 'Delete'}
+                          </button>
+                        </>
+                      )}
+                      {r.status === 'closed' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const accepted = r.offers.find(o => o.status === 'accepted');
+                              if (accepted) nav(`/chat/${accepted.supplier_id}`);
+                            }}
+                            className="btn-outline"
+                            style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
+                            {isAr ? 'محادثة المورد' : 'Chat with Supplier'}
+                          </button>
+                          <button
+                            onClick={() => setCancelConfirmReq(r)}
+                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                            {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <StatusBar status={r.shipping_status || r.status} isAr={isAr} />
@@ -482,19 +582,29 @@ export default function DashboardBuyer({ user, profile, lang }) {
                       background: 'var(--bg-raised)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                        {isAr ? 'رقم التتبع: ' : 'Tracking: '}
-                        <strong style={{ color: 'var(--text-primary)' }}>{r.tracking_number}</strong>
-                      </span>
-                      <a href={`https://t.17track.net/en#nums=${r.tracking_number}`} target="_blank" rel="noreferrer" style={{
-                        fontSize: 10, color: 'var(--text-secondary)',
-                        letterSpacing: 1.5, textTransform: 'uppercase',
-                        textDecoration: 'none', transition: 'color 0.15s',
-                      }}>
-                        {isAr ? 'تتبع ←' : 'Track →'}
-                      </a>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r.estimated_delivery ? 6 : 0 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          {r.shipping_company && (
+                            <span style={{ marginInlineEnd: 6, fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{r.shipping_company} ·</span>
+                          )}
+                          {isAr ? 'رقم التتبع: ' : 'Tracking: '}
+                          <strong style={{ color: 'var(--text-primary)' }}>{r.tracking_number}</strong>
+                        </span>
+                        <a href={getTrackingUrl(r.shipping_company, r.tracking_number)} target="_blank" rel="noreferrer" style={{
+                          fontSize: 10, color: 'var(--text-secondary)',
+                          letterSpacing: 1.5, textTransform: 'uppercase',
+                          textDecoration: 'none', transition: 'color 0.15s',
+                        }}>
+                          {isAr ? 'تتبع ←' : 'Track →'}
+                        </a>
+                      </div>
+                      {r.estimated_delivery && (
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>
+                          {isAr ? 'التسليم المتوقع: ' : 'Expected delivery: '}
+                          {new Date(r.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -517,9 +627,21 @@ export default function DashboardBuyer({ user, profile, lang }) {
                         {r.offers.map(o => (
                           <div key={o.id} style={{
                             background: o.status === 'accepted' ? 'var(--bg-raised)' : 'var(--bg-subtle)',
-                            border: o.status === 'accepted' ? '0' : '0',
                             padding: '18px 16px',
+                            position: 'relative',
                           }}>
+                            {r.offers.length > 1 && o.price === Math.min(...r.offers.map(x => x.price)) && (
+                              <span style={{
+                                position: 'absolute', top: 10,
+                                insetInlineEnd: 10,
+                                fontSize: 9, padding: '2px 8px',
+                                background: 'rgba(58,122,82,0.12)',
+                                border: '1px solid rgba(58,122,82,0.2)',
+                                color: '#5a9a72', borderRadius: 20,
+                              }}>
+                                {isAr ? 'الأقل سعراً' : 'Lowest Price'}
+                              </span>
+                            )}
                             <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8 }}>
                               {o.profiles?.company_name || '—'}
                             </p>
@@ -545,20 +667,35 @@ export default function DashboardBuyer({ user, profile, lang }) {
 
                             {o.status === 'accepted' && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {!['paid','shipping','arrived','delivered'].includes(r.status) && (
+                                {!['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
                                   <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary"
                                     style={{ padding: '9px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 36 }}>
                                     {isAr ? 'ادفع الآن' : 'Pay Now'}
                                   </button>
                                 )}
                                 {r.status === 'paid' && (
-                                  <p style={{ fontSize: 10, letterSpacing: 1, color: 'var(--text-disabled)', textAlign: 'center' }}>
-                                    {isAr ? 'تم الدفع — محجوز' : 'Paid — Held'}
+                                  <p style={{ fontSize: 10, letterSpacing: 1, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                                    {isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Paid — Awaiting preparation'}
                                   </p>
+                                )}
+                                {r.status === 'ready_to_ship' && (
+                                  <div style={{ padding: '12px 12px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-md)' }}>
+                                    <p style={{ fontSize: 11, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>
+                                      {isAr ? 'شحنتك جاهزة — ادفع الدفعة الثانية لإتمام الشحن' : 'Shipment ready — Pay second installment to ship'}
+                                    </p>
+                                    {r.payment_second > 0 && (
+                                      <button
+                                        className="btn-primary"
+                                        style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
+                                        onClick={() => nav('/checkout', { state: { offer: o, request: r, isSecondPayment: true } })}>
+                                        {isAr ? `ادفع ${r.payment_second} ريال` : `Pay ${r.payment_second} SAR`}
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                                 {r.status === 'shipping' && (
                                   <>
-                                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4 }}>
+                                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                                       {isAr ? 'في الطريق' : 'On the way'}
                                     </p>
                                     <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-outline"
@@ -747,6 +884,118 @@ export default function DashboardBuyer({ user, profile, lang }) {
               <button onClick={() => setReviewModal(null)} className="btn-outline"
                 style={{ padding: '11px 18px', fontSize: 12, minHeight: 44 }}>
                 {isAr ? 'تخطي' : 'Skip'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════
+          EDIT REQUEST MODAL
+      ══════════════════════════════════════ */}
+      {editReqModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 3000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24, animation: 'fadeIn 0.2s ease',
+        }}>
+          <div style={{
+            background: 'var(--bg-overlay)',
+            border: '1px solid var(--border-muted)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '36px 32px',
+            width: '100%', maxWidth: 480,
+            animation: 'slideUp 0.25s ease',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
+              {isAr ? 'تعديل الطلب' : 'Edit Request'}
+            </p>
+
+            <div className="form-grid" style={{ marginBottom: 16 }}>
+              <div className="form-group">
+                <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'العنوان بالعربي' : 'Title (Arabic)'}</label>
+                <input className="form-input" dir="rtl" value={editReqForm.title_ar}
+                  onChange={e => setEditReqForm(f => ({ ...f, title_ar: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{isAr ? 'العنوان بالإنجليزي' : 'Title (English)'}</label>
+                <input className="form-input" dir="ltr" value={editReqForm.title_en}
+                  onChange={e => setEditReqForm(f => ({ ...f, title_en: e.target.value }))} />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'الوصف' : 'Description'}</label>
+                <textarea className="form-input" rows={3} style={{ resize: 'none', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
+                  value={editReqForm.desc_ar}
+                  onChange={e => setEditReqForm(f => ({ ...f, desc_ar: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'الكمية' : 'Quantity'}</label>
+                <input className="form-input" value={editReqForm.quantity}
+                  onChange={e => setEditReqForm(f => ({ ...f, quantity: e.target.value }))} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={saveEditRequest} disabled={savingEditReq} className="btn-primary"
+                style={{ flex: 1, padding: '11px', fontSize: 12, minHeight: 44 }}>
+                {savingEditReq ? '...' : isAr ? 'حفظ التغييرات' : 'Save Changes'}
+              </button>
+              <button onClick={() => setEditReqModal(null)} className="btn-outline"
+                style={{ padding: '11px 18px', fontSize: 12, minHeight: 44 }}>
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════
+          CANCEL REQUEST MODAL
+      ══════════════════════════════════════ */}
+      {cancelConfirmReq && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 3000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24, animation: 'fadeIn 0.2s ease',
+        }}>
+          <div style={{
+            background: 'var(--bg-overlay)',
+            border: '1px solid var(--border-muted)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '36px 32px',
+            width: '100%', maxWidth: 400,
+            animation: 'slideUp 0.25s ease',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
+              {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
+            </p>
+            <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)' }}>
+              {isAr
+                ? (cancelConfirmReq.title_ar || cancelConfirmReq.title_en)
+                : (cancelConfirmReq.title_en || cancelConfirmReq.title_ar)}
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.7 }}>
+              {isAr
+                ? 'سيتم إلغاء الطلب وإعادته للحالة المفتوحة. هل تريد المتابعة؟'
+                : 'This will cancel the accepted offer and re-open the request. Are you sure?'}
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => cancelRequest(cancelConfirmReq)}
+                style={{ flex: 1, padding: '11px', fontSize: 12, minHeight: 44, background: 'none', border: '1px solid rgba(138,58,58,0.4)', color: '#a07070', cursor: 'pointer', borderRadius: 'var(--radius-md)' }}>
+                {isAr ? 'نعم، إلغاء الطلب' : 'Yes, Cancel Request'}
+              </button>
+              <button onClick={() => setCancelConfirmReq(null)} className="btn-outline"
+                style={{ padding: '11px 18px', fontSize: 12, minHeight: 44 }}>
+                {isAr ? 'رجوع' : 'Go Back'}
               </button>
             </div>
           </div>

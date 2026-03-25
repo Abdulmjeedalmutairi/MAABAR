@@ -169,9 +169,21 @@ export default function Suppliers({ lang, user }) {
                       : <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0].toUpperCase()}</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {s.company_name || '—'}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {s.company_name || '—'}
+                      </p>
+                      {s.status === 'approved' && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 16, height: 16, borderRadius: '50%',
+                          background: 'rgba(139,120,255,0.15)',
+                          border: '1px solid rgba(139,120,255,0.3)',
+                          color: 'rgba(139,120,255,0.85)',
+                          fontSize: 10, fontWeight: 700, flexShrink: 0,
+                        }}>✓</span>
+                      )}
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ color: '#f5a623', fontSize: 13 }}>{stars(s.rating)}</span>
                       {s.reviews_count > 0 && (
@@ -200,7 +212,7 @@ export default function Suppliers({ lang, user }) {
                 )}
 
                 {/* TAGS */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                   {s.speciality && s.speciality !== 'other' && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
                       {cats.find(c => c.val === s.speciality)?.label || s.speciality}
@@ -208,7 +220,7 @@ export default function Suppliers({ lang, user }) {
                   )}
                   {s.city && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
-                      📍 {s.city}
+                      {s.city}
                     </span>
                   )}
                   {s.products?.length > 0 && (
@@ -216,23 +228,53 @@ export default function Suppliers({ lang, user }) {
                       {s.products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
                     </span>
                   )}
-                  {s.trade_link && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20, color: '#2d7a4f', letterSpacing: 1 }}>
-                      ✓ {isAr ? 'موثق' : lang === 'zh' ? '已认证' : 'Verified'}
+                  {s.sample_available && (
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 20, color: 'rgba(139,120,255,0.85)', letterSpacing: 1 }}>
+                      {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample Available'}
                     </span>
                   )}
                 </div>
 
+                {/* TRUST SCORE */}
+                {s.trust_score > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1 }}>
+                        {isAr ? 'مستوى الثقة' : 'Trust Score'}
+                      </span>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{s.trust_score}%</span>
+                    </div>
+                    <div style={{ height: 2, background: 'var(--border-subtle)', borderRadius: 1, overflow: 'hidden' }}>
+                      <div style={{ width: `${s.trust_score}%`, height: '100%', background: 'rgba(139,120,255,0.5)', borderRadius: 1 }} />
+                    </div>
+                  </div>
+                )}
+
                 {/* FOOTER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-default)', paddingTop: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-default)', paddingTop: 12, gap: 8 }}>
                   {s.min_order_value ? (
                     <p style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
-                      {isAr ? `أقل طلب: ${s.min_order_value} ريال` : `Min order: ${s.min_order_value} SAR`}
+                      {isAr ? `أقل طلب: ${s.min_order_value} ريال` : `Min: ${s.min_order_value} SAR`}
                     </p>
                   ) : <span />}
-                  <span style={{ fontSize: 12, color: 'var(--text-primary)', letterSpacing: 1 }}>
-                    {isAr ? 'عرض الملف →' : lang === 'zh' ? '查看 →' : 'View →'}
-                  </span>
+                  <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={e => { e.stopPropagation(); nav(`/chat/${s.id}`); }}
+                      style={{
+                        padding: '6px 12px', fontSize: 11, cursor: 'pointer',
+                        background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)',
+                        color: 'rgba(139,120,255,0.85)', borderRadius: 'var(--radius-md)',
+                        transition: 'all 0.15s', letterSpacing: 0.5,
+                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,120,255,0.15)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,120,255,0.08)'; }}>
+                      {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--text-primary)', letterSpacing: 1, lineHeight: '28px' }}>
+                      {isAr ? 'الملف →' : lang === 'zh' ? '查看 →' : 'View →'}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
