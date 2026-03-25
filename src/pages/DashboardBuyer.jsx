@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+
+const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 import Footer from '../components/Footer';
 
 const getTrackingUrl = (company, num) => {
@@ -228,6 +231,13 @@ export default function DashboardBuyer({ user, profile, lang }) {
       title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
       ref_id: offerId, is_read: false,
     });
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ type: 'offer_accepted', record: { supplier_id: supplierId, request_id: requestId } }),
+      });
+    } catch (e) { console.error('email error:', e); }
     loadMyRequests(); loadPendingActions();
   };
 

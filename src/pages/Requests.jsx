@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
 
+const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 const CATEGORIES = {
   ar: [
     { val: 'electronics', label: 'إلكترونيات' },
@@ -141,6 +144,13 @@ export default function Requests({ lang, user, profile }) {
       title_zh: '您收到了新报价',
       ref_id: requestId, is_read: false,
     });
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ type: 'new_offer', record: { buyer_id: buyerId, request_id: requestId, offer_price: o.price, delivery_days: o.days } }),
+      });
+    } catch (e) { console.error('email error:', e); }
     alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');
     toggleOfferForm(requestId);
     loadRequests();

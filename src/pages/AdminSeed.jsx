@@ -12,12 +12,17 @@ export default function AdminSeed({ user, lang }) {
   const [command, setCommand] = useState('');
   const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({ real: 0, fake: 0, requests: 0, products: 0 });
+  const [stats, setStats] = useState({ real: 0, activeSuppliers: 0, completedDeals: 0, commissions: 0, newToday: 0 });
   const [pendingSuppliers, setPendingSuppliers] = useState([]);
   const [verifying, setVerifying] = useState({});
   const [verifyResults, setVerifyResults] = useState({});
   const [actionLoading, setActionLoading] = useState({});
+  const [overviewUsers, setOverviewUsers] = useState([]);
+  const [overviewRequests, setOverviewRequests] = useState([]);
+  const [overviewDeals, setOverviewDeals] = useState([]);
+  const [togglingUser, setTogglingUser] = useState({});
   const isAr = lang === 'ar';
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {
     if (!user || user.email !== ADMIN_EMAIL) { nav('/'); return; }
@@ -25,14 +30,46 @@ export default function AdminSeed({ user, lang }) {
     loadPendingSuppliers();
   }, [user]);
 
+  useEffect(() => {
+    if (activeTab === 'overview') loadOverviewData();
+  }, [activeTab]);
+
   const loadStats = async () => {
-    const [profiles, requests, products] = await Promise.all([
-      sb.from('profiles').select('id,is_seed', { count: 'exact' }),
-      sb.from('requests').select('id', { count: 'exact' }),
-      sb.from('products').select('id', { count: 'exact' }),
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const [realUsers, activeSuppliers, completedDeals, completedPayments, newToday] = await Promise.all([
+      sb.from('profiles').select('id', { count: 'exact' }).eq('is_seed', false),
+      sb.from('profiles').select('id', { count: 'exact' }).eq('role', 'supplier').eq('status', 'active'),
+      sb.from('offers').select('id', { count: 'exact' }).eq('status', 'completed'),
+      sb.from('payments').select('amount').eq('status', 'completed'),
+      sb.from('profiles').select('id', { count: 'exact' }).eq('is_seed', false).gte('created_at', today.toISOString()),
     ]);
-    const fake = profiles.data?.filter(p => p.is_seed).length || 0;
-    setStats({ real: (profiles.count || 0) - fake, fake, requests: requests.count || 0, products: products.count || 0 });
+    const totalCommissions = (completedPayments.data || []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0) * 0.06, 0);
+    setStats({
+      real: realUsers.count || 0,
+      activeSuppliers: activeSuppliers.count || 0,
+      completedDeals: completedDeals.count || 0,
+      commissions: Math.round(totalCommissions),
+      newToday: newToday.count || 0,
+    });
+  };
+
+  const loadOverviewData = async () => {
+    const [users, requests, deals] = await Promise.all([
+      sb.from('profiles').select('id,full_name,company_name,role,status,created_at').eq('is_seed', false).order('created_at', { ascending: false }).limit(10),
+      sb.from('requests').select('id,title_ar,title_en,status,created_at,buyer_id').order('created_at', { ascending: false }).limit(10),
+      sb.from('offers').select('id,request_id,supplier_id,status,created_at,requests(title_ar,title_en),profiles!offers_supplier_id_fkey(company_name)').eq('status', 'accepted').order('created_at', { ascending: false }),
+    ]);
+    if (users.data) setOverviewUsers(users.data);
+    if (requests.data) setOverviewRequests(requests.data);
+    if (deals.data) setOverviewDeals(deals.data);
+  };
+
+  const toggleUserStatus = async (userId, currentStatus) => {
+    setTogglingUser(prev => ({ ...prev, [userId]: true }));
+    const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
+    await sb.from('profiles').update({ status: newStatus }).eq('id', userId);
+    setOverviewUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+    setTogglingUser(prev => ({ ...prev, [userId]: false }));
   };
 
   const loadPendingSuppliers = async () => {
@@ -153,8 +190,10 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       });
       const data = await res.json();
       const text = data.content?.[0]?.text || '';
+      if (!text || !text.includes('{')) throw new Error('Empty or invalid response');
       const clean = text.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
+      let parsed;
+      try { parsed = JSON.parse(clean); } catch { throw new Error('JSON parse failed'); }
       if (parsed.action === 'add_requests') {
         for (const r of parsed.data) {
           await sb.from('requests').insert({ buyer_id: user.id, title_ar: r.title_ar, title_en: r.title_en, title_zh: r.title_zh || r.title_en, quantity: r.quantity, status: 'open', description: r.description || '' });
@@ -171,7 +210,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       }
       loadStats();
     } catch (e) {
-      addLog(`❌ خطأ: ${e.message}`);
+      addLog('❌ فشل تنفيذ الأمر — حاول مرة أخرى');
     }
     setLoading(false);
     setCommand('');
@@ -198,23 +237,25 @@ WeChat: ${supplier.wechat || 'غير موجود'}
         <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 40 }}>سرية — لك فقط</p>
 
         {/* STATS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(5,1fr)', gap: 16, marginBottom: 40 }}>
           {[
             { label: 'مستخدمين حقيقيين', val: stats.real },
-            { label: 'بيانات تجريبية', val: stats.fake },
-            { label: 'طلبات', val: stats.requests },
-            { label: 'منتجات', val: stats.products },
+            { label: 'موردين نشطين', val: stats.activeSuppliers },
+            { label: 'صفقات مكتملة', val: stats.completedDeals },
+            { label: 'إجمالي العمولات (ريال)', val: stats.commissions.toLocaleString() },
+            { label: 'مستخدمين جدد اليوم', val: stats.newToday },
           ].map((s, i) => (
             <div key={i} style={{ border: '1px solid rgba(255,255,255,0.1)', padding: 24, borderRadius: 4 }}>
               <p style={{ fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>{s.label}</p>
-              <p style={{ fontSize: 42, fontWeight: 300 }}>{s.val}</p>
+              <p style={{ fontSize: 36, fontWeight: 300 }}>{s.val}</p>
             </div>
           ))}
         </div>
 
         {/* TABS */}
-        <div style={{ display: 'flex', gap: 2, marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ display: 'flex', gap: 2, marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.1)', overflowX: 'auto' }}>
           {[
+            { id: 'overview', label: 'نظرة عامة' },
             { id: 'suppliers', label: `الموردون المعلقون (${pendingSuppliers.length})` },
             { id: 'seed', label: 'البيانات التجريبية' },
           ].map(tab => (
@@ -222,12 +263,85 @@ WeChat: ${supplier.wechat || 'غير موجود'}
               padding: '12px 24px', background: 'none', border: 'none',
               borderBottom: activeTab === tab.id ? '2px solid #fff' : '2px solid transparent',
               color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.4)',
-              fontSize: 13, cursor: 'pointer', transition: 'all 0.2s',
+              fontSize: 13, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
             }}>
               {tab.label}
             </button>
           ))}
         </div>
+
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <div>
+            {/* آخر المستخدمين */}
+            <div style={{ marginBottom: 40 }}>
+              <p style={{ fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.4)', marginBottom: 16, textTransform: 'uppercase' }}>آخر المستخدمين</p>
+              <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                {overviewUsers.length === 0 ? (
+                  <p style={{ padding: 20, color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>لا يوجد بيانات</p>
+                ) : overviewUsers.map((u, i) => (
+                  <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < overviewUsers.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <p style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>{u.full_name || u.company_name || '—'}</p>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                        {u.role} · {new Date(u.created_at).toLocaleDateString('ar-SA')}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: u.status === 'active' ? 'rgba(45,122,79,0.15)' : 'rgba(200,60,60,0.15)', color: u.status === 'active' ? '#4caf50' : '#ff6b6b' }}>{u.status}</span>
+                      <button onClick={() => toggleUserStatus(u.id, u.status)} disabled={!!togglingUser[u.id]} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 3 }}>
+                        {togglingUser[u.id] ? '...' : (u.status === 'active' ? 'تعطيل' : 'تفعيل')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* آخر الطلبات */}
+            <div style={{ marginBottom: 40 }}>
+              <p style={{ fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.4)', marginBottom: 16, textTransform: 'uppercase' }}>آخر الطلبات</p>
+              <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                {overviewRequests.length === 0 ? (
+                  <p style={{ padding: 20, color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>لا يوجد بيانات</p>
+                ) : overviewRequests.map((r, i) => (
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < overviewRequests.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <p style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>{r.title_ar || r.title_en || '—'}</p>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                        {r.profiles?.full_name || r.profiles?.company_name || '—'} · {new Date(r.created_at).toLocaleDateString('ar-SA')}
+                      </p>
+                    </div>
+                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>{r.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* الصفقات الجارية */}
+            <div style={{ marginBottom: 40 }}>
+              <p style={{ fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.4)', marginBottom: 16, textTransform: 'uppercase' }}>الصفقات الجارية</p>
+              <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                {overviewDeals.length === 0 ? (
+                  <p style={{ padding: 20, color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>لا توجد صفقات جارية</p>
+                ) : overviewDeals.map((d, i) => (
+                  <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: i < overviewDeals.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <p style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>{d.requests?.title_ar || d.requests?.title_en || '—'}</p>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                        مورد: {d.profiles?.company_name || '—'}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>{d.status}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{new Date(d.created_at).toLocaleDateString('ar-SA')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SUPPLIERS TAB */}
         {activeTab === 'suppliers' && (
@@ -236,10 +350,15 @@ WeChat: ${supplier.wechat || 'غير موجود'}
               <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
                 <p style={{ fontSize: 14 }}>لا يوجد موردون معلقون</p>
               </div>
-            ) : pendingSuppliers.map((s, idx) => {
+            ) : [...pendingSuppliers].sort((a, b) => {
+              const hoursA = (Date.now() - new Date(a.created_at)) / 3600000;
+              const hoursB = (Date.now() - new Date(b.created_at)) / 3600000;
+              return (hoursB > 24 ? 1 : 0) - (hoursA > 24 ? 1 : 0) || new Date(a.created_at) - new Date(b.created_at);
+            }).map((s, idx) => {
               const vResult = verifyResults[s.id];
               const isVerifying = verifying[s.id];
               const isActing = actionLoading[s.id];
+              const hoursWaiting = (Date.now() - new Date(s.created_at)) / 3600000;
 
               return (
                 <div key={s.id} style={{
@@ -255,7 +374,12 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                           {(s.company_name || '?')[0].toUpperCase()}
                         </div>
                         <div>
-                          <p style={{ fontSize: 16, fontWeight: 500, marginBottom: 2 }}>{s.company_name || 'بدون اسم'}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                            <p style={{ fontSize: 16, fontWeight: 500 }}>{s.company_name || 'بدون اسم'}</p>
+                            {hoursWaiting > 24 && (
+                              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(200,0,0,0.2)', color: '#ff6b6b', border: '1px solid rgba(200,0,0,0.3)' }}>⚠ تجاوز 24 ساعة</span>
+                            )}
+                          </div>
                           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{s.city || ''}{s.country ? ` · ${s.country}` : ''}</p>
                         </div>
                       </div>

@@ -145,6 +145,14 @@ ${profile.factory_image_url ? `<p><a href="${profile.factory_image_url}">View Fa
 ${aiTable}`;
 }
 
+function newOfferHtml(traderName: string, requestTitle: string, offerPrice: string, deliveryDays: string): string {
+  return `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;font-family:Arial,sans-serif;"><tr><td style="background:#0a0a0b;padding:32px 40px;border-radius:10px 10px 0 0;text-align:center;"><div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff;">MAABAR</div><div style="font-size:11px;color:#444;letter-spacing:1px;margin-top:4px;">مَعبر</div></td></tr><tr><td style="background:#111113;padding:40px;border-left:1px solid #1c1c1c;border-right:1px solid #1c1c1c;"><p style="font-size:16px;color:#e2e2e2;margin:0 0 16px;line-height:1.8;">أهلاً ${traderName}،</p><p style="font-size:14px;color:#888;margin:0 0 16px;line-height:2;">قدّم مورد عرض سعر على طلبك <strong style="color:#e2e2e2;">${requestTitle}</strong>.</p><div style="background:#0f0f11;border:1px solid #1c1c1c;border-radius:8px;padding:16px 20px;margin-bottom:24px;"><p style="font-size:11px;color:#444;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">تفاصيل العرض</p><p style="font-size:13px;color:#666;margin:0;line-height:2;">السعر: ${offerPrice} SAR<br>مدة التسليم: ${deliveryDays} يوم</p></div><table cellpadding="0" cellspacing="0"><tr><td style="background:#fff;border-radius:6px;padding:12px 28px;"><a href="https://maabar.io/dashboard" style="color:#0a0a0b;font-size:13px;font-weight:700;text-decoration:none;">راجع العرض ←</a></td></tr></table></td></tr><tr><td style="background:#111113;padding:24px 40px 32px;border-radius:0 0 10px 10px;border:1px solid #1c1c1c;"><table cellpadding="0" cellspacing="0"><tr><td style="border-right:1px solid #2a2a2a;padding-right:20px;"><div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:3px;">MAABAR</div><div style="font-size:10px;color:#444;margin-bottom:14px;">فريق معبر · Maabar Team</div><div style="font-size:11px;color:#666;margin-bottom:4px;">maabar.io</div><a href="mailto:hello@maabar.io" style="font-size:11px;color:#888;text-decoration:none;display:block;margin-bottom:4px;">hello@maabar.io</a><a href="https://wa.me/966504248942" style="font-size:11px;color:#888;text-decoration:none;">+966 50 424 8942</a></td><td style="padding-left:20px;vertical-align:bottom;"><div style="font-size:9px;color:#333;line-height:1.8;">Saudi × China<br>Bridge</div></td></tr></table></td></tr></table>`;
+}
+
+function offerAcceptedHtml(supplierName: string, requestTitle: string): string {
+  return `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;font-family:Arial,sans-serif;"><tr><td style="background:#0a0a0b;padding:32px 40px;border-radius:10px 10px 0 0;text-align:center;"><div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff;">MAABAR</div><div style="font-size:11px;color:#444;letter-spacing:1px;margin-top:4px;">مَعبر</div></td></tr><tr><td style="background:#111113;padding:40px;border-left:1px solid #1c1c1c;border-right:1px solid #1c1c1c;"><p style="font-size:16px;color:#e2e2e2;margin:0 0 16px;line-height:1.8;">Hello ${supplierName},</p><p style="font-size:14px;color:#888;margin:0 0 16px;line-height:2;">A trader has accepted your offer on <strong style="color:#e2e2e2;">${requestTitle}</strong>.</p><div style="background:#0f0f11;border:1px solid #1c1c1c;border-radius:8px;padding:16px 20px;margin-bottom:24px;"><p style="font-size:11px;color:#444;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Next Steps</p><p style="font-size:13px;color:#666;margin:0;line-height:2;">① Await payment confirmation<br>② Begin production<br>③ Add tracking number after shipment</p></div><table cellpadding="0" cellspacing="0"><tr><td style="background:#fff;border-radius:6px;padding:12px 28px;"><a href="https://maabar.io/dashboard" style="color:#0a0a0b;font-size:13px;font-weight:700;text-decoration:none;">View Order →</a></td></tr></table></td></tr><tr><td style="background:#111113;padding:24px 40px 32px;border-radius:0 0 10px 10px;border:1px solid #1c1c1c;"><table cellpadding="0" cellspacing="0"><tr><td style="border-right:1px solid #2a2a2a;padding-right:20px;"><div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:3px;">MAABAR</div><div style="font-size:10px;color:#444;margin-bottom:14px;">فريق معبر · Maabar Team</div><div style="font-size:11px;color:#666;margin-bottom:4px;">maabar.io</div><a href="mailto:hello@maabar.io" style="font-size:11px;color:#888;text-decoration:none;display:block;margin-bottom:4px;">hello@maabar.io</a><a href="https://wa.me/966504248942" style="font-size:11px;color:#888;text-decoration:none;">+966 50 424 8942</a></td><td style="padding-left:20px;vertical-align:bottom;"><div style="font-size:9px;color:#333;line-height:1.8;">Saudi × China<br>Bridge</div></td></tr></table></td></tr></table>`;
+}
+
 // ─── Handler ────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -176,6 +184,36 @@ serve(async (req) => {
       if (!profile) return new Response('Profile not found', { status: 404 });
       const html = await adminAlertHtml(profile);
       await sendEmail(ADMIN_EMAIL, `New Supplier Application: ${profile.company_name || 'Unknown'}`, html);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'new_offer') {
+      // Notify trader about a new offer on their request
+      const { buyer_id, request_id, offer_price, delivery_days } = record || {};
+      if (!buyer_id || !request_id) return new Response('Missing fields', { status: 400 });
+      const { data: authUser } = await sb.auth.admin.getUserById(buyer_id);
+      const buyerEmail = authUser?.user?.email;
+      if (!buyerEmail) return new Response('Buyer email not found', { status: 404 });
+      const { data: buyerProfile } = await sb.from('profiles').select('full_name, company_name').eq('id', buyer_id).single();
+      const traderName = buyerProfile?.full_name || buyerProfile?.company_name || buyerEmail.split('@')[0];
+      const { data: request } = await sb.from('requests').select('title_ar, title_en').eq('id', request_id).single();
+      const requestTitle = request?.title_ar || request?.title_en || 'طلبك';
+      await sendEmail(buyerEmail, 'عرض سعر جديد على طلبك 📩', newOfferHtml(traderName, requestTitle, String(offer_price || ''), String(delivery_days || '')));
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'offer_accepted') {
+      // Notify supplier that their offer was accepted
+      const { supplier_id, request_id } = record || {};
+      if (!supplier_id || !request_id) return new Response('Missing fields', { status: 400 });
+      const { data: authUser } = await sb.auth.admin.getUserById(supplier_id);
+      const supplierEmail = authUser?.user?.email;
+      if (!supplierEmail) return new Response('Supplier email not found', { status: 404 });
+      const { data: supplierProfile } = await sb.from('profiles').select('company_name, full_name').eq('id', supplier_id).single();
+      const supplierName = supplierProfile?.company_name || supplierProfile?.full_name || supplierEmail.split('@')[0];
+      const { data: request } = await sb.from('requests').select('title_ar, title_en').eq('id', request_id).single();
+      const requestTitle = request?.title_en || request?.title_ar || 'Your Request';
+      await sendEmail(supplierEmail, 'تم قبول عرضك 🎉', offerAcceptedHtml(supplierName, requestTitle));
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
