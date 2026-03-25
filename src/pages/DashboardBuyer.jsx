@@ -232,9 +232,22 @@ export default function DashboardBuyer({ user, profile, lang }) {
     const { data: reqData } = await sb.from('requests').select('title_ar,title_en').eq('id', requestId).single();
     const reqTitle = reqData?.title_ar || reqData?.title_en || '';
 
-    await sb.from('offers').update({ status: 'accepted' }).eq('id', offerId);
-    await sb.from('requests').update({ status: 'closed' }).eq('id', requestId);
-    await sb.from('offers').update({ status: 'rejected' }).eq('request_id', requestId).neq('id', offerId);
+    try {
+      const { data: d1, error: e1 } = await sb.from('offers').update({ status: 'accepted' }).eq('id', offerId).select('id');
+      if (e1 || !d1?.length) { console.error('acceptOffer: failed to set offer accepted (RLS or error):', e1, '| rows updated:', d1?.length ?? 0); alert(isAr ? 'حدث خطأ أثناء قبول العرض — تحقق من الصلاحيات' : 'Error accepting offer — may be an RLS/permissions issue'); return; }
+
+      const { data: d2, error: e2 } = await sb.from('requests').update({ status: 'closed' }).eq('id', requestId).select('id');
+      if (e2 || !d2?.length) { console.error('acceptOffer: failed to close request (RLS or error):', e2, '| rows updated:', d2?.length ?? 0); alert(isAr ? 'حدث خطأ أثناء تحديث الطلب — تحقق من الصلاحيات' : 'Error updating request — may be an RLS/permissions issue'); return; }
+
+      const { error: e3 } = await sb.from('offers').update({ status: 'rejected' }).eq('request_id', requestId).neq('id', offerId).select('id');
+      if (e3) { console.error('acceptOffer: failed to reject other offers:', e3); alert(isAr ? 'حدث خطأ أثناء تحديث العروض الأخرى' : 'Error updating other offers'); return; }
+    } catch (e) {
+      console.error('acceptOffer: unexpected DB error:', e);
+      alert(isAr ? 'حدث خطأ غير متوقع' : 'Unexpected error');
+      return;
+    }
+
+    // All DB writes succeeded — now send notifications and emails
     await sb.from('notifications').insert({
       user_id: supplierId, type: 'offer_accepted',
       title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
