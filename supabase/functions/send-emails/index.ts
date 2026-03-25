@@ -153,9 +153,19 @@ function offerAcceptedHtml(supplierName: string, requestTitle: string): string {
   return `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;font-family:Arial,sans-serif;"><tr><td style="background:#0a0a0b;padding:32px 40px;border-radius:10px 10px 0 0;text-align:center;"><div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff;">MAABAR</div><div style="font-size:11px;color:#444;letter-spacing:1px;margin-top:4px;">مَعبر</div></td></tr><tr><td style="background:#111113;padding:40px;border-left:1px solid #1c1c1c;border-right:1px solid #1c1c1c;"><p style="font-size:16px;color:#e2e2e2;margin:0 0 16px;line-height:1.8;">Hello ${supplierName},</p><p style="font-size:14px;color:#888;margin:0 0 16px;line-height:2;">A trader has accepted your offer on <strong style="color:#e2e2e2;">${requestTitle}</strong>.</p><div style="background:#0f0f11;border:1px solid #1c1c1c;border-radius:8px;padding:16px 20px;margin-bottom:24px;"><p style="font-size:11px;color:#444;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Next Steps</p><p style="font-size:13px;color:#666;margin:0;line-height:2;">① Await payment confirmation<br>② Begin production<br>③ Add tracking number after shipment</p></div><table cellpadding="0" cellspacing="0"><tr><td style="background:#fff;border-radius:6px;padding:12px 28px;"><a href="https://maabar.io/dashboard" style="color:#0a0a0b;font-size:13px;font-weight:700;text-decoration:none;">View Order →</a></td></tr></table></td></tr><tr><td style="background:#111113;padding:24px 40px 32px;border-radius:0 0 10px 10px;border:1px solid #1c1c1c;"><table cellpadding="0" cellspacing="0"><tr><td style="border-right:1px solid #2a2a2a;padding-right:20px;"><div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:3px;">MAABAR</div><div style="font-size:10px;color:#444;margin-bottom:14px;">فريق معبر · Maabar Team</div><div style="font-size:11px;color:#666;margin-bottom:4px;">maabar.io</div><a href="mailto:hello@maabar.io" style="font-size:11px;color:#888;text-decoration:none;display:block;margin-bottom:4px;">hello@maabar.io</a><a href="https://wa.me/966504248942" style="font-size:11px;color:#888;text-decoration:none;">+966 50 424 8942</a></td><td style="padding-left:20px;vertical-align:bottom;"><div style="font-size:9px;color:#333;line-height:1.8;">Saudi × China<br>Bridge</div></td></tr></table></td></tr></table>`;
 }
 
+// ─── CORS ───────────────────────────────────────────────────────────────────
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 // ─── Handler ────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
   try {
     const body = await req.json();
     const { type, record } = body;
@@ -163,58 +173,58 @@ serve(async (req) => {
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     if (type === 'trader_welcome') {
-      if (!record?.email) return new Response('No email', { status: 400 });
+      if (!record?.email) return new Response('No email', { status: 400, headers: corsHeaders });
       const { data: profile } = await sb.from('profiles').select('full_name, company_name').eq('id', record.id).single();
       const name = profile?.full_name || profile?.company_name || record.email.split('@')[0];
       await sendEmail(record.email, 'أهلاً بك في مَعبر!', traderWelcomeHtml(name));
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'supplier_welcome') {
-      if (!record?.email) return new Response('No email', { status: 400 });
+      if (!record?.email) return new Response('No email', { status: 400, headers: corsHeaders });
       const { data: profile } = await sb.from('profiles').select('company_name').eq('id', record.id).single();
       const name = profile?.company_name || record.email.split('@')[0];
       await sendEmail(record.email, "We've received your Maabar application", supplierWelcomeHtml(name));
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'admin_alert') {
-      if (!record?.id) return new Response('No record id', { status: 400 });
+      if (!record?.id) return new Response('No record id', { status: 400, headers: corsHeaders });
       const { data: profile } = await sb.from('profiles').select('*').eq('id', record.id).single();
-      if (!profile) return new Response('Profile not found', { status: 404 });
+      if (!profile) return new Response('Profile not found', { status: 404, headers: corsHeaders });
       const html = await adminAlertHtml(profile);
       await sendEmail(ADMIN_EMAIL, `New Supplier Application: ${profile.company_name || 'Unknown'}`, html);
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'new_offer') {
       // Notify trader about a new offer on their request
       const { buyer_id, request_id, offer_price, delivery_days } = record || {};
-      if (!buyer_id || !request_id) return new Response('Missing fields', { status: 400 });
+      if (!buyer_id || !request_id) return new Response('Missing fields', { status: 400, headers: corsHeaders });
       const { data: authUser } = await sb.auth.admin.getUserById(buyer_id);
       const buyerEmail = authUser?.user?.email;
-      if (!buyerEmail) return new Response('Buyer email not found', { status: 404 });
+      if (!buyerEmail) return new Response('Buyer email not found', { status: 404, headers: corsHeaders });
       const { data: buyerProfile } = await sb.from('profiles').select('full_name, company_name').eq('id', buyer_id).single();
       const traderName = buyerProfile?.full_name || buyerProfile?.company_name || buyerEmail.split('@')[0];
       const { data: request } = await sb.from('requests').select('title_ar, title_en').eq('id', request_id).single();
       const requestTitle = request?.title_ar || request?.title_en || 'طلبك';
       await sendEmail(buyerEmail, 'عرض سعر جديد على طلبك 📩', newOfferHtml(traderName, requestTitle, String(offer_price || ''), String(delivery_days || '')));
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'offer_accepted') {
       // Notify supplier that their offer was accepted
       const { supplier_id, request_id } = record || {};
-      if (!supplier_id || !request_id) return new Response('Missing fields', { status: 400 });
+      if (!supplier_id || !request_id) return new Response('Missing fields', { status: 400, headers: corsHeaders });
       const { data: authUser } = await sb.auth.admin.getUserById(supplier_id);
       const supplierEmail = authUser?.user?.email;
-      if (!supplierEmail) return new Response('Supplier email not found', { status: 404 });
+      if (!supplierEmail) return new Response('Supplier email not found', { status: 404, headers: corsHeaders });
       const { data: supplierProfile } = await sb.from('profiles').select('company_name, full_name').eq('id', supplier_id).single();
       const supplierName = supplierProfile?.company_name || supplierProfile?.full_name || supplierEmail.split('@')[0];
       const { data: request } = await sb.from('requests').select('title_ar, title_en').eq('id', request_id).single();
       const requestTitle = request?.title_en || request?.title_ar || 'Your Request';
       await sendEmail(supplierEmail, 'تم قبول عرضك 🎉', offerAcceptedHtml(supplierName, requestTitle));
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'supplier_approved') {
@@ -224,7 +234,7 @@ serve(async (req) => {
         const { data: authUser } = await sb.auth.admin.getUserById(supplier_id);
         supplier_email = authUser?.user?.email;
       }
-      if (!supplier_email) return new Response('No email', { status: 400 });
+      if (!supplier_email) return new Response('No email', { status: 400, headers: corsHeaders });
       const name = supplier_name || supplier_email.split('@')[0];
       const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
 <div style="background:#0a0a0b;padding:28px 36px;text-align:center">
@@ -242,7 +252,7 @@ serve(async (req) => {
 <div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
 </div>`;
       await sendEmail(supplier_email, 'تم قبول حسابك في مَعبر 🎉', html);
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'supplier_rejected') {
@@ -252,7 +262,7 @@ serve(async (req) => {
         const { data: authUser } = await sb.auth.admin.getUserById(supplier_id);
         supplier_email = authUser?.user?.email;
       }
-      if (!supplier_email) return new Response('No email', { status: 400 });
+      if (!supplier_email) return new Response('No email', { status: 400, headers: corsHeaders });
       const name = supplier_name || supplier_email.split('@')[0];
       const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
 <div style="background:#0a0a0b;padding:28px 36px;text-align:center">
@@ -267,7 +277,7 @@ serve(async (req) => {
 <div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
 </div>`;
       await sendEmail(supplier_email, 'بخصوص طلب انضمامك لمَعبر', html);
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'new_message') {
@@ -277,7 +287,7 @@ serve(async (req) => {
         const { data: authUser } = await sb.auth.admin.getUserById(recipient_id);
         recipient_email = authUser?.user?.email;
       }
-      if (!recipient_email) return new Response('No email', { status: 400 });
+      if (!recipient_email) return new Response('No email', { status: 400, headers: corsHeaders });
       const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
 <div style="background:#0a0a0b;padding:28px 36px;text-align:center">
   <div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff">MAABAR</div>
@@ -292,12 +302,12 @@ serve(async (req) => {
 <div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
 </div>`;
       await sendEmail(recipient_email, 'رسالة جديدة في مَعبر 💬', html);
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'offer_rejected') {
       const { supplier_id, supplier_email, supplier_name, request_title } = record || {};
-      if (!supplier_email) return new Response('No email', { status: 400 });
+      if (!supplier_email) return new Response('No email', { status: 400, headers: corsHeaders });
       const name = supplier_name || supplier_email.split('@')[0];
       const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
 <div style="background:#0a0a0b;padding:28px 36px;text-align:center">
@@ -314,12 +324,12 @@ serve(async (req) => {
 <div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
 </div>`;
       await sendEmail(supplier_email, 'بخصوص عرضك على مَعبر', html);
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'payment_received_supplier') {
       const { supplier_email, supplier_name, request_title, amount } = record || {};
-      if (!supplier_email) return new Response('No email', { status: 400 });
+      if (!supplier_email) return new Response('No email', { status: 400, headers: corsHeaders });
       const name = supplier_name || supplier_email.split('@')[0];
       const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
 <div style="background:#0a0a0b;padding:28px 36px;text-align:center">
@@ -336,12 +346,12 @@ serve(async (req) => {
 <div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
 </div>`;
       await sendEmail(supplier_email, 'تم استلام الدفع — ابدأ الإنتاج 🚀', html);
-      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    return new Response('Unknown type', { status: 400 });
+    return new Response('Unknown type', { status: 400, headers: corsHeaders });
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

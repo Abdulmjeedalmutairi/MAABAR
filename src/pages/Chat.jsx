@@ -152,6 +152,11 @@ export default function Chat({ lang, user }) {
       .eq('receiver_id', user.id)
       .eq('sender_id', partnerId)
       .eq('is_read', false);
+    await sb.from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('type', 'new_message')
+      .eq('is_read', false);
     window.dispatchEvent(new CustomEvent('maabar:messages-read'));
   };
 
