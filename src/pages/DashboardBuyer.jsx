@@ -223,6 +223,15 @@ export default function DashboardBuyer({ user, profile, lang }) {
   };
 
   const acceptOffer = async (offerId, supplierId, requestId) => {
+    // Get request title and all other pending offers before updating
+    const { data: allOffers } = await sb.from('offers')
+      .select('id,supplier_id,profiles(company_name,full_name)')
+      .eq('request_id', requestId)
+      .eq('status', 'pending')
+      .neq('id', offerId);
+    const { data: reqData } = await sb.from('requests').select('title_ar,title_en').eq('id', requestId).single();
+    const reqTitle = reqData?.title_ar || reqData?.title_en || '';
+
     await sb.from('offers').update({ status: 'accepted' }).eq('id', offerId);
     await sb.from('requests').update({ status: 'closed' }).eq('id', requestId);
     await sb.from('offers').update({ status: 'rejected' }).eq('request_id', requestId).neq('id', offerId);
@@ -238,6 +247,27 @@ export default function DashboardBuyer({ user, profile, lang }) {
         body: JSON.stringify({ type: 'offer_accepted', record: { supplier_id: supplierId, request_id: requestId } }),
       });
     } catch (e) { console.error('email error:', e); }
+
+    // Notify and email each rejected supplier individually
+    if (allOffers?.length) {
+      await Promise.all(allOffers.map(async (o) => {
+        await sb.from('notifications').insert({
+          user_id: o.supplier_id, type: 'offer_rejected',
+          title_ar: `تم اختيار عرض آخر على الطلب: ${reqTitle}`,
+          title_en: `Another offer was selected for: ${reqTitle}`,
+          title_zh: `已选择其他报价: ${reqTitle}`,
+          ref_id: requestId, is_read: false,
+        });
+        try {
+          await fetch(SEND_EMAILS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({ type: 'offer_rejected', record: { supplier_id: o.supplier_id, request_title: reqTitle } }),
+          });
+        } catch (e) { console.error('email error:', e); }
+      }));
+    }
+
     loadMyRequests(); loadPendingActions();
   };
 
@@ -594,6 +624,13 @@ export default function DashboardBuyer({ user, profile, lang }) {
                             {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
                           </button>
                         </>
+                      )}
+                      {['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0, lineHeight: 1.6 }}>
+                          {isAr
+                            ? 'لا يمكن إلغاء الطلب بعد إتمام الدفع. للمساعدة تواصل معنا على support@maabar.io'
+                            : 'Cannot cancel after payment. Contact support@maabar.io for help'}
+                        </p>
                       )}
                     </div>
                   </div>

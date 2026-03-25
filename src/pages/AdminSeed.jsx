@@ -4,7 +4,9 @@ import { sb } from '../supabase';
 
 const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
+const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
 export default function AdminSeed({ user, lang }) {
   const nav = useNavigate();
@@ -21,6 +23,10 @@ export default function AdminSeed({ user, lang }) {
   const [overviewRequests, setOverviewRequests] = useState([]);
   const [overviewDeals, setOverviewDeals] = useState([]);
   const [togglingUser, setTogglingUser] = useState({});
+  const [adminAuthed, setAdminAuthed] = useState(() => sessionStorage.getItem('maabar_admin_auth') === '1');
+  const [pwInput, setPwInput] = useState('');
+  const [pwError, setPwError] = useState(false);
+  const [updatingRequestStatus, setUpdatingRequestStatus] = useState({});
   const isAr = lang === 'ar';
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -146,6 +152,13 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       ref_id: supplier.id,
       is_read: false,
     });
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({ type: 'supplier_approved', record: { supplier_id: supplier.id, supplier_name: supplier.company_name } }),
+      });
+    } catch (e) { console.error('email error:', e); }
     setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
     setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
     addLog(`✅ تم قبول المورد: ${supplier.company_name}`);
@@ -164,6 +177,13 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       ref_id: supplier.id,
       is_read: false,
     });
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({ type: 'supplier_rejected', record: { supplier_id: supplier.id, supplier_name: supplier.company_name } }),
+      });
+    } catch (e) { console.error('email error:', e); }
     setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
     setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
     addLog(`❌ تم رفض المورد: ${supplier.company_name}`);
@@ -171,6 +191,13 @@ WeChat: ${supplier.wechat || 'غير موجود'}
   };
 
   const addLog = (msg) => setLog(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
+
+  const updateRequestStatus = async (requestId, newStatus) => {
+    setUpdatingRequestStatus(prev => ({ ...prev, [requestId]: true }));
+    await sb.from('requests').update({ status: newStatus }).eq('id', requestId);
+    setOverviewRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
+    setUpdatingRequestStatus(prev => ({ ...prev, [requestId]: false }));
+  };
 
   const executeCommand = async () => {
     if (!command.trim()) return;
@@ -229,6 +256,40 @@ WeChat: ${supplier.wechat || 'غير موجود'}
   };
 
   if (!user || user.email !== ADMIN_EMAIL) return null;
+
+  if (!adminAuthed) {
+    return (
+      <div style={{ minHeight: '100vh', paddingTop: 72, background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 320, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 40, background: '#111' }}>
+          <p style={{ color: '#fff', fontSize: 14, marginBottom: 24, textAlign: 'center', letterSpacing: 1 }}>لوحة الإدارة — كلمة المرور</p>
+          <input
+            type="password"
+            value={pwInput}
+            onChange={e => { setPwInput(e.target.value); setPwError(false); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (pwInput === ADMIN_PASSWORD) { sessionStorage.setItem('maabar_admin_auth', '1'); setAdminAuthed(true); }
+                else setPwError(true);
+              }
+            }}
+            placeholder="••••••••"
+            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${pwError ? '#c00' : 'rgba(255,255,255,0.15)'}`, borderRadius: 4, color: '#fff', fontSize: 14, boxSizing: 'border-box', marginBottom: 12 }}
+            autoFocus
+          />
+          {pwError && <p style={{ color: '#ff6b6b', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>كلمة المرور غير صحيحة</p>}
+          <button
+            onClick={() => {
+              if (pwInput === ADMIN_PASSWORD) { sessionStorage.setItem('maabar_admin_auth', '1'); setAdminAuthed(true); }
+              else setPwError(true);
+            }}
+            style={{ width: '100%', padding: '10px 0', background: '#fff', color: '#0a0a0b', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >
+            دخول
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, background: '#1a1a1a', color: '#fff' }}>
@@ -309,10 +370,22 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                     <div>
                       <p style={{ fontSize: 14, color: '#fff', marginBottom: 2 }}>{r.title_ar || r.title_en || '—'}</p>
                       <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                        {r.profiles?.full_name || r.profiles?.company_name || '—'} · {new Date(r.created_at).toLocaleDateString('ar-SA')}
+                        {new Date(r.created_at).toLocaleDateString('ar-SA')}
                       </p>
                     </div>
-                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>{r.status}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <select
+                        value={r.status}
+                        disabled={!!updatingRequestStatus[r.id]}
+                        onChange={e => updateRequestStatus(r.id, e.target.value)}
+                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '4px 8px', fontSize: 11, borderRadius: 3, cursor: 'pointer' }}
+                      >
+                        {['open', 'closed', 'in_progress', 'shipped', 'delivered', 'cancelled'].map(s => (
+                          <option key={s} value={s} style={{ background: '#222' }}>{s}</option>
+                        ))}
+                      </select>
+                      {updatingRequestStatus[r.id] && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>...</span>}
+                    </div>
                   </div>
                 ))}
               </div>

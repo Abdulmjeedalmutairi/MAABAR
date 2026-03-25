@@ -536,6 +536,25 @@ export default function DashboardSupplier({ user, profile, lang }) {
     loadMyOffers(); loadStats();
   };
 
+  const cancelOffer = async (o) => {
+    if (!window.confirm(isAr ? 'هل تريد إلغاء هذا العرض؟' : 'Cancel this offer?')) return;
+    await sb.from('offers').update({ status: 'cancelled' }).eq('id', o.id);
+    const buyerId = o.requests?.buyer_id;
+    if (buyerId) {
+      const title = getTitle(o.requests);
+      await sb.from('notifications').insert({
+        user_id: buyerId,
+        type: 'offer_cancelled',
+        title_ar: `قام المورد بسحب عرضه على طلبك: ${o.requests?.title_ar || title}`,
+        title_en: `Supplier withdrew their offer on: ${o.requests?.title_en || title}`,
+        title_zh: `供应商撤回了报价: ${o.requests?.title_zh || title}`,
+        ref_id: o.request_id,
+        is_read: false,
+      });
+    }
+    loadMyOffers();
+  };
+
   const toggleOfferForm = (id) => {
     setOfferForms(prev => ({ ...prev, [id]: !prev[id] }));
     setOffers(prev => ({ ...prev, [id]: prev[id] || { price: '', moq: '', days: '', origin: 'China', note: '' } }));
@@ -862,6 +881,11 @@ export default function DashboardSupplier({ user, profile, lang }) {
                             className="btn-outline"
                             style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
                             {t.edit}
+                          </button>
+                          <button
+                            onClick={() => cancelOffer(o)}
+                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                            {isAr ? 'إلغاء العرض' : 'Cancel Offer'}
                           </button>
                           <button
                             onClick={() => deleteOffer(o)}

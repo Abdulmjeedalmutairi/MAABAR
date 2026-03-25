@@ -64,20 +64,43 @@ export default function Requests({ lang, user, profile }) {
   const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRef, setUploadingRef] = useState(false);
+  const [showAllRequests, setShowAllRequests] = useState(false);
   const refImageRef = useRef(null);
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
   const cats       = CATEGORIES[lang] || CATEGORIES.ar;
 
-  useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile]);
+  // Load request draft from sessionStorage on mount (buyer)
+  useEffect(() => {
+    if (!isSupplier) {
+      const draft = sessionStorage.getItem('maabar_request_draft');
+      if (draft) {
+        try { setNewReq(prev => ({ ...prev, ...JSON.parse(draft) })); } catch {}
+      }
+    }
+  }, []);
+
+  // Save request form to sessionStorage on every change (buyer)
+  useEffect(() => {
+    if (!isSupplier) {
+      sessionStorage.setItem('maabar_request_draft', JSON.stringify(newReq));
+    }
+  }, [newReq, isSupplier]);
+
+  useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile, showAllRequests]);
 
   const loadRequests = async () => {
     setLoading(true);
-    const { data } = await sb
+    let query = sb
       .from('requests')
       .select('*,profiles(full_name,company_name)')
       .eq('status', 'open')
       .order('created_at', { ascending: false });
+    // Filter by supplier's speciality unless "show all" toggled
+    if (!showAllRequests && profile?.speciality) {
+      query = query.eq('category', profile.speciality);
+    }
+    const { data } = await query;
     if (data) setRequests(data);
     setLoading(false);
   };
@@ -117,6 +140,7 @@ export default function Requests({ lang, user, profile }) {
     setSubmitting(false);
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     alert(isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : 'Request posted! Suppliers will contact you soon');
+    sessionStorage.removeItem('maabar_request_draft');
     setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
   };
 
@@ -196,6 +220,21 @@ export default function Requests({ lang, user, profile }) {
       ════════════════════════════════════ */}
       {!isSupplier && (
         <div style={{ padding: '40px 60px', maxWidth: 820 }}>
+
+          {/* Draft restore banner */}
+          {user && sessionStorage.getItem('maabar_request_draft') && (() => {
+            try { const d = JSON.parse(sessionStorage.getItem('maabar_request_draft')); return d.title_ar || d.title_en; } catch { return false; }
+          })() && (
+            <div style={{
+              background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)',
+              padding: '12px 18px', borderRadius: 'var(--radius-lg)', marginBottom: 20,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 13, color: '#5a9a72', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr ? '📝 طلبك محفوظ — أكمل الإرسال' : '📝 Your draft is saved — complete submission'}
+              </span>
+            </div>
+          )}
 
           {/* إرشاد للزائر */}
           {!user && (
@@ -436,13 +475,24 @@ export default function Requests({ lang, user, profile }) {
       {isSupplier && (
         <div className="list-wrap">
 
-          <div className="search-bar">
+          <div className="search-bar" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <input className="search-input"
               placeholder={isAr ? 'ابحث...' : 'Search...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
               dir={isAr ? 'rtl' : 'ltr'}
+              style={{ flex: 1 }}
             />
+            {profile?.speciality && (
+              <button
+                onClick={() => setShowAllRequests(p => !p)}
+                className="btn-outline"
+                style={{ fontSize: 11, padding: '7px 14px', minHeight: 36, whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {showAllRequests
+                  ? (isAr ? 'طلبات تخصصي فقط' : 'My Specialty Only')
+                  : (isAr ? 'عرض كل الطلبات' : 'Show All Requests')}
+              </button>
+            )}
           </div>
 
           {/* ── Budget Filter ─────────────── */}
@@ -518,6 +568,21 @@ export default function Requests({ lang, user, profile }) {
                         letterSpacing: 0.5,
                       }}>
                         {cats.find(c => c.val === r.category)?.label || r.category}
+                      </span>
+                    )}
+                    {r.sample_requirement === 'required' && (
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(200,60,60,0.12)', color: '#d96060', border: '1px solid rgba(200,60,60,0.25)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? '🔴 عينة إلزامية' : '🔴 Sample Required'}
+                      </span>
+                    )}
+                    {r.sample_requirement === 'preferred' && (
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? '⚪ عينة مفضلة' : '⚪ Sample Preferred'}
+                      </span>
+                    )}
+                    {r.sample_requirement === 'none' && (
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', color: '#5a9a72', border: '1px solid rgba(58,122,82,0.2)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? '🟢 بدون عينة' : '🟢 No Sample'}
                       </span>
                     )}
                     <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>

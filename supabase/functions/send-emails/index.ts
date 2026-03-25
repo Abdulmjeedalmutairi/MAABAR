@@ -7,7 +7,7 @@ const SUPABASE_URL               = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const ANTHROPIC_API_KEY          = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const ADMIN_EMAIL                = 'info@maabar.io';
-const FROM                       = 'Maabar <no-reply@maabar.io>';
+const FROM                       = 'Maabar <hello@maabar.io>';
 
 async function sendEmail(to: string, subject: string, html: string) {
   const res = await fetch('https://api.resend.com/emails', {
@@ -214,6 +214,128 @@ serve(async (req) => {
       const { data: request } = await sb.from('requests').select('title_ar, title_en').eq('id', request_id).single();
       const requestTitle = request?.title_en || request?.title_ar || 'Your Request';
       await sendEmail(supplierEmail, 'تم قبول عرضك 🎉', offerAcceptedHtml(supplierName, requestTitle));
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'supplier_approved') {
+      const { supplier_id, supplier_email: emailFromRecord, supplier_name } = record || {};
+      let supplier_email = emailFromRecord;
+      if (!supplier_email && supplier_id) {
+        const { data: authUser } = await sb.auth.admin.getUserById(supplier_id);
+        supplier_email = authUser?.user?.email;
+      }
+      if (!supplier_email) return new Response('No email', { status: 400 });
+      const name = supplier_name || supplier_email.split('@')[0];
+      const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+<div style="background:#0a0a0b;padding:28px 36px;text-align:center">
+  <div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff">MAABAR</div>
+  <div style="font-size:11px;color:#444;margin-top:4px">مَعبر</div>
+</div>
+<div style="background:#111113;padding:36px;border:1px solid #1c1c1c">
+  <h2 style="color:#e2e2e2;font-size:22px;margin-bottom:16px">🎉 تم قبول حسابك في مَعبر!</h2>
+  <p style="color:#888;font-size:14px;line-height:2">أهلاً ${name}،</p>
+  <p style="color:#888;font-size:14px;line-height:2">يسعدنا إخبارك بأن حسابك في مَعبر قد تم قبوله. يمكنك الآن تسجيل الدخول وإضافة منتجاتك وبدء استقبال الطلبات من التجار السعوديين.</p>
+  <div style="margin-top:24px">
+    <a href="https://maabar.io/login/supplier" style="display:inline-block;background:#fff;color:#0a0a0b;padding:12px 28px;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px">ابدأ الآن ←</a>
+  </div>
+</div>
+<div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
+</div>`;
+      await sendEmail(supplier_email, 'تم قبول حسابك في مَعبر 🎉', html);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'supplier_rejected') {
+      const { supplier_id, supplier_email: emailFromRecord, supplier_name } = record || {};
+      let supplier_email = emailFromRecord;
+      if (!supplier_email && supplier_id) {
+        const { data: authUser } = await sb.auth.admin.getUserById(supplier_id);
+        supplier_email = authUser?.user?.email;
+      }
+      if (!supplier_email) return new Response('No email', { status: 400 });
+      const name = supplier_name || supplier_email.split('@')[0];
+      const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+<div style="background:#0a0a0b;padding:28px 36px;text-align:center">
+  <div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff">MAABAR</div>
+  <div style="font-size:11px;color:#444;margin-top:4px">مَعبر</div>
+</div>
+<div style="background:#111113;padding:36px;border:1px solid #1c1c1c">
+  <h2 style="color:#e2e2e2;font-size:20px;margin-bottom:16px">بخصوص طلب انضمامك لمَعبر</h2>
+  <p style="color:#888;font-size:14px;line-height:2">أهلاً ${name}،</p>
+  <p style="color:#888;font-size:14px;line-height:2">نأسف لإخبارك بأنه لم يتم قبول حسابك في مَعبر في الوقت الحالي. للاستفسار أو تقديم معلومات إضافية، تواصل معنا مباشرة على <a href="mailto:support@maabar.io" style="color:#888">support@maabar.io</a>.</p>
+</div>
+<div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
+</div>`;
+      await sendEmail(supplier_email, 'بخصوص طلب انضمامك لمَعبر', html);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'new_message') {
+      const { recipient_id, recipient_email: emailFromRecord, recipient_name, sender_id, sender_name } = record || {};
+      let recipient_email = emailFromRecord;
+      if (!recipient_email && recipient_id) {
+        const { data: authUser } = await sb.auth.admin.getUserById(recipient_id);
+        recipient_email = authUser?.user?.email;
+      }
+      if (!recipient_email) return new Response('No email', { status: 400 });
+      const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+<div style="background:#0a0a0b;padding:28px 36px;text-align:center">
+  <div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff">MAABAR</div>
+</div>
+<div style="background:#111113;padding:36px;border:1px solid #1c1c1c">
+  <p style="color:#e2e2e2;font-size:16px;margin-bottom:16px">💬 رسالة جديدة في مَعبر</p>
+  <p style="color:#888;font-size:14px;line-height:2">لديك رسالة جديدة${sender_name ? ` من ${sender_name}` : ''}. اضغط للرد.</p>
+  <div style="margin-top:24px">
+    <a href="https://maabar.io/chat/${sender_id || ''}" style="display:inline-block;background:#fff;color:#0a0a0b;padding:12px 28px;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px">فتح المحادثة ←</a>
+  </div>
+</div>
+<div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
+</div>`;
+      await sendEmail(recipient_email, 'رسالة جديدة في مَعبر 💬', html);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'offer_rejected') {
+      const { supplier_id, supplier_email, supplier_name, request_title } = record || {};
+      if (!supplier_email) return new Response('No email', { status: 400 });
+      const name = supplier_name || supplier_email.split('@')[0];
+      const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+<div style="background:#0a0a0b;padding:28px 36px;text-align:center">
+  <div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff">MAABAR</div>
+</div>
+<div style="background:#111113;padding:36px;border:1px solid #1c1c1c">
+  <p style="color:#e2e2e2;font-size:16px;margin-bottom:16px">بخصوص عرضك</p>
+  <p style="color:#888;font-size:14px;line-height:2">أهلاً ${name}،</p>
+  <p style="color:#888;font-size:14px;line-height:2">تم اختيار عرض آخر على الطلب <strong style="color:#e2e2e2">${request_title || ''}</strong>. شكراً لمشاركتك — تابع الطلبات الجديدة.</p>
+  <div style="margin-top:24px">
+    <a href="https://maabar.io/requests" style="display:inline-block;background:#fff;color:#0a0a0b;padding:12px 28px;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px">تصفح الطلبات ←</a>
+  </div>
+</div>
+<div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
+</div>`;
+      await sendEmail(supplier_email, 'بخصوص عرضك على مَعبر', html);
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'payment_received_supplier') {
+      const { supplier_email, supplier_name, request_title, amount } = record || {};
+      if (!supplier_email) return new Response('No email', { status: 400 });
+      const name = supplier_name || supplier_email.split('@')[0];
+      const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+<div style="background:#0a0a0b;padding:28px 36px;text-align:center">
+  <div style="font-size:18px;font-weight:700;letter-spacing:4px;color:#fff">MAABAR</div>
+</div>
+<div style="background:#111113;padding:36px;border:1px solid #1c1c1c">
+  <p style="color:#e2e2e2;font-size:18px;margin-bottom:16px">🚀 تم استلام الدفع — ابدأ الإنتاج</p>
+  <p style="color:#888;font-size:14px;line-height:2">أهلاً ${name}،</p>
+  <p style="color:#888;font-size:14px;line-height:2">تم استلام دفع التاجر لطلب <strong style="color:#e2e2e2">${request_title || ''}</strong>${amount ? ` بقيمة <strong style="color:#e2e2e2">${amount} SAR</strong>` : ''}. يمكنك الآن بدء الإنتاج والتجهيز.</p>
+  <div style="margin-top:24px">
+    <a href="https://maabar.io/dashboard" style="display:inline-block;background:#fff;color:#0a0a0b;padding:12px 28px;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px">عرض الطلب ←</a>
+  </div>
+</div>
+<div style="background:#111113;padding:20px 36px;border:1px solid #1c1c1c;text-align:center;font-size:11px;color:#444">hello@maabar.io · maabar.io</div>
+</div>`;
+      await sendEmail(supplier_email, 'تم استلام الدفع — ابدأ الإنتاج 🚀', html);
       return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 

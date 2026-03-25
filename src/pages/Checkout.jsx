@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 
 const MOYASAR_PUBLISHABLE_KEY = 'pk_test_YOUR_KEY_HERE';
+const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const T = {
   ar: {
@@ -264,6 +266,17 @@ export default function Checkout({ lang, user, profile }) {
       }).eq('id', request.id);
 
       // إشعار للمورد
+      const reqTitle = request?.title_ar || request?.title_en || '';
+      try {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'payment_received_supplier',
+            record: { supplier_id: offer.supplier_id, request_title: reqTitle, amount: firstPayment },
+          }),
+        });
+      } catch (e) { console.error('email error:', e); }
       await sb.from('notifications').insert({
         user_id: offer.supplier_id,
         type: 'payment_received',
