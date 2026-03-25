@@ -6,7 +6,6 @@ const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
 export default function AdminSeed({ user, lang }) {
   const nav = useNavigate();
@@ -23,24 +22,19 @@ export default function AdminSeed({ user, lang }) {
   const [overviewRequests, setOverviewRequests] = useState([]);
   const [overviewDeals, setOverviewDeals] = useState([]);
   const [togglingUser, setTogglingUser] = useState({});
-  const [adminAuthed, setAdminAuthed] = useState(() => sessionStorage.getItem('maabar_admin_auth') === '1');
-  const [pwInput, setPwInput] = useState('');
-  const [pwError, setPwError] = useState(false);
   const [updatingRequestStatus, setUpdatingRequestStatus] = useState({});
   const isAr = lang === 'ar';
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {
     if (!user || user.email !== ADMIN_EMAIL) { nav('/'); return; }
-    if (!adminAuthed) return;
     loadStats();
     loadPendingSuppliers();
-  }, [user, adminAuthed]);
+  }, [user]);
 
   useEffect(() => {
-    if (!adminAuthed) return;
     if (activeTab === 'overview') loadOverviewData();
-  }, [activeTab, adminAuthed]);
+  }, [activeTab]);
 
   const loadStats = async () => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -258,40 +252,6 @@ WeChat: ${supplier.wechat || 'غير موجود'}
   };
 
   if (!user || user.email !== ADMIN_EMAIL) return null;
-
-  if (!adminAuthed) {
-    return (
-      <div style={{ minHeight: '100vh', paddingTop: 72, background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 320, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 40, background: '#111' }}>
-          <p style={{ color: '#fff', fontSize: 14, marginBottom: 24, textAlign: 'center', letterSpacing: 1 }}>لوحة الإدارة — كلمة المرور</p>
-          <input
-            type="password"
-            value={pwInput}
-            onChange={e => { setPwInput(e.target.value); setPwError(false); }}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                if (pwInput === ADMIN_PASSWORD) { sessionStorage.setItem('maabar_admin_auth', '1'); setAdminAuthed(true); }
-                else setPwError(true);
-              }
-            }}
-            placeholder="••••••••"
-            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${pwError ? '#c00' : 'rgba(255,255,255,0.15)'}`, borderRadius: 4, color: '#fff', fontSize: 14, boxSizing: 'border-box', marginBottom: 12 }}
-            autoFocus
-          />
-          {pwError && <p style={{ color: '#ff6b6b', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>كلمة المرور غير صحيحة</p>}
-          <button
-            onClick={() => {
-              if (pwInput === ADMIN_PASSWORD) { sessionStorage.setItem('maabar_admin_auth', '1'); setAdminAuthed(true); }
-              else setPwError(true);
-            }}
-            style={{ width: '100%', padding: '10px 0', background: '#fff', color: '#0a0a0b', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-          >
-            دخول
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, background: '#1a1a1a', color: '#fff' }}>
