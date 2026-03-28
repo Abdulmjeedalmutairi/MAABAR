@@ -299,7 +299,12 @@ export default function Login({ setUser, setProfile, lang }) {
     if (isSupplier && payMethod === 'alipay' && !alipayAccount) { setMsg(l.fillRequired); setMsgType('error'); return; }
     if (isSupplier && payMethod === 'swift' && (!swiftCode || !bankName)) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
-    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard', data: { role, status: isSupplier ? 'pending' : 'active' } } });
+    const metaData = {
+      role, status: isSupplier ? 'pending' : 'active',
+      ...(!isSupplier && { full_name: `${firstName} ${lastName}`, phone, city, company_name: companyName }),
+      ...(isSupplier && { company_name: supCompany, whatsapp, wechat, pay_method: payMethod, reg_number: regNum, trade_link: tradeLink, speciality, license_photo: licenseUrl, factory_photo: factoryUrl, alipay_account: payMethod === 'alipay' ? alipayAccount : null, swift_code: payMethod === 'swift' ? swiftCode : null, bank_name: payMethod === 'swift' ? bankName : null }),
+    };
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard', data: metaData } });
     setLoading(false);
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     const profileData = {
@@ -316,8 +321,8 @@ export default function Login({ setUser, setProfile, lang }) {
         country, city: supCity, speciality,
         years_experience: yearsExp ? parseInt(yearsExp) : null,
         employees_count: employees ? parseInt(employees) : null,
-        license_url: licenseUrl,
-        factory_image_url: factoryUrl,
+        license_photo: licenseUrl,
+        factory_photo: factoryUrl,
       }),
     };
     if (isSupplier) {

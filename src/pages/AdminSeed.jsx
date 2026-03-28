@@ -430,17 +430,17 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                         </p>
                       )}
                       {/* Documents */}
-                      {(s.license_url || s.factory_image_url) && (
+                      {(s.license_photo || s.factory_photo) && (
                         <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-                          {s.license_url && (
-                            <a href={s.license_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                              <img src={s.license_url} alt="رخصة تجارية" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
+                          {s.license_photo && (
+                            <a href={s.license_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                              <img src={s.license_photo} alt="رخصة تجارية" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
                               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 4 }}>رخصة تجارية</p>
                             </a>
                           )}
-                          {s.factory_image_url && (
-                            <a href={s.factory_image_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                              <img src={s.factory_image_url} alt="صورة المصنع" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
+                          {s.factory_photo && (
+                            <a href={s.factory_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                              <img src={s.factory_photo} alt="صورة المصنع" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
                               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 4 }}>صورة المصنع</p>
                             </a>
                           )}
