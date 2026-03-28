@@ -354,7 +354,7 @@ export default function Login({ setUser, setProfile, lang }) {
   };
 
   const doGoogleLogin = async () => {
-    const redirectTo = import.meta.env.DEV
+    const redirectTo = process.env.NODE_ENV === 'development'
       ? window.location.origin + '/dashboard'
       : 'https://maabar.io/dashboard';
     await sb.auth.signInWithOAuth({
