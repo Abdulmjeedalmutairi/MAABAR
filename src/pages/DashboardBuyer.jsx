@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
@@ -435,10 +436,9 @@ export default function DashboardBuyer({ user, profile, lang }) {
       {/* ══════════════════════════════════════
           HEADER
       ══════════════════════════════════════ */}
-      <div style={{
+      <div className="dash-header-pad" style={{
         background: 'var(--bg-subtle)',
         borderBottom: '1px solid var(--border-subtle)',
-        padding: '48px 60px 0',
       }}>
         {/* Label */}
         <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20, fontWeight: 500 }}>
@@ -506,7 +506,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
           CONTENT
       ══════════════════════════════════════ */}
       <div style={{ background: 'var(--bg-base)', minHeight: 'calc(100vh - 280px)' }}>
-        <div style={{ padding: '40px 60px', maxWidth: 960, margin: '0 auto' }}>
+        <div className="dash-content">
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (

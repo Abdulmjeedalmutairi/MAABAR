@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
@@ -122,6 +123,7 @@ export default function Home({ lang, user, profile }) {
   const nav = useNavigate();
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
+  usePageTitle('home', lang);
   const [ideaOpen, setIdeaOpen] = useState(false);
 
   useEffect(() => { return () => setIdeaOpen(false); }, []);

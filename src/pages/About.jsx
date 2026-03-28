@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React from 'react';
 
@@ -65,6 +66,7 @@ export default function About({ lang }) {
   const t = T[lang] || T.ar;
   const problems = PROBLEMS[lang] || PROBLEMS.ar;
   const isAr = lang === 'ar';
+  usePageTitle('about', lang);
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>

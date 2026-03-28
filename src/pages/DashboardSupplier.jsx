@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
@@ -594,11 +595,11 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId];
-    if (!o?.price || !o?.moq || !o?.days) { alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields'); return; }
+    if (!o?.price || !o?.moq || !o?.days) { alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : lang === 'zh' ? '请填写必填字段' : 'Fill required fields'); return; }
     const { data: existing } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').single();
-    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : 'You already submitted an offer on this request'); return; }
+    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request'); return; }
     const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), delivery_days: parseInt(o.days), note: o.note || null, status: 'pending' });
-    if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
+    if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
     await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
     try {
       await fetch(SEND_EMAILS_URL, {
@@ -665,7 +666,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
       {/* ══════════════════════════════════════
           HEADER
       ══════════════════════════════════════ */}
-      <div style={{ background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)', padding: '48px 60px 0' }}>
+      <div className="dash-header-pad" style={{ background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
         <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20, fontWeight: 500 }}>{t.tag}</p>
         <h1 style={{ fontSize: isAr ? 34 : 40, fontWeight: 300, ...arFont, color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1.2, marginBottom: 10 }}>
           {t.welcome} {name}
@@ -696,7 +697,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
           CONTENT
       ══════════════════════════════════════ */}
       <div style={{ background: 'var(--bg-base)', minHeight: 'calc(100vh - 280px)' }}>
-        <div style={{ padding: '40px 60px', maxWidth: 960, margin: '0 auto' }}>
+        <div className="dash-content">
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (

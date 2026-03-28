@@ -1751,3 +1751,20 @@ input:-webkit-autofill:active {
   .sec-title { font-size: 28px; }
   .sec-title.ar { font-size: 24px; }
 }
+/* ── Responsive dashboard padding ── */
+.dash-content {
+  padding: 40px 60px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.dash-header-pad {
+  padding: 48px 60px 0;
+}
+@media (max-width: 768px) {
+  .dash-content { padding: 24px 20px; }
+  .dash-header-pad { padding: 24px 20px 0; }
+}
+@media (max-width: 480px) {
+  .dash-content { padding: 16px 16px; }
+  .dash-header-pad { padding: 16px 16px 0; }
+}

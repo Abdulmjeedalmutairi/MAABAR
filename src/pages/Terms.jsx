@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useState } from 'react';
 
@@ -181,6 +182,7 @@ const SECTIONS_ZH = [
 
 export default function Terms({ lang }) {
   const isAr = lang === 'ar';
+  usePageTitle('terms', lang);
   const isZh = lang === 'zh';
   const [activeSection, setActiveSection] = useState(null);
 

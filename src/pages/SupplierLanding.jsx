@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +53,7 @@ export default function SupplierLanding({ lang }) {
   const nav = useNavigate();
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
+  usePageTitle('supplier', lang);
   const [count, setCount] = useState(0);
 
   useEffect(() => {

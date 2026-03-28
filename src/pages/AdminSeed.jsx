@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
@@ -25,6 +26,7 @@ export default function AdminSeed({ user, lang }) {
   const [updatingRequestStatus, setUpdatingRequestStatus] = useState({});
   const [expandedSupplier, setExpandedSupplier] = useState(null);
   const isAr = lang === 'ar';
+  usePageTitle('admin', lang);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {

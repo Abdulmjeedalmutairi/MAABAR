@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -123,6 +124,7 @@ export default function Checkout({ lang, user, profile }) {
   const location = useLocation();
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
+  usePageTitle('checkout', lang);
 
   const { offer, request, isSecondPayment } = location.state || {};
 

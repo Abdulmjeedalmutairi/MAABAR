@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React from 'react';
 
@@ -10,6 +11,7 @@ const T = {
 export default function Contact({ lang }) {
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
+  usePageTitle('contact', lang);
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>

@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
@@ -124,7 +125,7 @@ export default function Requests({ lang, user, profile }) {
   const submitNewRequest = async () => {
     if (!user) { nav('/login/buyer'); return; }
     if (!newReq.title_ar || !newReq.quantity || !newReq.payment_plan || !newReq.sample_requirement) {
-      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields');
+      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : lang === 'zh' ? '请填写必填字段' : 'Fill required fields');
       return;
     }
     setSubmitting(true);
@@ -145,7 +146,7 @@ export default function Requests({ lang, user, profile }) {
     });
     console.log('Supabase error:', JSON.stringify(error));
     setSubmitting(false);
-    if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
+    if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
     alert(isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : 'Request posted! Suppliers will contact you soon');
     sessionStorage.removeItem('maabar_request_draft');
     setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
@@ -159,18 +160,18 @@ export default function Requests({ lang, user, profile }) {
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId];
     if (!o?.price || !o?.moq || !o?.days) {
-      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields');
+      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : lang === 'zh' ? '请填写必填字段' : 'Fill required fields');
       return;
     }
     // Prevent duplicate offers
     const { data: existing } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').single();
-    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : 'You already submitted an offer on this request'); return; }
+    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request'); return; }
     const { error } = await sb.from('offers').insert({
       request_id: requestId, supplier_id: user.id,
       price: parseFloat(o.price), moq: o.moq,
       delivery_days: parseInt(o.days), origin: o.origin, note: o.note, status: 'pending',
     });
-    if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
+    if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
     await sb.from('notifications').insert({
       user_id: buyerId, type: 'new_offer',
       title_ar: 'وصلك عرض جديد على طلبك',

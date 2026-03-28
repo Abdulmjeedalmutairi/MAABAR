@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +54,7 @@ export default function Suppliers({ lang, user }) {
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('all');
   const isAr = lang === 'ar';
+  usePageTitle('suppliers', lang);
   const cats = CATEGORIES[lang] || CATEGORIES.ar;
 
   useEffect(() => { loadSuppliers(); }, [activeCat]);
@@ -60,7 +62,7 @@ export default function Suppliers({ lang, user }) {
   const loadSuppliers = async () => {
     setLoading(true);
     let query = sb.from('profiles')
-      .select('*, products(id)')
+      .select('*, products(id), reviews(id)')
       .eq('role', 'supplier')
       .eq('status', 'active')
       .order('rating', { ascending: false });
@@ -174,20 +176,25 @@ export default function Suppliers({ lang, user }) {
                         {s.company_name || '—'}
                       </p>
                       {s.status === 'approved' && (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          width: 16, height: 16, borderRadius: '50%',
-                          background: 'rgba(139,120,255,0.15)',
-                          border: '1px solid rgba(139,120,255,0.3)',
-                          color: 'rgba(139,120,255,0.85)',
-                          fontSize: 10, fontWeight: 700, flexShrink: 0,
-                        }}>✓</span>
+                        <span title={isAr ? 'مورد معتمد من فريق مَعبر' : 'Verified by Maabar team'} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 3,
+                          padding: '2px 7px', borderRadius: 20,
+                          background: 'rgba(58,122,82,0.1)',
+                          border: '1px solid rgba(58,122,82,0.25)',
+                          color: '#5a9a72',
+                          fontSize: 10, fontWeight: 600, flexShrink: 0,
+                        }}>✓ {isAr ? 'معتمد' : lang === 'zh' ? '已认证' : 'Verified'}</span>
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ color: '#f5a623', fontSize: 13 }}>{stars(s.rating)}</span>
                       {s.reviews_count > 0 && (
                         <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>({s.reviews_count})</span>
+                      )}
+                      {(s.reviews?.length > 0 || s.reviews_count > 0) && (
+                        <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72', borderRadius: 20 }}>
+                          {s.reviews_count || s.reviews?.length} {isAr ? 'صفقة مكتملة' : lang === 'zh' ? '笔交易' : 'deals'}
+                        </span>
                       )}
                     </div>
                   </div>

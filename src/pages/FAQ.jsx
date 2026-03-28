@@ -1,3 +1,4 @@
+import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useState } from 'react';
 
@@ -36,6 +37,7 @@ const FAQS = {
 
 export default function FAQ({ lang }) {
   const isAr = lang === 'ar';
+  usePageTitle('faq', lang);
   const faqs = FAQS[lang] || FAQS.ar;
   const [open, setOpen] = useState(null);
 
