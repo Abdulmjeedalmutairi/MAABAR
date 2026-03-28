@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 
-const UNIFONIC_APP_SID   = import.meta.env.VITE_UNIFONIC_APP_SID;
-const SUPABASE_ANON_KEY  = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const UNIFONIC_APP_SID   = '';
+const SUPABASE_ANON_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 const SEND_EMAILS_URL    = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-emails';
 
 const SPECIALITIES = [
@@ -341,10 +341,11 @@ export default function Login({ setUser, setProfile, lang }) {
       setMsgType('success');
       return;
     }
-    // Buyer: OTP verification via phone
-    setPendingSignup({ authData: data, profileData });
-    await sendOtp(phone);
-    setOtpScreen(true);
+    // Buyer: insert profile directly (OTP disabled - Unifonic not configured)
+    await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
+    setMsg(lang === 'ar' ? 'تم إنشاء حسابك. سجّل دخولك الآن.' : 'Account created. Please sign in.');
+    setMsgType('success');
+    setMode('signin');
   };
 
   const doGoogleLogin = async () => {
