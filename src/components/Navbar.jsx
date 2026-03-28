@@ -135,7 +135,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       {/* ══════════════════════════════════════
           NAV BAR
       ══════════════════════════════════════ */}
-      <nav className={scrolled ? 'scrolled' : ''}>
+      <nav className={scrolled ? 'scrolled' : ''} dir={isAr ? 'rtl' : 'ltr'}>
 
         {/* Logo */}
         <button className="nav-logo" onClick={() => nav('/')}>
