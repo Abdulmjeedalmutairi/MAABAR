@@ -150,15 +150,17 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       is_read: false,
     });
     try {
-      // Get supplier email from auth
-      const { data: authUser } = await sb.auth.admin?.getUserById?.(supplier.id) || {};
-      const supplierEmail = authUser?.user?.email || supplier.email || '';
+      // Get email from profiles table (populated by trigger from auth.users)
+      const { data: profileRow } = await sb.from('profiles').select('email').eq('id', supplier.id).single();
+      const supplierEmail = profileRow?.email || supplier.email || '';
       if (supplierEmail) {
         await fetch(SEND_EMAILS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
           body: JSON.stringify({ type: 'supplier_approved', to: supplierEmail, data: { name: supplier.company_name || 'Supplier' } }),
         });
+      } else {
+        console.warn('approveSupplier: no email found for supplier', supplier.id);
       }
     } catch (e) { console.error('email error:', e); }
     setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
