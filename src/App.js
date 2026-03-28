@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { sb } from './supabase';
 
 // Pages
@@ -62,6 +62,7 @@ function App() {
   const DashboardRouter = () => {
     if (loading) return <div className="loading">...</div>;
     if (!profile) return <DashboardBuyer {...sharedProps} />;
+    if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
     if (profile.role === 'supplier' && profile.status === 'pending')
       return <PendingApproval {...sharedProps} />;
     if (profile.role === 'supplier')
