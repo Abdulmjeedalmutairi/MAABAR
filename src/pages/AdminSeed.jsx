@@ -23,6 +23,7 @@ export default function AdminSeed({ user, lang }) {
   const [overviewDeals, setOverviewDeals] = useState([]);
   const [togglingUser, setTogglingUser] = useState({});
   const [updatingRequestStatus, setUpdatingRequestStatus] = useState({});
+  const [expandedSupplier, setExpandedSupplier] = useState(null);
   const isAr = lang === 'ar';
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -149,11 +150,16 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       is_read: false,
     });
     try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({ type: 'supplier_approved', record: { supplier_id: supplier.id, supplier_name: supplier.company_name } }),
-      });
+      // Get supplier email from auth
+      const { data: authUser } = await sb.auth.admin?.getUserById?.(supplier.id) || {};
+      const supplierEmail = authUser?.user?.email || supplier.email || '';
+      if (supplierEmail) {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+          body: JSON.stringify({ type: 'supplier_approved', to: supplierEmail, data: { name: supplier.company_name || 'Supplier' } }),
+        });
+      }
     } catch (e) { console.error('email error:', e); }
     setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
     setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
@@ -459,6 +465,13 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                           {isVerifying ? '⏳ جاري التحقق...' : '🤖 تحقق بالـ AI'}
                         </button>
                       )}
+                      <button onClick={() => setExpandedSupplier(expandedSupplier === s.id ? null : s.id)} style={{
+                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        padding: '9px 16px', fontSize: 12, cursor: 'pointer', borderRadius: 3,
+                      }}>
+                        {expandedSupplier === s.id ? '← إخفاء' : '📋 الملف الكامل'}
+                      </button>
                       <button onClick={() => approveSupplier(s)} disabled={!!isActing} style={{
                         background: 'rgba(45,122,79,0.2)', color: '#4caf50',
                         border: '1px solid rgba(45,122,79,0.4)',
@@ -477,6 +490,52 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                       </button>
                     </div>
                   </div>
+
+                  {/* FULL PROFILE */}
+                  {expandedSupplier === s.id && (
+                    <div style={{ padding: '20px 24px', background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <p style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: 16 }}>الملف الكامل</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: 13 }}>
+                        {[
+                          { label: 'الإيميل', val: s.email },
+                          { label: 'اسم الشركة', val: s.company_name },
+                          { label: 'WhatsApp', val: s.whatsapp },
+                          { label: 'WeChat', val: s.wechat },
+                          { label: 'طريقة الدفع', val: s.pay_method },
+                          { label: 'Alipay', val: s.alipay_account },
+                          { label: 'SWIFT', val: s.swift_code },
+                          { label: 'البنك', val: s.bank_name },
+                          { label: 'التخصص', val: s.speciality },
+                          { label: 'رقم التسجيل', val: s.reg_number },
+                          { label: 'المدينة', val: s.city },
+                          { label: 'الدولة', val: s.country },
+                          { label: 'الصفحة التجارية', val: s.trade_link },
+                          { label: 'سنوات الخبرة', val: s.years_experience },
+                        ].map(({ label, val }) => val ? (
+                          <div key={label} style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>{label}: </span>
+                            <span style={{ color: 'rgba(255,255,255,0.75)' }}>{val}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                      {(s.license_photo || s.factory_photo) && (
+                        <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                          {s.license_photo && (
+                            <a href={s.license_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', textAlign: 'center' }}>
+                              <img src={s.license_photo} alt="رخصة" style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)' }} />
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>رخصة تجارية</p>
+                            </a>
+                          )}
+                          {s.factory_photo && (
+                            <a href={s.factory_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', textAlign: 'center' }}>
+                              <img src={s.factory_photo} alt="مصنع" style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)' }} />
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>صورة المصنع</p>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* AI VERIFICATION RESULT */}
                   {vResult && (
