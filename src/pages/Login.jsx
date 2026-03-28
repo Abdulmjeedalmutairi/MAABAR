@@ -346,11 +346,13 @@ export default function Login({ setUser, setProfile, lang }) {
       setMsgType('success');
       return;
     }
-    // Buyer: insert profile directly (OTP disabled - Unifonic not configured)
-    await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
-    setMsg(lang === 'ar' ? 'تم إنشاء حسابك. سجّل دخولك الآن.' : 'Account created. Please sign in.');
-    setMsgType('success');
-    setMode('signin');
+    // Buyer: email confirmation required
+    setMsg(
+      lang === 'ar' ? 'أرسلنا رسالة تأكيد لبريدك الإلكتروني. افتحها واضغط على الرابط للمتابعة.' :
+      lang === 'zh' ? '确认邮件已发送至您的邮箱，请点击邮件中的链接继续。' :
+      'We sent a confirmation email. Please click the link to continue.'
+    );
+    setMsgType('ok');
   };
 
   const doGoogleLogin = async () => {
