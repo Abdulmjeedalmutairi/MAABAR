@@ -122,18 +122,9 @@ export default function Home({ lang, user, profile }) {
   const nav = useNavigate();
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
-  const [products, setProducts] = useState([]);
   const [ideaOpen, setIdeaOpen] = useState(false);
 
   useEffect(() => { return () => setIdeaOpen(false); }, []);
-
-  useEffect(() => {
-    sb.from('products')
-      .select('*,profiles(company_name)')
-      .eq('is_active', true)
-      .limit(4)
-      .then(({ data }) => { if (data) setProducts(data); });
-  }, []);
 
   const arFont = isAr ? { fontFamily: 'var(--font-ar)' } : {};
 
@@ -203,51 +194,7 @@ export default function Home({ lang, user, profile }) {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          PRODUCTS PREVIEW
-      ══════════════════════════════════════ */}
-      <section id="products-preview" style={{ background: 'var(--bg-subtle)', borderTop: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
-        <div className="section-header">
-          <div>
-            <p className="section-label">{t.catalogLabel}</p>
-            <h2 className="sec-title" style={{ ...arFont, marginBottom: 0 }}>{t.catalogTitle}</h2>
-          </div>
-          <button className="btn-outline" onClick={() => nav('/products')}>
-            {t.viewAll} {isAr ? '←' : '→'}
-          </button>
-        </div>
 
-        {products.length === 0 ? (
-          <p style={{ color: 'var(--text-disabled)', fontSize: 13, paddingTop: 8 }}>{t.noProducts}</p>
-        ) : (
-          products.map(p => (
-            <div key={p.id} className="product-list-item" onClick={() => nav(`/products/${p.id}`)}>
-              <div className="product-img">
-                {p.image_url
-                  ? <img src={p.image_url} alt="" />
-                  : <span style={{ fontSize: 24, opacity: 0.3 }}>◻</span>
-                }
-              </div>
-              <div className="product-info">
-                <h3 className={`product-name${isAr ? ' ar' : ''}`}>
-                  {p.name_ar || p.name_en}
-                </h3>
-                <p className="product-price">
-                  {p.price_from ? `${p.price_from} SAR` : '—'}
-                </p>
-                <p className="product-meta">
-                  MOQ: {p.moq || '—'} · {p.profiles?.company_name || ''}
-                </p>
-              </div>
-              <div className="product-btns">
-                <button className="btn-dark-sm">
-                  {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </section>
 
       {/* ══════════════════════════════════════
           TRUST
