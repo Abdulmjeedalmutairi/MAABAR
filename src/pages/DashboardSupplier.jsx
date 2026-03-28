@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
 
@@ -268,10 +268,17 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
 
 /* ─── Main ───────────────────────────────── */
 export default function DashboardSupplier({ user, profile, lang }) {
-  const nav  = useNavigate();
-  const t    = T[lang] || T.zh;
-  const cats = CATEGORIES[lang] || CATEGORIES.zh;
-  const isAr = lang === 'ar';
+  const nav      = useNavigate();
+  const location = useLocation();
+  const t        = T[lang] || T.zh;
+  const cats     = CATEGORIES[lang] || CATEGORIES.zh;
+  const isAr     = lang === 'ar';
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
 
   const [stats, setStats]                   = useState({ products: 0, offers: 0, messages: 0 });
   const [myOffers, setMyOffers]             = useState([]);

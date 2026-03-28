@@ -88,7 +88,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     setNotifOpen(false);
     if (n.type === 'new_message') nav(`/chat/${n.ref_id}`);
     else if (n.type === 'account_approved' || n.type === 'account_rejected') nav('/dashboard');
-    else if (n.ref_id) nav(`/dashboard`);
+    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'payment_received', 'ready_to_ship', 'shipped', 'delivery_confirmed', 'request_deleted'].includes(n.type)) nav('/dashboard?tab=requests');
     else nav('/dashboard');
   };
 

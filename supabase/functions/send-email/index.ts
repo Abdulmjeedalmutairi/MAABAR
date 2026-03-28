@@ -156,6 +156,22 @@ const templates = {
 </div>`),
   }),
 
+  payment_confirmation_buyer: (d) => ({
+    subject: `تم استلام دفعتك — ${d.requestTitle || ''}`,
+    html: wrap(`
+<div class="bd">
+<p class="gr">أهلاً${d.name ? ' ' + d.name : ''}،</p>
+<p class="tg">Payment Confirmed</p>
+<div class="ib">
+<p class="il">تفاصيل الدفعة</p>
+<div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">المبلغ المدفوع</span><span class="iv">${d.amount || '-'} SAR</span></div>
+</div>
+<p style="font-size:15px;color:#333;margin-top:16px">تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">متابعة الطلب ←</a></div>
+</div>`),
+  }),
+
   supplier_rejected: (d) => ({
     subject: 'بخصوص طلب انضمامك في مَعبر',
     html: wrap(`

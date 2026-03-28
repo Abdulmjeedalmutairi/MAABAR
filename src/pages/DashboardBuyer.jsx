@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -114,8 +114,16 @@ function BackBtn({ onClick, isAr }) {
 
 /* ─── Main ───────────────────────────────── */
 export default function DashboardBuyer({ user, profile, lang }) {
-  const nav    = useNavigate();
-  const isAr   = lang === 'ar';
+  const nav      = useNavigate();
+  const location = useLocation();
+  const isAr     = lang === 'ar';
+
+  // Handle ?tab=requests from notification click
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
 
   const [stats, setStats]                 = useState({ requests: 0, messages: 0, offers: 0 });
   const [myRequests, setMyRequests]       = useState([]);
@@ -147,6 +155,19 @@ export default function DashboardBuyer({ user, profile, lang }) {
     if (!user) { nav('/login/buyer'); return; }
     loadStats();
     loadPendingActions();
+
+    // Realtime — refresh when offers/requests change
+    const channel = sb.channel(`buyer-dash-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
+        loadStats(); loadPendingActions();
+        if (activeTab === 'requests') loadMyRequests();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `buyer_id=eq.${user.id}` }, () => {
+        loadStats(); loadPendingActions();
+        if (activeTab === 'requests') loadMyRequests();
+      })
+      .subscribe();
+    return () => sb.removeChannel(channel);
   }, [user]);
 
   useEffect(() => {
@@ -188,7 +209,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
     const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
     if (data) {
       const withOffers = await Promise.all(data.map(async r => {
-        const { data: offers } = await sb.from('offers').select('*,profiles(company_name,rating,id)').eq('request_id', r.id);
+        const { data: offers } = await sb.from('offers').select('*,profiles(company_name,rating,reviews_count,id)').eq('request_id', r.id);
         return { ...r, offers: offers || [] };
       }));
       setMyRequests(withOffers);
@@ -662,11 +683,10 @@ export default function DashboardBuyer({ user, profile, lang }) {
                         </>
                       )}
                       {['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0, lineHeight: 1.6 }}>
-                          {isAr
-                            ? 'لا يمكن إلغاء الطلب بعد إتمام الدفع. للمساعدة تواصل معنا على support@maabar.io'
-                            : 'Cannot cancel after payment. Contact support@maabar.io for help'}
-                        </p>
+                        <a href={`mailto:support@maabar.io?subject=${encodeURIComponent((isAr ? 'مشكلة في طلب: ' : 'Issue with order: ') + (r.title_ar || r.title_en || r.id))}&body=${encodeURIComponent((isAr ? 'رقم الطلب: ' : 'Order ID: ') + r.id)}`}
+                          style={{ fontSize: 11, color: '#a07070', textDecoration: 'none', border: '1px solid rgba(138,58,58,0.25)', padding: '3px 10px', borderRadius: 'var(--radius-md)', display: 'inline-block', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? '⚠ إبلاغ عن مشكلة' : '⚠ Report Issue'}
+                        </a>
                       )}
                     </div>
                   </div>
@@ -744,9 +764,17 @@ export default function DashboardBuyer({ user, profile, lang }) {
                                 {isAr ? 'الأقل سعراً' : 'Lowest Price'}
                               </span>
                             )}
-                            <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8 }}>
-                              {o.profiles?.company_name || '—'}
-                            </p>
+                            <div style={{ marginBottom: 8 }}>
+                              <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 3 }}>
+                                {o.profiles?.company_name || '—'}
+                              </p>
+                              {o.profiles?.rating > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ color: '#a08050', fontSize: 11 }}>{'★'.repeat(Math.round(o.profiles.rating))}{'☆'.repeat(5 - Math.round(o.profiles.rating))}</span>
+                                  <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>{o.profiles.rating.toFixed(1)} ({o.profiles.reviews_count || 0})</span>
+                                </div>
+                              )}
+                            </div>
                             <p style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4 }}>
                               {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>SAR</span>
                             </p>

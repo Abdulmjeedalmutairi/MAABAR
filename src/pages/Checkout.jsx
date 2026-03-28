@@ -130,6 +130,7 @@ export default function Checkout({ lang, user, profile }) {
   const [selectedPct, setSelectedPct] = useState(30);
   const [card, setCard] = useState({ number: '', expiry: '', cvv: '', name: '' });
   const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState('');
   const [applePayAvailable, setApplePayAvailable] = useState(false);
 
   // حساب المبالغ
@@ -214,11 +215,13 @@ export default function Checkout({ lang, user, profile }) {
       alert(isAr ? 'يرجى تعبئة كل الحقول' : 'Please fill all fields');
       return;
     }
+    setPayError('');
     setPaying(true);
     try {
       await processPayment('card', null);
-    } catch {
+    } catch (e) {
       setPaying(false);
+      setPayError(isAr ? 'فشلت عملية الدفع — تحقق من بيانات بطاقتك وحاول مجدداً' : 'Payment failed — please check your card details and try again');
     }
   };
 
@@ -291,6 +294,21 @@ export default function Checkout({ lang, user, profile }) {
         is_read: false,
       });
     }
+
+    // إيميل تأكيد للتاجر
+    try {
+      if (user?.email) {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'payment_confirmation_buyer',
+            to: user.email,
+            data: { requestTitle: reqTitle, amount: firstPayment, name: '' },
+          }),
+        });
+      }
+    } catch (e) { console.error('buyer email error:', e); }
 
     nav('/payment-success', {
       state: { offer, request, total: firstPayment, method, isSecondPayment }
@@ -520,6 +538,11 @@ export default function Checkout({ lang, user, profile }) {
               }}>
                 {paying ? t.paying : `${t.pay} — ${fmt(firstPayment)} ${t.sar}`}
               </button>
+            )}
+            {payError && (
+              <p style={{ fontSize: 13, color: '#d96060', textAlign: 'center', marginTop: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {payError}
+              </p>
             )}
 
             {/* SECURE */}
