@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
+import NotFound from './pages/NotFound';
 import { sb } from './supabase';
 
 // Pages
@@ -112,6 +114,7 @@ function App() {
 
   /* ─── App ────────────────────────────────────── */
   return (
+    <ErrorBoundary lang={lang}>
     <Router>
       <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <Navbar {...sharedProps} />
@@ -137,6 +140,7 @@ function App() {
           {/* /apollo route removed — ApolloAgent not available */}
           <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
           <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
+          <Route path="*"               element={<NotFound        {...sharedProps} />} />
         </Routes>
 
         {(!profile || profile?.role === 'buyer') && (
@@ -144,6 +148,7 @@ function App() {
         )}
       </div>
     </Router>
+    </ErrorBoundary>
   );
 }
 

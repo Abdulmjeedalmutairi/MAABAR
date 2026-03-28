@@ -310,6 +310,9 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const [savingEditOffer, setSavingEditOffer] = useState(false);
   const [uploadingLogo, setUploadingLogo]   = useState(false);
   const [uploadingFactory, setUploadingFactory] = useState(false);
+  const [samples, setSamples] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
+  const isNewSupplier = !profile?.company_name || !profile?.speciality;
 
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
@@ -326,6 +329,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (activeTab === 'my-products')  loadMyProducts();
     if (activeTab === 'requests')     loadRequests();
     if (activeTab === 'settings')     loadSettings();
+    if (activeTab === 'samples')      loadSamples();
+    if (activeTab === 'reviews')      loadMyReviews();
     if (activeTab === 'add-product')  {
       setEditingProduct(null);
       const draft = sessionStorage.getItem('maabar_product_draft');
@@ -362,6 +367,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
       const { count } = await sb.from('requests').select('id', { count: 'exact' }).eq('status', 'open').eq('category', profData.data.speciality);
       matchingRequests = count || 0;
     }
+    const { count: pendingSamples } = await sb.from('samples').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'pending');
     setStats({
       products: products.count || 0,
       offers: offersData.count || 0,
@@ -369,7 +375,23 @@ export default function DashboardSupplier({ user, profile, lang }) {
       acceptedOffers: acceptedOffers.count || 0,
       totalSales: Math.round(totalSales),
       matchingRequests,
+      pendingSamples: pendingSamples || 0,
     });
+  };
+
+  const loadSamples = async () => {
+    const { data } = await sb.from('samples').select('*,products(name_ar,name_en,name_zh),profiles!samples_buyer_id_fkey(full_name,company_name)').eq('supplier_id', user.id).order('created_at', { ascending: false });
+    if (data) setSamples(data);
+  };
+
+  const loadMyReviews = async () => {
+    const { data } = await sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name,company_name)').eq('supplier_id', user.id).order('created_at', { ascending: false });
+    if (data) setMyReviews(data);
+  };
+
+  const updateSampleStatus = async (sampleId, status) => {
+    await sb.from('samples').update({ status }).eq('id', sampleId);
+    loadSamples(); loadStats();
   };
 
   const loadPendingTracking = async () => {
@@ -566,6 +588,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId];
     if (!o?.price || !o?.moq || !o?.days) { alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields'); return; }
+    const { data: existing } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').single();
+    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : 'You already submitted an offer on this request'); return; }
     const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), delivery_days: parseInt(o.days), note: o.note || null, status: 'pending' });
     if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
     await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
@@ -573,7 +597,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'new_offer', record: { buyer_id: buyerId, request_id: requestId, offer_price: o.price, delivery_days: o.days } }),
+        body: JSON.stringify({ type: 'new_offer', to: '', data: { requestTitle: requests.find(r=>r.id===requestId)?.title_ar || '', price: o.price, deliveryDays: o.days } }),
       });
     } catch (e) { console.error('email error:', e); }
     alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');
@@ -619,6 +643,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
     { id: 'my-products',  label: t.myProducts },
     { id: 'offers',       label: t.offers },
     { id: 'add-product',  label: t.addProduct },
+    { id: 'samples',      label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', badge: stats.pendingSamples > 0 ? stats.pendingSamples : null },
+    { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
     { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',     label: t.settings },
   ];
@@ -668,6 +694,21 @@ export default function DashboardSupplier({ user, profile, lang }) {
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
+              {/* ── Onboarding ── */}
+              {isNewSupplier && (
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-lg)' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
+                    {isAr ? '👋 مرحباً بك في مَعبر — أكمل ملفك لتبدأ' : 'Welcome to Maabar — Complete your profile to start'}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 16, ...arFont, lineHeight: 1.7 }}>
+                    {isAr ? 'أضف تخصصك واسم شركتك حتى يجدك التجار السعوديون، ثم أضف أول منتج لتبدأ استقبال الطلبات' : 'Add your specialty and company name so buyers can find you, then add your first product'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button onClick={() => setActiveTab('settings')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'أكمل ملفك ←' : 'Complete Profile →'}</button>
+                    <button onClick={() => setActiveTab('add-product')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'أضف منتج' : 'Add Product'}</button>
+                  </div>
+                </div>
+              )}
               {pendingCount > 0 && (
                 <div style={{ marginBottom: 40 }}>
                   <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
@@ -1040,6 +1081,88 @@ export default function DashboardSupplier({ user, profile, lang }) {
           )}
 
           {/* ── ADD PRODUCT ── */}
+          {/* ── SAMPLES ── */}
+          {activeTab === 'samples' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
+                {isAr ? 'طلبات العينات' : lang === 'zh' ? '样品请求' : 'Sample Requests'}
+              </h2>
+              {samples.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 14, ...arFont }}>{isAr ? 'لا توجد طلبات عينات بعد' : 'No sample requests yet'}</p>
+                </div>
+              ) : samples.map((s, idx) => (
+                <div key={s.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '20px 0', animation: `fadeIn 0.35s ease ${idx*0.04}s both` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6, ...arFont }}>
+                        {lang === 'zh' ? s.products?.name_zh : lang === 'ar' ? s.products?.name_ar : s.products?.name_en}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 4 }}>
+                        {s.profiles?.company_name || s.profiles?.full_name || '—'} · {isAr ? `الكمية: ${s.quantity}` : `Qty: ${s.quantity}`}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>
+                        {s.sample_price} SAR {isAr ? '+ شحن' : '+ shipping'} {s.shipping_price} SAR
+                      </p>
+                      {s.notes && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, ...arFont }}>{s.notes}</p>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: s.status==='approved' ? 'rgba(58,122,82,0.3)' : s.status==='rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: s.status==='approved' ? '#5a9a72' : s.status==='rejected' ? '#a07070' : 'var(--text-disabled)' }}>
+                        {s.status === 'approved' ? (isAr ? 'مقبول' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوض' : 'Rejected') : (isAr ? 'قيد المراجعة' : 'Pending')}
+                      </span>
+                      {s.status === 'pending' && <>
+                        <button onClick={() => updateSampleStatus(s.id, 'approved')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 28, padding: '4px 12px' }}>{isAr ? 'قبول' : 'Approve'}</button>
+                        <button onClick={() => updateSampleStatus(s.id, 'rejected')} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '4px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{isAr ? 'رفض' : 'Reject'}</button>
+                      </>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── REVIEWS ── */}
+          {activeTab === 'reviews' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
+                {isAr ? 'تقييماتي' : 'My Reviews'}
+              </h2>
+              {myReviews.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 14, ...arFont }}>{isAr ? 'لا توجد تقييمات بعد' : 'No reviews yet'}</p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32 }}>
+                    <p style={{ fontSize: 48, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
+                      {(myReviews.reduce((s,r) => s+r.rating, 0) / myReviews.length).toFixed(1)}
+                    </p>
+                    <div>
+                      <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+                        {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 16, color: s <= Math.round(myReviews.reduce((sum,r)=>sum+r.rating,0)/myReviews.length) ? '#a08050' : 'var(--border-default)' }}>★</span>)}
+                      </div>
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 1 }}>{myReviews.length} {isAr ? 'تقييم' : 'reviews'}</p>
+                    </div>
+                  </div>
+                  {myReviews.map((r, idx) => (
+                    <div key={r.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '18px 0', animation: `fadeIn 0.35s ease ${idx*0.04}s both` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{r.profiles?.company_name || r.profiles?.full_name || '—'}</p>
+                        <div style={{ display: 'flex', gap: 1 }}>
+                          {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 12, color: s <= r.rating ? '#a08050' : 'var(--border-default)' }}>★</span>)}
+                        </div>
+                      </div>
+                      {r.comment && <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, ...arFont }}>{r.comment}</p>}
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6 }}>{new Date(r.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+
           {activeTab === 'add-product' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />

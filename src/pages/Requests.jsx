@@ -87,6 +87,11 @@ export default function Requests({ lang, user, profile }) {
     }
   }, [newReq, isSupplier]);
 
+  // Redirect non-logged-in visitor who arrives at /requests via supplier path
+  useEffect(() => {
+    if (user && !isSupplier && profile?.role === 'supplier') nav('/login/supplier');
+  }, [user, profile]);
+
   useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile, showAllRequests]);
 
   const loadRequests = async () => {
@@ -157,6 +162,9 @@ export default function Requests({ lang, user, profile }) {
       alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : 'Fill required fields');
       return;
     }
+    // Prevent duplicate offers
+    const { data: existing } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').single();
+    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : 'You already submitted an offer on this request'); return; }
     const { error } = await sb.from('offers').insert({
       request_id: requestId, supplier_id: user.id,
       price: parseFloat(o.price), moq: o.moq,
@@ -174,7 +182,7 @@ export default function Requests({ lang, user, profile }) {
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'new_offer', record: { buyer_id: buyerId, request_id: requestId, offer_price: o.price, delivery_days: o.days } }),
+        body: JSON.stringify({ type: 'new_offer', to: '', data: { requestTitle: requests.find(r=>r.id===requestId)?.title_ar || '', price: o.price, deliveryDays: o.days } }),
       });
     } catch (e) { console.error('email error:', e); }
     alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');

@@ -267,7 +267,7 @@ export default function Login({ setUser, setProfile, lang }) {
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'trader_welcome', record: { id: authData.user.id, email: authData.user.email } }),
+        body: JSON.stringify({ type: 'trader_welcome', to: authData.user.email, data: { name: buyerName || '' } }),
       });
     } catch (e) { console.error('email error:', e); }
     setUser(authData.user);
@@ -334,7 +334,7 @@ export default function Login({ setUser, setProfile, lang }) {
           fetch(SEND_EMAILS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'supplier_welcome', record: { id: data.user.id, email: data.user.email } }),
+            body: JSON.stringify({ type: 'supplier_welcome', to: data.user.email, data: { name: supCompany || '' } }),
           }),
           fetch(SEND_EMAILS_URL, {
             method: 'POST',

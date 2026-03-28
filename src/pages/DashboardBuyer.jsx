@@ -159,7 +159,9 @@ export default function DashboardBuyer({ user, profile, lang }) {
     const [requests, messages, offers] = await Promise.all([
       sb.from('requests').select('id', { count: 'exact' }).eq('buyer_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
-      sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending'),
+      sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending').in('request_id',
+        (await sb.from('requests').select('id').eq('buyer_id', user.id)).data?.map(r=>r.id) || []
+      ),
     ]);
     setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0 });
   };
@@ -257,8 +259,17 @@ export default function DashboardBuyer({ user, profile, lang }) {
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'offer_accepted', record: { supplier_id: supplierId, request_id: requestId } }),
+        body: JSON.stringify({ type: 'offer_accepted', to: '', data: { name: '' } }),
       });
+      // Get supplier email and send proper email
+      const { data: supProfile } = await sb.from('profiles').select('email,company_name').eq('id', supplierId).single();
+      if (supProfile?.email) {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ type: 'offer_accepted', to: supProfile.email, data: { name: supProfile.company_name || 'Supplier', requestTitle: reqTitle } }),
+        });
+      }
     } catch (e) { console.error('email error:', e); }
 
     // Notify and email each rejected supplier individually
@@ -272,11 +283,14 @@ export default function DashboardBuyer({ user, profile, lang }) {
           ref_id: requestId, is_read: false,
         });
         try {
-          await fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'offer_rejected', record: { supplier_id: o.supplier_id, request_title: reqTitle } }),
-          });
+          const { data: rejProfile } = await sb.from('profiles').select('email,company_name').eq('id', o.supplier_id).single();
+          if (rejProfile?.email) {
+            await fetch(SEND_EMAILS_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ type: 'offer_rejected', to: rejProfile.email, data: { name: rejProfile.company_name || 'Supplier', requestTitle: reqTitle } }),
+            });
+          }
         } catch (e) { console.error('email error:', e); }
       }));
     }
@@ -332,11 +346,21 @@ export default function DashboardBuyer({ user, profile, lang }) {
       alert(isAr ? 'لا يمكن حذف طلب غير مفتوح' : 'Can only delete open requests');
       return;
     }
-    if (!window.confirm(isAr ? 'هل تريد حذف هذا الطلب؟' : 'Delete this request?')) return;
-    const { error } = await sb.from('requests').delete().eq('id', r.id);
-    if (!error) {
-      loadMyRequests(); loadPendingActions(); loadStats();
+    const pendingOffers = (r.offers || []).filter(o => o.status === 'pending');
+    if (pendingOffers.length > 0) {
+      const confirmed = window.confirm(isAr
+        ? `يوجد ${pendingOffers.length} عرض على هذا الطلب. هل تريد حذفه وإلغاء كل العروض؟`
+        : `There are ${pendingOffers.length} offer(s) on this request. Delete and cancel all offers?`);
+      if (!confirmed) return;
+      // Notify suppliers
+      await Promise.all(pendingOffers.map(o =>
+        sb.from('notifications').insert({ user_id: o.supplier_id, type: 'request_deleted', title_ar: `تم حذف الطلب: ${r.title_ar || r.title_en}`, title_en: `Request deleted: ${r.title_en || r.title_ar}`, title_zh: `需求已删除`, ref_id: r.id, is_read: false })
+      ));
+    } else {
+      if (!window.confirm(isAr ? 'هل تريد حذف هذا الطلب؟' : 'Delete this request?')) return;
     }
+    await sb.from('requests').delete().eq('id', r.id);
+    loadMyRequests(); loadPendingActions(); loadStats();
   };
 
   const cancelRequest = async (r) => {
@@ -776,16 +800,36 @@ export default function DashboardBuyer({ user, profile, lang }) {
                                     <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                                       {isAr ? 'في الطريق' : 'On the way'}
                                     </p>
-                                    <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-outline"
+                                    <button onClick={async () => {
+                                      await sb.from('requests').update({ status: 'arrived', shipping_status: 'arrived' }).eq('id', r.id);
+                                      loadMyRequests();
+                                    }} className="btn-outline"
+                                      style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                                      {isAr ? 'وصلت السعودية' : 'Arrived in KSA'}
+                                    </button>
+                                  </>
+                                )}
+                                {r.status === 'arrived' && (
+                                  <>
+                                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                                      {isAr ? 'وصلت — أكد الاستلام' : 'Arrived — Confirm receipt'}
+                                    </p>
+                                    <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-primary"
                                       style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34 }}>
                                       {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
                                     </button>
                                   </>
                                 )}
                                 {r.status === 'delivered' && (
-                                  <p style={{ fontSize: 10, letterSpacing: 1, color: '#5a9a72', textAlign: 'center' }}>
-                                    {isAr ? 'تم التسليم' : 'Delivered'}
-                                  </p>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    <p style={{ fontSize: 10, letterSpacing: 1, color: '#5a9a72', textAlign: 'center' }}>
+                                      {isAr ? 'تم التسليم ✓' : 'Delivered ✓'}
+                                    </p>
+                                    <button onClick={() => setReviewModal({ supplierId: o.supplier_id, requestId: r.id, supplierName: o.profiles?.company_name || '' })}
+                                      className="btn-outline" style={{ padding: '6px', fontSize: 10, width: '100%', minHeight: 28 }}>
+                                      {isAr ? 'قيّم المورد' : 'Rate Supplier'}
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             )}

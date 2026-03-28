@@ -185,7 +185,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({ type: 'supplier_rejected', record: { supplier_id: supplier.id, supplier_name: supplier.company_name } }),
+        body: JSON.stringify({ type: 'supplier_rejected', to: supplier.email || '', data: { name: supplier.company_name || 'Supplier' } }),
       });
     } catch (e) { console.error('email error:', e); }
     setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
