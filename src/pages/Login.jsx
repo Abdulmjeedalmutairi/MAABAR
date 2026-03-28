@@ -156,6 +156,7 @@ export default function Login({ setUser, setProfile, lang }) {
   const [msgType, setMsgType]     = useState('');
   const [loading, setLoading]     = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   // OTP state (buyer signup only)
   const [otpScreen, setOtpScreen]       = useState(false);
@@ -392,6 +393,17 @@ export default function Login({ setUser, setProfile, lang }) {
   };
 
   const fieldStyle = { marginBottom: 20 };
+
+  const TERMS_AR = [
+    { title: '١. تعريف المنصة', body: 'مَعبر هي منصة وساطة تجارية إلكترونية تربط التجار السعوديين بالموردين الصينيين. تعمل مَعبر بوصفها وسيطاً تجارياً فقط، وليست طرفاً في أي صفقة.' },
+    { title: '٢. شروط التسجيل', body: 'للتاجر: يجب أن يكون مقيماً أو يمارس نشاطاً تجارياً في المملكة العربية السعودية.\nللمورد: يجب أن يكون لديه سجل تجاري ساري، ويخضع لمراجعة وموافقة مَعبر قبل التفعيل.' },
+    { title: '٣. آلية إبرام العقود', body: 'تُبرم الصفقات عبر آلية العرض والقبول: يرفع التاجر طلبًا، يُقدّم الموردون عروضهم، يختار التاجر العرض الأنسب ويؤكده. يُعدّ هذا التأكيد عقدًا ملزمًا.' },
+    { title: '٤. نظام الدفع المرحلي', body: 'تتيح مَعبر ثلاثة خيارات: ٣٠٪ مقدماً، أو ٥٠٪، أو ١٠٠٪. الدفعة الأولى تُمثّل التزام التاجر. الدفعة الثانية تُسدَّد بعد إشعار "الشحنة جاهزة".' },
+    { title: '٥. العمولة', body: 'تأخذ مَعبر عمولة ٦٪ من كل صفقة مكتملة: ٤٪ من المورد، و٢٪ من التاجر.' },
+    { title: '٦. سياسة المشاكل والإرجاع', body: 'إذا وصلت البضاعة تالفة أو مختلفة عن الوصف، يُفتح نزاع خلال ٤٨ ساعة. مَعبر تبتّ خلال ٧ أيام عمل.' },
+    { title: '٧. الخصوصية وحماية البيانات', body: 'تلتزم مَعبر بنظام حماية البيانات الشخصية السعودي (PDPL). لا نبيع بيانات المستخدمين لأي طرف ثالث.' },
+    { title: '٨. الاختصاص القضائي', body: 'تخضع هذه الشروط لأنظمة المملكة العربية السعودية.' },
+  ];
 
   return (
     <div style={{
@@ -741,9 +753,9 @@ export default function Login({ setUser, setProfile, lang }) {
                   lineHeight: 1.5,
                 }}>
                   {l.termsLabel}
-                  <a href="/terms" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                  <button onClick={() => setShowTerms(true)} style={{ color: 'var(--accent)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit', padding: 0 }}>
                     {l.termsLink}
-                  </a>
+                  </button>
                 </label>
               </div>
             )}
@@ -833,5 +845,45 @@ export default function Login({ setUser, setProfile, lang }) {
         )}
       </div>
     </div>
+
+    {/* Terms Popup */}
+    {showTerms && (
+      <div onClick={() => setShowTerms(false)} style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+        zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      }}>
+        <div onClick={e => e.stopPropagation()} style={{
+          background: '#0f0f11', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12, maxWidth: 600, width: '100%', maxHeight: '80vh',
+          overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Header */}
+          <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: 1, color: '#fff', fontFamily: 'var(--font-ar)', margin: 0 }}>
+              {isAr ? 'الشروط والأحكام' : 'Terms & Conditions'}
+            </p>
+            <button onClick={() => setShowTerms(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
+          </div>
+          {/* Content */}
+          <div style={{ overflowY: 'auto', padding: '24px 28px' }} dir="rtl">
+            {TERMS_AR.map((s, i) => (
+              <div key={i} style={{ marginBottom: 24 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-ar)', marginBottom: 8 }}>{s.title}</p>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-ar)', lineHeight: 1.9, whiteSpace: 'pre-line', margin: 0 }}>{s.body}</p>
+              </div>
+            ))}
+          </div>
+          {/* Footer */}
+          <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <button onClick={() => setShowTerms(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
+              {isAr ? 'إغلاق' : 'Close'}
+            </button>
+            <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#fff', border: 'none', color: '#0f0f11', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-ar)' }}>
+              {isAr ? 'أوافق' : 'I Agree'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
