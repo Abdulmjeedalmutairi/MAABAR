@@ -135,12 +135,12 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       {/* ══════════════════════════════════════
           NAV BAR
       ══════════════════════════════════════ */}
-      <nav className={scrolled ? 'scrolled' : ''} dir={isAr ? 'rtl' : 'ltr'}>
+      <nav className={scrolled ? 'scrolled' : ''}>
 
         {/* Logo */}
         <button className="nav-logo" onClick={() => nav('/')}>
-          MAABAR
-          <span className="ar-part">| مَعبر</span>
+          {isAr ? 'مَعبر' : 'MAABAR'}
+          <span className="ar-part">{isAr ? '| MAABAR' : '| مَعبر'}</span>
         </button>
 
         {/* Desktop links */}
