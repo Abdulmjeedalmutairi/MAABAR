@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
-const ADMIN_EMAIL = 'info@maabar.io';
+const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const FROM = 'Maabar <hello@maabar.io>';
 
 const cors = {

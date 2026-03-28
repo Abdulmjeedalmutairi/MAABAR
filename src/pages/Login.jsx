@@ -340,7 +340,7 @@ export default function Login({ setUser, setProfile, lang }) {
           fetch(SEND_EMAILS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'admin_new_supplier', to: 'info@maabar.io', data: { companyName: supCompany, email: data.user.email, whatsapp, wechat, payMethod } }),
+            body: JSON.stringify({ type: 'admin_new_supplier', to: 'mjeedalmutairis@gmail.com', data: { companyName: supCompany, email: data.user.email, whatsapp, wechat, payMethod } }),
           }),
         ]);
       } catch (e) { console.error('email error:', e); }
