@@ -87,6 +87,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const handleNotifClick = (n) => {
     setNotifOpen(false);
     if (n.type === 'new_message') nav(`/chat/${n.ref_id}`);
+    else if (n.type === 'account_approved' || n.type === 'account_rejected') nav('/dashboard');
+    else if (n.ref_id) nav(`/dashboard`);
     else nav('/dashboard');
   };
 

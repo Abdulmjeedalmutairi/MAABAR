@@ -299,7 +299,7 @@ export default function Login({ setUser, setProfile, lang }) {
     if (isSupplier && payMethod === 'alipay' && !alipayAccount) { setMsg(l.fillRequired); setMsgType('error'); return; }
     if (isSupplier && payMethod === 'swift' && (!swiftCode || !bankName)) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
-    const { data, error } = await sb.auth.signUp({ email, password: pass });
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard' } });
     setLoading(false);
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     const profileData = {
@@ -350,7 +350,7 @@ export default function Login({ setUser, setProfile, lang }) {
   const doGoogleLogin = async () => {
     const redirectTo = import.meta.env.DEV
       ? window.location.origin + '/dashboard'
-      : 'https://maabar.netlify.app/dashboard';
+      : 'https://maabar.io/dashboard';
     await sb.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo }
