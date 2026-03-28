@@ -50,7 +50,10 @@ function App() {
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
-      else { setProfile(null); setLoading(false); }
+      else {
+        setProfile(null); setLoading(false);
+        if (window._profileChannel) { sb.removeChannel(window._profileChannel); window._profileChannel = null; }
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -59,6 +62,17 @@ function App() {
     const { data } = await sb.from('profiles').select('*').eq('id', id).single();
     if (data) setProfile(data);
     setLoading(false);
+
+    // Realtime — لو الأدمن غيّر status المورد يتحدث فوراً
+    const ch = sb.channel(`profile-status-${id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${id}`
+      }, (payload) => {
+        if (payload.new) setProfile(payload.new);
+      })
+      .subscribe();
+    // نحفظ الـ channel عشان نلغيها لو الجلسة انتهت
+    window._profileChannel = ch;
   };
 
   const DashboardRouter = () => {
