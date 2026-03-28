@@ -406,6 +406,7 @@ export default function Login({ setUser, setProfile, lang }) {
   ];
 
   return (
+    <>
     <div style={{
       minHeight: '100vh',
       display: 'flex',
@@ -885,5 +886,6 @@ export default function Login({ setUser, setProfile, lang }) {
         </div>
       </div>
     )}
+    </>
   );
 }
