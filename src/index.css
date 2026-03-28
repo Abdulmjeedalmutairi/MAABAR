@@ -109,28 +109,40 @@ nav.scrolled {
 }
 
 .nav-logo {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: 2.5px;
   cursor: pointer;
   background: none;
   border: none;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   white-space: nowrap;
   flex-shrink: 0;
   transition: var(--transition);
 }
 .nav-logo:hover { opacity: 0.65; }
-.nav-logo .ar-part {
+.nav-logo .logo-ar {
   font-family: var(--font-ar);
-  font-size: 12px;
-  color: var(--text-disabled);
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
   letter-spacing: 0;
+  unicode-bidi: isolate;
+}
+.nav-logo .logo-sep {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-disabled);
+  letter-spacing: 0;
+}
+.nav-logo .logo-en {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-disabled);
+  letter-spacing: 2.5px;
+  text-transform: none;
+  unicode-bidi: isolate;
 }
 
 .nav-links {

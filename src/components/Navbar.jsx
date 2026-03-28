@@ -139,8 +139,9 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
         {/* Logo */}
         <button className="nav-logo" onClick={() => nav('/')}>
-          مَعبر
-          <span className="ar-part">| Maabar</span>
+          <span className="logo-ar" dir="rtl">مَعبر</span>
+          <span className="logo-sep" aria-hidden="true">|</span>
+          <span className="logo-en" dir="ltr">Maabar</span>
         </button>
 
         {/* Desktop links */}
