@@ -260,7 +260,7 @@ export default function Login({ setUser, setProfile, lang }) {
     setOtpError('');
     if (!pendingSignup) return;
     const { authData, profileData } = pendingSignup;
-    await sb.from('profiles').insert(profileData);
+    await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
     // Send welcome email
     try {
       await fetch(SEND_EMAILS_URL, {
@@ -321,7 +321,7 @@ export default function Login({ setUser, setProfile, lang }) {
       }),
     };
     if (isSupplier) {
-      await sb.from('profiles').insert(profileData);
+      await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
       // Send supplier welcome + admin alert emails
       try {
         await Promise.all([
