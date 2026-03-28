@@ -678,7 +678,7 @@ export default function Requests({ lang, user, profile }) {
                       onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))}
                     />
                   </div>
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}
                       style={{ minHeight: 40 }}>
                       {isAr ? 'إرسال العرض' : 'Send Offer'}
@@ -687,6 +687,9 @@ export default function Requests({ lang, user, profile }) {
                       style={{ minHeight: 40 }}>
                       {isAr ? 'إلغاء' : 'Cancel'}
                     </button>
+                    <span style={{ fontSize: 11, color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      🔒 {isAr ? 'يراه التاجر فقط — سعرك سري' : lang === 'zh' ? '仅买家可见' : 'Only the buyer sees this — your price is private'}
+                    </span>
                   </div>
                 </div>
               )}

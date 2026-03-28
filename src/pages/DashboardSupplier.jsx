@@ -841,9 +841,12 @@ export default function DashboardSupplier({ user, profile, lang }) {
                         <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'ملاحظة' : 'Note'}</label>
                         <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={offers[r.id]?.note || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} />
                       </div>
-                      <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)} style={{ minHeight: 40 }}>{isAr ? 'إرسال العرض' : lang === 'zh' ? '发送报价' : 'Send Offer'}</button>
                         <button className="btn-outline" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 40 }}>{t.cancel}</button>
+                        <span style={{ fontSize: 11, color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          🔒 {isAr ? 'يراه التاجر فقط — سعرك سري' : lang === 'zh' ? '仅买家可见 — 您的报价保密' : 'Only the buyer sees this — your price is private'}
+                        </span>
                       </div>
                     </div>
                   )}
