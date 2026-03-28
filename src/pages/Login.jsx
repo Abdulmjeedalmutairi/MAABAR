@@ -299,7 +299,7 @@ export default function Login({ setUser, setProfile, lang }) {
     if (isSupplier && payMethod === 'alipay' && !alipayAccount) { setMsg(l.fillRequired); setMsgType('error'); return; }
     if (isSupplier && payMethod === 'swift' && (!swiftCode || !bankName)) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
-    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard' } });
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard', data: { role, status: isSupplier ? 'pending' : 'active' } } });
     setLoading(false);
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     const profileData = {
