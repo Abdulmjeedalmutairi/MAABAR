@@ -35,6 +35,7 @@ import AIHub from './components/AIHub';
 function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [lang, setLang] = useState('ar');
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +60,8 @@ function App() {
   }, []);
 
   const loadProfile = async (id, attempt = 1) => {
-    const { data } = await sb.from('profiles').select('*').eq('id', id).single();
+    if (attempt === 1) setProfileLoadFailed(false);
+    const { data, error } = await sb.from('profiles').select('*').eq('id', id).single();
 
     if (!data && attempt < 5) {
       // DB trigger may not have run yet — retry up to 4 times with backoff
@@ -67,6 +69,10 @@ function App() {
       return loadProfile(id, attempt + 1);
     }
 
+    if (error && !data) {
+      console.error('loadProfile error:', error);
+      setProfileLoadFailed(true);
+    }
     if (data) setProfile(data);
     setLoading(false);
 
@@ -84,9 +90,15 @@ function App() {
 
   const DashboardRouter = () => {
     if (loading) return <div className="loading">...</div>;
+    if (profileLoadFailed && user) return (
+      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.</p>
+        <button onClick={() => { setProfileLoadFailed(false); setLoading(true); loadProfile(user.id); }} style={{ padding: '8px 20px', cursor: 'pointer' }}>إعادة المحاولة</button>
+      </div>
+    );
     if (!profile) return <DashboardBuyer {...sharedProps} />;
     if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
-    if (profile.role === 'supplier' && profile.status === 'pending')
+    if (profile.role === 'supplier' && (profile.status === 'pending' || profile.status === 'rejected'))
       return <PendingApproval {...sharedProps} />;
     if (profile.role === 'supplier')
       return <DashboardSupplier {...sharedProps} />;

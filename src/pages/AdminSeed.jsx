@@ -16,6 +16,7 @@ export default function AdminSeed({ user, lang }) {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ real: 0, activeSuppliers: 0, completedDeals: 0, commissions: 0, newToday: 0 });
   const [pendingSuppliers, setPendingSuppliers] = useState([]);
+  const [pendingSuppliersError, setPendingSuppliersError] = useState(null);
   const [verifying, setVerifying] = useState({});
   const [verifyResults, setVerifyResults] = useState({});
   const [actionLoading, setActionLoading] = useState({});
@@ -78,11 +79,17 @@ export default function AdminSeed({ user, lang }) {
   };
 
   const loadPendingSuppliers = async () => {
-    const { data } = await sb.from('profiles')
+    setPendingSuppliersError(null);
+    const { data, error } = await sb.from('profiles')
       .select('id,role,status,full_name,company_name,city,country,speciality,whatsapp,wechat,trade_link,reg_number,license_photo,factory_photo,pay_method,alipay_account,swift_code,bank_name,years_experience,num_employees,created_at,email')
       .eq('role', 'supplier')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
+    if (error) {
+      console.error('loadPendingSuppliers error:', error);
+      setPendingSuppliersError(`${error.code}: ${error.message}`);
+      return;
+    }
     if (data) setPendingSuppliers(data);
   };
 
@@ -440,7 +447,13 @@ WeChat: ${supplier.wechat || 'غير موجود'}
         {/* SUPPLIERS TAB */}
         {activeTab === 'suppliers' && (
           <div>
-            {pendingSuppliers.length === 0 ? (
+            {pendingSuppliersError && (
+              <div style={{ background: 'rgba(255,60,60,0.1)', border: '1px solid rgba(255,60,60,0.3)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#ff6b6b', fontSize: 13 }}>
+                خطأ في تحميل الموردين: {pendingSuppliersError}
+                <button onClick={loadPendingSuppliers} style={{ marginRight: 12, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>إعادة المحاولة</button>
+              </div>
+            )}
+            {!pendingSuppliersError && pendingSuppliers.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
                 <p style={{ fontSize: 14 }}>لا يوجد موردون معلقون</p>
               </div>
