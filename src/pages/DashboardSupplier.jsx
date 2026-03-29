@@ -548,8 +548,9 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
   const loadRequests = async () => {
     setLoadingRequests(true);
+    // جلب كل الطلبات المفتوحة بدون فلتر تخصص — الفلتر اختياري من الـ UI فقط
     let query = sb.from('requests').select('*,profiles(full_name,company_name)').eq('status', 'open').order('created_at', { ascending: false });
-    if (activeCat !== 'all') query = query.eq('category', activeCat);
+    if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data } = await query;
     if (data) setRequests(data);
     setLoadingRequests(false);
