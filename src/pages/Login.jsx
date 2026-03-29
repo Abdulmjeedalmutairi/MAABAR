@@ -326,28 +326,8 @@ export default function Login({ setUser, setProfile, lang }) {
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     if (isSupplier) {
       // Profile created by DB trigger (handle_new_user) from raw_user_meta_data — no client upsert needed
-      try {
-        const emailRes = await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'supplier_signup_bundle',
-            data: {
-              name: supCompany || '',
-              companyName: supCompany,
-              email: data.user.email,
-              whatsapp,
-              wechat,
-              payMethod,
-            },
-          }),
-        });
-        if (!emailRes.ok) {
-          console.error('supplier signup bundle failed:', await emailRes.text());
-        }
-      } catch (e) {
-        console.error('email error:', e);
-      }
+      // NOTE: supplier_signup_bundle (supplier_welcome + admin notification) is sent AFTER email confirmation
+      // on first login via App.js:sendSupplierConfirmedEmailIfNeeded — not here, to preserve correct email order.
       setMsg(l.pendingMsg);
       setMsgType('success');
       return;
