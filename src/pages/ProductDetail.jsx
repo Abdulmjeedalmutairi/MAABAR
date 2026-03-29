@@ -40,35 +40,63 @@ export default function ProductDetail({ lang, user, profile }) {
     if (!qty) { alert(isAr ? 'يرجى تحديد الكمية' : 'Please enter quantity'); return; }
     if (!product) return;
     setSending(true);
+
     const sup = product.profiles || {};
-    const short = (isAr ? 'طلب شراء: ' : 'Buy order: ') + (product.name_ar || product.name_en);
-    const { error } = await sb.from('requests').insert({
+
+    // أنشئ request مباشر
+    const { data: reqData, error: reqError } = await sb.from('requests').insert({
       buyer_id: user.id,
-      title_ar: short, title_en: short, title_zh: short,
-      quantity: qty, description: note || '',
-      product_ref: id, status: 'open'
-    });
-    setSending(false);
-    if (error) { alert(isAr ? 'حدث خطأ' : 'Error'); return; }
-    if (sup.id) {
-      await sb.from('notifications').insert({
-        user_id: sup.id, type: 'new_request',
-        title_ar: 'طلب شراء جديد على منتجك',
-        title_en: 'New purchase order on your product',
-        title_zh: '您的产品收到了新采购订单',
-        ref_id: id, is_read: false
-      });
+      title_ar: (isAr ? 'طلب شراء: ' : 'Buy order: ') + (product.name_ar || product.name_en || product.name_zh),
+      title_en: 'Buy order: ' + (product.name_en || product.name_ar || product.name_zh),
+      title_zh: '采购: ' + (product.name_zh || product.name_en || product.name_ar),
+      quantity: qty,
+      description: note || '',
+      product_ref: id,
+      category: product.category || 'other',
+      status: 'closed',
+    }).select().single();
+
+    if (reqError || !reqData) {
+      setSending(false);
+      alert(isAr ? 'حدث خطأ' : 'Error');
+      return;
     }
-    alert(isAr ? '✅ تم إرسال طلبك!' : '✅ Order sent!');
-    setShowBuyForm(false);
-    setQty(''); setNote('');
+
+    // أنشئ offer مباشر من المنتج
+    const { data: offerData, error: offerError } = await sb.from('offers').insert({
+      request_id: reqData.id,
+      supplier_id: sup.id,
+      price: product.price_from || 0,
+      delivery_days: 30,
+      note: note || '',
+      status: 'accepted',
+    }).select().single();
+
+    setSending(false);
+
+    if (offerError || !offerData) {
+      alert(isAr ? 'حدث خطأ في إنشاء الطلب' : 'Error creating order');
+      return;
+    }
+
+    // روّح مباشرة لـ checkout
+    nav('/checkout', {
+      state: {
+        offer: offerData,
+        request: { ...reqData, quantity: qty },
+      }
+    });
   };
 
   const submitSample = async () => {
     if (!user) { nav('/login/buyer'); return; }
     if (!product) return;
     const sup = product.profiles || {};
-    if (!sup.id) return;
+    if (!sup.id) {
+      setSendingSample(false);
+      alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : 'Supplier not found, try again');
+      return;
+    }
 
     const maxQty = product.sample_max_qty || 3;
     if (parseInt(sampleQty) > maxQty) {
@@ -124,10 +152,13 @@ export default function ProductDetail({ lang, user, profile }) {
   };
 
   const handleChat = () => {
-    if (!product) return;
     if (!user) { nav('/login/buyer'); return; }
+    if (!product) return;
     const sup = product.profiles || {};
-    if (!sup.id) return;
+    if (!sup.id) {
+      alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : 'Supplier not found, try again');
+      return;
+    }
     nav(`/chat/${sup.id}`);
   };
 
@@ -203,26 +234,6 @@ export default function ProductDetail({ lang, user, profile }) {
         <p className="product-detail-price">
           {product.price_from ? `${product.price_from} ${product.currency || 'SAR'}` : '—'}
         </p>
-
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '8px 16px',
-          background: 'rgba(58,122,82,0.08)',
-          border: '1px solid rgba(58,122,82,0.15)',
-          borderRadius: 'var(--radius-lg)',
-          fontSize: 12, marginBottom: 20,
-        }}>
-          <span style={{
-            width: 14, height: 14, borderRadius: '50%',
-            background: 'rgba(58,122,82,0.2)',
-            border: '1px solid rgba(58,122,82,0.3)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 9, color: '#5a9a72', fontWeight: 700, flexShrink: 0,
-          }}>✓</span>
-          <span style={{ color: '#5a9a72' }}>
-            {isAr ? 'دفعك محجوز عند مَعبر حتى تستلم بضاعتك وتؤكد' : "Your payment is held by Maabar until you receive and confirm your order"}
-          </span>
-        </div>
 
         <div className="product-detail-meta">
           <div>
