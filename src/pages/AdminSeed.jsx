@@ -78,7 +78,11 @@ export default function AdminSeed({ user, lang }) {
   };
 
   const loadPendingSuppliers = async () => {
-    const { data } = await sb.rpc('admin_get_pending_suppliers');
+    const { data } = await sb.from('profiles')
+      .select('id,role,status,full_name,company_name,city,country,speciality,whatsapp,wechat,trade_link,reg_number,license_photo,factory_photo,pay_method,alipay_account,swift_code,bank_name,years_experience,num_employees,created_at,email')
+      .eq('role', 'supplier')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
     if (data) setPendingSuppliers(data);
   };
 
