@@ -3,6 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 
+const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+
 export default function ProductDetail({ lang, user, profile }) {
   const { id } = useParams();
   const nav = useNavigate();
@@ -98,6 +101,25 @@ export default function ProductDetail({ lang, user, profile }) {
       title_zh: '您的产品收到了新样品请求',
       ref_id: id, is_read: false
     });
+
+    try {
+      const { data: supplierProfile } = await sb.from('profiles').select('email').eq('id', sup.id).single();
+      if (supplierProfile?.email) {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'new_sample',
+            to: supplierProfile.email,
+            data: {
+              productName: product.name_ar || product.name_en || product.name_zh || 'Product',
+              quantity: sampleQty,
+              totalPrice: total,
+            },
+          }),
+        });
+      }
+    } catch (e) { console.error('sample email error:', e); }
 
     alert(isAr ? '✅ تم إرسال طلب العينة! سيتواصل معك المورد قريباً' : '✅ Sample request sent! The supplier will contact you soon');
     setShowSampleForm(false);

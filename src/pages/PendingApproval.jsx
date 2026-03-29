@@ -7,7 +7,7 @@ const T = {
   ar: {
     tag: 'مَعبر · المورد',
     title: 'حسابك قيد المراجعة',
-    sub: 'شكراً لتسجيلك في مَعبر. فريقنا يراجع بياناتك وسيتواصل معك خلال 48 ساعة.',
+    sub: 'شكراً لتسجيلك في مَعبر. فريقنا يراجع بياناتك وسيتواصل معك خلال 24 ساعة.',
     steps: [
       { n: '01', t: 'تم استلام طلبك', d: 'وصلنا بياناتك وهي قيد المراجعة.' },
       { n: '02', t: 'مراجعة البيانات', d: 'فريق مَعبر يتحقق من بيانات شركتك.' },
@@ -21,7 +21,7 @@ const T = {
   en: {
     tag: 'Maabar · Supplier',
     title: 'Account Under Review',
-    sub: 'Thank you for registering with Maabar. Our team is reviewing your details and will contact you within 48 hours.',
+    sub: 'Thank you for registering with Maabar. Our team is reviewing your details and will contact you within 24 hours.',
     steps: [
       { n: '01', t: 'Request Received', d: 'We have received your details and they are under review.' },
       { n: '02', t: 'Data Verification', d: 'Maabar team is verifying your company information.' },
@@ -35,7 +35,7 @@ const T = {
   zh: {
     tag: 'Maabar · 供应商',
     title: '账户审核中',
-    sub: '感谢您注册Maabar。我们的团队正在审核您的信息，将在48小时内与您联系。',
+    sub: '感谢您注册Maabar。我们的团队正在审核您的信息，将在24小时内与您联系。',
     steps: [
       { n: '01', t: '已收到申请', d: '我们已收到您的信息，正在审核中。' },
       { n: '02', t: '资料核实', d: 'Maabar团队正在核实您的公司信息。' },

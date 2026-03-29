@@ -132,6 +132,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   const [activeTab, setActiveTab]         = useState('overview');
   const [pendingActions, setPendingActions] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [samples, setSamples] = useState([]);
 
   // Review modal
   const [reviewModal, setReviewModal]       = useState(null);
@@ -174,6 +175,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   useEffect(() => {
     if (activeTab === 'requests') loadMyRequests();
     if (activeTab === 'messages') loadInbox();
+    if (activeTab === 'samples') loadMySamples();
     if (activeTab === 'settings') loadSettings();
   }, [activeTab]);
 
@@ -216,6 +218,14 @@ export default function DashboardBuyer({ user, profile, lang }) {
       setMyRequests(withOffers);
     }
     setLoadingRequests(false);
+  };
+
+  const loadMySamples = async () => {
+    const { data } = await sb.from('samples')
+      .select('*,products(name_ar,name_en,name_zh),profiles!samples_supplier_id_fkey(company_name,full_name)')
+      .eq('buyer_id', user.id)
+      .order('created_at', { ascending: false });
+    if (data) setSamples(data);
   };
 
   const loadInbox = async () => {
@@ -278,12 +288,6 @@ export default function DashboardBuyer({ user, profile, lang }) {
       ref_id: offerId, is_read: false,
     });
     try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'offer_accepted', to: '', data: { name: '' } }),
-      });
-      // Get supplier email and send proper email
       const { data: supProfile } = await sb.from('profiles').select('email,company_name').eq('id', supplierId).single();
       if (supProfile?.email) {
         await fetch(SEND_EMAILS_URL, {
@@ -423,6 +427,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   const tabs = [
     { id: 'overview',  label: isAr ? 'نظرة عامة' : 'Overview' },
     { id: 'requests',  label: isAr ? 'طلباتي'    : 'My Requests' },
+    { id: 'samples',   label: isAr ? 'العينات'   : 'Samples' },
     { id: 'messages',  label: isAr ? 'الرسائل'   : 'Messages', badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',  label: isAr ? 'الإعدادات' : 'Settings' },
   ];
@@ -880,6 +885,55 @@ export default function DashboardBuyer({ user, profile, lang }) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── SAMPLES ── */}
+          {activeTab === 'samples' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
+                {isAr ? 'طلبات العينات' : 'Sample Requests'}
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr ? 'تابع حالة العينات وتواصل مع المورد بعد الموافقة.' : 'Track your sample requests and contact the supplier after approval.'}
+              </p>
+
+              {samples.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 13, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'لا توجد طلبات عينات بعد' : 'No sample requests yet'}
+                  </p>
+                </div>
+              ) : samples.map((s, idx) => {
+                const supplierName = s.profiles?.company_name || s.profiles?.full_name || 'Supplier';
+                const productName = s.products?.name_ar || s.products?.name_en || s.products?.name_zh || 'Product';
+                return (
+                  <div key={s.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '18px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <div>
+                        <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 5, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'المورد:' : 'Supplier:'} {supplierName}</p>
+                      </div>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: s.status === 'approved' ? 'rgba(58,122,82,0.1)' : s.status === 'rejected' ? 'rgba(160,112,112,0.1)' : 'rgba(139,120,255,0.08)', color: s.status === 'approved' ? '#5a9a72' : s.status === 'rejected' ? '#a07070' : 'rgba(139,120,255,0.9)' }}>
+                        {s.status === 'approved' ? (isAr ? 'تمت الموافقة' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوضة' : 'Rejected') : (isAr ? 'قيد المراجعة' : 'Pending')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                      <span>{isAr ? 'الكمية:' : 'Qty:'} {s.quantity}</span>
+                      <span>{isAr ? 'الإجمالي:' : 'Total:'} {s.total_price} SAR</span>
+                    </div>
+                    {s.notes && (
+                      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>💬 {s.notes}</p>
+                    )}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button className="btn-outline" onClick={() => nav(`/chat/${s.supplier_id}`)} style={{ minHeight: 34, fontSize: 11 }}>
+                        {isAr ? 'محادثة المورد' : 'Chat Supplier'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 

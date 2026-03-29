@@ -152,7 +152,67 @@ const templates = {
 <div class="ir"><span class="ik">السعر</span><span class="iv">${d.price || '-'} SAR</span></div>
 <div class="ir"><span class="ik">مدة التسليم</span><span class="iv">${d.deliveryDays || '-'} يوم</span></div>
 </div>
-<div class="bw"><a href="https://maabar.io/dashboard" class="bt">مراجعة العروض ←</a></div>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">مراجعة العروض ←</a></div>
+</div>`),
+  }),
+
+  new_message: (d) => ({
+    subject: `رسالة جديدة من ${d.senderName || 'Maabar'}`,
+    html: wrap(`
+<div class="bd">
+<p class="gr">رسالة جديدة</p>
+<p class="tg">New Message</p>
+<p style="font-size:15px;color:#333">لديك رسالة جديدة من <strong>${d.senderName || '-'}</strong> على منصة مَعبر.</p>
+<div class="ib">
+<div class="ir"><span class="ik">المرسل</span><span class="iv">${d.senderName || '-'}</span></div>
+<div class="ir"><span class="ik">المعاينة</span><span class="iv">${d.preview || '-'}</span></div>
+</div>
+<div class="bw"><a href="https://maabar.io/chat/${d.senderId || ''}" class="bt">فتح المحادثة ←</a></div>
+</div>`),
+  }),
+
+  new_sample: (d) => ({
+    subject: `طلب عينة جديد — ${d.productName || ''}`,
+    html: wrap(`
+<div class="bd">
+<p class="gr">طلب عينة جديد</p>
+<p class="tg">New Sample Request</p>
+<div class="ib">
+<div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
+<div class="ir"><span class="ik">الكمية</span><span class="iv">${d.quantity || '-'}</span></div>
+<div class="ir"><span class="ik">الإجمالي التقريبي</span><span class="iv">${d.totalPrice || '-'} SAR</span></div>
+</div>
+<p style="font-size:15px;color:#333">قام تاجر بطلب عينة من منتجك. راجع الطلب من لوحة المورد.</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">مراجعة الطلب ←</a></div>
+</div>`),
+  }),
+
+  sample_approved: (d) => ({
+    subject: `تمت الموافقة على طلب العينة — ${d.productName || ''}`,
+    html: wrap(`
+<div class="bd">
+<p class="gr">تمت الموافقة على طلب العينة</p>
+<p class="tg">Sample Approved</p>
+<div class="ib">
+<div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
+<div class="ir"><span class="ik">الإجمالي</span><span class="iv">${d.totalPrice || '-'} SAR</span></div>
+</div>
+<p style="font-size:15px;color:#333">وافق المورد على طلب العينة. يمكنك الآن متابعة التفاصيل مع المورد داخل المحادثة.</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">عرض طلبات العينات ←</a></div>
+</div>`),
+  }),
+
+  sample_rejected: (d) => ({
+    subject: `تم رفض طلب العينة — ${d.productName || ''}`,
+    html: wrap(`
+<div class="bd">
+<p class="gr">تم رفض طلب العينة</p>
+<p class="tg">Sample Rejected</p>
+<div class="ib">
+<div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
+</div>
+<p style="font-size:15px;color:#333">قام المورد برفض طلب العينة. يمكنك التواصل معه داخل مَعبر لمعرفة البدائل.</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">عرض طلبات العينات ←</a></div>
 </div>`),
   }),
 
