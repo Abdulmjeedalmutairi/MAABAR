@@ -39,15 +39,17 @@ export default function ProductDetail({ lang, user, profile }) {
     if (!user) { nav('/login/buyer'); return; }
     if (!qty) { alert(isAr ? 'يرجى تحديد الكمية' : 'Please enter quantity'); return; }
     if (!product) return;
-    setSending(true);
 
     const sup = product.profiles || {};
+    if (!sup.id) { alert(isAr ? 'تعذّر تحديد المورد' : 'Supplier not found'); return; }
 
-    // أنشئ request مباشر
+    setSending(true);
+
+    // أنشئ request
     const { data: reqData, error: reqError } = await sb.from('requests').insert({
       buyer_id: user.id,
-      title_ar: (isAr ? 'طلب شراء: ' : 'Buy order: ') + (product.name_ar || product.name_en || product.name_zh),
-      title_en: 'Buy order: ' + (product.name_en || product.name_ar || product.name_zh),
+      title_ar: 'شراء: ' + (product.name_ar || product.name_en || product.name_zh),
+      title_en: 'Buy: ' + (product.name_en || product.name_ar || product.name_zh),
       title_zh: '采购: ' + (product.name_zh || product.name_en || product.name_ar),
       quantity: qty,
       description: note || '',
@@ -56,33 +58,26 @@ export default function ProductDetail({ lang, user, profile }) {
       status: 'closed',
     }).select().single();
 
+    setSending(false);
+
     if (reqError || !reqData) {
-      setSending(false);
       alert(isAr ? 'حدث خطأ' : 'Error');
       return;
     }
 
-    // أنشئ offer مباشر من المنتج
-    const { data: offerData, error: offerError } = await sb.from('offers').insert({
-      request_id: reqData.id,
-      supplier_id: sup.id,
-      price: product.price_from || 0,
-      delivery_days: 30,
-      note: note || '',
-      status: 'accepted',
-    }).select().single();
-
-    setSending(false);
-
-    if (offerError || !offerData) {
-      alert(isAr ? 'حدث خطأ في إنشاء الطلب' : 'Error creating order');
-      return;
-    }
-
-    // روّح مباشرة لـ checkout
+    // روّح مباشرة لـ checkout مع offer وهمي من بيانات المنتج
+    // offer.id = reqData.id كـ placeholder UUID (ما يُدرج في offers table)
     nav('/checkout', {
       state: {
-        offer: offerData,
+        offer: {
+          id: reqData.id, // placeholder UUID
+          request_id: reqData.id,
+          supplier_id: sup.id,
+          price: product.price_from || 0,
+          delivery_days: 30,
+          status: 'accepted',
+          isDirect: true, // flag يخبر Checkout أن هذا شراء مباشر
+        },
         request: { ...reqData, quantity: qty },
       }
     });
