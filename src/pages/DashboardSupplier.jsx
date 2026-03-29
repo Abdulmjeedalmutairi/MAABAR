@@ -390,7 +390,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
         setProduct(emptyProduct);
       }
     }
-  }, [activeTab, user]);
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
@@ -551,11 +551,11 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (!user) return;
     setLoadingRequests(true);
     // جلب كل الطلبات المفتوحة بدون فلتر تخصص — الفلتر اختياري من الـ UI فقط
-    let query = sb.from('requests').select('*,profiles(full_name,company_name)').eq('status', 'open').order('created_at', { ascending: false });
+    let query = sb.from('requests').select('*,profiles!requests_buyer_id_fkey(full_name,company_name)').eq('status', 'open').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
-    const { data } = await query;
+    const { data, error } = await query;
+    console.log('loadRequests result:', data?.length, 'error:', error);
     if (data) setRequests(data);
-    console.log('loadRequests result:', data?.length, data);
     setLoadingRequests(false);
   };
 
