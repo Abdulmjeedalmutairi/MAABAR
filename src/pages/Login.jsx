@@ -352,7 +352,14 @@ export default function Login({ setUser, setProfile, lang }) {
       setMsgType('success');
       return;
     }
-    // Buyer: email confirmation required
+    // Buyer: send welcome email then ask to confirm
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ type: 'trader_welcome', to: data.user.email, data: { name: `${firstName} ${lastName}`.trim() || '' } }),
+      });
+    } catch (e) { console.error('trader welcome email error:', e); }
     setMsg(
       lang === 'ar' ? 'أرسلنا رسالة تأكيد لبريدك الإلكتروني. افتحها واضغط على الرابط للمتابعة.' :
       lang === 'zh' ? '确认邮件已发送至您的邮箱，请点击邮件中的链接继续。' :
