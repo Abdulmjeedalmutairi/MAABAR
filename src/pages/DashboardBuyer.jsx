@@ -259,7 +259,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   const acceptOffer = async (offerId, supplierId, requestId) => {
     // Get request title and all other pending offers before updating
     const { data: allOffers } = await sb.from('offers')
-      .select('id,supplier_id,profiles(company_name,full_name)')
+      .select('id,supplier_id')
       .eq('request_id', requestId)
       .eq('status', 'pending')
       .neq('id', offerId);
@@ -267,13 +267,13 @@ export default function DashboardBuyer({ user, profile, lang }) {
     const reqTitle = reqData?.title_ar || reqData?.title_en || '';
 
     try {
-      const { data: d1, error: e1 } = await sb.from('offers').update({ status: 'accepted' }).eq('id', offerId).select('id');
-      if (e1 || !d1?.length) { console.error('acceptOffer: failed to set offer accepted (RLS or error):', e1, '| rows updated:', d1?.length ?? 0); alert(isAr ? 'حدث خطأ أثناء قبول العرض — تحقق من الصلاحيات' : 'Error accepting offer — may be an RLS/permissions issue'); return; }
+      const { error: e1 } = await sb.from('offers').update({ status: 'accepted' }).eq('id', offerId);
+      if (e1) { console.error('acceptOffer: failed to set offer accepted:', e1); alert(isAr ? 'حدث خطأ أثناء قبول العرض' : 'Error accepting offer'); return; }
 
-      const { data: d2, error: e2 } = await sb.from('requests').update({ status: 'closed' }).eq('id', requestId).select('id');
-      if (e2 || !d2?.length) { console.error('acceptOffer: failed to close request (RLS or error):', e2, '| rows updated:', d2?.length ?? 0); alert(isAr ? 'حدث خطأ أثناء تحديث الطلب — تحقق من الصلاحيات' : 'Error updating request — may be an RLS/permissions issue'); return; }
+      const { error: e2 } = await sb.from('requests').update({ status: 'closed' }).eq('id', requestId);
+      if (e2) { console.error('acceptOffer: failed to close request:', e2); alert(isAr ? 'حدث خطأ أثناء تحديث الطلب' : 'Error updating request'); return; }
 
-      const { error: e3 } = await sb.from('offers').update({ status: 'rejected' }).eq('request_id', requestId).neq('id', offerId).select('id');
+      const { error: e3 } = await sb.from('offers').update({ status: 'rejected' }).eq('request_id', requestId).neq('id', offerId);
       if (e3) { console.error('acceptOffer: failed to reject other offers:', e3); alert(isAr ? 'حدث خطأ أثناء تحديث العروض الأخرى' : 'Error updating other offers'); return; }
     } catch (e) {
       console.error('acceptOffer: unexpected DB error:', e);
@@ -288,11 +288,14 @@ export default function DashboardBuyer({ user, profile, lang }) {
       ref_id: offerId, is_read: false,
     });
     try {
-      await fetch(SEND_EMAILS_URL, {
+      const res = await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({ type: 'offer_accepted', data: { recipientUserId: supplierId, name: 'Supplier', requestTitle: reqTitle } }),
       });
+      if (!res.ok) {
+        console.error('offer_accepted email failed:', await res.text());
+      }
     } catch (e) { console.error('email error:', e); }
 
     // Notify and email each rejected supplier individually
