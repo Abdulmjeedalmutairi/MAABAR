@@ -73,21 +73,26 @@ function App() {
     if (data) {
       setProfile(data);
       setProfileError(false);
-      // Send trader welcome email once after email confirmation (first login)
+      // Send trader welcome email once after email confirmation — deduplicated via notifications table
       if (data?.role === 'buyer' && data?.status === 'active') {
-        const welcomeKey = `trader_welcome_sent_${id}`;
-        if (!sessionStorage.getItem(welcomeKey)) {
-          sessionStorage.setItem(welcomeKey, '1');
-          try {
+        try {
+          const { data: existing } = await sb.from('notifications')
+            .select('id').eq('user_id', id).eq('type', 'trader_welcome_sent').limit(1);
+          if (!existing || existing.length === 0) {
             const _ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
             const _URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-            fetch(_URL, {
+            await fetch(_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_ANON}` },
               body: JSON.stringify({ type: 'trader_welcome', to: data.email, data: { name: data.full_name || '' } }),
-            }).catch(e => console.error('trader welcome error:', e));
-          } catch (e) { console.error('trader welcome error:', e); }
-        }
+            });
+            await sb.from('notifications').insert({
+              user_id: id, type: 'trader_welcome_sent',
+              title_ar: 'تم إرسال إيميل الترحيب', title_en: 'Welcome email sent',
+              is_read: true,
+            });
+          }
+        } catch (e) { console.error('trader welcome error:', e); }
       }
     } else {
       // Failed after all retries — show error screen instead of falling through to buyer dashboard

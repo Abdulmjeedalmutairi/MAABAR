@@ -319,12 +319,53 @@ export default function DashboardBuyer({ user, profile, lang }) {
   };
 
   const confirmDelivery = async (requestId, supplierId, supplierName) => {
+    // Update request status
     await sb.from('requests').update({ status: 'delivered', shipping_status: 'delivered' }).eq('id', requestId);
+
+    // Trigger payout: mark payment as completed
+    const { data: paymentData } = await sb.from('payments')
+      .select('id, amount, amount_second, payment_pct')
+      .eq('request_id', requestId)
+      .eq('buyer_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (paymentData) {
+      // If split payment and second payment was made, total is fully paid
+      // Mark payment as completed — triggers payout to supplier
+      await sb.from('payments')
+        .update({ status: 'completed' })
+        .eq('id', paymentData.id);
+    }
+
+    // Notify supplier
     await sb.from('notifications').insert({
       user_id: supplierId, type: 'delivery_confirmed',
-      title_ar: 'التاجر أكد الاستلام', title_en: 'Buyer confirmed delivery', title_zh: '买家已确认收货',
+      title_ar: 'التاجر أكد الاستلام — سيتم تحويل المبلغ خلال 24 ساعة',
+      title_en: 'Buyer confirmed delivery — payout will be processed within 24h',
+      title_zh: '买家已确认收货 — 款项将在24小时内处理',
       ref_id: requestId, is_read: false,
     });
+
+    // Send payout email to supplier
+    try {
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+      const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'payout_initiated',
+          data: {
+            recipientUserId: supplierId,
+            name: supplierName || 'Supplier',
+            amount: paymentData?.amount || 0,
+          },
+        }),
+      });
+    } catch (e) { console.error('payout email error:', e); }
+
     loadMyRequests(); loadPendingActions();
     setReviewRating(0); setReviewComment('');
     setReviewModal({ supplierId, requestId, supplierName });

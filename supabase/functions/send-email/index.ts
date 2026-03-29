@@ -259,6 +259,19 @@ const templates = {
 <div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">متابعة الطلب ←</a></div>
 </div>`),
   }),
+  payout_initiated: (d) => ({
+    subject: 'تم تأكيد استلام بضاعتك — مَعبر',
+    html: wrap(`
+<div class="bd">
+<p class="gr">أهلاً ${d.name || ''}،</p>
+<p class="tg">Payout Initiated</p>
+<p style="font-size:15px;color:#333">أكّد التاجر استلام الشحنة. سيتم تحويل مبلغك خلال <strong>24 ساعة</strong> عبر طريقة الدفع المسجلة.</p>
+<div class="ib">
+<div class="ir"><span class="ik">المبلغ</span><span class="iv">${d.amount || '-'} SAR</span></div>
+</div>
+<div class="bw"><a href="https://maabar.io/dashboard" class="bt">عرض لوحة التحكم ←</a></div>
+</div>`),
+  }),
 };
 
 async function sendEmail(to, subject, html) {
