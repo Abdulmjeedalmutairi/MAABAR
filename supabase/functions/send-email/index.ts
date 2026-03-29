@@ -189,21 +189,39 @@ async function sendEmail(to, subject, html) {
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
     body: JSON.stringify({ from: FROM, to, subject, html }),
   });
-  return res.json();
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(result?.message || result?.error || `Resend failed (${res.status})`);
+  }
+  return result;
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
     const { type, to, data } = await req.json();
+
+    if (type === 'supplier_signup_bundle') {
+      if (!data?.email) {
+        return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const welcomeTpl = templates.supplier_welcome(data || {});
+      const adminTpl = templates.admin_new_supplier(data || {});
+      const [welcomeResult, adminResult] = await Promise.all([
+        sendEmail(data.email, welcomeTpl.subject, welcomeTpl.html),
+        sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html),
+      ]);
+      return new Response(JSON.stringify({ ok: true, welcomeResult, adminResult }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
     const factory = templates[type];
-    if (!factory) return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), { status: 400, headers: cors });
+    if (!factory) return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const tpl = factory(data || {});
     const recipient = tpl.to || to;
-    if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: cors });
+    if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const result = await sendEmail(recipient, tpl.subject, tpl.html);
     return new Response(JSON.stringify({ ok: true, result }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: cors });
+    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 });

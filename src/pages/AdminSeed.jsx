@@ -141,59 +141,108 @@ WeChat: ${supplier.wechat || 'غير موجود'}
 
   const approveSupplier = async (supplier) => {
     setActionLoading(prev => ({ ...prev, [supplier.id]: 'approving' }));
-    await sb.from('profiles').update({ status: 'active' }).eq('id', supplier.id);
-    await sb.from('notifications').insert({
-      user_id: supplier.id,
-      type: 'account_approved',
-      title_ar: '🎉 تم قبول حسابك في مَعبر! يمكنك الآن إضافة منتجاتك',
-      title_en: '🎉 Your Maabar account has been approved! You can now add your products',
-      title_zh: '🎉 您的Maabar账户已获批准！您现在可以添加产品',
-      ref_id: supplier.id,
-      is_read: false,
-    });
     try {
-      // Get email from profiles table (populated by trigger from auth.users)
-      const { data: profileRow } = await sb.from('profiles').select('email').eq('id', supplier.id).single();
-      const supplierEmail = profileRow?.email || supplier.email || '';
+      const { data: updatedSupplier, error: updateError } = await sb.from('profiles')
+        .update({ status: 'active' })
+        .eq('id', supplier.id)
+        .eq('status', 'pending')
+        .select('id,email,status,company_name')
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+
+      if (!updatedSupplier) {
+        addLog(`⚠️ لم يتم قبول المورد لأن حالته تغيرت أو لم يتم تحديثها: ${supplier.company_name}`);
+        await loadPendingSuppliers();
+        return;
+      }
+
+      const { error: notifError } = await sb.from('notifications').insert({
+        user_id: supplier.id,
+        type: 'account_approved',
+        title_ar: '🎉 تم قبول حسابك في مَعبر! يمكنك الآن إضافة منتجاتك',
+        title_en: '🎉 Your Maabar account has been approved! You can now add your products',
+        title_zh: '🎉 您的Maabar账户已获批准！您现在可以添加产品',
+        ref_id: supplier.id,
+        is_read: false,
+      });
+      if (notifError) throw notifError;
+
+      const supplierEmail = updatedSupplier?.email || supplier.email || '';
       if (supplierEmail) {
-        await fetch(SEND_EMAILS_URL, {
+        const emailRes = await fetch(SEND_EMAILS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
           body: JSON.stringify({ type: 'supplier_approved', to: supplierEmail, data: { name: supplier.company_name || 'Supplier' } }),
         });
+        if (!emailRes.ok) {
+          throw new Error(await emailRes.text());
+        }
       } else {
         console.warn('approveSupplier: no email found for supplier', supplier.id);
       }
-    } catch (e) { console.error('email error:', e); }
-    setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
-    setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
-    addLog(`✅ تم قبول المورد: ${supplier.company_name}`);
-    loadStats();
+
+      await loadPendingSuppliers();
+      addLog(`✅ تم قبول المورد: ${supplier.company_name}`);
+      loadStats();
+    } catch (e) {
+      console.error('approveSupplier error:', e);
+      addLog(`❌ فشل قبول المورد: ${supplier.company_name}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
+    }
   };
 
   const rejectSupplier = async (supplier) => {
     setActionLoading(prev => ({ ...prev, [supplier.id]: 'rejecting' }));
-    await sb.from('profiles').update({ status: 'rejected' }).eq('id', supplier.id);
-    await sb.from('notifications').insert({
-      user_id: supplier.id,
-      type: 'account_rejected',
-      title_ar: 'نأسف، لم يتم قبول حسابك. للاستفسار تواصل معنا على hello@maabar.io',
-      title_en: 'Sorry, your account was not approved. Contact hello@maabar.io for inquiries',
-      title_zh: '抱歉，您的账户未获批准。请联系hello@maabar.io',
-      ref_id: supplier.id,
-      is_read: false,
-    });
     try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({ type: 'supplier_rejected', to: supplier.email || '', data: { name: supplier.company_name || 'Supplier' } }),
+      const { data: updatedSupplier, error: updateError } = await sb.from('profiles')
+        .update({ status: 'rejected' })
+        .eq('id', supplier.id)
+        .eq('status', 'pending')
+        .select('id,email,status,company_name')
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+
+      if (!updatedSupplier) {
+        addLog(`⚠️ لم يتم رفض المورد لأن حالته تغيرت أو لم يتم تحديثها: ${supplier.company_name}`);
+        await loadPendingSuppliers();
+        return;
+      }
+
+      const { error: notifError } = await sb.from('notifications').insert({
+        user_id: supplier.id,
+        type: 'account_rejected',
+        title_ar: 'نأسف، لم يتم قبول حسابك. للاستفسار تواصل معنا على hello@maabar.io',
+        title_en: 'Sorry, your account was not approved. Contact hello@maabar.io for inquiries',
+        title_zh: '抱歉，您的账户未获批准。请联系hello@maabar.io',
+        ref_id: supplier.id,
+        is_read: false,
       });
-    } catch (e) { console.error('email error:', e); }
-    setPendingSuppliers(prev => prev.filter(s => s.id !== supplier.id));
-    setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
-    addLog(`❌ تم رفض المورد: ${supplier.company_name}`);
-    loadStats();
+      if (notifError) throw notifError;
+
+      const supplierEmail = updatedSupplier?.email || supplier.email || '';
+      if (supplierEmail) {
+        const emailRes = await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+          body: JSON.stringify({ type: 'supplier_rejected', to: supplierEmail, data: { name: supplier.company_name || 'Supplier' } }),
+        });
+        if (!emailRes.ok) {
+          throw new Error(await emailRes.text());
+        }
+      }
+
+      await loadPendingSuppliers();
+      addLog(`❌ تم رفض المورد: ${supplier.company_name}`);
+      loadStats();
+    } catch (e) {
+      console.error('rejectSupplier error:', e);
+      addLog(`❌ فشل رفض المورد: ${supplier.company_name}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [supplier.id]: null }));
+    }
   };
 
   const addLog = (msg) => setLog(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);

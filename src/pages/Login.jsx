@@ -328,22 +328,34 @@ export default function Login({ setUser, setProfile, lang }) {
       }),
     };
     if (isSupplier) {
-      await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
-      // Send supplier welcome + admin alert emails
+      const { error: profileError } = await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
+      if (profileError) {
+        setMsg(profileError.message || l.fillRequired);
+        setMsgType('error');
+        return;
+      }
       try {
-        await Promise.all([
-          fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'supplier_welcome', to: data.user.email, data: { name: supCompany || '' } }),
+        const emailRes = await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'supplier_signup_bundle',
+            data: {
+              name: supCompany || '',
+              companyName: supCompany,
+              email: data.user.email,
+              whatsapp,
+              wechat,
+              payMethod,
+            },
           }),
-          fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'admin_new_supplier', to: 'mjeedalmutairis@gmail.com', data: { companyName: supCompany, email: data.user.email, whatsapp, wechat, payMethod } }),
-          }),
-        ]);
-      } catch (e) { console.error('email error:', e); }
+        });
+        if (!emailRes.ok) {
+          console.error('supplier signup bundle failed:', await emailRes.text());
+        }
+      } catch (e) {
+        console.error('email error:', e);
+      }
       setMsg(l.pendingMsg);
       setMsgType('success');
       return;
