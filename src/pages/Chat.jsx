@@ -132,7 +132,7 @@ export default function Chat({ lang, user, profile }) {
   const loadPartner = async () => {
     const { data } = await sb
       .from('profiles')
-      .select('company_name,full_name,avatar_url,role,email')
+      .select('company_name,full_name,avatar_url,role')
       .eq('id', partnerId)
       .single();
     if (data) setPartner(data);
@@ -217,21 +217,19 @@ export default function Chat({ lang, user, profile }) {
     });
 
     try {
-      if (partner?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-          body: JSON.stringify({
-            type: 'new_message',
-            to: partner.email,
-            data: {
-              senderId: user.id,
-              senderName: profile?.company_name || profile?.full_name || user.email?.split('@')[0] || 'Maabar',
-              preview: text.length > 80 ? `${text.slice(0, 80)}...` : text,
-            },
-          }),
-        });
-      }
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({
+          type: 'new_message',
+          data: {
+            recipientUserId: partnerId,
+            senderId: user.id,
+            senderName: profile?.company_name || profile?.full_name || user.email?.split('@')[0] || 'Maabar',
+            preview: text.length > 80 ? `${text.slice(0, 80)}...` : text,
+          },
+        }),
+      });
     } catch (e) { console.error('email error:', e); }
 
     setSending(false);

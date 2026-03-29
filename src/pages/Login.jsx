@@ -213,7 +213,7 @@ export default function Login({ setUser, setProfile, lang }) {
       return;
     }
     setUser(data.user);
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+    const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', data.user.id).single();
     if (profile) setProfile(profile);
     const draft = sessionStorage.getItem('maabar_request_draft');
     const hasDraft = draft && (() => { try { const d = JSON.parse(draft); return d.title_ar || d.title_en; } catch { return false; } })();
@@ -272,7 +272,7 @@ export default function Login({ setUser, setProfile, lang }) {
       });
     } catch (e) { console.error('email error:', e); }
     setUser(authData.user);
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', authData.user.id).single();
+    const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', authData.user.id).single();
     if (profile) setProfile(profile);
     const draft = sessionStorage.getItem('maabar_request_draft');
     const hasDraft = draft && (() => { try { const d = JSON.parse(draft); return d.title_ar || d.title_en; } catch { return false; } })();

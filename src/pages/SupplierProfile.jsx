@@ -27,7 +27,7 @@ export default function SupplierProfile({ lang, user }) {
   const loadSupplier = async () => {
     setLoading(true);
     const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
-      sb.from('profiles').select('*').eq('id', id).single(),
+      sb.from('profiles').select('id,company_name,city,country,rating,reviews_count,avatar_url,bio_ar,bio_en,bio_zh,speciality,status,factory_images').eq('id', id).single(),
       sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name)').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
@@ -84,22 +84,19 @@ export default function SupplierProfile({ lang, user }) {
       ref_id: p.id, is_read: false
     });
     try {
-      const { data: supplierProfile } = await sb.from('profiles').select('email').eq('id', id).single();
-      if (supplierProfile?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'new_sample',
-            to: supplierProfile.email,
-            data: {
-              productName: p.name_ar || p.name_en || p.name_zh || 'Product',
-              quantity: d.qty,
-              totalPrice: total,
-            },
-          }),
-        });
-      }
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'new_sample',
+          data: {
+            recipientUserId: id,
+            productName: p.name_ar || p.name_en || p.name_zh || 'Product',
+            quantity: d.qty,
+            totalPrice: total,
+          },
+        }),
+      });
     } catch (e) { console.error('sample email error:', e); }
     alert(isAr ? '✅ تم إرسال طلب العينة!' : '✅ Sample request sent!');
     toggleSampleForm(p.id);

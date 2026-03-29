@@ -1,8 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
+const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || 'https://utzalmszfqfcofywfetv.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || '';
 const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const FROM = 'Maabar <hello@maabar.io>';
+const adminSb = SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -256,6 +260,16 @@ async function sendEmail(to, subject, html) {
   return result;
 }
 
+async function resolveRecipient(to, data) {
+  if (to) return to;
+  if (data?.recipientUserId && adminSb) {
+    const { data: profileRow, error } = await adminSb.from('profiles').select('email').eq('id', data.recipientUserId).single();
+    if (error) throw error;
+    return profileRow?.email || '';
+  }
+  return '';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
@@ -277,7 +291,7 @@ serve(async (req) => {
     const factory = templates[type];
     if (!factory) return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const tpl = factory(data || {});
-    const recipient = tpl.to || to;
+    const recipient = tpl.to || await resolveRecipient(to, data);
     if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const result = await sendEmail(recipient, tpl.subject, tpl.html);
     return new Response(JSON.stringify({ ok: true, result }), { headers: { ...cors, 'Content-Type': 'application/json' } });

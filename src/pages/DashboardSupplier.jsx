@@ -417,22 +417,19 @@ export default function DashboardSupplier({ user, profile, lang }) {
       });
 
       try {
-        const { data: buyerProfile } = await sb.from('profiles').select('email,full_name,company_name').eq('id', sample.buyer_id).single();
-        if (buyerProfile?.email) {
-          await fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({
-              type: status === 'approved' ? 'sample_approved' : 'sample_rejected',
-              to: buyerProfile.email,
-              data: {
-                name: buyerProfile.full_name || buyerProfile.company_name || 'Trader',
-                productName: sample?.products?.name_ar || sample?.products?.name_en || sample?.products?.name_zh || 'Product',
-                totalPrice: sample?.total_price || 0,
-              },
-            }),
-          });
-        }
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: status === 'approved' ? 'sample_approved' : 'sample_rejected',
+            data: {
+              recipientUserId: sample.buyer_id,
+              name: 'Trader',
+              productName: sample?.products?.name_ar || sample?.products?.name_en || sample?.products?.name_zh || 'Product',
+              totalPrice: sample?.total_price || 0,
+            },
+          }),
+        });
       } catch (e) { console.error('sample status email error:', e); }
     }
 
@@ -450,7 +447,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   };
 
   const loadSettings = async () => {
-    const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    const { data } = await sb.from('profiles').select('bio_ar,bio_en,bio_zh,company_name,whatsapp,wechat,city,country,trade_link,speciality,min_order_value,avatar_url,factory_images').eq('id', user.id).single();
     if (data) setSettings({ bio_ar: data.bio_ar || '', bio_en: data.bio_en || '', bio_zh: data.bio_zh || '', company_name: data.company_name || '', whatsapp: data.whatsapp || '', wechat: data.wechat || '', city: data.city || '', country: data.country || '', trade_link: data.trade_link || '', speciality: data.speciality || '', min_order_value: data.min_order_value || '', avatar_url: data.avatar_url || '', factory_images: data.factory_images || [] });
   };
 
@@ -639,24 +636,21 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
     await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
     try {
-      const { data: buyerProfile } = await sb.from('profiles').select('email,full_name,company_name').eq('id', buyerId).single();
-      if (buyerProfile?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'new_offer',
-            to: buyerProfile.email,
-            data: {
-              name: buyerProfile.full_name || buyerProfile.company_name || 'Trader',
-              requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
-              supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
-              price: o.price,
-              deliveryDays: o.days,
-            },
-          }),
-        });
-      }
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'new_offer',
+          data: {
+            recipientUserId: buyerId,
+            name: 'Trader',
+            requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
+            supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
+            price: o.price,
+            deliveryDays: o.days,
+          },
+        }),
+      });
     } catch (e) { console.error('email error:', e); }
     alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');
     toggleOfferForm(requestId); loadRequests();

@@ -180,24 +180,21 @@ export default function Requests({ lang, user, profile }) {
       ref_id: requestId, is_read: false,
     });
     try {
-      const { data: buyerProfile } = await sb.from('profiles').select('email,full_name,company_name').eq('id', buyerId).single();
-      if (buyerProfile?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'new_offer',
-            to: buyerProfile.email,
-            data: {
-              name: buyerProfile.full_name || buyerProfile.company_name || 'Trader',
-              requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
-              supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
-              price: o.price,
-              deliveryDays: o.days,
-            },
-          }),
-        });
-      }
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'new_offer',
+          data: {
+            recipientUserId: buyerId,
+            name: 'Trader',
+            requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
+            supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
+            price: o.price,
+            deliveryDays: o.days,
+          },
+        }),
+      });
     } catch (e) { console.error('email error:', e); }
     alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');
     toggleOfferForm(requestId);

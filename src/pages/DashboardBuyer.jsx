@@ -241,7 +241,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   };
 
   const loadSettings = async () => {
-    const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    const { data } = await sb.from('profiles').select('full_name,phone,city,company_name').eq('id', user.id).single();
     if (data) setSettings({ full_name: data.full_name || '', phone: data.phone || '', city: data.city || '', company_name: data.company_name || '' });
   };
 
@@ -288,14 +288,11 @@ export default function DashboardBuyer({ user, profile, lang }) {
       ref_id: offerId, is_read: false,
     });
     try {
-      const { data: supProfile } = await sb.from('profiles').select('email,company_name').eq('id', supplierId).single();
-      if (supProfile?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({ type: 'offer_accepted', to: supProfile.email, data: { name: supProfile.company_name || 'Supplier', requestTitle: reqTitle } }),
-        });
-      }
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ type: 'offer_accepted', data: { recipientUserId: supplierId, name: 'Supplier', requestTitle: reqTitle } }),
+      });
     } catch (e) { console.error('email error:', e); }
 
     // Notify and email each rejected supplier individually
@@ -309,14 +306,11 @@ export default function DashboardBuyer({ user, profile, lang }) {
           ref_id: requestId, is_read: false,
         });
         try {
-          const { data: rejProfile } = await sb.from('profiles').select('email,company_name').eq('id', o.supplier_id).single();
-          if (rejProfile?.email) {
-            await fetch(SEND_EMAILS_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-              body: JSON.stringify({ type: 'offer_rejected', to: rejProfile.email, data: { name: rejProfile.company_name || 'Supplier', requestTitle: reqTitle } }),
-            });
-          }
+          await fetch(SEND_EMAILS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle } }),
+          });
         } catch (e) { console.error('email error:', e); }
       }));
     }

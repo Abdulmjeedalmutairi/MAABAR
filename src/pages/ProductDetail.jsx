@@ -103,22 +103,19 @@ export default function ProductDetail({ lang, user, profile }) {
     });
 
     try {
-      const { data: supplierProfile } = await sb.from('profiles').select('email').eq('id', sup.id).single();
-      if (supplierProfile?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'new_sample',
-            to: supplierProfile.email,
-            data: {
-              productName: product.name_ar || product.name_en || product.name_zh || 'Product',
-              quantity: sampleQty,
-              totalPrice: total,
-            },
-          }),
-        });
-      }
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'new_sample',
+          data: {
+            recipientUserId: sup.id,
+            productName: product.name_ar || product.name_en || product.name_zh || 'Product',
+            quantity: sampleQty,
+            totalPrice: total,
+          },
+        }),
+      });
     } catch (e) { console.error('sample email error:', e); }
 
     alert(isAr ? '✅ تم إرسال طلب العينة! سيتواصل معك المورد قريباً' : '✅ Sample request sent! The supplier will contact you soon');

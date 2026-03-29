@@ -78,11 +78,7 @@ export default function AdminSeed({ user, lang }) {
   };
 
   const loadPendingSuppliers = async () => {
-    const { data } = await sb.from('profiles')
-      .select('*')
-      .eq('role', 'supplier')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+    const { data } = await sb.rpc('admin_get_pending_suppliers');
     if (data) setPendingSuppliers(data);
   };
 
@@ -146,7 +142,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
         .update({ status: 'active' })
         .eq('id', supplier.id)
         .eq('status', 'pending')
-        .select('id,email,status,company_name')
+        .select('id,status,company_name')
         .maybeSingle();
 
       if (updateError) throw updateError;
@@ -168,7 +164,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       });
       if (notifError) throw notifError;
 
-      const supplierEmail = updatedSupplier?.email || supplier.email || '';
+      const supplierEmail = supplier.email || '';
       if (supplierEmail) {
         const emailRes = await fetch(SEND_EMAILS_URL, {
           method: 'POST',
@@ -200,7 +196,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
         .update({ status: 'rejected' })
         .eq('id', supplier.id)
         .eq('status', 'pending')
-        .select('id,email,status,company_name')
+        .select('id,status,company_name')
         .maybeSingle();
 
       if (updateError) throw updateError;
@@ -222,7 +218,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       });
       if (notifError) throw notifError;
 
-      const supplierEmail = updatedSupplier?.email || supplier.email || '';
+      const supplierEmail = supplier.email || '';
       if (supplierEmail) {
         const emailRes = await fetch(SEND_EMAILS_URL, {
           method: 'POST',

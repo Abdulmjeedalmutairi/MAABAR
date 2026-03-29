@@ -273,18 +273,14 @@ export default function Checkout({ lang, user, profile }) {
       // إشعار للمورد
       const reqTitle = request?.title_ar || request?.title_en || '';
       try {
-        const { data: supProf } = await sb.from('profiles').select('email,company_name').eq('id', offer.supplier_id).single();
-        if (supProf?.email) {
-          await fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({
-              type: 'payment_received_supplier',
-              to: supProf.email,
-              data: { requestTitle: reqTitle, amount: firstPayment, name: supProf.company_name || 'Supplier' },
-            }),
-          });
-        }
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'payment_received_supplier',
+            data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPayment, name: 'Supplier' },
+          }),
+        });
       } catch (e) { console.error('email error:', e); }
       await sb.from('notifications').insert({
         user_id: offer.supplier_id,
