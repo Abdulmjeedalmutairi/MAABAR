@@ -304,36 +304,28 @@ export default function Login({ setUser, setProfile, lang }) {
     const metaData = {
       role, status: isSupplier ? 'pending' : 'active',
       ...(!isSupplier && { full_name: `${firstName} ${lastName}`, phone, city, company_name: companyName }),
-      ...(isSupplier && { company_name: supCompany, whatsapp, wechat, pay_method: payMethod, reg_number: regNum, trade_link: tradeLink, speciality, license_photo: licenseUrl, factory_photo: factoryUrl, alipay_account: payMethod === 'alipay' ? alipayAccount : null, swift_code: payMethod === 'swift' ? swiftCode : null, bank_name: payMethod === 'swift' ? bankName : null }),
+      ...(isSupplier && {
+        company_name: supCompany, whatsapp, wechat,
+        pay_method: payMethod,
+        reg_number: regNum,
+        trade_link: tradeLink,
+        speciality,
+        country,
+        city: supCity,
+        license_photo: licenseUrl,
+        factory_photo: factoryUrl,
+        alipay_account: payMethod === 'alipay' ? alipayAccount : null,
+        swift_code: payMethod === 'swift' ? swiftCode : null,
+        bank_name: payMethod === 'swift' ? bankName : null,
+        years_experience: yearsExp || null,
+        num_employees: employees || null,
+      }),
     };
     const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard', data: metaData } });
     setLoading(false);
     if (error) { setMsg(error.message); setMsgType('error'); return; }
-    const profileData = {
-      id: data.user.id, role,
-      status: isSupplier ? 'pending' : 'active',
-      ...(!isSupplier && { full_name: `${firstName} ${lastName}`, phone, city, company_name: companyName }),
-      ...(isSupplier && {
-        company_name: supCompany, whatsapp, wechat,
-        pay_method: payMethod,
-        alipay_account: payMethod === 'alipay' ? alipayAccount : null,
-        swift_code: payMethod === 'swift' ? swiftCode : null,
-        bank_name: payMethod === 'swift' ? bankName : null,
-        trade_link: tradeLink, reg_number: regNum,
-        country, city: supCity, speciality,
-        years_experience: yearsExp ? parseInt(yearsExp) : null,
-        num_employees: employees ? parseInt(employees) : null,
-        license_photo: licenseUrl,
-        factory_photo: factoryUrl,
-      }),
-    };
     if (isSupplier) {
-      const { error: profileError } = await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
-      if (profileError) {
-        setMsg(profileError.message || l.fillRequired);
-        setMsgType('error');
-        return;
-      }
+      // Profile created by DB trigger (handle_new_user) from raw_user_meta_data — no client upsert needed
       try {
         const emailRes = await fetch(SEND_EMAILS_URL, {
           method: 'POST',
