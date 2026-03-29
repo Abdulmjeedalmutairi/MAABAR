@@ -322,7 +322,7 @@ export default function Login({ setUser, setProfile, lang }) {
         trade_link: tradeLink, reg_number: regNum,
         country, city: supCity, speciality,
         years_experience: yearsExp ? parseInt(yearsExp) : null,
-        employees_count: employees ? parseInt(employees) : null,
+        num_employees: employees ? parseInt(employees) : null,
         license_photo: licenseUrl,
         factory_photo: factoryUrl,
       }),
