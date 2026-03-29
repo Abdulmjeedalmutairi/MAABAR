@@ -551,7 +551,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (!user) return;
     setLoadingRequests(true);
     // جلب كل الطلبات المفتوحة بدون فلتر تخصص — الفلتر اختياري من الـ UI فقط
-    let query = sb.from('requests').select('*,profiles!requests_buyer_id_fkey(full_name,company_name)').eq('status', 'open').order('created_at', { ascending: false });
+    let query = sb.from('requests').select('*').eq('status', 'open').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data, error } = await query;
     console.log('loadRequests result:', data?.length, 'error:', error);
@@ -925,7 +925,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                       </div>
                       <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text-primary)', ...arFont }}>{getTitle(r)}</h3>
                       <div style={{ display: 'flex', gap: 16, color: 'var(--text-disabled)', fontSize: 12, flexWrap: 'wrap' }}>
-                        <span>{r.profiles?.full_name || r.profiles?.company_name || ''}</span>
+                        <span>{r.profiles?.full_name || r.profiles?.company_name || (isAr ? 'تاجر' : 'Trader')}</span>
                         <span>{r.quantity || '—'}</span>
                         {r.description && <span>{r.description.substring(0, 55)}…</span>}
                       </div>
@@ -1294,7 +1294,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                   {myReviews.map((r, idx) => (
                     <div key={r.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '18px 0', animation: `fadeIn 0.35s ease ${idx*0.04}s both` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{r.profiles?.company_name || r.profiles?.full_name || '—'}</p>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : 'Trader')}</p>
                         <div style={{ display: 'flex', gap: 1 }}>
                           {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 12, color: s <= r.rating ? '#a08050' : 'var(--border-default)' }}>★</span>)}
                         </div>
