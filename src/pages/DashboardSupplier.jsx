@@ -548,12 +548,14 @@ export default function DashboardSupplier({ user, profile, lang }) {
   };
 
   const loadRequests = async () => {
+    if (!user) return;
     setLoadingRequests(true);
     // جلب كل الطلبات المفتوحة بدون فلتر تخصص — الفلتر اختياري من الـ UI فقط
     let query = sb.from('requests').select('*,profiles(full_name,company_name)').eq('status', 'open').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data } = await query;
     if (data) setRequests(data);
+    console.log('loadRequests result:', data?.length, data);
     setLoadingRequests(false);
   };
 

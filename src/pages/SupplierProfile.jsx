@@ -172,25 +172,7 @@ export default function SupplierProfile({ lang, user }) {
               </div>
             )}
           </div>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '6px 14px',
-            background: 'rgba(58,122,82,0.08)',
-            border: '1px solid rgba(58,122,82,0.15)',
-            borderRadius: 'var(--radius-lg)',
-            fontSize: 12, marginBottom: 8,
-          }}>
-            <span style={{
-              width: 14, height: 14, borderRadius: '50%',
-              background: 'rgba(58,122,82,0.2)',
-              border: '1px solid rgba(58,122,82,0.3)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, color: '#5a9a72', fontWeight: 700, flexShrink: 0,
-            }}>✓</span>
-            <span style={{ color: '#5a9a72' }}>
-              {isAr ? 'مدفوعاتك محمية · ادفع بقدر ما تثق' : "Your payment is protected · Pay what you're comfortable with"}
-            </span>
-          </div>
+
 
           <p className="profile-meta">
             <span className="stars">{stars(Math.round(supplier.rating || 0))}</span>

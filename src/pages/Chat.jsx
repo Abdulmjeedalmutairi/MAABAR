@@ -58,6 +58,7 @@ const MSG_TEMPLATES = {
   ],
 };
 
+// TODO: Add buyer rating by supplier after deal completion
 export default function Chat({ lang, user, profile }) {
   const { partnerId } = useParams();
   const nav = useNavigate();
@@ -317,7 +318,15 @@ export default function Chat({ lang, user, profile }) {
           onClick={() => nav('/inbox')}>←</button>
         <div className="avatar-sm">{partnerName[0]}</div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 500, fontSize: 15 }}>{partnerName}</p>
+          <p
+            style={{ fontWeight: 500, fontSize: 15, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-subtle)' }}
+            onClick={() => partner?.role === 'supplier' ? nav(`/supplier/${partnerId}`) : null}
+          >
+            {partnerName}
+            {partner?.role === 'supplier' && (
+              <span style={{ fontSize: 10, color: 'var(--text-disabled)', marginInlineStart: 6 }}>↗</span>
+            )}
+          </p>
           <p style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
             {isAr ? 'ترجمة تلقائية مفعّلة' : lang === 'zh' ? '自动翻译已启用' : 'Auto-translate on'}
             {chinaTime && (
