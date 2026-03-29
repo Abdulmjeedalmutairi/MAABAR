@@ -65,7 +65,7 @@ export default function Requests({ lang, user, profile }) {
   const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRef, setUploadingRef] = useState(false);
-  const [showAllRequests, setShowAllRequests] = useState(false);
+  const [showAllRequests, setShowAllRequests] = useState(true);
   const refImageRef = useRef(null);
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';

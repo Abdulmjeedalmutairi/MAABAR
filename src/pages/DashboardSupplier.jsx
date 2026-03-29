@@ -549,13 +549,14 @@ export default function DashboardSupplier({ user, profile, lang }) {
   };
 
   const addProduct = async () => {
-    if (!product.name_zh || !product.price_from || !product.moq) {
-      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، السعر، MOQ' : 'Please fill required fields: Chinese name, price, MOQ');
+    if ((!product.name_zh && !product.name_ar && !product.name_en) || !product.price_from || !product.moq) {
+      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: اسم المنتج، السعر، MOQ' : 'Please fill required fields: product name, price, MOQ');
       return;
     }
     setSaving(true);
     setProductSaveMsg('');
-    const { error } = await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || product.name_zh, name_en: product.name_en || product.name_zh, name_zh: product.name_zh, price_from: parseFloat(product.price_from), moq: product.moq, desc_ar: product.desc_ar, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
+    const productName = product.name_zh || product.name_ar || product.name_en || '';
+    const { error } = await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || productName, name_en: product.name_en || productName, name_zh: product.name_zh || productName, price_from: parseFloat(product.price_from), moq: product.moq, desc_ar: product.desc_ar, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
     setSaving(false);
     if (error) {
       console.error('addProduct error:', error);
