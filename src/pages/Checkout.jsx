@@ -309,7 +309,14 @@ export default function Checkout({ lang, user, profile }) {
     } catch (e) { console.error('buyer email error:', e); }
 
     nav('/payment-success', {
-      state: { offer, request, total: firstPayment, method, isSecondPayment }
+      state: {
+        offer,
+        request,
+        total: firstPayment,
+        method,
+        isSecondPayment,
+        payment: { moyasar_id: `temp_${Date.now()}`, id: `temp_${Date.now()}` },
+      }
     });
   };
 

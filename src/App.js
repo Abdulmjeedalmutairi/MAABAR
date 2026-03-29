@@ -150,6 +150,28 @@ function App() {
     if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
     if (profile.role === 'supplier' && profile.status === 'pending')
       return <PendingApproval {...sharedProps} />;
+    if (profile.role === 'supplier' && profile.status === 'rejected')
+      return (
+        <div style={{
+          minHeight: '100vh', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          background: '#0a0a0b', gap: 16, padding: 24, textAlign: 'center',
+        }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
+            نأسف، لم يتم قبول حسابك.
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
+            للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'rgba(255,255,255,0.5)' }}>hello@maabar.io</a>
+          </p>
+          <button onClick={() => sb.auth.signOut()} style={{
+            background: 'none', color: 'rgba(255,255,255,0.3)',
+            border: '1px solid rgba(255,255,255,0.1)', padding: '10px 24px',
+            borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
+          }}>
+            تسجيل الخروج
+          </button>
+        </div>
+      );
     if (profile.role === 'supplier')
       return <DashboardSupplier {...sharedProps} />;
     return <DashboardBuyer {...sharedProps} />;
