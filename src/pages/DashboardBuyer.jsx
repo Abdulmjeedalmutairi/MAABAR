@@ -332,6 +332,16 @@ export default function DashboardBuyer({ user, profile, lang }) {
 
   const submitReview = async () => {
     if (!reviewRating || !reviewModal) return;
+    const { data: existingReview } = await sb.from('reviews')
+      .select('id')
+      .eq('supplier_id', reviewModal.supplierId)
+      .eq('buyer_id', user.id)
+      .eq('request_id', reviewModal.requestId)
+      .maybeSingle();
+    if (existingReview) {
+      setReviewModal(null);
+      return;
+    }
     setSubmittingReview(true);
     await sb.from('reviews').insert({
       supplier_id: reviewModal.supplierId, buyer_id: user.id,

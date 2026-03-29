@@ -61,47 +61,6 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const sendSupplierConfirmedEmailIfNeeded = async (profileData) => {
-    // Send "طلبك وصلنا" to supplier only once, after email confirmation (first login)
-    // We track this by checking notifications table for a sent marker
-    if (profileData?.role !== 'supplier') return;
-    try {
-      const { data: existing } = await sb.from('notifications')
-        .select('id').eq('user_id', profileData.id).eq('type', 'supplier_confirmed_sent').limit(1);
-      if (existing && existing.length > 0) return; // Already sent
-
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
-      const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-
-      // Send supplier_welcome (طلبك وصلنا) + admin notification
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          type: 'supplier_signup_bundle',
-          data: {
-            name: profileData.company_name || '',
-            companyName: profileData.company_name || '',
-            email: profileData.email,
-            whatsapp: profileData.whatsapp || '',
-            wechat: profileData.wechat || '',
-            payMethod: profileData.pay_method || '',
-          },
-        }),
-      });
-
-      // Mark as sent so we don't send again
-      await sb.from('notifications').insert({
-        user_id: profileData.id,
-        type: 'supplier_confirmed_sent',
-        message: 'supplier signup bundle sent after email confirmation',
-        is_read: true,
-      });
-    } catch (e) {
-      console.error('sendSupplierConfirmedEmailIfNeeded error:', e);
-    }
-  };
-
   const loadProfile = async (id, attempt = 1) => {
     const { data, error } = await sb.from('profiles').select('*').eq('id', id).single();
 
@@ -114,8 +73,22 @@ function App() {
     if (data) {
       setProfile(data);
       setProfileError(false);
-      // Send post-confirmation emails for supplier (طلبك وصلنا + admin) only once after email confirm
-      sendSupplierConfirmedEmailIfNeeded(data);
+      // Send trader welcome email once after email confirmation (first login)
+      if (data?.role === 'buyer' && data?.status === 'active') {
+        const welcomeKey = `trader_welcome_sent_${id}`;
+        if (!sessionStorage.getItem(welcomeKey)) {
+          sessionStorage.setItem(welcomeKey, '1');
+          try {
+            const _ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+            const _URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
+            fetch(_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_ANON}` },
+              body: JSON.stringify({ type: 'trader_welcome', to: data.email, data: { name: data.full_name || '' } }),
+            }).catch(e => console.error('trader welcome error:', e));
+          } catch (e) { console.error('trader welcome error:', e); }
+        }
+      }
     } else {
       // Failed after all retries — show error screen instead of falling through to buyer dashboard
       console.error('loadProfile failed after retries:', error);

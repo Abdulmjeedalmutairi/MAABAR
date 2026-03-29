@@ -263,14 +263,7 @@ export default function Login({ setUser, setProfile, lang }) {
     if (!pendingSignup) return;
     const { authData, profileData } = pendingSignup;
     await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
-    // Send welcome email
-    try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'trader_welcome', to: authData.user.email, data: { name: buyerName || '' } }),
-      });
-    } catch (e) { console.error('email error:', e); }
+    // trader_welcome is sent in App.js after email confirmation (first login) — not here
     setUser(authData.user);
     const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', authData.user.id).single();
     if (profile) setProfile(profile);
@@ -326,20 +319,29 @@ export default function Login({ setUser, setProfile, lang }) {
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     if (isSupplier) {
       // Profile created by DB trigger (handle_new_user) from raw_user_meta_data — no client upsert needed
-      // NOTE: supplier_signup_bundle (supplier_welcome + admin notification) is sent AFTER email confirmation
-      // on first login via App.js:sendSupplierConfirmedEmailIfNeeded — not here, to preserve correct email order.
+      // Send supplier_signup_bundle immediately at signup (before email confirmation)
+      try {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'supplier_signup_bundle',
+            data: {
+              name: supCompany || '',
+              companyName: supCompany,
+              email: data.user.email,
+              whatsapp,
+              wechat,
+              payMethod,
+            },
+          }),
+        });
+      } catch (e) { console.error('email error:', e); }
       setMsg(l.pendingMsg);
       setMsgType('success');
       return;
     }
-    // Buyer: send welcome email then ask to confirm
-    try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'trader_welcome', to: data.user.email, data: { name: `${firstName} ${lastName}`.trim() || '' } }),
-      });
-    } catch (e) { console.error('trader welcome email error:', e); }
+    // Buyer: trader_welcome is sent in App.js after email confirmation (first login) — not here
     setMsg(
       lang === 'ar' ? 'أرسلنا رسالة تأكيد لبريدك الإلكتروني. افتحها واضغط على الرابط للمتابعة.' :
       lang === 'zh' ? '确认邮件已发送至您的邮箱，请点击邮件中的链接继续。' :

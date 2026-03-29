@@ -172,6 +172,8 @@ export default function Requests({ lang, user, profile }) {
       delivery_days: parseInt(o.days), origin: o.origin, note: o.note, status: 'pending',
     });
     if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
+    // Update request status to offers_received when first offer comes in
+    await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
     await sb.from('notifications').insert({
       user_id: buyerId, type: 'new_offer',
       title_ar: 'وصلك عرض جديد على طلبك',

@@ -634,6 +634,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request'); return; }
     const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price: parseFloat(o.price), delivery_days: parseInt(o.days), note: o.note || null, status: 'pending' });
     if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
+    // Update request status to offers_received when first offer comes in
+    await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
     await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
     try {
       await fetch(SEND_EMAILS_URL, {
@@ -669,6 +671,21 @@ export default function DashboardSupplier({ user, profile, lang }) {
       ...(estimatedDelivery ? { estimated_delivery: estimatedDelivery } : {}),
     }).eq('id', requestId);
     await sb.from('notifications').insert({ user_id: buyerId, type: 'shipped', title_ar: 'طلبك في الطريق — رقم التتبع: ' + num, title_en: 'Your order is on the way — Tracking: ' + num, title_zh: '您的订单已发货 — 跟踪号：' + num, ref_id: requestId, is_read: false });
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'shipment_tracking',
+          data: {
+            recipientUserId: buyerId,
+            name: 'Trader',
+            trackingNumber: num,
+            shippingCompany,
+          },
+        }),
+      });
+    } catch (e) { console.error('tracking email error:', e); }
     loadMyOffers(); loadPendingTracking();
   };
 

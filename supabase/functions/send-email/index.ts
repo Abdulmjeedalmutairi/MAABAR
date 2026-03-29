@@ -245,6 +245,20 @@ const templates = {
 <p style="font-size:15px;color:#333">نشكرك على اهتمامك بالانضمام لمنصة مَعبر. للأسف، لم نتمكن من قبول طلبك في الوقت الحالي. للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style="color:#555">hello@maabar.io</a></p>
 </div>`),
   }),
+  shipment_tracking: (d) => ({
+    subject: `طلبك في الطريق — رقم التتبع: ${d.trackingNumber || ''}`,
+    html: wrap(`
+<div class="bd">
+<p class="gr">طلبك في الطريق!</p>
+<p class="tg">Shipment Dispatched</p>
+<div class="ib">
+<p class="il">تفاصيل الشحن</p>
+<div class="ir"><span class="ik">شركة الشحن</span><span class="iv">${d.shippingCompany || '-'}</span></div>
+<div class="ir"><span class="ik">رقم التتبع</span><span class="iv">${d.trackingNumber || '-'}</span></div>
+</div>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">متابعة الطلب ←</a></div>
+</div>`),
+  }),
 };
 
 async function sendEmail(to, subject, html) {
