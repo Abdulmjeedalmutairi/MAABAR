@@ -127,9 +127,10 @@ export default function Checkout({ lang, user, profile }) {
   usePageTitle('checkout', lang);
 
   const { offer, request, isSecondPayment } = location.state || {};
+  const isDirectBuy = offer?.isDirect === true; // شراء مباشر أو عينة — دفعة واحدة دائماً
 
   const [payMethod, setPayMethod] = useState('card');
-  const [selectedPct, setSelectedPct] = useState(30);
+  const [selectedPct, setSelectedPct] = useState(isDirectBuy ? 100 : 30);
   const [card, setCard] = useState({ number: '', expiry: '', cvv: '', name: '' });
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
@@ -390,8 +391,8 @@ export default function Checkout({ lang, user, profile }) {
 
           {/* RIGHT — PAYMENT */}
           <div>
-            {/* Payment Percentage Options — not for second payment */}
-            {!isSecondPayment && (
+            {/* Payment Percentage Options — not for second payment or direct buy/sample */}
+            {!isSecondPayment && !isDirectBuy && (
               <div style={{ marginBottom: 24 }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, fontFamily: 'var(--font-sans)' }}>
                   {t.choosePayment}

@@ -373,6 +373,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
     if (activeTab === 'offers')       loadMyOffers();
     if (activeTab === 'messages')     loadInbox();
     if (activeTab === 'my-products')  loadMyProducts();
