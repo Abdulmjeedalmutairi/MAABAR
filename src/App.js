@@ -58,7 +58,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadProfile = async (id) => {
+  const loadProfile = async (id, attempt = 1) => {
     const { data } = await sb.from('profiles').select(`
       id, role, status, full_name, company_name, phone, city, country,
       verified, created_at, avatar_url, bio, bio_ar, bio_zh, rating, reviews_count,
@@ -67,6 +67,13 @@ function App() {
       pay_method, alibaba_url, total_sales, years_experience, company_reg_number,
       alipay_account, swift_code, bank_name, num_employees, license_photo, factory_photo
     `).eq('id', id).single();
+
+    if (!data && attempt < 5) {
+      // DB trigger may not have run yet — retry up to 4 times with backoff
+      await new Promise(r => setTimeout(r, attempt * 800));
+      return loadProfile(id, attempt + 1);
+    }
+
     if (data) setProfile(data);
     setLoading(false);
 
