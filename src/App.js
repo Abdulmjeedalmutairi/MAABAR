@@ -38,6 +38,7 @@ function App() {
   const [lang, setLang] = useState('ar');
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
+  const welcomeEmailSentRef = React.useRef(false);
 
   useEffect(() => {
     sb.auth.getSession().then(({ data: { session } }) => {
@@ -73,8 +74,9 @@ function App() {
     if (data) {
       setProfile(data);
       setProfileError(false);
-      // Send trader welcome email once after email confirmation — deduplicated via notifications table
-      if (data?.role === 'buyer' && data?.status === 'active') {
+      // Send trader welcome email once after email confirmation — deduplicated via ref + notifications table
+      if (data?.role === 'buyer' && data?.status === 'active' && !welcomeEmailSentRef.current) {
+        welcomeEmailSentRef.current = true;
         try {
           const { data: existing } = await sb.from('notifications')
             .select('id').eq('user_id', id).eq('type', 'trader_welcome_sent').limit(1);

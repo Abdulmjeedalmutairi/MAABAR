@@ -972,6 +972,31 @@ export default function DashboardBuyer({ user, profile, lang }) {
                       <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>💬 {s.notes}</p>
                     )}
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {s.status === 'approved' && (
+                        <button className="btn-primary" onClick={() => nav('/checkout', {
+                          state: {
+                            offer: {
+                              id: s.id,
+                              request_id: s.id,
+                              supplier_id: s.supplier_id,
+                              price: s.total_price,
+                              delivery_days: 14,
+                              status: 'accepted',
+                              isDirect: true,
+                            },
+                            request: {
+                              id: s.id,
+                              title_ar: `عينة: ${productName}`,
+                              title_en: `Sample: ${productName}`,
+                              quantity: s.quantity,
+                              status: 'closed',
+                              buyer_id: user.id,
+                            },
+                          }
+                        })} style={{ minHeight: 34, fontSize: 11 }}>
+                          {isAr ? `ادفع ${s.total_price} SAR` : `Pay ${s.total_price} SAR`}
+                        </button>
+                      )}
                       <button className="btn-outline" onClick={() => nav(`/chat/${s.supplier_id}`)} style={{ minHeight: 34, fontSize: 11 }}>
                         {isAr ? 'محادثة المورد' : 'Chat Supplier'}
                       </button>
