@@ -9,6 +9,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
 
+// جلب سعر الصرف USD → SAR
+const getUsdToSar = async () => {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    return data?.rates?.SAR || 3.75;
+  } catch {
+    return 3.75; // fallback ثابت
+  }
+};
+
 const CATEGORIES = {
   ar: [
     { val: 'all', label: 'الكل' }, { val: 'electronics', label: 'إلكترونيات' },
@@ -200,7 +211,7 @@ function BackBtn({ onClick, label }) {
 const emptyProduct = { name_ar: '', name_en: '', name_zh: '', price_from: '', moq: '', desc_ar: '', sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '' };
 
 /* ─── Product Form (defined outside to prevent remount on parent render) ─ */
-function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange, uploadingImage, uploadingVideo, t, isAr, saving }) {
+function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange, uploadingImage, uploadingVideo, t, isAr, saving, usdRate }) {
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   return (
     <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 680, borderRadius: 'var(--radius-xl)' }}>
@@ -228,13 +239,41 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
       <div className="form-grid">
         {[
           [t.nameZh, 'name_zh'], [t.nameEn, 'name_en'], [t.nameAr, 'name_ar'],
-          [t.price, 'price_from', 'number'], [t.moq, 'moq'],
+          [t.moq, 'moq'],
         ].map(([label, key, type]) => (
           <div key={key} className="form-group">
             <label className="form-label">{label}</label>
             <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
           </div>
         ))}
+        {/* حقل السعر بالدولار + الريال */}
+        <div className="form-group">
+          <label className="form-label">{t.price}</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <input
+                className="form-input"
+                type="number"
+                placeholder="USD"
+                value={data.price_from || ''}
+                onChange={e => setData(prev => ({ ...prev, price_from: e.target.value }))}
+                style={{ paddingRight: 40 }}
+                dir="ltr"
+              />
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
+            </div>
+            {data.price_from && (
+              <div style={{
+                flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-subtle)', borderRadius: 3,
+                fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center',
+                direction: 'ltr',
+              }}>
+                ≈ {(parseFloat(data.price_from || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="form-group">
@@ -294,6 +333,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const [trackingInputs, setTrackingInputs] = useState({});
   const [shippingCompany, setShippingCompany] = useState('DHL');
   const [product, setProduct]               = useState(emptyProduct);
+  const [usdRate, setUsdRate]               = useState(3.75);
+  useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
   const [editingProduct, setEditingProduct] = useState(null);
   const [saving, setSaving]                 = useState(false);
   const [pendingTracking, setPendingTracking] = useState([]);
@@ -893,7 +934,34 @@ export default function DashboardSupplier({ user, profile, lang }) {
                   {offerForms[r.id] && (
                     <div style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderTop: 'none', padding: '18px 22px', marginBottom: 10, borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }}>
                       <div className="form-grid">
-                        {[[isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *', 'price', 'number'], ['MOQ *', 'moq'], [isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *', 'days', 'number'], [isAr ? 'بلد المنشأ' : 'Origin', 'origin']].map(([label, key, type]) => (
+                        {/* حقل السعر بالدولار + الريال */}
+                        <div className="form-group">
+                          <label className="form-label">{isAr ? 'سعر الوحدة (USD) *' : 'Unit Price (USD) *'}</label>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                              <input
+                                className="form-input"
+                                type="number"
+                                placeholder="USD"
+                                value={offers[r.id]?.price || ''}
+                                onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
+                                style={{ paddingRight: 40 }}
+                                dir="ltr"
+                              />
+                              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
+                            </div>
+                            {offers[r.id]?.price && (
+                              <div style={{
+                                flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
+                                border: '1px solid var(--border-subtle)', borderRadius: 3,
+                                fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
+                              }}>
+                                ≈ {(parseFloat(offers[r.id]?.price || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {[['MOQ *', 'moq'], [isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *', 'days', 'number'], [isAr ? 'بلد المنشأ' : 'Origin', 'origin']].map(([label, key, type]) => (
                           <div key={key} className="form-group">
                             <label className="form-label">{label}</label>
                             <input className="form-input" type={type || 'text'} value={offers[r.id]?.[key] || (key === 'origin' ? 'China' : '')} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], [key]: e.target.value } }))} />
@@ -941,7 +1009,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: 'fadeIn 0.3s ease' }}>
                       <input ref={editImageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, true)} />
                       <input ref={editVideoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, true)} />
-                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} />
+                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} />
                     </div>
                   ) : (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 0', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
@@ -1242,7 +1310,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.addProductTitle}</h2>
               <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, false)} />
               <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, false)} />
-              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} />
+              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} />
               {productSaveMsg && (
                 <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {productSaveMsg}

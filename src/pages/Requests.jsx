@@ -7,6 +7,17 @@ import Footer from '../components/Footer';
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
+// جلب سعر الصرف USD → SAR
+const getUsdToSar = async () => {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    return data?.rates?.SAR || 3.75;
+  } catch {
+    return 3.75; // fallback ثابت
+  }
+};
+
 const CATEGORIES = {
   ar: [
     { val: 'electronics', label: 'إلكترونيات' },
@@ -62,6 +73,8 @@ export default function Requests({ lang, user, profile }) {
   const [budgetRange, setBudgetRange] = useState({ min: '', max: '' });
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers]       = useState({});
+  const [usdRate, setUsdRate]     = useState(3.75);
+  useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
   const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRef, setUploadingRef] = useState(false);
@@ -646,14 +659,32 @@ export default function Requests({ lang, user, profile }) {
                   borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
                 }}>
                   <div className="form-grid">
+                    {/* حقل السعر بالدولار + الريال */}
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'سعر الوحدة (ريال) *' : 'Unit Price (SAR) *'}
+                        {isAr ? 'سعر الوحدة (USD) *' : 'Unit Price (USD) *'}
                       </label>
-                      <input className="form-input" type="number"
-                        value={offers[r.id]?.price || ''}
-                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
-                      />
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <input className="form-input" type="number"
+                            placeholder="USD"
+                            value={offers[r.id]?.price || ''}
+                            onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
+                            style={{ paddingRight: 40 }}
+                            dir="ltr"
+                          />
+                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
+                        </div>
+                        {offers[r.id]?.price && (
+                          <div style={{
+                            flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border-subtle)', borderRadius: 3,
+                            fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
+                          }}>
+                            ≈ {(parseFloat(offers[r.id]?.price || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="form-group">
                       <label className="form-label">MOQ *</label>

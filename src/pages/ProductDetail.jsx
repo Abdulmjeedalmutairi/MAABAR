@@ -220,7 +220,7 @@ export default function ProductDetail({ lang, user, profile }) {
             fontSize: 9, color: '#5a9a72', fontWeight: 700, flexShrink: 0,
           }}>✓</span>
           <span style={{ color: '#5a9a72' }}>
-            {isAr ? 'مدفوعاتك محمية · ادفع بقدر ما تثق' : "Your payment is protected · Pay what you're comfortable with"}
+            {isAr ? 'دفعك محجوز عند مَعبر حتى تستلم بضاعتك وتؤكد' : "Your payment is held by Maabar until you receive and confirm your order"}
           </span>
         </div>
 
