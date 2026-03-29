@@ -390,7 +390,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
         setProduct(emptyProduct);
       }
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   // Save product form draft to sessionStorage on every change
   useEffect(() => {

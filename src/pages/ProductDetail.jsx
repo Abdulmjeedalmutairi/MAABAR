@@ -294,26 +294,26 @@ export default function ProductDetail({ lang, user, profile }) {
         {showBuyForm && (
           <div className="buy-form">
             <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 20, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-              {isAr ? 'اطلب هذا المنتج' : 'Order This Product'}
+              {isAr ? 'أدخل الكمية' : 'Enter Quantity'}
             </h3>
             <div className="form-group">
-              <label className="form-label">{isAr ? 'الكمية المطلوبة *' : 'Quantity *'}</label>
+              <label className="form-label">{isAr ? 'الكمية *' : 'Quantity *'}</label>
               <input className="form-input" value={qty} onChange={e => setQty(e.target.value)}
-                placeholder={isAr ? 'مثال: 200 كرتون' : 'e.g. 200 cartons'} />
+                placeholder={isAr ? 'مثال: 200' : 'e.g. 200'} type="number" min="1" />
             </div>
             <div className="form-group">
-              <label className="form-label">{isAr ? 'ملاحظة للمورد' : 'Note to supplier'}</label>
+              <label className="form-label">{isAr ? 'ملاحظة (اختياري)' : 'Note (optional)'}</label>
               <textarea className="form-input" rows={2} style={{ resize: 'none' }}
                 value={note} onChange={e => setNote(e.target.value)} />
             </div>
             {!user && (
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
-                {isAr ? '* سيُطلب منك تسجيل الدخول عند الإرسال' : "* You'll be asked to sign in when submitting"}
+                {isAr ? '* سيُطلب منك تسجيل الدخول' : '* You\'ll be asked to sign in'}
               </p>
             )}
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn-dark-sm" onClick={submitOrder} disabled={sending}>
-                {sending ? '...' : isAr ? 'إرسال الطلب ←' : 'Send Order →'}
+                {sending ? '...' : isAr ? 'متابعة للدفع ←' : 'Proceed to Payment →'}
               </button>
               <button className="btn-outline" onClick={() => setShowBuyForm(false)}>
                 {isAr ? 'إلغاء' : 'Cancel'}
