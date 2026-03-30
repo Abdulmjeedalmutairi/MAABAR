@@ -33,34 +33,42 @@ function wrap(content) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="color-scheme" content="dark only">
 <meta name="supported-color-schemes" content="dark only">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a0b;font-family:Tahoma,Arial,sans-serif;color:#f5f5f2}
-.w{max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden}
-.hd{background:#0a0a0b;padding:34px 24px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)}
-.bd{padding:28px 24px;background:#111113;border:1px solid rgba(255,255,255,.06);border-radius:16px;margin:24px}
-.gr{font-size:24px;font-weight:800;margin-bottom:8px;color:#f5f5f2}
-.tg{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin-bottom:22px}
-.ib{background:#16161a;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px;margin:22px 0}
-.il{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin-bottom:12px}
-.ir{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
-.ir:last-child{border-bottom:none}
-.ik{color:rgba(255,255,255,.52)}.iv{color:#f5f5f2;font-weight:500}
-.bw{text-align:center;margin:28px 0 6px}
-.bt{display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:800}
-.ft{padding:22px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);background:#0a0a0b}
-.fl{font-size:12px;color:rgba(255,255,255,.46);margin-top:12px}
-.fl a{color:rgba(255,255,255,.72);text-decoration:none}
-p{line-height:1.9;margin:12px 0;color:#ececef}
-strong{color:#ffffff}
-</style>
 </head>
-<body>
-<div class="w">
-  <div class="hd">${brandLockup()}</div>
-  ${content}
-  <div class="ft">${brandLockup()}<div class="fl"><a href="https://maabar.io">maabar.io</a> &nbsp;·&nbsp; <a href="mailto:hello@maabar.io">hello@maabar.io</a></div></div>
-</div>
+<body style="margin:0;padding:0;background-color:#0a0a0b;background:#0a0a0b;font-family:Tahoma,Arial,sans-serif;color:#f5f5f2;direction:rtl;text-align:right;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0b" style="width:100%;background:#0a0a0b;background-color:#0a0a0b;">
+    <tr>
+      <td align="center" bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;padding:0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background:#0a0a0b;background-color:#0a0a0b;">
+          <tr>
+            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;padding:34px 24px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
+              ${brandLockup()}
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;padding:24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#111113" style="width:100%;background:#111113;background-color:#111113;border:1px solid rgba(255,255,255,.06);border-radius:16px;">
+                <tr>
+                  <td bgcolor="#111113" style="background:#111113;background-color:#111113;padding:28px 24px;border-radius:16px;">
+                    ${content}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;padding:22px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
+              ${brandLockup()}
+              <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px;line-height:1.8;">
+                <a href="https://maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">maabar.io</a>
+                &nbsp;·&nbsp;
+                <a href="mailto:hello@maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">hello@maabar.io</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
@@ -99,11 +107,10 @@ const templates = {
   supplier_welcome: (d) => ({
     subject: 'طلبك وصلنا — مَعبر',
     html: wrap(`
-<div class="bd">
-<p class="gr">أهلاً ${d.name || ''}،</p>
-<p class="tg">Application Received</p>
-<p style="font-size:15px;color:#ececef">استلمنا طلب تسجيلك كمورد. فريقنا سيراجع بياناتك خلال <strong>24 ساعة</strong> وسنرسل لك إيميلاً فور اتخاذ القرار.</p>
-</div>`),
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">أهلاً ${d.name || ''}،</div>
+<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">Application Received</div>
+<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">استلمنا طلب تسجيلك كمورد. فريقنا سيراجع بياناتك خلال <strong style="color:#ffffff;">24 ساعة</strong> وسنرسل لك إيميلاً فور اتخاذ القرار.</p>
+`),
   }),
 
   trader_welcome: (d) => ({
