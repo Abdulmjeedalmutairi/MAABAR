@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFound from './pages/NotFound';
 import { sb } from './supabase';
@@ -221,12 +221,14 @@ function App() {
     </div>
   );
 
-  /* ─── App ────────────────────────────────────── */
-  return (
-    <ErrorBoundary lang={lang}>
-    <Router>
-      <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        <Navbar {...sharedProps} />
+  function AppContent() {
+    const location = useLocation();
+    const isSupplierAccessPage = location.pathname === '/supplier-access';
+    const pageDir = isSupplierAccessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
+
+    return (
+      <div dir={pageDir}>
+        {!isSupplierAccessPage && <Navbar {...sharedProps} />}
         <Routes>
           <Route path="/"               element={<Home            {...sharedProps} />} />
           <Route path="/products"       element={<Products        {...sharedProps} />} />
@@ -254,11 +256,19 @@ function App() {
           <Route path="*"               element={<NotFound        {...sharedProps} />} />
         </Routes>
 
-        {(!profile || profile?.role === 'buyer') && (
+        {!isSupplierAccessPage && (!profile || profile?.role === 'buyer') && (
           <AIHub lang={lang} user={user} profile={profile} />
         )}
       </div>
-    </Router>
+    );
+  }
+
+  /* ─── App ────────────────────────────────────── */
+  return (
+    <ErrorBoundary lang={lang}>
+      <Router>
+        <AppContent />
+      </Router>
     </ErrorBoundary>
   );
 }
