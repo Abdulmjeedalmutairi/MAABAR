@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { generateIdeaToProductReport } from '../lib/maabarAi/client';
-import { MAABAR_AI_PERSONA_NAME, getSaudiRepresentativeIntro } from '../lib/maabarAi/config';
+import { MAABAR_AI_PERSONA_NAME } from '../lib/maabarAi/config';
+
+const SAUDI_REPRESENTATIVE_NAMES = [
+  'سلمان', 'فيصل', 'تركي', 'عبدالعزيز', 'سعود', 'نورة', 'العنود', 'الجوهرة', 'ريم', 'لولوة'
+];
 
 const CAT_LABEL = {
   ar: { electronics: 'إلكترونيات', furniture: 'أثاث', clothing: 'ملابس', building: 'مواد بناء', food: 'غذاء', other: 'أخرى' },
@@ -160,6 +164,27 @@ function Bubble({ role, children, isAr }) {
   );
 }
 
+function getInitialMessages(language = 'ar', representativeName = 'سلمان') {
+  if (language === 'zh') {
+    return [
+      `您好，我是来自 Maabar 的 ${representativeName}。`,
+      '请告诉我您的想法。',
+    ];
+  }
+
+  if (language === 'en') {
+    return [
+      `Hello, this is ${representativeName} from Maabar.`,
+      'What do you have in mind?',
+    ];
+  }
+
+  return [
+    `مرحبا، معك ${representativeName} من معبر.`,
+    'وش عندك؟',
+  ];
+}
+
 function ReportRow({ label, value, isAr }) {
   if (!value) return null;
   return (
@@ -174,7 +199,8 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const nav = useNavigate();
   const isAr = lang === 'ar';
   const t = COPY[lang] || COPY.en;
-  const introMessage = `${getSaudiRepresentativeIntro(lang)} ${t.intro}`;
+  const representativeName = useMemo(() => SAUDI_REPRESENTATIVE_NAMES[Math.floor(Math.random() * SAUDI_REPRESENTATIVE_NAMES.length)], []);
+  const initialMessages = useMemo(() => getInitialMessages(lang, representativeName), [lang, representativeName]);
   const [minimized, setMinimized] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [phase, setPhase] = useState('chat');
@@ -185,9 +211,9 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: 1, role: 'assistant', content: introMessage },
-  ]);
+  const [messages, setMessages] = useState(() =>
+    initialMessages.map((content, index) => ({ id: index + 1, role: 'assistant', content }))
+  );
 
   const questions = useMemo(() => (
     routeMode === 'supplier_match' ? t.supplierQuestions : t.buildQuestions
@@ -203,7 +229,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setResult(null);
     setError('');
     setSubmitting(false);
-    setMessages([{ id: Date.now(), role: 'assistant', content: introMessage }]);
+    setMessages(initialMessages.map((content, index) => ({ id: Date.now() + index, role: 'assistant', content })));
   };
 
   const appendMessage = (role, content) => {
