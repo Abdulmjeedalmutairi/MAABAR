@@ -283,35 +283,32 @@ const templates = {
 <meta name="supported-color-schemes" content="light only">
 <title>${d.subject || 'مَعبر'}</title>
 </head>
-<body style="margin:0;padding:0;background:#050505;font-family:Tahoma,Arial,sans-serif;color:#f4f4f4;direction:rtl;text-align:right">
-  <div style="width:100%;background:#050505">
-    <div style="max-width:680px;margin:0 auto;background:#0b0b0b;border-inline:1px solid #171717;overflow:hidden">
-      ${d.logoText ? `
-      <div style="padding:26px 24px 22px;text-align:center;background:#0a0a0a;color:#fff;border-bottom:1px solid #1a1a1a">
-        <div style="font-size:28px;line-height:1.4;font-weight:800;letter-spacing:.3px;color:#f4ede3">${d.logoText}</div>
-      </div>` : d.logoUrl ? `
-      <div style="padding:28px 28px 8px;text-align:center;background:#0b0b0b">
-        <img src="${d.logoUrl}" alt="Maabar" style="max-width:240px;width:100%;height:auto;display:inline-block" />
+<body style="margin:0;padding:24px 10px;background:#171717;font-family:Tahoma,Arial,sans-serif;color:#f3f3f3;direction:rtl;text-align:right">
+  <div style="max-width:560px;margin:0 auto;background:#222329;border:1px solid #2b2c31;border-radius:12px;overflow:hidden">
+    <div style="padding:30px 24px;background:#ffffff;text-align:center;border-bottom:1px solid #e8e8e8">
+      <div style="font-size:26px;line-height:1.4;font-weight:800;color:#111111;letter-spacing:.3px">${d.logoText || 'مَعبر | Maabar'}</div>
+    </div>
+    <div style="padding:34px 32px 38px;background:#222329;direction:rtl;text-align:right">
+      <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:#9a9a9f">${d.kicker || 'مَعبر | Maabar'}</p>
+      <h1 style="margin:0 0 12px;font-size:36px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
+      ${d.subheadline ? `<p style="margin:0 0 22px;font-size:24px;line-height:1.8;font-weight:700;color:#ffffff">${d.subheadline}</p>` : ''}
+      ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#e1e1e3">${p}</p>`).join('') : ''}
+      ${Array.isArray(d.bullets) && d.bullets.length ? `
+      <div style="margin:28px 0;padding:22px 22px;background:#2a2b30;border-radius:10px;border:1px solid #2f3036">
+        <p style="margin:0 0 16px;font-size:18px;line-height:1.8;font-weight:700;color:#ffffff">${d.bulletsTitle || 'المزايا'}</p>
+        <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside;color:#e1e1e3">
+          ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#e1e1e3">${item}</li>`).join('')}
+        </ul>
       </div>` : ''}
-      <div style="padding:22px 30px 40px;text-align:right;direction:rtl;background:#0b0b0b">
-        <p style="margin:0 0 14px;font-size:13px;letter-spacing:.3px;color:#c8ab77;font-weight:700">${d.kicker || 'فرصة المؤسسين الأوائل في مَعبر'}</p>
-        <h1 style="margin:0 0 12px;font-size:34px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
-        ${d.subheadline ? `<p style="margin:0 0 24px;font-size:25px;line-height:1.8;font-weight:700;color:#f1e6d6">${d.subheadline}</p>` : ''}
-        ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:19px;line-height:2;color:#e7dfd3">${p}</p>`).join('') : ''}
-        ${Array.isArray(d.bullets) && d.bullets.length ? `
-        <div style="margin:30px 0;padding:22px 24px;background:#101010;border:1px solid #24201a;border-radius:12px">
-          <p style="margin:0 0 16px;font-size:19px;line-height:1.8;font-weight:700;color:#f7efe2">${d.bulletsTitle || 'المزايا'}</p>
-          <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside;color:#e7dfd3">
-            ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#e7dfd3">${item}</li>`).join('')}
-          </ul>
-        </div>` : ''}
-        ${d.footnote ? `<p style="margin:0 0 28px;font-size:20px;line-height:1.9;font-weight:800;color:#d8bb85">${d.footnote}</p>` : ''}
-        <div style="text-align:right">
-          <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#d0b07a;color:#0b0b0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
-        </div>
+      ${d.footnote ? `<p style="margin:0 0 28px;font-size:19px;line-height:1.9;font-weight:800;color:#ffffff">${d.footnote}</p>` : ''}
+      <div style="text-align:center;margin-top:28px">
+        <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#ffffff;color:#111111;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
       </div>
     </div>
-    <div style="text-align:center;font-size:12px;color:#847561;margin:14px 0 18px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
+    <div style="padding:24px 20px;background:#2a2b30;border-top:1px solid #313238;text-align:center">
+      <div style="font-size:16px;font-weight:800;letter-spacing:4px;color:#ffffff">MAABAR</div>
+      <div style="font-size:12px;color:#b7b7bb;margin-top:8px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
+    </div>
   </div>
 </body>
 </html>`,
