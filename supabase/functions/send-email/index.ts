@@ -283,35 +283,35 @@ const templates = {
 <meta name="supported-color-schemes" content="light only">
 <title>${d.subject || 'مَعبر'}</title>
 </head>
-<body style="margin:0;padding:24px 12px;background:#f5f1ea;font-family:Tahoma,Arial,sans-serif;color:#111;direction:rtl;text-align:right">
+<body style="margin:0;padding:24px 12px;background:#050505;font-family:Tahoma,Arial,sans-serif;color:#f4f4f4;direction:rtl;text-align:right">
   <div style="max-width:620px;margin:0 auto">
-    <div style="background:#ffffff;border:1px solid #e7dfd4;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.06)">
+    <div style="background:#0d0d0d;border:1px solid #1c1c1c;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)">
       ${d.logoText ? `
-      <div style="padding:22px 28px;text-align:center;background:#111;color:#fff">
+      <div style="padding:24px 28px;text-align:center;background:#0a0a0a;color:#fff;border-bottom:1px solid #1e1e1e">
         <div style="font-size:28px;line-height:1.4;font-weight:800;letter-spacing:.3px">${d.logoText}</div>
       </div>` : d.logoUrl ? `
-      <div style="padding:28px 28px 8px;text-align:center;background:#ffffff">
+      <div style="padding:28px 28px 8px;text-align:center;background:#0d0d0d">
         <img src="${d.logoUrl}" alt="Maabar" style="max-width:240px;width:100%;height:auto;display:inline-block" />
       </div>` : ''}
-      <div style="padding:10px 34px 38px;text-align:right;direction:rtl">
-        <p style="margin:0 0 14px;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#8a7f73">${d.kicker || 'Founding Traders Invitation'}</p>
-        <h1 style="margin:0 0 12px;font-size:32px;line-height:1.5;font-weight:800;color:#111">${d.headline || 'مَعبر'}</h1>
-        ${d.subheadline ? `<p style="margin:0 0 24px;font-size:24px;line-height:1.8;font-weight:700;color:#111">${d.subheadline}</p>` : ''}
-        ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#2d2d2d">${p}</p>`).join('') : ''}
+      <div style="padding:18px 34px 38px;text-align:right;direction:rtl;background:#0d0d0d">
+        <p style="margin:0 0 14px;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#b8aa90">${d.kicker || 'Founding Traders Invitation'}</p>
+        <h1 style="margin:0 0 12px;font-size:32px;line-height:1.5;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
+        ${d.subheadline ? `<p style="margin:0 0 24px;font-size:24px;line-height:1.8;font-weight:700;color:#f6f0e8">${d.subheadline}</p>` : ''}
+        ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#e5e0d8">${p}</p>`).join('') : ''}
         ${Array.isArray(d.bullets) && d.bullets.length ? `
-        <div style="margin:28px 0;padding:22px 24px;background:#faf8f4;border:1px solid #eee6db;border-radius:14px">
-          <p style="margin:0 0 16px;font-size:18px;line-height:1.8;font-weight:700;color:#111">${d.bulletsTitle || 'المزايا'}</p>
-          <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside">
-            ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#111">${item}</li>`).join('')}
+        <div style="margin:28px 0;padding:22px 24px;background:#121212;border:1px solid #242424;border-radius:14px">
+          <p style="margin:0 0 16px;font-size:18px;line-height:1.8;font-weight:700;color:#ffffff">${d.bulletsTitle || 'المزايا'}</p>
+          <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside;color:#e5e0d8">
+            ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#e5e0d8">${item}</li>`).join('')}
           </ul>
         </div>` : ''}
-        ${d.footnote ? `<p style="margin:0 0 28px;font-size:19px;line-height:1.9;font-weight:800;color:#111">${d.footnote}</p>` : ''}
+        ${d.footnote ? `<p style="margin:0 0 28px;font-size:19px;line-height:1.9;font-weight:800;color:#fff4e2">${d.footnote}</p>` : ''}
         <div style="text-align:right">
-          <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:16px 28px;border-radius:12px;font-size:16px;font-weight:700">${d.ctaText || 'اعرف أكثر ←'}</a>
+          <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#ffffff;color:#0d0d0d;text-decoration:none;padding:16px 28px;border-radius:12px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
         </div>
       </div>
     </div>
-    <div style="text-align:center;font-size:12px;color:#8a7f73;margin-top:14px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
+    <div style="text-align:center;font-size:12px;color:#8c8171;margin-top:14px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
   </div>
 </body>
 </html>`,
@@ -357,6 +357,17 @@ serve(async (req) => {
         sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html),
       ]);
       return new Response(JSON.stringify({ ok: true, welcomeResult, adminResult }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    if (type === 'inspect_email') {
+      if (!data?.emailId) {
+        return new Response(JSON.stringify({ error: 'Missing emailId' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const inspectRes = await fetch(`https://api.resend.com/emails/${data.emailId}`, {
+        headers: { 'Authorization': `Bearer ${RESEND_API_KEY}` },
+      });
+      const inspectData = await inspectRes.json().catch(() => ({}));
+      return new Response(JSON.stringify({ ok: inspectRes.ok, status: inspectRes.status, data: inspectData }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
     const factory = templates[type];
