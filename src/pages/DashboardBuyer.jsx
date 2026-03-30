@@ -256,6 +256,35 @@ export default function DashboardBuyer({ user, profile, lang }) {
     setTimeout(() => setSettingsSaved(false), 3000);
   };
 
+  const rejectOffer = async (offerId, supplierId, requestId) => {
+    if (!window.confirm(isAr ? 'هل تريد رفض هذا العرض؟' : 'Reject this offer?')) return;
+    const { data: reqData } = await sb.from('requests').select('title_ar,title_en').eq('id', requestId).single();
+    const reqTitle = reqData?.title_ar || reqData?.title_en || '';
+
+    const { error } = await sb.from('offers').update({ status: 'rejected' }).eq('id', offerId);
+    if (error) {
+      alert(isAr ? 'حدث خطأ أثناء رفض العرض' : 'Error rejecting offer');
+      return;
+    }
+
+    await sb.from('notifications').insert({
+      user_id: supplierId,
+      type: 'offer_rejected',
+      title_ar: `تم رفض عرضك على الطلب: ${reqTitle}`,
+      title_en: `Your offer was rejected for: ${reqTitle}`,
+      title_zh: `您的报价已被拒绝: ${reqTitle}`,
+      ref_id: requestId,
+      is_read: false,
+    });
+
+    setMyRequests(prev => prev.map(req => req.id !== requestId ? req : {
+      ...req,
+      offers: req.offers.map(o => o.id === offerId ? { ...o, status: 'rejected' } : o),
+    }));
+    loadPendingActions();
+    loadStats();
+  };
+
   const acceptOffer = async (offerId, supplierId, requestId) => {
     // Get request title and all other pending offers before updating
     const { data: allOffers } = await sb.from('offers')
@@ -840,6 +869,11 @@ export default function DashboardBuyer({ user, profile, lang }) {
                                 <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} className="btn-primary"
                                   style={{ padding: '8px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
                                   {isAr ? 'قبول' : 'Accept'}
+                                </button>
+                                <button
+                                  onClick={() => rejectOffer(o.id, o.supplier_id, r.id)}
+                                  style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '7px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
+                                  {isAr ? 'رفض' : 'Reject'}
                                 </button>
                                 <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
                                   style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>

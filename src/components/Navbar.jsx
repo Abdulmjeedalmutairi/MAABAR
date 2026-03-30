@@ -111,7 +111,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const links = isSupplier
     ? [
         { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
-        { label: isAr ? 'الطلبات'  : lang === 'zh' ? '需求'  : 'Requests',  path: '/requests' },
+        { label: isAr ? 'الطلبات'  : lang === 'zh' ? '需求'  : 'Requests',  path: '/dashboard?tab=requests' },
         { label: isAr ? 'لوحتي'    : lang === 'zh' ? '控制台' : 'Dashboard', path: '/dashboard' },
         { label: isAr ? 'عن مَعبر' : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
       ]
