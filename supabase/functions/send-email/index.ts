@@ -36,16 +36,23 @@ function darkBlend(content, background = '#0a0a0b') {
   </div>`;
 }
 
-function wrap(content) {
+function localeMeta(lang = 'ar') {
+  if (lang === 'zh') return { lang: 'zh', dir: 'ltr', align: 'left', font: `'Segoe UI', Arial, sans-serif` };
+  if (lang === 'en') return { lang: 'en', dir: 'ltr', align: 'left', font: `'Segoe UI', Arial, sans-serif` };
+  return { lang: 'ar', dir: 'rtl', align: 'right', font: `Tahoma, Arial, sans-serif` };
+}
+
+function wrap(content, options = {}) {
+  const locale = localeMeta(options.lang || 'ar');
   return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="${locale.lang}" dir="${locale.dir}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="color-scheme" content="dark only">
 <meta name="supported-color-schemes" content="dark only">
 </head>
-<body style="margin:0;padding:0;background-color:#0a0a0b;background:#0a0a0b;font-family:Tahoma,Arial,sans-serif;color:#f5f5f2;direction:rtl;text-align:right;">
+<body style="margin:0;padding:0;background-color:#0a0a0b;background:#0a0a0b;font-family:${locale.font};color:#f5f5f2;direction:${locale.dir};text-align:${locale.align};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0b" style="width:100%;background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
     <tr>
       <td align="center" bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:0;">
@@ -104,36 +111,129 @@ const templates = {
 </div>`),
   }),
 
-  supplier_approved: (d) => ({
-    subject: 'تم قبول طلبك في مَعبر 🎉',
-    html: wrap(`
-<div class="bd">
-<p class="gr">أهلاً ${d.name || ''}،</p>
-<p class="tg">Supplier Approved</p>
-<p style="font-size:15px;color:#ececef">تمت الموافقة على طلب انضمامك كمورد في منصة <strong>مَعبر</strong>. يمكنك الآن تسجيل الدخول والبدء في استقبال طلبات التجار السعوديين.</p>
-<div class="bw"><a href="https://maabar.io/login/supplier" class="bt">ابدأ الآن ←</a></div>
-</div>`),
-  }),
+  supplier_approved: (d) => {
+    const lang = d.lang || 'ar';
+    const t = {
+      ar: {
+        subject: 'تم قبول طلبك في مَعبر',
+        eyebrow: 'Supplier Approved',
+        title: `أهلاً ${d.name || ''}،`,
+        body: 'تمت الموافقة على طلب انضمامك كمورد في منصة مَعبر. يمكنك الآن تسجيل الدخول والبدء في استقبال طلبات التجار السعوديين.',
+        cta: 'ابدأ الآن ←',
+      },
+      en: {
+        subject: 'Your Maabar supplier application was approved',
+        eyebrow: 'Supplier Approved',
+        title: `Hello ${d.name || ''},`,
+        body: 'Your supplier application has been approved on Maabar. You can now sign in and start receiving Saudi buyer opportunities.',
+        cta: 'Start now →',
+      },
+      zh: {
+        subject: '您在 Maabar 的供应商申请已通过',
+        eyebrow: 'Supplier Approved',
+        title: `${d.name || ''}，您好`,
+        body: '您在 Maabar 的供应商申请已获批准。现在您可以登录并开始接收来自沙特买家的机会。',
+        cta: '立即开始 →',
+      },
+    }[lang] || {
+      subject: 'تم قبول طلبك في مَعبر',
+      eyebrow: 'Supplier Approved',
+      title: `أهلاً ${d.name || ''}،`,
+      body: 'تمت الموافقة على طلب انضمامك كمورد في منصة مَعبر. يمكنك الآن تسجيل الدخول والبدء في استقبال طلبات التجار السعوديين.',
+      cta: 'ابدأ الآن ←',
+    };
 
-  supplier_welcome: (d) => ({
-    subject: 'طلبك وصلنا — مَعبر',
-    html: wrap(`
-<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">أهلاً ${d.name || ''}،</div>
-<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">Application Received</div>
-<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">استلمنا طلب تسجيلك كمورد. فريقنا سيراجع بياناتك خلال <strong style="color:#ffffff;">24 ساعة</strong> وسنرسل لك إيميلاً فور اتخاذ القرار.</p>
-`),
-  }),
+    return ({
+      subject: t.subject,
+      html: wrap(`
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
+<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
+<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
+<div style="text-align:center;margin-top:28px"><a href="https://maabar.io/login/supplier" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
+`, { lang }),
+    });
+  },
 
-  trader_welcome: (d) => ({
-    subject: 'أهلاً بك في مَعبر',
-    html: wrap(`
-<div class="bd">
-<p class="gr">أهلاً ${d.name || ''}،</p>
-<p class="tg">Welcome to Maabar</p>
-<p style="font-size:15px;color:#ececef">تم إنشاء حسابك بنجاح. يمكنك الآن رفع طلبات الاستيراد وتلقي عروض الأسعار مباشرة من الموردين الصينيين.</p>
-<div class="bw"><a href="https://maabar.io/dashboard" class="bt">ابدأ الآن ←</a></div>
-</div>`),
-  }),
+  supplier_welcome: (d) => {
+    const lang = d.lang || 'ar';
+    const t = {
+      ar: {
+        subject: 'طلبك وصلنا — مَعبر',
+        eyebrow: 'Application Received',
+        title: `أهلاً ${d.name || ''}،`,
+        body: 'استلمنا طلب تسجيلك كمورد. فريقنا سيراجع بياناتك خلال 24 ساعة وسنرسل لك إيميلاً فور اتخاذ القرار.',
+      },
+      en: {
+        subject: 'We received your application — Maabar',
+        eyebrow: 'Application Received',
+        title: `Hello ${d.name || ''},`,
+        body: 'We received your supplier application. Our team will review your details within 24 hours and email you once a decision is made.',
+      },
+      zh: {
+        subject: '我们已收到您的申请 — Maabar',
+        eyebrow: 'Application Received',
+        title: `${d.name || ''}，您好`,
+        body: '我们已收到您的供应商申请。团队将在 24 小时内审核您的资料，并在有结果后通过邮件通知您。',
+      },
+    }[lang] || {
+      subject: 'طلبك وصلنا — مَعبر',
+      eyebrow: 'Application Received',
+      title: `أهلاً ${d.name || ''}،`,
+      body: 'استلمنا طلب تسجيلك كمورد. فريقنا سيراجع بياناتك خلال 24 ساعة وسنرسل لك إيميلاً فور اتخاذ القرار.',
+    };
+
+    return ({
+      subject: t.subject,
+      html: wrap(`
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
+<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
+<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
+`, { lang }),
+    });
+  },
+
+  trader_welcome: (d) => {
+    const lang = d.lang || 'ar';
+    const t = {
+      ar: {
+        subject: 'أهلاً بك في مَعبر',
+        eyebrow: 'Welcome to Maabar',
+        title: `أهلاً ${d.name || ''}،`,
+        body: 'تم إنشاء حسابك بنجاح. يمكنك الآن رفع طلبات الاستيراد وتلقي عروض الأسعار مباشرة من الموردين الصينيين.',
+        cta: 'ابدأ الآن ←',
+      },
+      en: {
+        subject: 'Welcome to Maabar',
+        eyebrow: 'Welcome to Maabar',
+        title: `Hello ${d.name || ''},`,
+        body: 'Your account has been created successfully. You can now post sourcing requests and receive offers directly from Chinese suppliers.',
+        cta: 'Get started →',
+      },
+      zh: {
+        subject: '欢迎加入 Maabar',
+        eyebrow: 'Welcome to Maabar',
+        title: `${d.name || ''}，您好`,
+        body: '您的账户已成功创建。现在您可以发布采购需求，并直接接收中国供应商的报价。',
+        cta: '立即开始 →',
+      },
+    }[lang] || {
+      subject: 'أهلاً بك في مَعبر',
+      eyebrow: 'Welcome to Maabar',
+      title: `أهلاً ${d.name || ''}،`,
+      body: 'تم إنشاء حسابك بنجاح. يمكنك الآن رفع طلبات الاستيراد وتلقي عروض الأسعار مباشرة من الموردين الصينيين.',
+      cta: 'ابدأ الآن ←',
+    };
+
+    return ({
+      subject: t.subject,
+      html: wrap(`
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
+<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
+<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
+<div style="text-align:center;margin-top:28px"><a href="https://maabar.io/dashboard" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
+`, { lang }),
+    });
+  },
 
   offer_accepted: (d) => ({
     subject: `تم قبول عرضك — ${d.requestTitle || ''}`,
@@ -302,10 +402,12 @@ const templates = {
 <div class="bw"><a href="https://maabar.io/dashboard" class="bt">عرض لوحة التحكم ←</a></div>
 </div>`),
   }),
-  custom_marketing: (d) => ({
+  custom_marketing: (d) => {
+    const locale = localeMeta(d.lang || 'ar');
+    return ({
     subject: d.subject || 'مَعبر',
     html: `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="${locale.lang}" dir="${locale.dir}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -313,13 +415,13 @@ const templates = {
 <meta name="supported-color-schemes" content="dark only">
 <title>${d.subject || 'مَعبر'}</title>
 </head>
-<body style="margin:0;padding:0;background:#0a0a0b;font-family:Tahoma,Arial,sans-serif;color:#f3f3f3;direction:rtl;text-align:right">
+<body style="margin:0;padding:0;background:#0a0a0b;font-family:${locale.font};color:#f3f3f3;direction:${locale.dir};text-align:${locale.align}">
   <div style="max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden">
     <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
       ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : darkBlend(brandLockup(), '#0a0a0b')}
     </div>
     <div style="padding:24px;background:#0a0a0b">
-      <div style="padding:30px 24px;background:#111113;background-image:linear-gradient(#111113,#111113);border:1px solid rgba(255,255,255,.06);border-radius:16px;direction:rtl;text-align:right">
+      <div style="padding:30px 24px;background:#111113;background-image:linear-gradient(#111113,#111113);border:1px solid rgba(255,255,255,.06);border-radius:16px;direction:${locale.dir};text-align:${locale.align}">
         ${darkBlend(`
         <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:rgba(255,255,255,.42)">${d.kicker || 'مَعبر | MAABAR'}</p>
         <h1 style="margin:0 0 12px;font-size:36px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
@@ -346,7 +448,8 @@ const templates = {
   </div>
 </body>
 </html>`,
-  }),
+  });
+  },
 };
 
 async function sendEmail(to, subject, html) {
