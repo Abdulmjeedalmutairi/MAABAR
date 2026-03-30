@@ -286,7 +286,10 @@ const templates = {
 <body style="margin:0;padding:24px 12px;background:#f5f1ea;font-family:Tahoma,Arial,sans-serif;color:#111;direction:rtl;text-align:right">
   <div style="max-width:620px;margin:0 auto">
     <div style="background:#ffffff;border:1px solid #e7dfd4;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.06)">
-      ${d.logoUrl ? `
+      ${d.logoText ? `
+      <div style="padding:22px 28px;text-align:center;background:#111;color:#fff">
+        <div style="font-size:28px;line-height:1.4;font-weight:800;letter-spacing:.3px">${d.logoText}</div>
+      </div>` : d.logoUrl ? `
       <div style="padding:28px 28px 8px;text-align:center;background:#ffffff">
         <img src="${d.logoUrl}" alt="Maabar" style="max-width:240px;width:100%;height:auto;display:inline-block" />
       </div>` : ''}
