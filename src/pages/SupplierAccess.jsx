@@ -11,7 +11,7 @@ const earlyBenefits = [
   },
   {
     title: 'Founding supplier advantage',
-    description: 'Be among the first selected suppliers positioned inside a Saudi-focused B2B marketplace.',
+    description: 'Approved suppliers can prepare their presence and upload products before public launch begins.',
   },
   {
     title: 'Selective onboarding',
@@ -216,7 +216,7 @@ export default function SupplierAccess() {
                   <div className="supplier-scene-eyebrow">Limited access</div>
                   <h2 className="supplier-scene-title">Apply before public launch</h2>
                   <p className="supplier-scene-description">
-                    We are currently onboarding a limited number of Chinese suppliers before official launch. Selected applications move into review before approval and onboarding.
+                    We are currently onboarding a limited number of Chinese suppliers before official launch. Selected applications move into review before approval, onboarding, and early product setup ahead of launch.
                   </p>
                 </div>
                 <div className="supplier-countdown-row">
@@ -455,7 +455,7 @@ export default function SupplierAccess() {
         }
 
         .supplier-scene-title {
-          font-size: clamp(2.2rem, 4vw, 4rem);
+          font-size: clamp(2rem, 3.2vw, 3.25rem);
           line-height: 0.98;
           letter-spacing: -0.05em;
           margin: 0 0 16px;
@@ -463,19 +463,19 @@ export default function SupplierAccess() {
 
         .supplier-scene-title-hero {
           max-width: 780px;
-          font-size: clamp(2.8rem, 5vw, 5rem);
+          font-size: clamp(2.4rem, 4.2vw, 4rem);
         }
 
         .supplier-scene-description {
           color: var(--text-secondary);
-          font-size: 18px;
+          font-size: 17px;
           line-height: 1.78;
           margin: 0;
           max-width: 720px;
         }
 
         .supplier-scene-description-large {
-          font-size: 19px;
+          font-size: 17px;
         }
 
         .supplier-scene-actions {
@@ -680,7 +680,7 @@ export default function SupplierAccess() {
           }
 
           .supplier-scene-title-hero {
-            font-size: 2.9rem;
+            font-size: 2.35rem;
           }
 
           .supplier-topbar-actions {
