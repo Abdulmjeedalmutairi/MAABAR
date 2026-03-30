@@ -225,6 +225,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [briefReady, setBriefReady] = useState(false);
   const [messages, setMessages] = useState(() =>
     initialMessages.map((content, index) => ({ id: index + 1, role: 'assistant', content }))
   );
@@ -250,6 +251,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setError('');
     setSubmitting(false);
     setIsTyping(false);
+    setBriefReady(false);
     setMessages(initialMessages.map((content, index) => ({ id: Date.now() + index, role: 'assistant', content })));
   };
 
@@ -257,13 +259,13 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, content }]);
   };
 
-  const generateReport = async () => {
+  const generateReport = async (sourceOverride = '') => {
     const userConversation = messages
       .filter((message) => message.role === 'user')
       .map((message) => message.content)
       .join('\n');
 
-    const sourceIdea = userConversation || idea;
+    const sourceIdea = sourceOverride || userConversation || idea;
     if (!sourceIdea.trim()) return;
 
     setPhase('generating');
@@ -308,6 +310,11 @@ export default function IdeaToProduct({ lang, user, onClose }) {
         },
       });
       appendMessage('assistant', productReply?.reply || t.error);
+      const readyForBrief = Boolean(productReply?.enoughInfo || productReply?.nextStep === 'brief_ready');
+      setBriefReady(readyForBrief);
+      if (readyForBrief) {
+        await generateReport([...nextConversation.filter((message) => message.role === 'user').map((message) => message.content), value].join('\n'));
+      }
     } catch (_error) {
       appendMessage('assistant', t.error);
       setError(t.error);
@@ -459,7 +466,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
                 {t.send}
               </button>
             </div>
-            {hasUserMessages && (
+            {briefReady && (
               <button
                 onClick={generateReport}
                 disabled={isTyping}

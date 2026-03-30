@@ -195,6 +195,34 @@ export default function Login({ setUser, setProfile, lang }) {
   const [uploadingLicense, setUploadingLicense] = useState(false);
   const [uploadingFactory, setUploadingFactory] = useState(false);
 
+  const createAiDraftRequestAfterAuth = async (userId) => {
+    const draft = sessionStorage.getItem('maabar_ai_draft');
+    if (!draft) return false;
+    try {
+      const parsed = JSON.parse(draft);
+      if (!(parsed.title_ar || parsed.title_en)) return false;
+      const { error } = await sb.from('requests').insert({
+        buyer_id: userId,
+        title_ar: parsed.title_ar || parsed.title_en,
+        title_en: parsed.title_en || parsed.title_ar,
+        title_zh: parsed.title_zh || parsed.title_en || parsed.title_ar,
+        quantity: parsed.quantity || '',
+        description: parsed.description || '',
+        category: parsed.category || 'other',
+        status: 'open',
+      });
+      if (error) {
+        console.error('AI draft request insert failed:', error);
+        return false;
+      }
+      sessionStorage.removeItem('maabar_ai_draft');
+      return true;
+    } catch (e) {
+      console.error('AI draft parse failed:', e);
+      return false;
+    }
+  };
+
   const doSignIn = async () => {
     if (!email || !pass) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
@@ -215,6 +243,11 @@ export default function Login({ setUser, setProfile, lang }) {
     setUser(data.user);
     const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', data.user.id).single();
     if (profile) setProfile(profile);
+    const aiDraftCreated = await createAiDraftRequestAfterAuth(data.user.id);
+    if (aiDraftCreated) {
+      nav('/dashboard?tab=requests');
+      return;
+    }
     const draft = sessionStorage.getItem('maabar_request_draft');
     const hasDraft = draft && (() => { try { const d = JSON.parse(draft); return d.title_ar || d.title_en; } catch { return false; } })();
     nav(hasDraft ? '/requests' : '/dashboard');
@@ -267,6 +300,11 @@ export default function Login({ setUser, setProfile, lang }) {
     setUser(authData.user);
     const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', authData.user.id).single();
     if (profile) setProfile(profile);
+    const aiDraftCreated = await createAiDraftRequestAfterAuth(authData.user.id);
+    if (aiDraftCreated) {
+      nav('/dashboard?tab=requests');
+      return;
+    }
     const draft = sessionStorage.getItem('maabar_request_draft');
     const hasDraft = draft && (() => { try { const d = JSON.parse(draft); return d.title_ar || d.title_en; } catch { return false; } })();
     nav(hasDraft ? '/requests' : '/dashboard');
