@@ -4,6 +4,8 @@ import {
   MAABAR_AI_PERSONA_NAME,
   MAABAR_AI_SUPPORT_CHANNELS,
   MAABAR_AI_SUPPORT_PROMISE,
+  getSaudiRepresentativeIntro,
+  getSessionSaudiRepresentative,
 } from '../lib/maabarAi/config';
 
 const COPY = {
@@ -14,7 +16,7 @@ const COPY = {
     placeholder: 'اكتب سؤالك هنا...',
     send: 'إرسال',
     thinking: 'جاري تجهيز الرد...',
-    welcome: 'أهلاً، أنا وكيل معبر. أنا موجود 24/7 لمساعدتك في الحسابات، الطلبات، الدفع، الموردين، الشحن، والترجمة التجارية داخل المنصة.',
+    welcome: 'أنا موجود 24/7 لمساعدتك في الحسابات، الطلبات، الدفع، الموردين، الشحن، والترجمة التجارية داخل المنصة.',
     quickLabel: 'أسئلة سريعة',
     quickActions: [
       'عندي مشكلة في تسجيل الدخول',
@@ -34,7 +36,7 @@ const COPY = {
     placeholder: 'Type your question...',
     send: 'Send',
     thinking: 'Preparing a reply...',
-    welcome: 'Hi, I am Maabar\'s support agent. I am available 24/7 to help with accounts, orders, payments, suppliers, shipping, and trade translation inside the platform.',
+    welcome: 'I am available 24/7 to help with accounts, orders, payments, suppliers, shipping, and trade translation inside the platform.',
     quickLabel: 'Quick questions',
     quickActions: [
       'I have a login problem',
@@ -54,7 +56,7 @@ const COPY = {
     placeholder: '请输入您的问题...',
     send: '发送',
     thinking: '正在准备回复...',
-    welcome: '您好，我是 Maabar 支持助手。我 24/7 在线，可协助处理平台内的账户、订单、付款、供应商、物流与商务翻译问题。',
+    welcome: '我 24/7 在线，可协助处理平台内的账户、订单、付款、供应商、物流与商务翻译问题。',
     quickLabel: '快捷问题',
     quickActions: [
       '我登录时遇到问题',
@@ -96,6 +98,8 @@ function SupportBubble({ role, children, lang }) {
 export function MaabarSupportAgent({ lang = 'ar', user, profile, compact = false }) {
   const t = COPY[lang] || COPY.ar;
   const isAr = lang === 'ar';
+  const representative = getSessionSaudiRepresentative();
+  const introMessage = `${getSaudiRepresentativeIntro(lang)} ${t.welcome}`;
   const bodyRef = useRef(null);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
@@ -103,7 +107,7 @@ export function MaabarSupportAgent({ lang = 'ar', user, profile, compact = false
     {
       id: 'welcome',
       role: 'assistant',
-      content: t.welcome,
+      content: introMessage,
       suggestions: [],
       escalate: false,
     },
@@ -114,6 +118,14 @@ export function MaabarSupportAgent({ lang = 'ar', user, profile, compact = false
       bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
     }
   }, [messages, loading]);
+
+  useEffect(() => {
+    setMessages((current) => current.map((message, index) => (
+      index === 0 && message.id === 'welcome'
+        ? { ...message, content: introMessage }
+        : message
+    )));
+  }, [introMessage]);
 
   const supportSummary = useMemo(() => MAABAR_AI_SUPPORT_PROMISE[lang] || MAABAR_AI_SUPPORT_PROMISE.ar, [lang]);
 
@@ -145,6 +157,7 @@ export function MaabarSupportAgent({ lang = 'ar', user, profile, compact = false
           role: profile?.role || '',
           companyName: profile?.company_name || '',
           fullName: profile?.full_name || '',
+          representativeName: representative.name,
         },
       });
 
@@ -206,7 +219,7 @@ export function MaabarSupportAgent({ lang = 'ar', user, profile, compact = false
           marginBottom: 10,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
         }}>
-          {MAABAR_AI_PERSONA_NAME}
+          {`${representative.name} · ${MAABAR_AI_PERSONA_NAME}`}
         </h2>
         <p style={{
           fontSize: 14,

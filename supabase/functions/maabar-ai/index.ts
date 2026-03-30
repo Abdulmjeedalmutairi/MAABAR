@@ -30,6 +30,7 @@ type CustomerSupportPayload = {
     role?: string;
     companyName?: string;
     fullName?: string;
+    representativeName?: string;
   };
 };
 
@@ -53,6 +54,12 @@ function getLanguageName(lang: Lang = 'ar') {
   if (lang === 'zh') return '中文';
   if (lang === 'en') return 'English';
   return 'العربية';
+}
+
+function getRepresentativeOpening(lang: Lang = 'ar', representativeName = 'سلمان') {
+  if (lang === 'zh') return `您好，我是来自 Maabar 的 ${representativeName}。`;
+  if (lang === 'en') return `Hello, this is ${representativeName} from Maabar.`;
+  return `مرحبا، معك ${representativeName} من معبر.`;
 }
 
 async function callGemini({
@@ -125,9 +132,13 @@ function buildSupportPrompt(payload: CustomerSupportPayload) {
   const language = payload.language || 'ar';
   const conversation = payload.conversation || [];
   const userProfile = payload.userProfile || {};
+  const representativeName = userProfile.representativeName || 'سلمان';
 
   return [
     `Respond in ${getLanguageName(language)}.`,
+    `Use this Saudi representative opening only if this is the first reply: ${getRepresentativeOpening(language, representativeName)}`,
+    `First interaction: ${conversation.length === 0 ? 'yes' : 'no'}`,
+    `Representative name: ${representativeName}`,
     `User role: ${userProfile.role || 'guest'}`,
     `User company: ${userProfile.companyName || ''}`,
     `User name: ${userProfile.fullName || ''}`,
@@ -175,9 +186,10 @@ Return ONLY valid JSON with these exact fields:
   "category": "one of: electronics, furniture, clothing, building, food, other"
 }
 Rules:
-- Keep the tone polished, practical, and suitable for a Saudi B2B sourcing flow.
+- Keep the tone polished, practical, human, and suitable for a Saudi B2B sourcing flow.
 - Always answer content fields in ${getLanguageName(language)}.
 - category must remain the English enum only.
+- No emojis.
 - No markdown. No commentary.`;
 
       const text = await callGemini({
@@ -202,6 +214,7 @@ Translate faithfully from ${getLanguageName(payload.sourceLanguage)} to ${getLan
 Rules:
 - Keep business intent, numbers, pricing, and negotiation tone precise.
 - Do not add notes, explanations, or quotation marks.
+- Do not add emojis.
 - Return only the translated message text.`;
 
       const translatedText = await callGemini({
@@ -227,10 +240,12 @@ Return ONLY valid JSON with this exact shape:
 }
 Rules:
 - Respond in ${getLanguageName(language)}.
-- Be professional, calm, and practical.
+- Sound like a real Saudi Maabar representative: elegant, natural, professional, never robotic.
+- If this is the first reply in the conversation, open with the representative introduction provided in the prompt.
 - Cover platform guidance broadly: account access, requests, offers, supplier communication, shipping, payments, translation, and onboarding.
 - Never invent account-specific data you do not have.
 - If human intervention is needed, set escalate=true and direct the user to support@maabar.io or WhatsApp +966 50 424 8942.
+- No emojis.
 - No markdown. No extra commentary.`;
 
       const text = await callGemini({

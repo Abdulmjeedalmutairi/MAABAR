@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { generateIdeaToProductReport } from '../lib/maabarAi/client';
-import { MAABAR_AI_PERSONA_NAME } from '../lib/maabarAi/config';
+import { MAABAR_AI_PERSONA_NAME, getSaudiRepresentativeIntro } from '../lib/maabarAi/config';
 
 const CAT_LABEL = {
   ar: { electronics: 'إلكترونيات', furniture: 'أثاث', clothing: 'ملابس', building: 'مواد بناء', food: 'غذاء', other: 'أخرى' },
@@ -15,7 +15,7 @@ const COPY = {
     title: 'صنّع فكرتك',
     subtitle: `${MAABAR_AI_PERSONA_NAME} يحوّل الفكرة إلى طلب تصنيع احترافي`,
     minimized: 'صنّع فكرتك — متابعة',
-    intro: `أهلاً، أنا ${MAABAR_AI_PERSONA_NAME}. اكتب لي فكرتك أو قل مباشرة: أبي أوصل لموردين، وأنا أمشي معك بخطوات قصيرة وواضحة.`,
+    intro: 'اكتب لي فكرتك أو قل مباشرة: أبي أوصل لموردين، وأنا أمشي معك بخطوات قصيرة وواضحة.',
     placeholder: 'اكتب رسالتك هنا...',
     send: 'إرسال',
     generating: 'أرتب فكرتك الآن وأبني لك brief احترافي...',
@@ -53,7 +53,7 @@ const COPY = {
     title: 'Build Your Product',
     subtitle: `${MAABAR_AI_PERSONA_NAME} turns your idea into a professional manufacturing brief`,
     minimized: 'Build Your Product — Continue',
-    intro: `Hi, I am ${MAABAR_AI_PERSONA_NAME}. Tell me your idea — or just say “connect me to suppliers” — and I will guide you in short, clear steps.`,
+    intro: 'Tell me your idea — or just say “connect me to suppliers” — and I will guide you in short, clear steps.',
     placeholder: 'Write your message...',
     send: 'Send',
     generating: 'Preparing your manufacturing brief...',
@@ -91,7 +91,7 @@ const COPY = {
     title: '打造您的产品',
     subtitle: `${MAABAR_AI_PERSONA_NAME} 将想法整理成专业制造需求`,
     minimized: '继续打造产品',
-    intro: `您好，我是 ${MAABAR_AI_PERSONA_NAME}。告诉我您的想法，或直接说“帮我对接供应商”，我会用清晰简短的步骤协助您。`,
+    intro: '告诉我您的想法，或直接说“帮我对接供应商”，我会用清晰简短的步骤协助您。',
     placeholder: '请输入内容...',
     send: '发送',
     generating: '正在整理您的制造需求...',
@@ -174,6 +174,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const nav = useNavigate();
   const isAr = lang === 'ar';
   const t = COPY[lang] || COPY.en;
+  const introMessage = `${getSaudiRepresentativeIntro(lang)} ${t.intro}`;
   const [minimized, setMinimized] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [phase, setPhase] = useState('chat');
@@ -185,7 +186,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, role: 'assistant', content: t.intro },
+    { id: 1, role: 'assistant', content: introMessage },
   ]);
 
   const questions = useMemo(() => (
@@ -202,7 +203,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setResult(null);
     setError('');
     setSubmitting(false);
-    setMessages([{ id: Date.now(), role: 'assistant', content: t.intro }]);
+    setMessages([{ id: Date.now(), role: 'assistant', content: introMessage }]);
   };
 
   const appendMessage = (role, content) => {

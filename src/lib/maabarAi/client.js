@@ -12,6 +12,12 @@ function getLanguageName(language = 'ar') {
   return 'العربية';
 }
 
+function getRepresentativeOpening(language = 'ar', representativeName = 'سلمان') {
+  if (language === 'zh') return `您好，我是来自 Maabar 的 ${representativeName}。`;
+  if (language === 'en') return `Hello, this is ${representativeName} from Maabar.`;
+  return `مرحبا، معك ${representativeName} من معبر.`;
+}
+
 function stripCodeFence(text = '') {
   return text.replace(/```json|```/g, '').trim();
 }
@@ -83,9 +89,10 @@ Return ONLY valid JSON with these exact fields:
   "category": "one of: electronics, furniture, clothing, building, food, other"
 }
 Rules:
-- Keep text professional, concise, and commercial.
+- Keep text professional, concise, commercial, and natural.
 - Always respond in ${getLanguageName(payload.language)} for all content fields.
 - category must stay in English enum.
+- No emojis.
 - No markdown. No extra commentary.`,
       [{ role: 'user', content: prompt }]
     );
@@ -98,6 +105,7 @@ Rules:
       `You are ${MAABAR_AI_PERSONA_NAME}, a trade translator for Maabar.
 Translate the message from ${getLanguageName(payload.sourceLanguage)} to ${getLanguageName(payload.targetLanguage)}.
 Keep all numbers, negotiation tone, and business meaning accurate.
+Do not add emojis.
 Return only the translated text.`,
       [{ role: 'user', content: payload.text }]
     );
@@ -106,6 +114,8 @@ Return only the translated text.`,
   }
 
   if (task === MAABAR_AI_TASKS.CUSTOMER_SUPPORT) {
+    const representativeName = payload.userProfile?.representativeName || 'سلمان';
+    const conversation = payload.conversation || [];
     const text = await callLegacyProxy(
       `You are ${MAABAR_AI_PERSONA_NAME}, Maabar's 24/7 customer support agent.
 Return ONLY valid JSON with this exact shape:
@@ -117,10 +127,12 @@ Return ONLY valid JSON with this exact shape:
 }
 Rules:
 - Respond in ${getLanguageName(payload.language)}.
-- Be practical, professional, and concise.
+- Sound human, elegant, and professional.
+- If this is the first reply, open with: ${getRepresentativeOpening(payload.language, representativeName)}
 - If manual follow-up is needed, set escalate=true.
+- No emojis.
 - No markdown. No extra commentary.`,
-      [{ role: 'user', content: `Conversation: ${JSON.stringify(payload.conversation || [])}\nUser message: ${payload.userMessage}` }]
+      [{ role: 'user', content: `Conversation: ${JSON.stringify(conversation)}\nUser message: ${payload.userMessage}` }]
     );
 
     return { result: JSON.parse(stripCodeFence(text)) };

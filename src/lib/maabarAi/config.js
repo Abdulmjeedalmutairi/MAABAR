@@ -28,6 +28,21 @@ export const MAABAR_AI_SUPPORT_PROMISE = {
   zh: 'Maabar 提供 24/7 支持，可处理账户、订单、付款、供应商与商务翻译相关问题。',
 };
 
+export const MAABAR_AI_SAUDI_REP_NAMES = [
+  { name: 'سلمان', gender: 'male' },
+  { name: 'تركي', gender: 'male' },
+  { name: 'فيصل', gender: 'male' },
+  { name: 'سعود', gender: 'male' },
+  { name: 'عبدالعزيز', gender: 'male' },
+  { name: 'نورة', gender: 'female' },
+  { name: 'الجوهرة', gender: 'female' },
+  { name: 'سارة', gender: 'female' },
+  { name: 'ريم', gender: 'female' },
+  { name: 'هيا', gender: 'female' },
+];
+
+const SESSION_REP_KEY = 'maabar_ai_saudi_rep';
+
 export const TRANSLATION_DIRECTIONS = [
   { id: 'off', source: null, target: null },
   { id: 'ar_to_zh', source: 'ar', target: 'zh' },
@@ -80,4 +95,42 @@ export function getDirectionLabel(directionId, lang = 'ar') {
   };
 
   return labels[lang]?.[directionId] || labels.ar[directionId] || directionId;
+}
+
+function pickSaudiRepresentative() {
+  const randomIndex = Math.floor(Math.random() * MAABAR_AI_SAUDI_REP_NAMES.length);
+  return MAABAR_AI_SAUDI_REP_NAMES[randomIndex];
+}
+
+export function getSessionSaudiRepresentative() {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
+    return MAABAR_AI_SAUDI_REP_NAMES[0];
+  }
+
+  const stored = window.sessionStorage.getItem(SESSION_REP_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (_error) {
+      window.sessionStorage.removeItem(SESSION_REP_KEY);
+    }
+  }
+
+  const selected = pickSaudiRepresentative();
+  window.sessionStorage.setItem(SESSION_REP_KEY, JSON.stringify(selected));
+  return selected;
+}
+
+export function getSaudiRepresentativeIntro(lang = 'ar') {
+  const representative = getSessionSaudiRepresentative();
+
+  if (lang === 'zh') {
+    return `您好，我是 ${representative.name}，来自 Maabar。`;
+  }
+
+  if (lang === 'en') {
+    return `Hello, this is ${representative.name} from Maabar.`;
+  }
+
+  return `مرحبا، معك ${representative.name} من معبر.`;
 }
