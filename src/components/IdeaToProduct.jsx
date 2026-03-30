@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 
 const AI_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
-
-const CATS = ['electronics', 'furniture', 'clothing', 'building', 'food', 'other'];
 
 const CAT_LABEL = {
   ar: { electronics: 'إلكترونيات', furniture: 'أثاث', clothing: 'ملابس', building: 'مواد بناء', food: 'غذاء', other: 'أخرى' },
@@ -13,39 +11,118 @@ const CAT_LABEL = {
   zh: { electronics: '电子产品', furniture: '家具', clothing: '服装', building: '建材', food: '食品', other: '其他' },
 };
 
-const SYSTEM = `You are a Chinese manufacturing advisor for Maabar B2B platform. Given a product idea, produce ONLY a JSON object (no markdown, no extra text) with these exact fields:
+const SYSTEM = `You are Maabar's manufacturing and supplier-matching agent.
+Return ONLY valid JSON with these exact fields:
 {
   "product_name_ar": "اسم المنتج بالعربي",
   "product_name_en": "Product name in English",
   "product_name_zh": "产品中文名",
-  "specs": "Key specifications",
-  "factory_type": "Type of factory needed",
+  "specs": "Key specifications and user requirements",
+  "factory_type": "Type of supplier or factory needed",
   "city": "Best Chinese manufacturing city",
-  "price_estimate": "Price per unit estimate in USD",
-  "moq": "Minimum order quantity",
-  "timeline": "Production timeline",
-  "request_description": "Full request description for suppliers",
+  "price_estimate": "Estimated target/unit price in USD if possible",
+  "moq": "Recommended minimum order quantity",
+  "timeline": "Estimated production timeline",
+  "request_description": "Professional supplier-ready brief for matching and sourcing",
   "category": "one of: electronics, furniture, clothing, building, food, other"
 }
-Always respond in the user's language for text fields, but category must be one of the enum values.`;
+Rules:
+- If the user intent is supplier matching, optimize the request_description for routing to suitable suppliers.
+- Keep text professional, concise, and commercial.
+- Always respond in the user's language for text fields, but category must stay in English enum.
+- No markdown. No extra commentary.`;
 
-const QUESTIONS = {
-  ar: [
-    'ما المواد المفضلة؟ (بلاستيك، معدن، قماش، خشب...)',
-    'كم الكمية الأولى المطلوبة تقريباً؟',
-    'ما الميزانية التقريبية للوحدة الواحدة؟',
-  ],
-  en: [
-    'What materials do you prefer? (plastic, metal, fabric, wood...)',
-    'What is the approximate initial quantity you need?',
-    'What is your approximate budget per unit?',
-  ],
-  zh: [
-    '您偏好什么材料？（塑料、金属、布料、木材...）',
-    '您大约需要多少初始数量？',
-    '每件产品的大约预算是多少？',
-  ],
+const COPY = {
+  ar: {
+    title: 'صنّع فكرتك',
+    subtitle: 'وكيل معبر يساعدك يحوّل الفكرة إلى طلب تصنيع احترافي',
+    minimized: 'صنّع فكرتك — متابعة',
+    intro: 'أهلاً، أنا وكيل معبر. اكتب لي فكرتك أو قل مباشرة: أبي أوصل لموردين، وأنا أمشي معك بخطوات قصيرة وواضحة.',
+    placeholder: 'اكتب رسالتك هنا...',
+    send: 'إرسال',
+    generating: 'أرتب فكرتك الآن وأبني لك brief احترافي...',
+    report: 'تقرير التصنيع',
+    submit: 'إرسال لموردين مختصين',
+    loginSubmit: 'تسجيل الدخول للإرسال',
+    newChat: 'محادثة جديدة',
+    close: 'إغلاق',
+    edit: 'تعديل',
+    error: 'حدث خطأ، حاول مرة أخرى',
+    reportReady: 'جهزت لك التقرير. راجعه، وإذا مناسب أرسله لموردين مختصين مباشرة.',
+    supplierRouteIntro: 'واضح أنك تريد الوصول لموردين بسرعة. خلني آخذ منك الحد الأدنى فقط ثم أجهز الطلب بشكل احترافي.',
+    buildRouteIntro: 'ممتاز. خلني أفهم فكرتك بشكل مرتب، وبعدها أطلع لك brief جاهز للتصنيع.',
+    supplierQuestions: [
+      'وش المنتج أو الفكرة بشكل مختصر؟',
+      'كم الكمية الأولية تقريبًا؟',
+      'هل عندك ميزانية أو سعر مستهدف للوحدة؟',
+    ],
+    buildQuestions: [
+      'وش نوع المنتج أو استخدامه الأساسي؟',
+      'هل فيه خامات أو مواصفات مهمة؟',
+      'كم الكمية الأولية تقريبًا؟',
+      'هل عندك ميزانية أو سعر مستهدف؟',
+    ],
+    reportFields: {
+      product: 'المنتج',
+      factory: 'نوع المصنع',
+      city: 'المدينة',
+      cost: 'تكلفة تقريبية',
+      moq: 'MOQ',
+      timeline: 'مدة التصنيع',
+      category: 'التخصص',
+      specs: 'المواصفات',
+    },
+  },
+  en: {
+    title: 'Build Your Product',
+    subtitle: 'A Maabar agent turns your idea into a professional manufacturing brief',
+    minimized: 'Build Your Product — Continue',
+    intro: 'Hi, I am Maabar’s sourcing agent. Tell me your idea — or just say “connect me to suppliers” — and I will guide you in short, clear steps.',
+    placeholder: 'Write your message...',
+    send: 'Send',
+    generating: 'Preparing your manufacturing brief...',
+    report: 'Manufacturing Report',
+    submit: 'Send to matched suppliers',
+    loginSubmit: 'Login to submit',
+    newChat: 'New Chat',
+    close: 'Close',
+    edit: 'Edit',
+    error: 'Something went wrong, please try again',
+    reportReady: 'Your report is ready. Review it and send it to matched suppliers when ready.',
+    supplierRouteIntro: 'Got it — you want supplier matching fast. I’ll only ask for the essentials, then prepare a clean brief.',
+    buildRouteIntro: 'Great. I’ll understand your idea first, then turn it into a professional manufacturing brief.',
+    supplierQuestions: [
+      'What is the product or idea in one short line?',
+      'What is the approximate initial quantity?',
+      'Do you have a target budget or unit price?',
+    ],
+    buildQuestions: [
+      'What is the product and main use case?',
+      'Any key materials or specifications?',
+      'What is the approximate initial quantity?',
+      'Do you have a target budget or unit price?',
+    ],
+    reportFields: {
+      product: 'Product',
+      factory: 'Factory Type',
+      city: 'City',
+      cost: 'Est. Cost',
+      moq: 'MOQ',
+      timeline: 'Timeline',
+      category: 'Category',
+      specs: 'Specifications',
+    },
+  },
 };
+
+function detectIntent(text = '') {
+  const t = text.toLowerCase();
+  const supplierKeywords = [
+    'مورد', 'موردين', 'مصنع', 'مصانع', 'وصلني', 'ابي مورد', 'أبي مورد', 'ابي اوصل', 'أبي أوصل',
+    'supplier', 'suppliers', 'factory', 'factories', 'manufacturer', 'sourcing', 'connect me'
+  ];
+  return supplierKeywords.some((k) => t.includes(k)) ? 'supplier_match' : 'build_product';
+}
 
 async function callAI(prompt) {
   const res = await fetch(AI_URL, {
@@ -60,75 +137,137 @@ async function callAI(prompt) {
   return data.content?.[0]?.text || '';
 }
 
+function Bubble({ role, children, isAr }) {
+  const isUser = role === 'user';
+  return (
+    <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+      <div style={{
+        maxWidth: '86%',
+        padding: '14px 16px',
+        borderRadius: 16,
+        background: isUser ? '#E8E3D8' : '#23242A',
+        color: isUser ? '#141414' : '#F5F2EC',
+        border: `1px solid ${isUser ? 'rgba(232,227,216,0.35)' : 'rgba(255,255,255,0.06)'}`,
+        fontSize: 14,
+        lineHeight: 1.9,
+        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+        whiteSpace: 'pre-wrap',
+        boxShadow: isUser ? '0 8px 30px rgba(0,0,0,0.12)' : 'none',
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ReportRow({ label, value, isAr }) {
+  if (!value) return null;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      <span style={{ color: '#8F9198', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{label}</span>
+      <span style={{ color: '#F4F1EB', fontSize: 13, fontWeight: 500, textAlign: isAr ? 'left' : 'right', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{value}</span>
+    </div>
+  );
+}
+
 export default function IdeaToProduct({ lang, user, onClose }) {
   const nav = useNavigate();
   const isAr = lang === 'ar';
+  const t = COPY[lang] || COPY.en;
   const [minimized, setMinimized] = useState(false);
-
-  // step: 'input' | 'choice' | 'questions' | 'report'
-  const [step, setStep] = useState('input');
+  const [draftText, setDraftText] = useState('');
+  const [phase, setPhase] = useState('chat'); // chat | generating | report
+  const [routeMode, setRouteMode] = useState(null);
   const [idea, setIdea] = useState('');
-  const [qAnswers, setQAnswers] = useState(['', '', '']);
-  const [qIdx, setQIdx] = useState(0);
-  const [qInput, setQInput] = useState('');
+  const [questionIndex, setQuestionIndex] = useState(-1);
+  const [answers, setAnswers] = useState([]);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [messages, setMessages] = useState([
+    { id: 1, role: 'assistant', content: t.intro },
+  ]);
 
-  const questions = QUESTIONS[lang] || QUESTIONS.ar;
+  const questions = useMemo(() => (
+    routeMode === 'supplier_match' ? t.supplierQuestions : t.buildQuestions
+  ), [routeMode, t]);
 
-  const generateReport = async (fullIdea) => {
-    setLoading(true);
+  const resetAll = () => {
+    setDraftText('');
+    setPhase('chat');
+    setRouteMode(null);
+    setIdea('');
+    setQuestionIndex(-1);
+    setAnswers([]);
+    setResult(null);
+    setError('');
+    setSubmitting(false);
+    setMessages([{ id: Date.now(), role: 'assistant', content: t.intro }]);
+  };
+
+  const appendMessage = (role, content) => {
+    setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, content }]);
+  };
+
+  const generateReport = async (initialIdea, mode, collectedAnswers) => {
+    setPhase('generating');
     setError('');
     try {
-      const text = await callAI(fullIdea);
+      const prompt = [
+        `User intent mode: ${mode}`,
+        `Original user message: ${initialIdea}`,
+        ...collectedAnswers.map((answer, idx) => `Q${idx + 1}: ${questions[idx]}\nA${idx + 1}: ${answer}`),
+      ].join('\n\n');
+
+      const text = await callAI(prompt);
       const clean = text.replace(/```json|```/g, '').trim();
       const json = JSON.parse(clean);
       setResult(json);
-      setStep('report');
+      setPhase('report');
+      appendMessage('assistant', t.reportReady);
     } catch (e) {
-      setError(isAr ? 'حدث خطأ، حاول مرة أخرى' : 'Error generating report, try again');
-      setStep('choice');
+      setError(t.error);
+      setPhase('chat');
+      appendMessage('assistant', t.error);
     }
-    setLoading(false);
   };
 
-  const handleIdeaSubmit = () => {
-    if (!idea.trim()) return;
-    setStep('choice');
-  };
+  const handleSend = async () => {
+    const value = draftText.trim();
+    if (!value) return;
+    setDraftText('');
+    appendMessage('user', value);
 
-  const handleDirect = () => {
-    generateReport(idea.trim());
-  };
+    if (!routeMode) {
+      const detected = detectIntent(value);
+      setRouteMode(detected);
+      setIdea(value);
+      const intro = detected === 'supplier_match' ? t.supplierRouteIntro : t.buildRouteIntro;
+      appendMessage('assistant', `${intro}\n\n${questions[0]}`);
+      setQuestionIndex(0);
+      return;
+    }
 
-  const handleDetails = () => {
-    setStep('questions');
-    setQIdx(0);
-    setQInput('');
-  };
+    if (questionIndex >= 0) {
+      const nextAnswers = [...answers, value];
+      setAnswers(nextAnswers);
 
-  const handleQNext = () => {
-    if (!qInput.trim()) return;
-    const updated = [...qAnswers];
-    updated[qIdx] = qInput.trim();
-    setQAnswers(updated);
-    setQInput('');
-    if (qIdx < questions.length - 1) {
-      setQIdx(qIdx + 1);
-    } else {
-      // All answers collected — generate report
-      const fullIdea = `${idea.trim()}\n${questions.map((q, i) => `${q}: ${updated[i]}`).join('\n')}`;
-      setQAnswers(updated);
-      generateReport(fullIdea);
+      if (questionIndex < questions.length - 1) {
+        const nextIdx = questionIndex + 1;
+        setQuestionIndex(nextIdx);
+        appendMessage('assistant', questions[nextIdx]);
+        return;
+      }
+
+      setQuestionIndex(-1);
+      appendMessage('assistant', t.generating);
+      await generateReport(idea, routeMode, nextAnswers);
     }
   };
 
   const submitRequest = async () => {
     if (!result) return;
     if (!user) {
-      // Save draft to sessionStorage and redirect to login
       const draft = {
         title_ar: result.product_name_ar,
         title_en: result.product_name_en,
@@ -142,6 +281,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
       nav('/login');
       return;
     }
+
     setSubmitting(true);
     const { error: err } = await sb.from('requests').insert({
       buyer_id: user.id,
@@ -154,190 +294,119 @@ export default function IdeaToProduct({ lang, user, onClose }) {
       status: 'open',
     });
     setSubmitting(false);
-    if (err) { setError(isAr ? 'حدث خطأ' : 'Error'); return; }
+    if (err) {
+      setError(t.error);
+      return;
+    }
     if (onClose) onClose();
     nav('/requests');
   };
 
-  const reset = () => {
-    setStep('input');
-    setIdea('');
-    setQAnswers(['', '', '']);
-    setQIdx(0);
-    setQInput('');
-    setResult(null);
-    setError('');
-  };
-
-  if (minimized) return (
-    <div onClick={() => setMinimized(false)} style={{
-      position: 'fixed', bottom: 24, left: 24, zIndex: 2000,
-      background: '#2C2C2C', color: '#F7F5F2',
-      padding: '10px 20px', borderRadius: 3,
-      cursor: 'pointer', fontSize: 12, fontWeight: 500,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-      fontFamily: isAr ? 'var(--font-ar)' : 'inherit',
-      display: 'flex', alignItems: 'center', gap: 8, letterSpacing: 0.5,
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4caf50', display: 'inline-block' }} />
-      {isAr ? 'ابتكر منتجك — متابعة' : 'Create Product — Continue'}
-    </div>
-  );
+  if (minimized) {
+    return (
+      <div
+        onClick={() => setMinimized(false)}
+        style={{
+          position: 'fixed', bottom: 24, left: 24, zIndex: 2000,
+          background: '#1F2025', color: '#F4F1EB', border: '1px solid rgba(255,255,255,0.08)',
+          padding: '12px 18px', borderRadius: 14, cursor: 'pointer', fontSize: 12,
+          boxShadow: '0 18px 50px rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', gap: 10,
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+        }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#8FB1FF', display: 'inline-block' }} />
+        {t.minimized}
+      </div>
+    );
+  }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ background: '#F7F5F2', borderRadius: 4, width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-        {/* HEADER */}
-        <div style={{ padding: '18px 24px', background: '#2C2C2C', color: '#F7F5F2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18 }}>
+      <div style={{ width: '100%', maxWidth: 760, height: 'min(88vh, 860px)', background: '#141519', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+        <div style={{ padding: '20px 24px', background: '#191A1F', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 2, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', letterSpacing: 0.5 }}>
-              {isAr ? 'ابتكر منتجك الخاص' : 'Create Your Own Product'}
-            </p>
-            <p style={{ fontSize: 11, opacity: 0.5, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-              {isAr ? 'AI يحول فكرتك لطلب توريد' : 'AI turns your idea into a sourcing request'}
-            </p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#F4F1EB', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.title}</p>
+            <p style={{ fontSize: 12, color: '#8B8E96', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.subtitle}</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setMinimized(true)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: '#F7F5F2', fontSize: 14, cursor: 'pointer', padding: '2px 10px', borderRadius: 2 }}>—</button>
-            <button onClick={() => { reset(); if (onClose) onClose(); }} style={{ background: 'none', border: 'none', color: '#F7F5F2', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+            <button onClick={() => setMinimized(true)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', color: '#F4F1EB', fontSize: 14, cursor: 'pointer', padding: '4px 12px', borderRadius: 10 }}>—</button>
+            <button onClick={() => { resetAll(); if (onClose) onClose(); }} style={{ background: 'none', border: 'none', color: '#F4F1EB', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
           </div>
         </div>
 
-        {/* BODY */}
-        <div style={{ padding: '28px 28px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'inherit', direction: isAr ? 'rtl' : 'ltr' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 14, background: 'linear-gradient(180deg, #17181D 0%, #141519 100%)', direction: isAr ? 'rtl' : 'ltr' }}>
+          {messages.map((m) => (
+            <Bubble key={m.id} role={m.role} isAr={isAr}>{m.content}</Bubble>
+          ))}
 
-          {/* STEP: INPUT */}
-          {step === 'input' && (
-            <div>
-              <p style={{ fontSize: 13, color: '#555', marginBottom: 16, lineHeight: 1.7 }}>
-                {isAr ? 'صف فكرتك في جملة واحدة:' : 'Describe your idea in one sentence:'}
-              </p>
-              <textarea
-                autoFocus
-                value={idea}
-                onChange={e => setIdea(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleIdeaSubmit(); } }}
-                placeholder={isAr ? 'مثال: أريد كرسي مكتبي بظهر داعم من الشبك...' : 'e.g. I want a mesh office chair with lumbar support...'}
-                style={{ width: '100%', padding: '12px 14px', border: '1px solid #E5E0D8', borderRadius: 3, fontSize: 13, outline: 'none', background: '#fff', resize: 'vertical', minHeight: 80, boxSizing: 'border-box', lineHeight: 1.6 }}
-                dir={isAr ? 'rtl' : 'ltr'}
-              />
-              <button
-                onClick={handleIdeaSubmit}
-                disabled={!idea.trim()}
-                style={{ marginTop: 12, width: '100%', padding: '12px', background: idea.trim() ? '#2C2C2C' : '#ccc', color: '#F7F5F2', border: 'none', borderRadius: 3, fontSize: 12, cursor: idea.trim() ? 'pointer' : 'default', letterSpacing: 1.5, textTransform: 'uppercase' }}
-              >
-                {isAr ? 'متابعة' : 'Continue'} →
-              </button>
-            </div>
-          )}
-
-          {/* STEP: CHOICE */}
-          {step === 'choice' && !loading && (
-            <div>
-              <div style={{ background: '#EFECE7', borderRadius: 4, padding: '12px 16px', fontSize: 13, lineHeight: 1.7, color: '#2C2C2C', marginBottom: 20 }}>
-                {idea}
-              </div>
-              {error && <p style={{ color: '#c00', fontSize: 12, marginBottom: 12 }}>{error}</p>}
-              <p style={{ fontSize: 13, color: '#555', marginBottom: 16, lineHeight: 1.7 }}>
-                {isAr ? 'كيف تريد المتابعة؟' : 'How would you like to continue?'}
-              </p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={handleDirect}
-                  style={{ flex: 1, padding: '12px', background: '#2C2C2C', color: '#F7F5F2', border: 'none', borderRadius: 3, fontSize: 12, cursor: 'pointer', letterSpacing: 1 }}
-                >
-                  {isAr ? '⚡ مباشرة' : '⚡ Directly'}
-                </button>
-                <button
-                  onClick={handleDetails}
-                  style={{ flex: 1, padding: '12px', background: 'none', color: '#2C2C2C', border: '1px solid #2C2C2C', borderRadius: 3, fontSize: 12, cursor: 'pointer', letterSpacing: 1 }}
-                >
-                  {isAr ? '📋 إضافة تفاصيل' : '📋 Add Details'}
-                </button>
-              </div>
-              <button onClick={reset} style={{ marginTop: 10, width: '100%', padding: '8px', background: 'none', border: '1px solid #E5E0D8', color: '#7a7a7a', borderRadius: 3, fontSize: 11, cursor: 'pointer' }}>
-                {isAr ? '← تعديل الفكرة' : '← Edit idea'}
-              </button>
-            </div>
-          )}
-
-          {/* STEP: QUESTIONS */}
-          {step === 'questions' && !loading && (
-            <div>
-              <p style={{ fontSize: 11, color: '#aaa', marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                {isAr ? `سؤال ${qIdx + 1} من ${questions.length}` : `Question ${qIdx + 1} of ${questions.length}`}
-              </p>
-              <p style={{ fontSize: 14, color: '#2C2C2C', marginBottom: 16, lineHeight: 1.7 }}>
-                {questions[qIdx]}
-              </p>
-              <input
-                autoFocus
-                value={qInput}
-                onChange={e => setQInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleQNext()}
-                style={{ width: '100%', padding: '11px 14px', border: '1px solid #E5E0D8', borderRadius: 3, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
-                dir={isAr ? 'rtl' : 'ltr'}
-              />
-              <button
-                onClick={handleQNext}
-                disabled={!qInput.trim()}
-                style={{ marginTop: 12, width: '100%', padding: '12px', background: qInput.trim() ? '#2C2C2C' : '#ccc', color: '#F7F5F2', border: 'none', borderRadius: 3, fontSize: 12, cursor: qInput.trim() ? 'pointer' : 'default', letterSpacing: 1.5 }}
-              >
-                {qIdx < questions.length - 1 ? (isAr ? 'التالي →' : 'Next →') : (isAr ? 'إنشاء التقرير ✓' : 'Generate Report ✓')}
-              </button>
-            </div>
-          )}
-
-          {/* LOADING */}
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#7a7a7a', fontSize: 13 }}>
-              <div style={{ fontSize: 24, marginBottom: 12 }}>⏳</div>
-              {isAr ? 'جاري التحليل...' : 'Analyzing your idea...'}
-            </div>
-          )}
-
-          {/* STEP: REPORT */}
-          {step === 'report' && result && (
-            <div>
-              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16 }}>
-                {isAr ? 'تقرير التصنيع' : 'Manufacturing Report'}
-              </p>
-              {[
-                { label: isAr ? 'المنتج' : 'Product', val: lang === 'zh' ? result.product_name_zh : (isAr ? result.product_name_ar : result.product_name_en) },
-                { label: isAr ? 'نوع المصنع' : 'Factory Type', val: result.factory_type },
-                { label: isAr ? 'المدينة' : 'City', val: result.city },
-                { label: isAr ? 'تكلفة تقريبية' : 'Est. Cost', val: result.price_estimate },
-                { label: 'MOQ', val: result.moq },
-                { label: isAr ? 'مدة التصنيع' : 'Timeline', val: result.timeline },
-                { label: isAr ? 'التخصص' : 'Category', val: CAT_LABEL[lang]?.[result.category] || result.category },
-              ].map((r, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E5E0D8', fontSize: 12 }}>
-                  <span style={{ color: '#7a7a7a', letterSpacing: 0.5 }}>{r.label}</span>
-                  <span style={{ fontWeight: 500, color: '#2C2C2C' }}>{r.val}</span>
+          {phase === 'report' && result && (
+            <div style={{ marginTop: 8, padding: 18, background: '#1F2025', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#8B8E96', marginBottom: 16 }}>{t.report}</p>
+              <ReportRow label={t.reportFields.product} value={lang === 'zh' ? result.product_name_zh : (isAr ? result.product_name_ar : result.product_name_en)} isAr={isAr} />
+              <ReportRow label={t.reportFields.factory} value={result.factory_type} isAr={isAr} />
+              <ReportRow label={t.reportFields.city} value={result.city} isAr={isAr} />
+              <ReportRow label={t.reportFields.cost} value={result.price_estimate} isAr={isAr} />
+              <ReportRow label={t.reportFields.moq} value={result.moq} isAr={isAr} />
+              <ReportRow label={t.reportFields.timeline} value={result.timeline} isAr={isAr} />
+              <ReportRow label={t.reportFields.category} value={CAT_LABEL[lang]?.[result.category] || result.category} isAr={isAr} />
+              <div style={{ paddingTop: 14 }}>
+                <p style={{ color: '#8F9198', fontSize: 12, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reportFields.specs}</p>
+                <div style={{ padding: '12px 14px', background: '#17181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, color: '#F4F1EB', fontSize: 13, lineHeight: 1.9, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {result.specs || result.request_description}
                 </div>
-              ))}
-              <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-                <button
-                  onClick={submitRequest}
-                  disabled={submitting}
-                  style={{ flex: 1, background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '11px', fontSize: 11, cursor: 'pointer', borderRadius: 2, letterSpacing: 1.5, textTransform: 'uppercase', opacity: submitting ? 0.6 : 1 }}
-                >
-                  {user
-                    ? (isAr ? 'إرسال للموردين' : 'Send to Suppliers')
-                    : (isAr ? 'تسجيل الدخول للإرسال' : 'Login to Submit')}
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+                <button onClick={submitRequest} disabled={submitting} style={{ flex: 1, minWidth: 180, background: '#E8E3D8', color: '#141414', border: 'none', padding: '14px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: submitting ? 0.65 : 1 }}>
+                  {user ? t.submit : t.loginSubmit}
                 </button>
-                <button
-                  onClick={reset}
-                  style={{ flex: 1, background: 'none', border: '1px solid #E5E0D8', color: '#2C2C2C', padding: '11px', fontSize: 11, cursor: 'pointer', borderRadius: 2, letterSpacing: 1.5, textTransform: 'uppercase' }}
-                >
-                  {isAr ? 'جديد' : 'New'}
+                <button onClick={resetAll} style={{ flex: 1, minWidth: 160, background: 'transparent', color: '#F4F1EB', border: '1px solid rgba(255,255,255,0.12)', padding: '14px 16px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {t.newChat}
                 </button>
               </div>
-              {error && <p style={{ color: '#c00', fontSize: 12, marginTop: 10 }}>{error}</p>}
             </div>
           )}
+
+          {phase === 'generating' && (
+            <Bubble role="assistant" isAr={isAr}>{t.generating}</Bubble>
+          )}
+
+          {error && <p style={{ color: '#ff8f8f', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{error}</p>}
         </div>
+
+        {phase !== 'report' && (
+          <div style={{ padding: 18, borderTop: '1px solid rgba(255,255,255,0.06)', background: '#17181D' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <textarea
+                value={draftText}
+                onChange={(e) => setDraftText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                rows={2}
+                placeholder={t.placeholder}
+                style={{
+                  flex: 1,
+                  resize: 'none',
+                  background: '#23242A',
+                  color: '#F4F1EB',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 14,
+                  padding: '14px 16px',
+                  outline: 'none',
+                  fontSize: 14,
+                  lineHeight: 1.8,
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                  direction: isAr ? 'rtl' : 'ltr',
+                }}
+              />
+              <button onClick={handleSend} disabled={!draftText.trim()} style={{ minWidth: 112, background: draftText.trim() ? '#E8E3D8' : '#555', color: '#141414', border: 'none', padding: '14px 18px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: draftText.trim() ? 'pointer' : 'default', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {t.send}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
