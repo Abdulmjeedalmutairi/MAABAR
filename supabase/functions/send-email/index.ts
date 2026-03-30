@@ -25,6 +25,17 @@ function brandLockup() {
   </div>`;
 }
 
+function darkBlend(content, background = '#0a0a0b') {
+  return `
+  <div style="background:${background};background-color:${background};background-image:linear-gradient(${background},${background});color:#ffffff;">
+    <div style="background:${background};mix-blend-mode:screen;">
+      <div style="background:${background};mix-blend-mode:difference;">
+        ${content}
+      </div>
+    </div>
+  </div>`;
+}
+
 function wrap(content) {
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -41,7 +52,7 @@ function wrap(content) {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
           <tr>
             <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:34px 24px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
-              ${brandLockup()}
+              ${darkBlend(brandLockup(), '#0a0a0b')}
             </td>
           </tr>
           <tr>
@@ -49,7 +60,7 @@ function wrap(content) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#111113" style="width:100%;background:#111113;background-color:#111113;background-image:linear-gradient(#111113,#111113);border:1px solid rgba(255,255,255,.06);border-radius:16px;">
                 <tr>
                   <td bgcolor="#111113" style="background:#111113;background-color:#111113;background-image:linear-gradient(#111113,#111113);padding:28px 24px;border-radius:16px;">
-                    ${content}
+                    ${darkBlend(content, '#111113')}
                   </td>
                 </tr>
               </table>
@@ -57,7 +68,7 @@ function wrap(content) {
           </tr>
           <tr>
             <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:22px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
-              ${brandLockup()}
+              ${darkBlend(brandLockup(), '#0a0a0b')}
               <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px;line-height:1.8;">
                 <a href="https://maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">maabar.io</a>
                 &nbsp;·&nbsp;
@@ -305,10 +316,11 @@ const templates = {
 <body style="margin:0;padding:0;background:#0a0a0b;font-family:Tahoma,Arial,sans-serif;color:#f3f3f3;direction:rtl;text-align:right">
   <div style="max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden">
     <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
-      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : brandLockup()}
+      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : darkBlend(brandLockup(), '#0a0a0b')}
     </div>
     <div style="padding:24px;background:#0a0a0b">
       <div style="padding:30px 24px;background:#111113;background-image:linear-gradient(#111113,#111113);border:1px solid rgba(255,255,255,.06);border-radius:16px;direction:rtl;text-align:right">
+        ${darkBlend(`
         <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:rgba(255,255,255,.42)">${d.kicker || 'مَعبر | MAABAR'}</p>
         <h1 style="margin:0 0 12px;font-size:36px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
         ${d.subheadline ? `<p style="margin:0 0 22px;font-size:24px;line-height:1.8;font-weight:700;color:#ffffff">${d.subheadline}</p>` : ''}
@@ -324,10 +336,11 @@ const templates = {
         <div style="text-align:center;margin-top:28px">
           <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
         </div>
+        `, '#111113')}
       </div>
     </div>
     <div style="padding:22px 24px 34px;background:#0a0a0b;border-top:1px solid rgba(255,255,255,.06);text-align:center">
-      ${brandLockup()}
+      ${darkBlend(brandLockup(), '#0a0a0b')}
       <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
     </div>
   </div>
