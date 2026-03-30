@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
+import BrandLogo from './BrandLogo';
 
 export default function Navbar({ user, profile, lang, setLang, setUser, setProfile }) {
   const nav = useNavigate();
@@ -139,11 +140,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       <nav className={scrolled ? 'scrolled' : ''}>
 
         {/* Logo */}
-        <button className="nav-logo" onClick={() => nav('/')}>
-          <span className="logo-ar" dir="rtl">مَعبر</span>
-          <span className="logo-sep" aria-hidden="true">|</span>
-          <span className="logo-en" dir="ltr">Maabar</span>
-        </button>
+        <BrandLogo as="button" size="sm" align="flex-start" onClick={() => nav('/')} />
 
         {/* Desktop links */}
         <ul className="nav-links">

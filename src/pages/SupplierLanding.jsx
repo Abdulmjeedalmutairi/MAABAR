@@ -1,6 +1,7 @@
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
+import BrandLogo from '../components/BrandLogo';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 
@@ -109,7 +110,7 @@ export default function SupplierLanding({ lang }) {
       </div>
 
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="footer-logo">MAABAR <span>| مَعبر</span></div>
+        <div className="footer-logo"><BrandLogo size="sm" /></div>
         <p className="footer-copy">{t.copyright}</p>
       </footer>
     </div>

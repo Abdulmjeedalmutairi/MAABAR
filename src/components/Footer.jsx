@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import BrandLogo from './BrandLogo';
 
 const T = {
   ar: {
@@ -113,13 +114,8 @@ export default function Footer({ lang }) {
 
         {/* LOGO + TAGLINE */}
         <div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            marginBottom: 12,
-          }}>
-            <span dir="rtl" style={{ fontFamily: 'var(--font-ar)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0, unicodeBidi: 'isolate' }}>مَعبر</span>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-disabled)' }}>|</span>
-            <span dir="ltr" style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--text-disabled)', letterSpacing: 2, unicodeBidi: 'isolate' }}>MAABAR</span>
+          <div style={{ marginBottom: 12 }}>
+            <BrandLogo size="sm" align={isAr ? 'flex-end' : 'flex-start'} />
           </div>
           <p style={{
             fontSize: 13, color: 'var(--text-tertiary)',

@@ -2,6 +2,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
+import BrandLogo from '../components/BrandLogo';
 
 const UNIFONIC_APP_SID   = '';
 const SUPABASE_ANON_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -477,11 +478,8 @@ export default function Login({ setUser, setProfile, lang }) {
       <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 400 }}>
 
         {/* Logo */}
-        <div style={{
-          fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
-          letterSpacing: 2.5, color: 'var(--text-disabled)', marginBottom: 40,
-        }}>
-          MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 12, fontWeight: 400, opacity: 0.7 }}>| مَعبر</span>
+        <div style={{ marginBottom: 40 }}>
+          <BrandLogo size="sm" align={isAr ? 'flex-end' : 'flex-start'} muted />
         </div>
 
         {/* Title */}

@@ -1,5 +1,6 @@
 import Footer from '../components/Footer';
 import React from 'react';
+import BrandLogo from '../components/BrandLogo';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 
@@ -179,12 +180,7 @@ export default function PendingApproval({ lang, setUser, setProfile }) {
         background: '#2C2C2C', padding: '32px 60px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <div style={{
-          fontFamily: 'var(--font-en)', fontSize: 16,
-          fontWeight: 600, color: '#F7F5F2', letterSpacing: 2,
-        }}>
-          MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 13, opacity: 0.5 }}>| مَعبر</span>
-        </div>
+        <BrandLogo size="sm" />
         <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, letterSpacing: 1 }}>{t.copy}</p>
       </footer>
 

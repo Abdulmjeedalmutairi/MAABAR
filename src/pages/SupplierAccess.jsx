@@ -1,6 +1,7 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import BrandLogo from '../components/BrandLogo';
 
 const ACCESS_DEADLINE = '2026-04-14T23:59:59Z';
 
@@ -102,11 +103,7 @@ export default function SupplierAccess() {
     <div dir="ltr" lang="en" className="supplier-access-page">
       <div className="supplier-access-topbar">
         <div className="supplier-access-shell supplier-access-topbar-inner">
-          <button onClick={goHome} className="supplier-brand-button">
-            <span className="supplier-brand-word">MAABAR</span>
-            <span className="supplier-brand-separator">|</span>
-            <span className="supplier-brand-sub">Supplier Access</span>
-          </button>
+          <BrandLogo as="button" size="sm" align="flex-start" onClick={goHome} />
 
           <div className="supplier-topbar-actions">
             <button onClick={() => jumpToScene(0)} className="supplier-topbar-link">Start Journey</button>
