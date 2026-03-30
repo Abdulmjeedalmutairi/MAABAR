@@ -14,7 +14,7 @@ export default function BrandLogo({
       sep: 13,
       zh: 11,
       gap: 8,
-      chineseMargin: 4,
+      chineseMargin: 6,
       tracking: '0.14em',
     },
     md: {
@@ -23,7 +23,7 @@ export default function BrandLogo({
       sep: 14,
       zh: 12,
       gap: 10,
-      chineseMargin: 6,
+      chineseMargin: 8,
       tracking: '0.16em',
     },
     lg: {
@@ -32,7 +32,7 @@ export default function BrandLogo({
       sep: 16,
       zh: 13,
       gap: 12,
-      chineseMargin: 8,
+      chineseMargin: 10,
       tracking: '0.18em',
     },
   };
@@ -101,6 +101,8 @@ export default function BrandLogo({
         dir="ltr"
         style={{
           marginTop: s.chineseMargin,
+          alignSelf: 'center',
+          textAlign: 'center',
           fontFamily: 'var(--font-sans)',
           fontSize: s.zh,
           color: secondary,
