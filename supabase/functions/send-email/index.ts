@@ -274,28 +274,44 @@ const templates = {
   }),
   custom_marketing: (d) => ({
     subject: d.subject || 'مَعبر',
-    html: wrap(`
-<div class="bd" dir="rtl" style="text-align:right;font-family:Tahoma,Arial,sans-serif;padding:36px 36px 40px">
-${d.logoUrl ? `
-<div style="background:#0b0b0d;border-radius:14px;padding:18px 20px;text-align:center;margin-bottom:26px">
-  <img src="${d.logoUrl}" alt="Maabar" style="max-width:220px;width:100%;height:auto;display:inline-block" />
-</div>` : ''}
-<p style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:#8a8a8a;margin:0 0 14px;text-align:right">${d.kicker || 'Founding Traders Invitation'}</p>
-<h1 style="font-size:30px;line-height:1.5;font-weight:800;color:#111;margin:0 0 10px;text-align:right">${d.headline || 'مَعبر'}</h1>
-${d.subheadline ? `<p style="font-size:20px;line-height:1.9;color:#111;font-weight:700;margin:0 0 22px;text-align:right">${d.subheadline}</p>` : ''}
-${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="font-size:17px;line-height:2;color:#333;margin:0 0 14px;text-align:right">${p}</p>`).join('') : ''}
-${Array.isArray(d.bullets) && d.bullets.length ? `
-<div style="background:#f7f7f7;border:1px solid #ececec;border-radius:12px;padding:22px 22px 14px;margin:26px 0">
-<p style="font-size:15px;letter-spacing:1px;text-transform:uppercase;color:#888;margin:0 0 16px;text-align:right">${d.bulletsTitle || 'المزايا'}</p>
-<ul style="margin:0;padding:0 18px 0 0;list-style:none;text-align:right">
-${d.bullets.map((item) => `<li style="font-size:17px;line-height:1.9;color:#111;margin:0 0 12px;position:relative;padding-right:18px"><span style="position:absolute;right:0;top:0;color:#111">•</span>${item}</li>`).join('')}
-</ul>
-</div>` : ''}
-${d.footnote ? `<p style="font-size:18px;line-height:1.9;color:#111;font-weight:700;margin:0 0 26px;text-align:right">${d.footnote}</p>` : ''}
-<div style="text-align:right;margin:30px 0 8px">
-  <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:700">${d.ctaText || 'اعرف أكثر ←'}</a>
-</div>
-</div>`),
+    html: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>${d.subject || 'مَعبر'}</title>
+</head>
+<body style="margin:0;padding:24px 12px;background:#f5f1ea;font-family:Tahoma,Arial,sans-serif;color:#111;direction:rtl;text-align:right">
+  <div style="max-width:620px;margin:0 auto">
+    <div style="background:#ffffff;border:1px solid #e7dfd4;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.06)">
+      ${d.logoUrl ? `
+      <div style="padding:28px 28px 8px;text-align:center;background:#ffffff">
+        <img src="${d.logoUrl}" alt="Maabar" style="max-width:240px;width:100%;height:auto;display:inline-block" />
+      </div>` : ''}
+      <div style="padding:10px 34px 38px;text-align:right;direction:rtl">
+        <p style="margin:0 0 14px;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#8a7f73">${d.kicker || 'Founding Traders Invitation'}</p>
+        <h1 style="margin:0 0 12px;font-size:32px;line-height:1.5;font-weight:800;color:#111">${d.headline || 'مَعبر'}</h1>
+        ${d.subheadline ? `<p style="margin:0 0 24px;font-size:24px;line-height:1.8;font-weight:700;color:#111">${d.subheadline}</p>` : ''}
+        ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#2d2d2d">${p}</p>`).join('') : ''}
+        ${Array.isArray(d.bullets) && d.bullets.length ? `
+        <div style="margin:28px 0;padding:22px 24px;background:#faf8f4;border:1px solid #eee6db;border-radius:14px">
+          <p style="margin:0 0 16px;font-size:18px;line-height:1.8;font-weight:700;color:#111">${d.bulletsTitle || 'المزايا'}</p>
+          <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside">
+            ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#111">${item}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+        ${d.footnote ? `<p style="margin:0 0 28px;font-size:19px;line-height:1.9;font-weight:800;color:#111">${d.footnote}</p>` : ''}
+        <div style="text-align:right">
+          <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:16px 28px;border-radius:12px;font-size:16px;font-weight:700">${d.ctaText || 'اعرف أكثر ←'}</a>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:#8a7f73;margin-top:14px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
+  </div>
+</body>
+</html>`,
   }),
 };
 
