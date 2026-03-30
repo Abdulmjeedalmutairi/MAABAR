@@ -84,6 +84,7 @@ export default function SupplierAccess() {
   const nav = useNavigate();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
   const [isCompact, setIsCompact] = useState(typeof window !== 'undefined' ? window.innerWidth < 960 : false);
+  const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
@@ -97,8 +98,11 @@ export default function SupplierAccess() {
 
   const ctaCopy = useMemo(() => (timeLeft.expired ? 'Apply for Supplier Access' : 'Apply for Early Supplier Access'), [timeLeft.expired]);
   const containerStyle = useMemo(() => ({ maxWidth: 1180, margin: '0 auto', width: '100%' }), []);
+  const currentStep = howItWorks[activeStep];
 
   const goToApply = () => nav('/login/supplier');
+  const nextStep = () => setActiveStep((prev) => (prev + 1) % howItWorks.length);
+  const prevStep = () => setActiveStep((prev) => (prev - 1 + howItWorks.length) % howItWorks.length);
   const scrollToFlow = () => {
     const el = document.getElementById('supplier-access-flow');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -203,15 +207,78 @@ export default function SupplierAccess() {
       <section id="supplier-access-flow" style={{ padding: '52px 20px', background: 'var(--bg-base)' }}>
         <div style={containerStyle}>
           <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>How it works</div>
-          <h2 style={{ fontSize: 'clamp(2rem, 3vw, 3rem)', margin: '0 0 28px', letterSpacing: '-0.03em' }}>A short, selective path to pre-launch supplier access</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
-            {howItWorks.map((item) => (
-              <div key={item.step} style={{ padding: 26, borderRadius: 24, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ color: 'var(--text-tertiary)', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 12 }}>{item.step}</div>
-                <h3 style={{ margin: '0 0 10px', fontSize: 22 }}>{item.title}</h3>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{item.description}</p>
+          <h2 style={{ fontSize: 'clamp(2rem, 3vw, 3rem)', margin: '0 0 16px', letterSpacing: '-0.03em' }}>A short, animated tour the user can control</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 17, lineHeight: 1.7, maxWidth: 760, margin: '0 0 28px' }}>
+            The supplier moves through the flow step by step, with clear motion and manual navigation.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isCompact ? '1fr' : '320px minmax(0,1fr)', gap: 18, alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gap: 12 }}>
+              {howItWorks.map((item, index) => {
+                const isActive = activeStep === index;
+                return (
+                  <button
+                    key={item.step}
+                    onClick={() => setActiveStep(index)}
+                    style={{
+                      textAlign: 'left',
+                      padding: '18px 18px',
+                      borderRadius: 20,
+                      background: isActive ? 'var(--bg-muted)' : 'var(--bg-subtle)',
+                      border: isActive ? '1px solid var(--border-default)' : '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 8 }}>{item.step}</div>
+                    <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{item.title}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>{item.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ padding: isCompact ? 22 : 30, borderRadius: 28, background: 'var(--bg-muted)', border: '1px solid var(--border-muted)', minHeight: 320, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div key={currentStep.step} style={{ animation: 'supplierTourFade 0.35s ease' }}>
+                <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>
+                  Step {activeStep + 1} of {howItWorks.length}
+                </div>
+                <div style={{ fontSize: isCompact ? 56 : 72, lineHeight: 0.95, marginBottom: 14, letterSpacing: '-0.06em' }}>{currentStep.step}</div>
+                <h3 style={{ fontSize: isCompact ? 28 : 36, lineHeight: 1.05, margin: '0 0 12px', letterSpacing: '-0.03em' }}>{currentStep.title}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1.75, maxWidth: 560, margin: 0 }}>{currentStep.description}</p>
               </div>
-            ))}
+
+              <div>
+                <div style={{ display: 'flex', gap: 8, margin: '24px 0 18px' }}>
+                  {howItWorks.map((item, index) => (
+                    <button
+                      key={item.step}
+                      onClick={() => setActiveStep(index)}
+                      aria-label={`Go to step ${index + 1}`}
+                      style={{
+                        width: index === activeStep ? 34 : 10,
+                        height: 10,
+                        borderRadius: 999,
+                        border: 'none',
+                        background: index === activeStep ? 'var(--text-primary)' : 'var(--border-strong)',
+                        cursor: 'pointer',
+                        transition: 'all 0.22s ease',
+                        padding: 0,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                  <button onClick={prevStep} style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '14px 18px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                    Previous
+                  </button>
+                  <button onClick={nextStep} style={{ background: 'var(--text-primary)', color: 'var(--bg-base)', border: 'none', borderRadius: 14, padding: '14px 18px', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                    Next step
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -262,6 +329,19 @@ export default function SupplierAccess() {
           </button>
         </div>
       </section>
+
+      <style>{`
+        @keyframes supplierTourFade {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
 
       <Footer lang="en" />
     </div>
