@@ -1,64 +1,84 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { sb } from '../supabase';
+import { sb, SUPABASE_ANON_KEY, SUPABASE_FUNCTIONS_URL } from '../supabase';
+import {
+  getDefaultTranslationDirection,
+  getDirectionLabel,
+  getTranslationDirection,
+  TRANSLATION_DIRECTIONS,
+} from '../lib/maabarAi/config';
+import { translateChatMessage } from '../lib/maabarAi/client';
 
-const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
-const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
-
-// ترجمة ذكية بالسياق التجاري
-const translateText = async (text, targetLang) => {
-  const langNames = { ar: 'العربية', en: 'English', zh: '中文' };
-  try {
-    const res = await fetch(SUPABASE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}`, 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({
-        system: `أنت مترجم تجاري متخصص في تجارة الاستيراد والتصدير بين السعودية والصين.
-ترجم النص التالي إلى ${langNames[targetLang]} مع مراعاة:
-- السياق التجاري والمصطلحات الدقيقة
-- الطبيعة التفاوضية للمحادثة
-- أن تكون الترجمة طبيعية ومفهومة
-أرجع الترجمة فقط بدون أي نص إضافي أو تفسير.`,
-        messages: [{ role: 'user', content: text }]
-      })
-    });
-    const data = await res.json();
-    return data.content?.[0]?.text?.trim() || '';
-  } catch {
-    return '';
-  }
-};
 
 const MSG_TEMPLATES = {
   ar: [
-    { label: 'المنتج',  msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
-    { label: 'السعر',   msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
-    { label: 'MOQ',     msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
-    { label: 'العينة',  msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
-    { label: 'الشحن',   msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
-    { label: 'الدفع',   msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
+    { label: 'المنتج', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
+    { label: 'السعر', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
+    { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
+    { label: 'العينة', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
+    { label: 'الشحن', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
+    { label: 'الدفع', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
   ],
   en: [
-    { label: 'Product',  msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
-    { label: 'Price',    msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
-    { label: 'MOQ',      msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
-    { label: 'Sample',   msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
+    { label: 'Product', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
+    { label: 'Price', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
+    { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
+    { label: 'Sample', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
     { label: 'Shipping', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
-    { label: 'Payment',  msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
+    { label: 'Payment', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
   ],
   zh: [
-    { label: '产品',  msg: '能提供更多产品详情吗？规格、材料和可用颜色？' },
-    { label: '价格',  msg: '批量订购的单价是多少？量大可以优惠吗？' },
-    { label: 'MOQ',   msg: '最小起订量是多少？首次订单有灵活性吗？' },
-    { label: '样品',  msg: '你们提供产品样品吗？样品费用和运到沙特的时间是多少？' },
-    { label: '运输',  msg: '你们有哪些运到沙特的运输方式？预计到货时间是多少？' },
-    { label: '付款',  msg: '付款条件是什么？接受Maabar平台支付系统吗？' },
+    { label: '产品', msg: '能提供更多产品详情吗？规格、材料和可用颜色？' },
+    { label: '价格', msg: '批量订购的单价是多少？量大可以优惠吗？' },
+    { label: 'MOQ', msg: '最小起订量是多少？首次订单有灵活性吗？' },
+    { label: '样品', msg: '你们提供产品样品吗？样品费用和运到沙特的时间是多少？' },
+    { label: '运输', msg: '你们有哪些运到沙特的运输方式？预计到货时间是多少？' },
+    { label: '付款', msg: '付款条件是什么？接受Maabar平台支付系统吗？' },
   ],
 };
 
-// TODO: Add buyer rating by supplier after deal completion
+const COPY = {
+  ar: {
+    translationLabel: 'اتجاه الترجمة',
+    translating: 'جاري الترجمة...',
+    inputPlaceholder: 'اكتب رسالة...',
+    uploading: 'جاري رفع الملف...',
+    attachImage: 'صورة',
+    attachVideo: 'فيديو',
+    quickTemplates: 'رسائل جاهزة',
+    protection: 'للحماية الكاملة — أتمّ صفقتك عبر معبر',
+    chinaTime: 'توقيت الصين',
+  },
+  en: {
+    translationLabel: 'Translation direction',
+    translating: 'Translating...',
+    inputPlaceholder: 'Type a message...',
+    uploading: 'Uploading...',
+    attachImage: 'Image',
+    attachVideo: 'Video',
+    quickTemplates: 'Quick Templates',
+    protection: 'For full protection — complete your deal on Maabar',
+    chinaTime: 'China time',
+  },
+  zh: {
+    translationLabel: '翻译方向',
+    translating: '翻译中...',
+    inputPlaceholder: '输入消息...',
+    uploading: '正在上传文件...',
+    attachImage: '图片',
+    attachVideo: '视频',
+    quickTemplates: '快捷模板',
+    protection: '获得完整保障 — 通过 Maabar 完成交易',
+    chinaTime: '中国时间',
+  },
+};
+
+function isMediaMessage(content) {
+  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:'));
+}
+
 export default function Chat({ lang, user, profile }) {
   const { partnerId } = useParams();
   const nav = useNavigate();
@@ -69,6 +89,7 @@ export default function Chat({ lang, user, profile }) {
   const [sending, setSending] = useState(false);
   const [translations, setTranslations] = useState({});
   const [translatingIds, setTranslatingIds] = useState(new Set());
+  const [translationDirection, setTranslationDirection] = useState(getDefaultTranslationDirection(lang));
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [chinaTime, setChinaTime] = useState('');
@@ -77,8 +98,13 @@ export default function Chat({ lang, user, profile }) {
   const fileRef = useRef(null);
   const isAr = lang === 'ar';
   const templates = MSG_TEMPLATES[lang] || MSG_TEMPLATES.ar;
+  const t = COPY[lang] || COPY.ar;
+  const selectedDirection = getTranslationDirection(translationDirection);
 
-  // China time
+  useEffect(() => {
+    setTranslationDirection(getDefaultTranslationDirection(lang));
+  }, [lang]);
+
   useEffect(() => {
     const update = () => {
       setChinaTime(new Date().toLocaleTimeString('en', {
@@ -87,8 +113,8 @@ export default function Chat({ lang, user, profile }) {
       }));
     };
     update();
-    const t = setInterval(update, 30000);
-    return () => clearInterval(t);
+    const timer = setInterval(update, 30000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -102,33 +128,52 @@ export default function Chat({ lang, user, profile }) {
   }, [partnerId, user]);
 
   useEffect(() => {
-    if (bodyRef.current)
+    if (bodyRef.current) {
       bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
-  }, [messages]);
+    }
+  }, [messages, translations]);
 
-  // ترجمة تلقائية للرسائل الجديدة من الطرف الثاني
   useEffect(() => {
-    const untranslated = messages.filter(m =>
-      m.sender_id !== user.id &&
-      !translations[m.id] &&
-      !translatingIds.has(m.id) &&
-      m.content && !m.content.startsWith('[img:') && !m.content.startsWith('[vid:') && !m.content.startsWith('[pdf:')
-    );
+    if (!user || translationDirection === 'off') return;
+
+    const untranslated = messages.filter((message) => {
+      const translationKey = `${translationDirection}:${message.id}`;
+      return (
+        message.sender_id !== user.id &&
+        !translations[translationKey] &&
+        !translatingIds.has(translationKey) &&
+        message.content &&
+        !isMediaMessage(message.content)
+      );
+    });
+
     if (untranslated.length === 0) return;
 
-    untranslated.forEach(async (m) => {
-      setTranslatingIds(prev => new Set(prev).add(m.id));
-      const translated = await translateText(m.content, lang);
-      if (translated && translated !== m.content) {
-        setTranslations(prev => ({ ...prev, [m.id]: translated }));
+    untranslated.forEach(async (message) => {
+      const translationKey = `${translationDirection}:${message.id}`;
+      setTranslatingIds((current) => new Set(current).add(translationKey));
+      try {
+        const translated = await translateChatMessage({
+          text: message.content,
+          sourceLanguage: selectedDirection.source,
+          targetLanguage: selectedDirection.target,
+          conversationRole: 'trade_chat',
+        });
+
+        setTranslations((current) => ({
+          ...current,
+          [translationKey]: translated || message.content,
+        }));
+      } catch (_error) {
+        // silent fail — chat should continue without blocking
       }
-      setTranslatingIds(prev => {
-        const next = new Set(prev);
-        next.delete(m.id);
+      setTranslatingIds((current) => {
+        const next = new Set(current);
+        next.delete(translationKey);
         return next;
       });
     });
-  }, [messages]);
+  }, [messages, selectedDirection.source, selectedDirection.target, translationDirection, translations, translatingIds, user]);
 
   const loadPartner = async () => {
     const { data } = await sb
@@ -171,15 +216,15 @@ export default function Chat({ lang, user, profile }) {
         table: 'messages',
         filter: `receiver_id=eq.${user.id}`,
       }, async (payload) => {
-        const msg = payload.new;
-        if (msg.sender_id !== partnerId) return;
-        setMessages(prev => {
-          if (prev.find(m => m.id === msg.id)) return prev;
-          return [...prev, msg];
+        const message = payload.new;
+        if (message.sender_id !== partnerId) return;
+        setMessages((current) => {
+          if (current.find((item) => item.id === message.id)) return current;
+          return [...current, message];
         });
         await sb.from('messages')
           .update({ is_read: true })
-          .eq('id', msg.id);
+          .eq('id', message.id);
       })
       .subscribe();
     channelRef.current = channel;
@@ -191,7 +236,7 @@ export default function Chat({ lang, user, profile }) {
     if (!content) setInput('');
     setSending(true);
 
-    const tempMsg = {
+    const tempMessage = {
       id: `temp-${Date.now()}`,
       sender_id: user.id,
       receiver_id: partnerId,
@@ -199,7 +244,7 @@ export default function Chat({ lang, user, profile }) {
       created_at: new Date().toISOString(),
       is_read: false,
     };
-    setMessages(prev => [...prev, tempMsg]);
+    setMessages((current) => [...current, tempMessage]);
 
     await sb.from('messages').insert({
       sender_id: user.id,
@@ -220,7 +265,7 @@ export default function Chat({ lang, user, profile }) {
     try {
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({
           type: 'new_message',
           data: {
@@ -231,7 +276,9 @@ export default function Chat({ lang, user, profile }) {
           },
         }),
       });
-    } catch (e) { console.error('email error:', e); }
+    } catch (error) {
+      console.error('email error:', error);
+    }
 
     setSending(false);
     loadMessages();
@@ -281,12 +328,12 @@ export default function Chat({ lang, user, profile }) {
     return <div>{content}</div>;
   };
 
-  const fmtTime = (d) => new Date(d).toLocaleTimeString(
+  const fmtTime = (date) => new Date(date).toLocaleTimeString(
     isAr ? 'ar-SA' : 'en-US',
     { hour: '2-digit', minute: '2-digit' }
   );
 
-  const fmtDate = (d) => new Date(d).toLocaleDateString(
+  const fmtDate = (date) => new Date(date).toLocaleDateString(
     isAr ? 'ar-SA' : 'en-US',
     { weekday: 'long', month: 'short', day: 'numeric' }
   );
@@ -312,8 +359,7 @@ export default function Chat({ lang, user, profile }) {
     <div className="chat-wrap">
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
 
-      {/* HEADER */}
-      <div className="chat-header">
+      <div className="chat-header" style={{ alignItems: 'flex-start' }}>
         <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, marginInlineEnd: 8, color: 'var(--text-secondary)' }}
           onClick={() => nav('/inbox')}>←</button>
         <div className="avatar-sm">{partnerName[0]}</div>
@@ -327,18 +373,39 @@ export default function Chat({ lang, user, profile }) {
               <span style={{ fontSize: 10, color: 'var(--text-disabled)', marginInlineStart: 6 }}>↗</span>
             )}
           </p>
-          <p style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
-            {isAr ? 'ترجمة تلقائية مفعّلة' : lang === 'zh' ? '自动翻译已启用' : 'Auto-translate on'}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 6 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 0.4 }}>{t.translationLabel}</span>
+              <select
+                value={translationDirection}
+                onChange={(event) => setTranslationDirection(event.target.value)}
+                style={{
+                  background: 'var(--bg-raised)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 10,
+                  padding: '6px 10px',
+                  fontSize: 11,
+                  outline: 'none',
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                }}
+              >
+                {TRANSLATION_DIRECTIONS.map((direction) => (
+                  <option key={direction.id} value={direction.id}>
+                    {getDirectionLabel(direction.id, lang)}
+                  </option>
+                ))}
+              </select>
+            </label>
             {chinaTime && (
-              <span style={{ marginInlineStart: 10, opacity: 0.7 }}>
-                {chinaTime} {isAr ? 'توقيت الصين' : lang === 'zh' ? '中国时间' : 'China time'}
+              <span style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: 0.7 }}>
+                {chinaTime} {t.chinaTime}
               </span>
             )}
-          </p>
+          </div>
         </div>
       </div>
 
-      {/* PROTECTION NOTICE */}
       <div style={{
         padding: '7px 16px',
         background: 'rgba(139,120,255,0.06)',
@@ -348,59 +415,57 @@ export default function Chat({ lang, user, profile }) {
         textAlign: 'center', margin: '8px 16px',
         fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
       }}>
-        {isAr ? 'للحماية الكاملة — أتمّ صفقتك عبر معبر' : lang === 'zh' ? '获得完整保障 — 通过Maabar完成交易' : 'For full protection — complete your deal on Maabar'}
+        {t.protection}
       </div>
 
-      {/* MESSAGES */}
       <div className="chat-body" ref={bodyRef}>
-        {/* Message templates — new chat only */}
         {isNewChat && (
           <div style={{ padding: '16px 0', textAlign: isAr ? 'right' : 'left' }}>
             <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10, fontFamily: 'var(--font-sans)' }}>
-              {isAr ? 'رسائل جاهزة' : lang === 'zh' ? '快速模板' : 'Quick Templates'}
+              {t.quickTemplates}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {templates.map((tpl, i) => (
-                <button key={i} onClick={() => sendMessage(tpl.msg)} style={{
+              {templates.map((template, index) => (
+                <button key={index} onClick={() => sendMessage(template.msg)} style={{
                   padding: '7px 14px', fontSize: 11, cursor: 'pointer',
                   background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)',
                   borderRadius: 20, color: 'var(--text-secondary)',
                   fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                   transition: 'all 0.15s',
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
-                  {tpl.label}
+                  onMouseEnter={event => { event.currentTarget.style.borderColor = 'var(--border-strong)'; event.currentTarget.style.color = 'var(--text-primary)'; }}
+                  onMouseLeave={event => { event.currentTarget.style.borderColor = 'var(--border-subtle)'; event.currentTarget.style.color = 'var(--text-secondary)'; }}>
+                  {template.label}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {messages.map((m) => {
-          const isMe = m.sender_id === user.id;
-          const dateStr = fmtDate(m.created_at);
+        {messages.map((message) => {
+          const isMe = message.sender_id === user.id;
+          const dateStr = fmtDate(message.created_at);
           const showDate = dateStr !== lastDate;
           lastDate = dateStr;
-          const translation = !isMe ? translations[m.id] : null;
-          const isTranslating = !isMe && translatingIds.has(m.id);
+          const translationKey = `${translationDirection}:${message.id}`;
+          const translation = !isMe && translationDirection !== 'off' ? translations[translationKey] : null;
+          const isTranslating = !isMe && translatingIds.has(translationKey);
 
           return (
-            <React.Fragment key={m.id}>
+            <React.Fragment key={message.id}>
               {showDate && (
                 <div className="chat-day-sep"><span>{dateStr}</span></div>
               )}
               <div className={`chat-bubble ${isMe ? 'bubble-me' : 'bubble-them'}`}>
-                {renderMessageContent(m.content)}
+                {renderMessageContent(message.content)}
 
-                {/* Auto translation — incoming only */}
-                {!isMe && (m.content && !m.content.startsWith('[img:') && !m.content.startsWith('[vid:') && !m.content.startsWith('[pdf:')) && (
+                {!isMe && !isMediaMessage(message.content) && translationDirection !== 'off' && (
                   <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
                     {isTranslating ? (
                       <p style={{ fontSize: 10, color: 'var(--text-secondary)', fontStyle: 'italic', animation: 'pulse 1s ease infinite' }}>
-                        {isAr ? 'جاري الترجمة...' : lang === 'zh' ? '翻译中...' : 'Translating...'}
+                        {t.translating}
                       </p>
-                    ) : translation ? (
+                    ) : translation && translation !== message.content ? (
                       <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', fontStyle: 'italic' }}>
                         {translation}
                       </p>
@@ -409,14 +474,14 @@ export default function Chat({ lang, user, profile }) {
                 )}
 
                 <div className="bubble-time" style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                  <span>{fmtTime(m.created_at)}</span>
+                  <span>{fmtTime(message.created_at)}</span>
                   {isMe && (
                     <span style={{
                       fontSize: 9,
-                      color: m.is_read ? 'var(--accent)' : 'var(--text-disabled)',
+                      color: message.is_read ? 'var(--accent)' : 'var(--text-disabled)',
                       letterSpacing: -1,
                     }}>
-                      {m.is_read ? '✓✓' : m.id?.startsWith('temp-') ? '✓' : '✓✓'}
+                      {message.is_read ? '✓✓' : message.id?.startsWith('temp-') ? '✓' : '✓✓'}
                     </span>
                   )}
                 </div>
@@ -427,14 +492,12 @@ export default function Chat({ lang, user, profile }) {
 
         {uploading && (
           <div style={{ textAlign: 'center', padding: '12px 0', color: 'var(--text-disabled)', fontSize: 12 }}>
-            {isAr ? 'جاري رفع الملف...' : 'Uploading...'}
+            {t.uploading}
           </div>
         )}
       </div>
 
-      {/* INPUT */}
       <div className="chat-footer" style={{ position: 'relative' }}>
-        {/* Attach menu */}
         {showAttachMenu && (
           <div style={{
             position: 'absolute', bottom: '100%', left: isAr ? 'auto' : 8, right: isAr ? 8 : 'auto',
@@ -443,13 +506,13 @@ export default function Chat({ lang, user, profile }) {
             overflow: 'hidden', zIndex: 10,
           }}>
             {[
-              { label: isAr ? 'صورة' : 'Image', accept: 'image/*', type: 'image' },
-              { label: isAr ? 'فيديو' : 'Video', accept: 'video/*', type: 'video' },
+              { label: t.attachImage, accept: 'image/*', type: 'image' },
+              { label: t.attachVideo, accept: 'video/*', type: 'video' },
               { label: 'PDF', accept: '.pdf', type: 'pdf' },
-            ].map((opt, i) => (
-              <button key={i} onClick={() => {
-                fileRef.current.accept = opt.accept;
-                fileRef.current._uploadType = opt.type;
+            ].map((option, index) => (
+              <button key={index} onClick={() => {
+                fileRef.current.accept = option.accept;
+                fileRef.current._uploadType = option.type;
                 fileRef.current.click();
               }} style={{
                 display: 'block', width: '100%', padding: '10px 16px',
@@ -458,25 +521,24 @@ export default function Chat({ lang, user, profile }) {
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                 transition: 'background 0.1s',
               }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                {opt.label}
+                onMouseEnter={event => event.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseLeave={event => event.currentTarget.style.background = 'none'}>
+                {option.label}
               </button>
             ))}
           </div>
         )}
 
         <input ref={fileRef} type="file" style={{ display: 'none' }}
-          onChange={e => {
-            const file = e.target.files[0];
+          onChange={event => {
+            const file = event.target.files[0];
             if (file) uploadFile(file, fileRef.current._uploadType || 'image');
-            e.target.value = '';
+            event.target.value = '';
           }}
         />
 
-        {/* Attach button */}
         <button
-          onClick={() => setShowAttachMenu(prev => !prev)}
+          onClick={() => setShowAttachMenu((current) => !current)}
           style={{
             background: 'none', border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-md)', color: 'var(--text-disabled)',
@@ -484,17 +546,17 @@ export default function Chat({ lang, user, profile }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-disabled)'; }}>
+          onMouseEnter={event => { event.currentTarget.style.borderColor = 'var(--border-strong)'; event.currentTarget.style.color = 'var(--text-secondary)'; }}
+          onMouseLeave={event => { event.currentTarget.style.borderColor = 'var(--border-subtle)'; event.currentTarget.style.color = 'var(--text-disabled)'; }}>
           +
         </button>
 
         <input
           className="chat-input"
-          placeholder={isAr ? 'اكتب رسالة...' : lang === 'zh' ? '输入消息...' : 'Type a message...'}
+          placeholder={t.inputPlaceholder}
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !sending && sendMessage()}
+          onChange={event => setInput(event.target.value)}
+          onKeyDown={event => event.key === 'Enter' && !sending && sendMessage()}
           dir={isAr ? 'rtl' : 'ltr'}
         />
         <button className="chat-send" onClick={() => sendMessage()} disabled={sending}>

@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
-
-const AI_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+import { generateIdeaToProductReport } from '../lib/maabarAi/client';
+import { MAABAR_AI_PERSONA_NAME } from '../lib/maabarAi/config';
 
 const CAT_LABEL = {
   ar: { electronics: 'إلكترونيات', furniture: 'أثاث', clothing: 'ملابس', building: 'مواد بناء', food: 'غذاء', other: 'أخرى' },
@@ -11,33 +10,12 @@ const CAT_LABEL = {
   zh: { electronics: '电子产品', furniture: '家具', clothing: '服装', building: '建材', food: '食品', other: '其他' },
 };
 
-const SYSTEM = `You are Maabar's manufacturing and supplier-matching agent.
-Return ONLY valid JSON with these exact fields:
-{
-  "product_name_ar": "اسم المنتج بالعربي",
-  "product_name_en": "Product name in English",
-  "product_name_zh": "产品中文名",
-  "specs": "Key specifications and user requirements",
-  "factory_type": "Type of supplier or factory needed",
-  "city": "Best Chinese manufacturing city",
-  "price_estimate": "Estimated target/unit price in USD if possible",
-  "moq": "Recommended minimum order quantity",
-  "timeline": "Estimated production timeline",
-  "request_description": "Professional supplier-ready brief for matching and sourcing",
-  "category": "one of: electronics, furniture, clothing, building, food, other"
-}
-Rules:
-- If the user intent is supplier matching, optimize the request_description for routing to suitable suppliers.
-- Keep text professional, concise, and commercial.
-- Always respond in the user's language for text fields, but category must stay in English enum.
-- No markdown. No extra commentary.`;
-
 const COPY = {
   ar: {
     title: 'صنّع فكرتك',
-    subtitle: 'وكيل معبر يساعدك يحوّل الفكرة إلى طلب تصنيع احترافي',
+    subtitle: `${MAABAR_AI_PERSONA_NAME} يحوّل الفكرة إلى طلب تصنيع احترافي`,
     minimized: 'صنّع فكرتك — متابعة',
-    intro: 'أهلاً، أنا وكيل معبر. اكتب لي فكرتك أو قل مباشرة: أبي أوصل لموردين، وأنا أمشي معك بخطوات قصيرة وواضحة.',
+    intro: `أهلاً، أنا ${MAABAR_AI_PERSONA_NAME}. اكتب لي فكرتك أو قل مباشرة: أبي أوصل لموردين، وأنا أمشي معك بخطوات قصيرة وواضحة.`,
     placeholder: 'اكتب رسالتك هنا...',
     send: 'إرسال',
     generating: 'أرتب فكرتك الآن وأبني لك brief احترافي...',
@@ -45,8 +23,6 @@ const COPY = {
     submit: 'إرسال لموردين مختصين',
     loginSubmit: 'تسجيل الدخول للإرسال',
     newChat: 'محادثة جديدة',
-    close: 'إغلاق',
-    edit: 'تعديل',
     error: 'حدث خطأ، حاول مرة أخرى',
     reportReady: 'جهزت لك التقرير. راجعه، وإذا مناسب أرسله لموردين مختصين مباشرة.',
     supplierRouteIntro: 'واضح أنك تريد الوصول لموردين بسرعة. خلني آخذ منك الحد الأدنى فقط ثم أجهز الطلب بشكل احترافي.',
@@ -75,9 +51,9 @@ const COPY = {
   },
   en: {
     title: 'Build Your Product',
-    subtitle: 'A Maabar agent turns your idea into a professional manufacturing brief',
+    subtitle: `${MAABAR_AI_PERSONA_NAME} turns your idea into a professional manufacturing brief`,
     minimized: 'Build Your Product — Continue',
-    intro: 'Hi, I am Maabar’s sourcing agent. Tell me your idea — or just say “connect me to suppliers” — and I will guide you in short, clear steps.',
+    intro: `Hi, I am ${MAABAR_AI_PERSONA_NAME}. Tell me your idea — or just say “connect me to suppliers” — and I will guide you in short, clear steps.`,
     placeholder: 'Write your message...',
     send: 'Send',
     generating: 'Preparing your manufacturing brief...',
@@ -85,8 +61,6 @@ const COPY = {
     submit: 'Send to matched suppliers',
     loginSubmit: 'Login to submit',
     newChat: 'New Chat',
-    close: 'Close',
-    edit: 'Edit',
     error: 'Something went wrong, please try again',
     reportReady: 'Your report is ready. Review it and send it to matched suppliers when ready.',
     supplierRouteIntro: 'Got it — you want supplier matching fast. I’ll only ask for the essentials, then prepare a clean brief.',
@@ -113,28 +87,54 @@ const COPY = {
       specs: 'Specifications',
     },
   },
+  zh: {
+    title: '打造您的产品',
+    subtitle: `${MAABAR_AI_PERSONA_NAME} 将想法整理成专业制造需求`,
+    minimized: '继续打造产品',
+    intro: `您好，我是 ${MAABAR_AI_PERSONA_NAME}。告诉我您的想法，或直接说“帮我对接供应商”，我会用清晰简短的步骤协助您。`,
+    placeholder: '请输入内容...',
+    send: '发送',
+    generating: '正在整理您的制造需求...',
+    report: '制造报告',
+    submit: '发送给匹配供应商',
+    loginSubmit: '登录后发送',
+    newChat: '新对话',
+    error: '出错了，请重试',
+    reportReady: '报告已准备好。确认后可直接发送给匹配供应商。',
+    supplierRouteIntro: '了解，您想尽快对接供应商。我先收集最核心的信息，再为您整理成专业需求。',
+    buildRouteIntro: '很好。我先了解您的产品想法，然后整理成专业制造 brief。',
+    supplierQuestions: [
+      '请简要描述产品或想法？',
+      '预计首批数量是多少？',
+      '您是否有目标预算或单价？',
+    ],
+    buildQuestions: [
+      '产品是什么？主要用途是什么？',
+      '是否有关键材料或规格要求？',
+      '预计首批数量是多少？',
+      '您是否有目标预算或单价？',
+    ],
+    reportFields: {
+      product: '产品',
+      factory: '工厂类型',
+      city: '城市',
+      cost: '预估成本',
+      moq: 'MOQ',
+      timeline: '生产周期',
+      category: '类别',
+      specs: '规格要求',
+    },
+  },
 };
 
 function detectIntent(text = '') {
   const t = text.toLowerCase();
   const supplierKeywords = [
     'مورد', 'موردين', 'مصنع', 'مصانع', 'وصلني', 'ابي مورد', 'أبي مورد', 'ابي اوصل', 'أبي أوصل',
-    'supplier', 'suppliers', 'factory', 'factories', 'manufacturer', 'sourcing', 'connect me'
+    'supplier', 'suppliers', 'factory', 'factories', 'manufacturer', 'sourcing', 'connect me',
+    '供应商', '工厂', '对接', '找工厂'
   ];
-  return supplierKeywords.some((k) => t.includes(k)) ? 'supplier_match' : 'build_product';
-}
-
-async function callAI(prompt) {
-  const res = await fetch(AI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-    body: JSON.stringify({
-      system: SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
+  return supplierKeywords.some((keyword) => t.includes(keyword)) ? 'supplier_match' : 'build_product';
 }
 
 function Bubble({ role, children, isAr }) {
@@ -176,7 +176,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const t = COPY[lang] || COPY.en;
   const [minimized, setMinimized] = useState(false);
   const [draftText, setDraftText] = useState('');
-  const [phase, setPhase] = useState('chat'); // chat | generating | report
+  const [phase, setPhase] = useState('chat');
   const [routeMode, setRouteMode] = useState(null);
   const [idea, setIdea] = useState('');
   const [questionIndex, setQuestionIndex] = useState(-1);
@@ -213,19 +213,17 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setPhase('generating');
     setError('');
     try {
-      const prompt = [
-        `User intent mode: ${mode}`,
-        `Original user message: ${initialIdea}`,
-        ...collectedAnswers.map((answer, idx) => `Q${idx + 1}: ${questions[idx]}\nA${idx + 1}: ${answer}`),
-      ].join('\n\n');
-
-      const text = await callAI(prompt);
-      const clean = text.replace(/```json|```/g, '').trim();
-      const json = JSON.parse(clean);
-      setResult(json);
+      const report = await generateIdeaToProductReport({
+        language: lang,
+        mode,
+        initialIdea,
+        questions,
+        answers: collectedAnswers,
+      });
+      setResult(report);
       setPhase('report');
       appendMessage('assistant', t.reportReady);
-    } catch (e) {
+    } catch (_error) {
       setError(t.error);
       setPhase('chat');
       appendMessage('assistant', t.error);
@@ -240,10 +238,11 @@ export default function IdeaToProduct({ lang, user, onClose }) {
 
     if (!routeMode) {
       const detected = detectIntent(value);
+      const nextQuestions = detected === 'supplier_match' ? t.supplierQuestions : t.buildQuestions;
       setRouteMode(detected);
       setIdea(value);
       const intro = detected === 'supplier_match' ? t.supplierRouteIntro : t.buildRouteIntro;
-      appendMessage('assistant', `${intro}\n\n${questions[0]}`);
+      appendMessage('assistant', `${intro}\n\n${nextQuestions[0]}`);
       setQuestionIndex(0);
       return;
     }
@@ -253,9 +252,9 @@ export default function IdeaToProduct({ lang, user, onClose }) {
       setAnswers(nextAnswers);
 
       if (questionIndex < questions.length - 1) {
-        const nextIdx = questionIndex + 1;
-        setQuestionIndex(nextIdx);
-        appendMessage('assistant', questions[nextIdx]);
+        const nextIndex = questionIndex + 1;
+        setQuestionIndex(nextIndex);
+        appendMessage('assistant', questions[nextIndex]);
         return;
       }
 
@@ -283,7 +282,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     }
 
     setSubmitting(true);
-    const { error: err } = await sb.from('requests').insert({
+    const { error: requestError } = await sb.from('requests').insert({
       buyer_id: user.id,
       title_ar: result.product_name_ar,
       title_en: result.product_name_en,
@@ -294,7 +293,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
       status: 'open',
     });
     setSubmitting(false);
-    if (err) {
+    if (requestError) {
       setError(t.error);
       return;
     }
@@ -312,7 +311,8 @@ export default function IdeaToProduct({ lang, user, onClose }) {
           padding: '12px 18px', borderRadius: 14, cursor: 'pointer', fontSize: 12,
           boxShadow: '0 18px 50px rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', gap: 10,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-        }}>
+        }}
+      >
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#8FB1FF', display: 'inline-block' }} />
         {t.minimized}
       </div>
@@ -334,8 +334,8 @@ export default function IdeaToProduct({ lang, user, onClose }) {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 14, background: 'linear-gradient(180deg, #17181D 0%, #141519 100%)', direction: isAr ? 'rtl' : 'ltr' }}>
-          {messages.map((m) => (
-            <Bubble key={m.id} role={m.role} isAr={isAr}>{m.content}</Bubble>
+          {messages.map((message) => (
+            <Bubble key={message.id} role={message.role} isAr={isAr}>{message.content}</Bubble>
           ))}
 
           {phase === 'report' && result && (
@@ -377,10 +377,10 @@ export default function IdeaToProduct({ lang, user, onClose }) {
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <textarea
                 value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
+                onChange={(event) => setDraftText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
                     handleSend();
                   }
                 }}

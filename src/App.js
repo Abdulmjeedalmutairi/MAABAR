@@ -14,6 +14,7 @@ import DashboardSupplier from './pages/DashboardSupplier';
 import PendingApproval from './pages/PendingApproval';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Support from './pages/Support';
 import Requests from './pages/Requests';
 import SupplierLanding from './pages/SupplierLanding';
 import SupplierProfile from './pages/SupplierProfile';
@@ -234,6 +235,7 @@ function App() {
           <Route path="/dashboard"      element={<DashboardRouter />} />
           <Route path="/about"          element={<About           {...sharedProps} />} />
           <Route path="/contact"        element={<Contact         {...sharedProps} />} />
+          <Route path="/support"        element={<Support         {...sharedProps} />} />
           <Route path="/requests"       element={<Requests        {...sharedProps} />} />
           <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
           <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
