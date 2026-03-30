@@ -272,6 +272,22 @@ const templates = {
 <div class="bw"><a href="https://maabar.io/dashboard" class="bt">عرض لوحة التحكم ←</a></div>
 </div>`),
   }),
+  custom_marketing: (d) => ({
+    subject: d.subject || 'مَعبر',
+    html: wrap(`
+<div class="bd">
+<p class="gr">${d.headline || 'مَعبر'}</p>
+<p class="tg">${d.kicker || 'Marketing Email'}</p>
+${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="font-size:15px;color:#333">${p}</p>`).join('') : ''}
+${Array.isArray(d.bullets) && d.bullets.length ? `
+<div class="ib">
+<p class="il">${d.bulletsTitle || 'المزايا'}</p>
+${d.bullets.map((item) => `<p style="font-size:15px;color:#111;margin:10px 0">• ${item}</p>`).join('')}
+</div>` : ''}
+${d.footnote ? `<p style="font-size:15px;color:#333;font-weight:600">${d.footnote}</p>` : ''}
+<div class="bw"><a href="${d.ctaUrl || 'https://maabar.io'}" class="bt">${d.ctaText || 'اعرف أكثر ←'}</a></div>
+</div>`),
+  }),
 };
 
 async function sendEmail(to, subject, html) {
