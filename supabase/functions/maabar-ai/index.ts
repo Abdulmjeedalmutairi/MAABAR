@@ -21,6 +21,16 @@ type ChatTranslationPayload = {
   conversationRole?: string;
 };
 
+type ProductConversationPayload = {
+  language?: Lang;
+  conversation?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  userMessage?: string;
+  userProfile?: {
+    role?: string;
+    representativeName?: string;
+  };
+};
+
 type CustomerSupportPayload = {
   language?: Lang;
   conversation?: Array<{ role: 'user' | 'assistant'; content: string }>;
@@ -35,9 +45,9 @@ type CustomerSupportPayload = {
 };
 
 type RequestBody = {
-  task?: 'idea_to_product' | 'chat_translation' | 'customer_support';
+  task?: 'idea_to_product' | 'product_conversation' | 'chat_translation' | 'customer_support';
   personaName?: string;
-  payload?: IdeaToProductPayload | ChatTranslationPayload | CustomerSupportPayload;
+  payload?: IdeaToProductPayload | ProductConversationPayload | ChatTranslationPayload | CustomerSupportPayload;
 };
 
 function json(data: unknown, status = 200) {
@@ -206,6 +216,24 @@ function buildIdeaPrompt(payload: IdeaToProductPayload) {
   ].join('\n\n');
 }
 
+function buildProductConversationPrompt(payload: ProductConversationPayload) {
+  const language = payload.language || 'ar';
+  const conversation = payload.conversation || [];
+  const userProfile = payload.userProfile || {};
+  const representativeName = userProfile.representativeName || 'سلمان';
+
+  return [
+    `Respond in ${getLanguageName(language)}.`,
+    `Use this Saudi representative opening only if this is the first reply: ${getRepresentativeOpening(language, representativeName)}`,
+    `First interaction: ${conversation.length === 0 ? 'yes' : 'no'}`,
+    `Representative name: ${representativeName}`,
+    `User role: ${userProfile.role || 'buyer'}`,
+    'Conversation so far:',
+    ...conversation.map((message) => `${message.role}: ${message.content}`),
+    `Latest user message: ${payload.userMessage || ''}`,
+  ].join('\n');
+}
+
 function buildSupportPrompt(payload: CustomerSupportPayload) {
   const language = payload.language || 'ar';
   const conversation = payload.conversation || [];
@@ -268,6 +296,39 @@ Rules:
       const text = await callProvider({
         systemInstruction,
         prompt: buildIdeaPrompt(payload),
+        responseMimeType: 'application/json',
+      });
+
+      return json({ result: JSON.parse(text) });
+    }
+
+    if (body.task === 'product_conversation') {
+      const payload = body.payload as ProductConversationPayload;
+      const language = payload.language || 'ar';
+      const systemInstruction = `You are ${personaName}, Maabar's product idea and manufacturing conversation agent.
+Return ONLY valid JSON with this exact shape:
+{
+  "reply": "Human-like assistant reply",
+  "intent": "build_product|supplier_match|clarify",
+  "nextStep": "continue|brief_ready|supplier_ready",
+  "enoughInfo": false
+}
+Rules:
+- Respond only in ${getLanguageName(language)}. Do not mix in English, Chinese, or other languages unless the user explicitly asks.
+- Sound like a real Saudi Maabar representative, not a support bot.
+- If this is the first reply in the conversation, open with the representative introduction from the prompt.
+- If the user greets you, greet back naturally.
+- If the user has a product idea, help shape the idea before sending them to suppliers.
+- Do NOT rush to say "create a request" or "contact suppliers" unless the idea is reasonably clear.
+- Ask at most one concise follow-up question at a time.
+- Understand short, fragmented, typo-heavy, or colloquial Saudi Arabic messages.
+- Do not assume the user's gender unless it is explicit.
+- No emojis.
+- No markdown.
+- No robotic phrases.`;
+      const text = await callProvider({
+        systemInstruction,
+        prompt: buildProductConversationPrompt(payload),
         responseMimeType: 'application/json',
       });
 

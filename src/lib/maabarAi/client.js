@@ -100,6 +100,36 @@ Rules:
     return { result: JSON.parse(stripCodeFence(text)) };
   }
 
+  if (task === MAABAR_AI_TASKS.PRODUCT_CONVERSATION) {
+    const representativeName = payload.userProfile?.representativeName || 'سلمان';
+    const conversation = payload.conversation || [];
+    const text = await callLegacyProxy(
+      `You are ${MAABAR_AI_PERSONA_NAME}, Maabar's product idea and manufacturing conversation agent.
+Return ONLY valid JSON with this exact shape:
+{
+  "reply": "Human-like assistant reply",
+  "intent": "build_product|supplier_match|clarify",
+  "nextStep": "continue|brief_ready|supplier_ready",
+  "enoughInfo": false
+}
+Rules:
+- Respond only in ${getLanguageName(payload.language)}. Do not mix in other languages unless the user explicitly asks.
+- Sound human, elegant, practical, and Saudi in tone.
+- If this is the first reply, open with: ${getRepresentativeOpening(payload.language, representativeName)}
+- If the user greets you, greet back naturally.
+- If the user is describing a product idea, help shape the idea before suggesting suppliers.
+- Do not rush to tell them to post a request unless the concept is already clear.
+- Ask only one concise follow-up question at a time.
+- Understand short and typo-heavy Arabic.
+- Do not assume the user's gender unless it is explicit.
+- No emojis.
+- No markdown. No extra commentary.`,
+      [{ role: 'user', content: `Conversation: ${JSON.stringify(conversation)}\nUser message: ${payload.userMessage}` }]
+    );
+
+    return { result: JSON.parse(stripCodeFence(text)) };
+  }
+
   if (task === MAABAR_AI_TASKS.CHAT_TRANSLATION) {
     const text = await callLegacyProxy(
       `You are ${MAABAR_AI_PERSONA_NAME}, a trade translator for Maabar.
@@ -154,6 +184,22 @@ export async function generateIdeaToProductReport({
     initialIdea,
     questions,
     answers,
+  });
+
+  return data.result;
+}
+
+export async function requestProductConversationReply({
+  language,
+  conversation,
+  userMessage,
+  userProfile,
+}) {
+  const data = await requestMaabarAI(MAABAR_AI_TASKS.PRODUCT_CONVERSATION, {
+    language,
+    conversation,
+    userMessage,
+    userProfile,
   });
 
   return data.result;

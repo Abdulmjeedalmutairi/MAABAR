@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
-import { generateIdeaToProductReport, requestSupportReply } from '../lib/maabarAi/client';
+import { generateIdeaToProductReport, requestProductConversationReply } from '../lib/maabarAi/client';
 import { MAABAR_AI_PERSONA_NAME } from '../lib/maabarAi/config';
 
 const SAUDI_REPRESENTATIVE_NAMES = [
@@ -285,7 +285,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setError('');
 
     try {
-      const supportResult = await requestSupportReply({
+      const productReply = await requestProductConversationReply({
         language: lang,
         conversation: nextConversation,
         userMessage: value,
@@ -294,7 +294,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
           representativeName,
         },
       });
-      appendMessage('assistant', supportResult?.reply || t.error);
+      appendMessage('assistant', productReply?.reply || t.error);
     } catch (_error) {
       appendMessage('assistant', t.error);
       setError(t.error);

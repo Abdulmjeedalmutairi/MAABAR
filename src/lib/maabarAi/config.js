@@ -13,6 +13,7 @@ export const MAABAR_AI_LEGACY_PROXY_ENDPOINT = `${SUPABASE_FUNCTIONS_URL}/Ai-pro
 
 export const MAABAR_AI_TASKS = {
   IDEA_TO_PRODUCT: 'idea_to_product',
+  PRODUCT_CONVERSATION: 'product_conversation',
   CHAT_TRANSLATION: 'chat_translation',
   CUSTOMER_SUPPORT: 'customer_support',
 };
@@ -42,6 +43,7 @@ export const MAABAR_AI_SAUDI_REP_NAMES = [
 ];
 
 const SESSION_REP_KEY = 'maabar_ai_saudi_rep';
+const REP_GENDER_TOGGLE_KEY = 'maabar_ai_saudi_rep_gender_toggle';
 
 export const TRANSLATION_DIRECTIONS = [
   { id: 'off', source: null, target: null },
@@ -98,8 +100,16 @@ export function getDirectionLabel(directionId, lang = 'ar') {
 }
 
 function pickSaudiRepresentative() {
-  const randomIndex = Math.floor(Math.random() * MAABAR_AI_SAUDI_REP_NAMES.length);
-  return MAABAR_AI_SAUDI_REP_NAMES[randomIndex];
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return MAABAR_AI_SAUDI_REP_NAMES[0];
+  }
+
+  const lastGender = window.localStorage.getItem(REP_GENDER_TOGGLE_KEY);
+  const nextGender = lastGender === 'female' ? 'male' : 'female';
+  const candidates = MAABAR_AI_SAUDI_REP_NAMES.filter((representative) => representative.gender === nextGender);
+  const selected = candidates[Math.floor(Math.random() * candidates.length)] || MAABAR_AI_SAUDI_REP_NAMES[0];
+  window.localStorage.setItem(REP_GENDER_TOGGLE_KEY, nextGender);
+  return selected;
 }
 
 export function getSessionSaudiRepresentative() {
