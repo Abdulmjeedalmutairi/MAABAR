@@ -17,6 +17,7 @@ import Contact from './pages/Contact';
 import Support from './pages/Support';
 import Requests from './pages/Requests';
 import SupplierLanding from './pages/SupplierLanding';
+import SupplierAccess from './pages/SupplierAccess';
 import SupplierProfile from './pages/SupplierProfile';
 import Suppliers from './pages/Suppliers';
 import Chat from './pages/Chat';
@@ -238,6 +239,7 @@ function App() {
           <Route path="/support"        element={<Support         {...sharedProps} />} />
           <Route path="/requests"       element={<Requests        {...sharedProps} />} />
           <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
+          <Route path="/supplier-access" element={<SupplierAccess />} />
           <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
           <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
           <Route path="/chat/:partnerId"element={<Chat            {...sharedProps} />} />
