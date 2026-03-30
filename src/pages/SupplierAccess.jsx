@@ -220,15 +220,8 @@ export default function SupplierAccess() {
                   <button
                     key={item.step}
                     onClick={() => setActiveStep(index)}
-                    style={{
-                      textAlign: 'left',
-                      padding: '18px 18px',
-                      borderRadius: 20,
-                      background: isActive ? 'var(--bg-muted)' : 'var(--bg-subtle)',
-                      border: isActive ? '1px solid var(--border-default)' : '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer',
-                    }}
+                    className={`supplier-step-button${isActive ? ' active' : ''}`}
+                    style={{ textAlign: 'left' }}
                   >
                     <div style={{ color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 8 }}>{item.step}</div>
                     <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{item.title}</div>
@@ -238,42 +231,39 @@ export default function SupplierAccess() {
               })}
             </div>
 
-            <div style={{ padding: isCompact ? 22 : 30, borderRadius: 28, background: 'var(--bg-muted)', border: '1px solid var(--border-muted)', minHeight: 320, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div key={currentStep.step} style={{ animation: 'supplierTourFade 0.35s ease' }}>
-                <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>
-                  Step {activeStep + 1} of {howItWorks.length}
+            <div className="supplier-tour-stage" style={{ padding: isCompact ? 22 : 30, minHeight: 320, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 22 }}>
+                  <div style={{ width: `${((activeStep + 1) / howItWorks.length) * 100}%`, height: '100%', borderRadius: 999, background: 'var(--text-primary)', transition: 'width 320ms cubic-bezier(0.22, 1, 0.36, 1)' }} />
                 </div>
-                <div style={{ fontSize: isCompact ? 56 : 72, lineHeight: 0.95, marginBottom: 14, letterSpacing: '-0.06em' }}>{currentStep.step}</div>
-                <h3 style={{ fontSize: isCompact ? 28 : 36, lineHeight: 1.05, margin: '0 0 12px', letterSpacing: '-0.03em' }}>{currentStep.title}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1.75, maxWidth: 560, margin: 0 }}>{currentStep.description}</p>
+
+                <div key={currentStep.step} className="supplier-tour-content">
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>
+                    Step {activeStep + 1} of {howItWorks.length}
+                  </div>
+                  <div style={{ fontSize: isCompact ? 56 : 72, lineHeight: 0.95, marginBottom: 14, letterSpacing: '-0.06em' }}>{currentStep.step}</div>
+                  <h3 style={{ fontSize: isCompact ? 28 : 36, lineHeight: 1.05, margin: '0 0 12px', letterSpacing: '-0.03em' }}>{currentStep.title}</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1.75, maxWidth: 560, margin: 0 }}>{currentStep.description}</p>
+                </div>
               </div>
 
               <div>
-                <div style={{ display: 'flex', gap: 8, margin: '24px 0 18px' }}>
+                <div style={{ display: 'flex', gap: 8, margin: '0 0 18px' }}>
                   {howItWorks.map((item, index) => (
                     <button
                       key={item.step}
                       onClick={() => setActiveStep(index)}
                       aria-label={`Go to step ${index + 1}`}
-                      style={{
-                        width: index === activeStep ? 34 : 10,
-                        height: 10,
-                        borderRadius: 999,
-                        border: 'none',
-                        background: index === activeStep ? 'var(--text-primary)' : 'var(--border-strong)',
-                        cursor: 'pointer',
-                        transition: 'all 0.22s ease',
-                        padding: 0,
-                      }}
+                      className={`supplier-tour-dot${index === activeStep ? ' active' : ''}`}
                     />
                   ))}
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                  <button onClick={prevStep} style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '14px 18px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={prevStep} className="supplier-tour-nav supplier-tour-nav-secondary">
                     Previous
                   </button>
-                  <button onClick={nextStep} style={{ background: 'var(--text-primary)', color: 'var(--bg-base)', border: 'none', borderRadius: 14, padding: '14px 18px', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                  <button onClick={nextStep} className="supplier-tour-nav supplier-tour-nav-primary">
                     Next step
                   </button>
                 </div>
@@ -334,12 +324,97 @@ export default function SupplierAccess() {
         @keyframes supplierTourFade {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(16px) scale(0.985);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
+        }
+
+        .supplier-step-button {
+          text-align: left;
+          padding: 18px;
+          border-radius: 20px;
+          background: var(--bg-subtle);
+          border: 1px solid var(--border-subtle);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, background 220ms ease, box-shadow 240ms ease;
+        }
+
+        .supplier-step-button:hover {
+          transform: translateY(-2px);
+          border-color: var(--border-default);
+        }
+
+        .supplier-step-button.active {
+          background: var(--bg-muted);
+          border-color: var(--border-default);
+          transform: translateX(6px);
+          box-shadow: 0 16px 40px rgba(0,0,0,0.16);
+        }
+
+        .supplier-tour-stage {
+          position: relative;
+          border-radius: 28px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+          border: 1px solid var(--border-muted);
+          overflow: hidden;
+          box-shadow: 0 28px 70px rgba(0,0,0,0.18);
+        }
+
+        .supplier-tour-stage::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at top left, rgba(255,255,255,0.05), transparent 34%);
+          pointer-events: none;
+        }
+
+        .supplier-tour-content {
+          animation: supplierTourFade 380ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .supplier-tour-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          border: none;
+          background: var(--border-strong);
+          cursor: pointer;
+          transition: all 240ms cubic-bezier(0.22, 1, 0.36, 1);
+          padding: 0;
+        }
+
+        .supplier-tour-dot.active {
+          width: 34px;
+          background: var(--text-primary);
+        }
+
+        .supplier-tour-nav {
+          border-radius: 14px;
+          padding: 14px 18px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, background 220ms ease, border-color 220ms ease;
+        }
+
+        .supplier-tour-nav:hover {
+          transform: translateY(-1px);
+        }
+
+        .supplier-tour-nav-primary {
+          background: var(--text-primary);
+          color: var(--bg-base);
+          border: none;
+        }
+
+        .supplier-tour-nav-secondary {
+          background: transparent;
+          color: var(--text-primary);
+          border: 1px solid var(--border-default);
         }
       `}</style>
 
