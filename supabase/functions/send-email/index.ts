@@ -5,7 +5,7 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || 'https://utzalmszfqfcofywfetv.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || '';
 const ADMIN_EMAIL = 'info@maabar.io';
-const FROM = 'Maabar <hello@maabar.io>';
+const FROM = 'مَعبر | MAABAR <hello@maabar.io>';
 const adminSb = SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
 
 const cors = {

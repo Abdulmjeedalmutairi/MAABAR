@@ -7,7 +7,7 @@ const SUPABASE_URL               = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const ANTHROPIC_API_KEY          = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const ADMIN_EMAIL                = 'info@maabar.io';
-const FROM                       = 'Maabar <hello@maabar.io>';
+const FROM                       = 'مَعبر | MAABAR <hello@maabar.io>';
 
 async function sendEmail(to: string, subject: string, html: string) {
   const res = await fetch('https://api.resend.com/emails', {

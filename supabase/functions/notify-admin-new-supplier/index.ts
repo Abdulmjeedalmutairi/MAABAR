@@ -15,7 +15,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       'Authorization': `Bearer ${RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from: 'Maabar <hello@maabar.io>', to, subject, html }),
+    body: JSON.stringify({ from: 'مَعبر | MAABAR <hello@maabar.io>', to, subject, html }),
   });
 }
 
