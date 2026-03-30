@@ -1,7 +1,6 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Footer from '../components/Footer';
 
 const ACCESS_DEADLINE = '2026-04-14T23:59:59Z';
 
@@ -46,7 +45,7 @@ const whyMaabar = [
   'Direct positioning for Saudi buyer demand',
   'Arabic–Chinese communication support',
   'Structured onboarding before public launch',
-  'Selective supplier access rather than open listing noise',
+  'Selective supplier access instead of open-listing noise',
 ];
 
 function getTimeLeft() {
@@ -65,16 +64,9 @@ function getTimeLeft() {
 
 function CountUnit({ label, value }) {
   return (
-    <div style={{
-      minWidth: 88,
-      padding: '16px 14px',
-      borderRadius: 18,
-      background: 'var(--bg-muted)',
-      border: '1px solid var(--border-muted)',
-      textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.1 }}>{String(value).padStart(2, '0')}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+    <div className="supplier-count-unit">
+      <div className="supplier-count-value">{String(value).padStart(2, '0')}</div>
+      <div className="supplier-count-label">{label}</div>
     </div>
   );
 }
@@ -83,8 +75,8 @@ export default function SupplierAccess() {
   usePageTitle('supplier-access', 'en');
   const nav = useNavigate();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+  const [activeScene, setActiveScene] = useState(0);
   const [isCompact, setIsCompact] = useState(typeof window !== 'undefined' ? window.innerWidth < 960 : false);
-  const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
@@ -97,234 +89,335 @@ export default function SupplierAccess() {
   }, []);
 
   const ctaCopy = useMemo(() => (timeLeft.expired ? 'Apply for Supplier Access' : 'Apply for Early Supplier Access'), [timeLeft.expired]);
-  const containerStyle = useMemo(() => ({ maxWidth: 1180, margin: '0 auto', width: '100%' }), []);
-  const currentStep = howItWorks[activeStep];
+  const totalScenes = 5;
+  const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
 
   const goToApply = () => nav('/login/supplier');
-  const nextStep = () => setActiveStep((prev) => (prev + 1) % howItWorks.length);
-  const prevStep = () => setActiveStep((prev) => (prev - 1 + howItWorks.length) % howItWorks.length);
-  const scrollToFlow = () => {
-    const el = document.getElementById('supplier-access-flow');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const goHome = () => nav('/');
+  const nextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
+  const prevScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
+  const jumpToScene = (index) => setActiveScene(index);
 
   return (
-    <div dir="ltr" lang="en" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', minHeight: '100vh', textAlign: 'left' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid var(--border-subtle)', background: 'rgba(10,10,11,0.92)', backdropFilter: 'blur(16px)' }}>
-        <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '16px 20px' }}>
-          <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', fontSize: 18, fontWeight: 600 }}>
-            <span style={{ letterSpacing: '0.18em', fontSize: 13, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>MAABAR</span>
-            <span style={{ color: 'var(--text-tertiary)' }}>|</span>
-            <span style={{ fontSize: 16 }}>Supplier Access</span>
+    <div dir="ltr" lang="en" className="supplier-access-page">
+      <div className="supplier-access-topbar">
+        <div className="supplier-access-shell supplier-access-topbar-inner">
+          <button onClick={goHome} className="supplier-brand-button">
+            <span className="supplier-brand-word">MAABAR</span>
+            <span className="supplier-brand-separator">|</span>
+            <span className="supplier-brand-sub">Supplier Access</span>
           </button>
-          <button onClick={goToApply} style={{ background: 'var(--text-primary)', color: 'var(--bg-base)', border: 'none', borderRadius: 12, padding: '12px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            Apply now
-          </button>
+
+          <div className="supplier-topbar-actions">
+            <button onClick={() => jumpToScene(0)} className="supplier-topbar-link">Start Journey</button>
+            <button onClick={goToApply} className="supplier-topbar-cta">Apply now</button>
+          </div>
         </div>
       </div>
 
-      <section style={{ padding: isCompact ? '56px 20px 56px' : '92px 20px 72px', borderBottom: '1px solid var(--border-subtle)', background: 'linear-gradient(180deg, var(--bg-base) 0%, var(--bg-subtle) 100%)' }}>
-        <div style={{ ...containerStyle, display: 'grid', gap: 24, gridTemplateColumns: isCompact ? '1fr' : 'minmax(0,1.1fr) minmax(320px,0.9fr)', alignItems: 'center' }}>
-          <div style={{ order: isCompact ? 2 : 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 999, background: 'var(--bg-muted)', border: '1px solid var(--border-muted)', color: 'var(--text-primary)', fontSize: 13, marginBottom: 18 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-primary)', display: 'inline-block', opacity: 0.8 }} />
-              Founding supplier access is limited
+      <main className="supplier-access-main">
+        <div className="supplier-access-shell">
+          <div className="supplier-journey-progress-wrap">
+            <div className="supplier-journey-progress-bar">
+              <div className="supplier-journey-progress-fill" style={{ width: `${sceneProgress}%` }} />
             </div>
-
-            <h1 style={{ fontSize: isCompact ? '3rem' : 'clamp(3.4rem, 5vw, 5rem)', lineHeight: 0.98, margin: '0 0 18px', letterSpacing: '-0.05em', maxWidth: 760 }}>
-              Secure early access to Saudi buyers before public launch
-            </h1>
-
-            <p style={{ fontSize: isCompact ? 18 : 20, lineHeight: 1.65, color: 'var(--text-primary)', maxWidth: 760, margin: '0 0 16px' }}>
-              Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants.
-            </p>
-            <p style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--text-secondary)', maxWidth: 740, margin: '0 0 28px' }}>
-              We are currently reviewing a limited number of founding supplier applications before public launch. Enter early, position your company sooner, and gain an advantage before broader supplier onboarding begins.
-            </p>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 22 }}>
-              <button onClick={goToApply} style={{ background: 'var(--text-primary)', color: 'var(--bg-base)', border: 'none', borderRadius: 14, padding: '15px 22px', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
-                {ctaCopy}
-              </button>
-              <button onClick={scrollToFlow} style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '15px 22px', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
-                See how it works
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {['Selective review', 'Saudi market opportunity', 'Pre-launch access'].map((item) => (
-                <div key={item} style={{ padding: '9px 12px', borderRadius: 999, background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 13 }}>
-                  {item}
-                </div>
-              ))}
+            <div className="supplier-journey-progress-meta">
+              <span>Journey</span>
+              <span>{activeScene + 1} / {totalScenes}</span>
             </div>
           </div>
 
-          <div style={{ order: isCompact ? 1 : 2, background: 'var(--bg-muted)', border: '1px solid var(--border-muted)', borderRadius: 28, padding: 26, boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
-              Founding supplier access closes in
-            </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}>
-              <CountUnit label="Days" value={timeLeft.days} />
-              <CountUnit label="Hours" value={timeLeft.hours} />
-              <CountUnit label="Minutes" value={timeLeft.minutes} />
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 20, display: 'grid', gap: 14 }}>
-              {[
-                'Selected suppliers only',
-                'Applications reviewed before launch',
-                'Designed for serious Saudi market entry',
-              ].map((item) => (
-                <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', color: 'var(--text-primary)' }}>
-                  <span style={{ marginTop: 2, color: 'var(--text-primary)', opacity: 0.72 }}>●</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={{ padding: '72px 20px 24px', background: 'var(--bg-base)' }}>
-        <div style={containerStyle}>
-          <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Why join early</div>
-          <h2 style={{ fontSize: 'clamp(2rem, 3vw, 3rem)', margin: '0 0 16px', letterSpacing: '-0.03em' }}>Why selected suppliers join Maabar before launch</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 17, lineHeight: 1.7, maxWidth: 780, margin: '0 0 28px' }}>
-            This is not a generic directory signup. It is an early market-entry opportunity built around Saudi buyer access, positioning, and selective onboarding.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18 }}>
-            {earlyBenefits.map((item) => (
-              <div key={item.title} style={{ padding: 24, borderRadius: 22, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                <h3 style={{ margin: '0 0 10px', fontSize: 20 }}>{item.title}</h3>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="supplier-access-flow" style={{ padding: '52px 20px', background: 'var(--bg-base)' }}>
-        <div style={containerStyle}>
-          <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>How it works</div>
-          <h2 style={{ fontSize: 'clamp(2rem, 3vw, 3rem)', margin: '0 0 16px', letterSpacing: '-0.03em' }}>A short, animated tour the user can control</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 17, lineHeight: 1.7, maxWidth: 760, margin: '0 0 28px' }}>
-            The supplier moves through the flow step by step, with clear motion and manual navigation.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isCompact ? '1fr' : '320px minmax(0,1fr)', gap: 18, alignItems: 'stretch' }}>
-            <div style={{ display: 'grid', gap: 12 }}>
-              {howItWorks.map((item, index) => {
-                const isActive = activeStep === index;
-                return (
-                  <button
-                    key={item.step}
-                    onClick={() => setActiveStep(index)}
-                    className={`supplier-step-button${isActive ? ' active' : ''}`}
-                    style={{ textAlign: 'left' }}
-                  >
-                    <div style={{ color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 8 }}>{item.step}</div>
-                    <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{item.title}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>{item.description}</div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="supplier-tour-stage" style={{ padding: isCompact ? 22 : 30, minHeight: 320, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div style={{ marginBottom: 22 }}>
-                <div style={{ height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 22 }}>
-                  <div style={{ width: `${((activeStep + 1) / howItWorks.length) * 100}%`, height: '100%', borderRadius: 999, background: 'var(--text-primary)', transition: 'width 320ms cubic-bezier(0.22, 1, 0.36, 1)' }} />
-                </div>
-
-                <div key={currentStep.step} className="supplier-tour-content">
-                  <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>
-                    Step {activeStep + 1} of {howItWorks.length}
+          <div className="supplier-journey-stage">
+            {activeScene === 0 && (
+              <section key="scene-0" className="supplier-scene supplier-scene-hero">
+                <div className="supplier-scene-content">
+                  <div className="supplier-scene-eyebrow">Founding supplier access</div>
+                  <h1 className="supplier-scene-title supplier-scene-title-hero">Secure early access to Saudi buyers before public launch</h1>
+                  <p className="supplier-scene-description supplier-scene-description-large">
+                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This is not a generic platform signup — it is a guided pre-launch opportunity for selected suppliers.
+                  </p>
+                  <div className="supplier-scene-actions">
+                    <button onClick={nextScene} className="supplier-primary-btn">Start Journey</button>
+                    <button onClick={goToApply} className="supplier-secondary-btn">Skip to apply</button>
                   </div>
-                  <div style={{ fontSize: isCompact ? 56 : 72, lineHeight: 0.95, marginBottom: 14, letterSpacing: '-0.06em' }}>{currentStep.step}</div>
-                  <h3 style={{ fontSize: isCompact ? 28 : 36, lineHeight: 1.05, margin: '0 0 12px', letterSpacing: '-0.03em' }}>{currentStep.title}</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1.75, maxWidth: 560, margin: 0 }}>{currentStep.description}</p>
                 </div>
-              </div>
+                <div className="supplier-scene-sidecard">
+                  <div className="supplier-sidecard-label">Currently open</div>
+                  <div className="supplier-sidecard-title">Founding supplier intake is limited</div>
+                  <div className="supplier-sidecard-text">Applications are reviewed before public rollout to keep supplier onboarding selective and premium.</div>
+                </div>
+              </section>
+            )}
 
-              <div>
-                <div style={{ display: 'flex', gap: 8, margin: '0 0 18px' }}>
-                  {howItWorks.map((item, index) => (
-                    <button
-                      key={item.step}
-                      onClick={() => setActiveStep(index)}
-                      aria-label={`Go to step ${index + 1}`}
-                      className={`supplier-tour-dot${index === activeStep ? ' active' : ''}`}
-                    />
+            {activeScene === 1 && (
+              <section key="scene-1" className="supplier-scene">
+                <div className="supplier-scene-content">
+                  <div className="supplier-scene-eyebrow">Why join early</div>
+                  <h2 className="supplier-scene-title">Position your company before broader supplier rollout begins</h2>
+                  <p className="supplier-scene-description">
+                    The opportunity is not simply to join a marketplace. It is to enter early, gain positioning sooner, and secure stronger visibility before public launch.
+                  </p>
+                </div>
+                <div className="supplier-card-grid">
+                  {earlyBenefits.map((item) => (
+                    <div key={item.title} className="supplier-feature-card">
+                      <h3>{item.title}</h3>
+                      <p>{item.description}</p>
+                    </div>
                   ))}
                 </div>
+              </section>
+            )}
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                  <button onClick={prevStep} className="supplier-tour-nav supplier-tour-nav-secondary">
-                    Previous
-                  </button>
-                  <button onClick={nextStep} className="supplier-tour-nav supplier-tour-nav-primary">
-                    Next step
-                  </button>
+            {activeScene === 2 && (
+              <section key="scene-2" className="supplier-scene">
+                <div className="supplier-scene-content">
+                  <div className="supplier-scene-eyebrow">How it works</div>
+                  <h2 className="supplier-scene-title">A short, selective path to supplier access</h2>
+                  <p className="supplier-scene-description">
+                    The journey is simple: apply, get reviewed, then enter early with better positioning before launch.
+                  </p>
                 </div>
-              </div>
-            </div>
+                <div className="supplier-steps-grid">
+                  {howItWorks.map((item) => (
+                    <div key={item.step} className="supplier-step-card">
+                      <div className="supplier-step-number">{item.step}</div>
+                      <h3>{item.title}</h3>
+                      <p>{item.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeScene === 3 && (
+              <section key="scene-3" className="supplier-scene">
+                <div className="supplier-scene-content">
+                  <div className="supplier-scene-eyebrow">Why Maabar</div>
+                  <h2 className="supplier-scene-title">Built for Saudi buyer access, not open-listing clutter</h2>
+                  <p className="supplier-scene-description">
+                    Maabar is structured around Saudi market entry, buyer–supplier coordination, and selective onboarding rather than random marketplace noise.
+                  </p>
+                </div>
+                <div className="supplier-bullets-wrap">
+                  {whyMaabar.map((item) => (
+                    <div key={item} className="supplier-bullet-row">
+                      <span className="supplier-bullet-dot" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeScene === 4 && (
+              <section key="scene-4" className="supplier-scene supplier-scene-final">
+                <div className="supplier-scene-content">
+                  <div className="supplier-scene-eyebrow">Limited access</div>
+                  <h2 className="supplier-scene-title">Apply before public launch</h2>
+                  <p className="supplier-scene-description">
+                    We are currently onboarding a limited number of Chinese suppliers before official launch. Selected applications move into review before approval and onboarding.
+                  </p>
+                </div>
+                <div className="supplier-countdown-row">
+                  <CountUnit label="Days" value={timeLeft.days} />
+                  <CountUnit label="Hours" value={timeLeft.hours} />
+                  <CountUnit label="Minutes" value={timeLeft.minutes} />
+                </div>
+                <div className="supplier-scene-actions supplier-scene-actions-final">
+                  <button onClick={goToApply} className="supplier-primary-btn">{ctaCopy}</button>
+                  <button onClick={() => jumpToScene(0)} className="supplier-secondary-btn">Restart journey</button>
+                </div>
+              </section>
+            )}
           </div>
-        </div>
-      </section>
 
-      <section style={{ padding: '24px 20px 72px', background: 'var(--bg-base)' }}>
-        <div style={{ ...containerStyle, display: 'grid', gridTemplateColumns: isCompact ? '1fr' : 'minmax(0, 0.95fr) minmax(320px, 0.75fr)', gap: 22, alignItems: 'stretch' }}>
-          <div style={{ padding: 30, borderRadius: 28, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Why Maabar</div>
-            <h2 style={{ fontSize: 'clamp(1.9rem, 2.8vw, 2.8rem)', margin: '0 0 14px', letterSpacing: '-0.03em' }}>Why this is different from a standard supplier listing</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 17, lineHeight: 1.7, margin: '0 0 24px' }}>
-              Maabar is built around Saudi buyer demand and structured supplier onboarding — not open listing noise.
-            </p>
-            <div style={{ display: 'grid', gap: 14 }}>
-              {whyMaabar.map((item) => (
-                <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', color: 'var(--text-primary)' }}>
-                  <span style={{ marginTop: 2, color: 'var(--text-primary)', opacity: 0.72 }}>●</span>
-                  <span>{item}</span>
-                </div>
+          <div className="supplier-journey-footer">
+            <div className="supplier-scene-dots">
+              {Array.from({ length: totalScenes }).map((_, index) => (
+                <button
+                  key={`scene-dot-${index}`}
+                  onClick={() => jumpToScene(index)}
+                  className={`supplier-scene-dot${index === activeScene ? ' active' : ''}`}
+                  aria-label={`Go to scene ${index + 1}`}
+                />
               ))}
             </div>
-          </div>
 
-          <div style={{ padding: 30, borderRadius: 28, background: 'var(--bg-muted)', border: '1px solid var(--border-muted)' }}>
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Scarcity & timing</div>
-            <h2 style={{ fontSize: 30, margin: '0 0 12px', lineHeight: 1.15 }}>Founding supplier access is limited</h2>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 22px' }}>
-              We are currently onboarding a limited number of Chinese suppliers before official launch. Applications are reviewed selectively.
-            </p>
-            <button onClick={goToApply} style={{ width: '100%', background: 'var(--text-primary)', color: 'var(--bg-base)', border: 'none', borderRadius: 14, padding: '15px 18px', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: 16 }}>
-              Apply before public launch
-            </button>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-              After applying, suppliers move into an under-review state before approval and onboarding.
+            <div className="supplier-nav-actions">
+              <button onClick={prevScene} className="supplier-secondary-btn" disabled={activeScene === 0}>Back</button>
+              {activeScene < totalScenes - 1 ? (
+                <button onClick={nextScene} className="supplier-primary-btn">Next</button>
+              ) : (
+                <button onClick={goToApply} className="supplier-primary-btn">Apply now</button>
+              )}
             </div>
           </div>
         </div>
-      </section>
-
-      <section style={{ padding: '0 20px 88px', background: 'var(--bg-base)' }}>
-        <div style={{ ...containerStyle, textAlign: 'center', padding: '42px 24px', borderRadius: 30, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ color: 'var(--text-tertiary)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Apply now</div>
-          <h2 style={{ fontSize: 'clamp(2rem, 3vw, 3rem)', margin: '0 0 14px', letterSpacing: '-0.03em' }}>Position your company early in the Saudi market</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 17, lineHeight: 1.7, maxWidth: 760, margin: '0 auto 26px' }}>
-            Join Maabar as a founding supplier before public launch and secure early access to Saudi buyer opportunities through a selective onboarding process.
-          </p>
-          <button onClick={goToApply} style={{ background: 'var(--text-primary)', color: 'var(--bg-base)', border: 'none', borderRadius: 14, padding: '16px 24px', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
-            {ctaCopy}
-          </button>
-        </div>
-      </section>
+      </main>
 
       <style>{`
-        @keyframes supplierTourFade {
+        .supplier-access-page {
+          min-height: 100vh;
+          background: var(--bg-base);
+          color: var(--text-primary);
+          text-align: left;
+        }
+
+        .supplier-access-shell {
+          width: 100%;
+          max-width: 1180px;
+          margin: 0 auto;
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+
+        .supplier-access-topbar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: rgba(10,10,11,0.92);
+          backdrop-filter: blur(18px);
+          border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .supplier-access-topbar-inner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          min-height: 72px;
+        }
+
+        .supplier-brand-button {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border: none;
+          background: transparent;
+          color: var(--text-primary);
+          cursor: pointer;
+        }
+
+        .supplier-brand-word {
+          font-size: 13px;
+          letter-spacing: 0.18em;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+        }
+
+        .supplier-brand-separator {
+          color: var(--text-tertiary);
+        }
+
+        .supplier-brand-sub {
+          font-size: 16px;
+        }
+
+        .supplier-topbar-actions {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .supplier-topbar-link,
+        .supplier-topbar-cta,
+        .supplier-primary-btn,
+        .supplier-secondary-btn {
+          border-radius: 14px;
+          padding: 14px 20px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, background 220ms ease, border-color 220ms ease;
+        }
+
+        .supplier-topbar-link:hover,
+        .supplier-topbar-cta:hover,
+        .supplier-primary-btn:hover,
+        .supplier-secondary-btn:hover {
+          transform: translateY(-1px);
+        }
+
+        .supplier-topbar-link,
+        .supplier-secondary-btn {
+          background: transparent;
+          color: var(--text-primary);
+          border: 1px solid var(--border-default);
+        }
+
+        .supplier-topbar-cta,
+        .supplier-primary-btn {
+          background: var(--text-primary);
+          color: var(--bg-base);
+          border: none;
+        }
+
+        .supplier-secondary-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .supplier-access-main {
+          min-height: calc(100vh - 72px);
+          display: flex;
+          align-items: center;
+          padding: 32px 0 36px;
+        }
+
+        .supplier-journey-progress-wrap {
+          margin-bottom: 24px;
+        }
+
+        .supplier-journey-progress-bar {
+          width: 100%;
+          height: 5px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.06);
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+
+        .supplier-journey-progress-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: var(--text-primary);
+          transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .supplier-journey-progress-meta {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--text-secondary);
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .supplier-journey-stage {
+          position: relative;
+          overflow: hidden;
+          min-height: 66vh;
+          border-radius: 34px;
+          border: 1px solid var(--border-subtle);
+          background: linear-gradient(180deg, var(--bg-subtle), var(--bg-base));
+          box-shadow: 0 34px 90px rgba(0,0,0,0.22);
+        }
+
+        .supplier-journey-stage::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at top left, rgba(255,255,255,0.045), transparent 30%);
+          pointer-events: none;
+        }
+
+        @keyframes supplierSceneEnter {
           from {
             opacity: 0;
-            transform: translateY(16px) scale(0.985);
+            transform: translateY(18px) scale(0.985);
           }
           to {
             opacity: 1;
@@ -332,51 +425,221 @@ export default function SupplierAccess() {
           }
         }
 
-        .supplier-step-button {
-          text-align: left;
-          padding: 18px;
-          border-radius: 20px;
-          background: var(--bg-subtle);
-          border: 1px solid var(--border-subtle);
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, background 220ms ease, box-shadow 240ms ease;
-        }
-
-        .supplier-step-button:hover {
-          transform: translateY(-2px);
-          border-color: var(--border-default);
-        }
-
-        .supplier-step-button.active {
-          background: var(--bg-muted);
-          border-color: var(--border-default);
-          transform: translateX(6px);
-          box-shadow: 0 16px 40px rgba(0,0,0,0.16);
-        }
-
-        .supplier-tour-stage {
+        .supplier-scene {
           position: relative;
-          border-radius: 28px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+          min-height: 66vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 28px;
+          padding: 54px;
+          animation: supplierSceneEnter 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .supplier-scene-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+          align-items: center;
+        }
+
+        .supplier-scene-content {
+          max-width: 760px;
+        }
+
+        .supplier-scene-eyebrow {
+          color: var(--text-tertiary);
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          margin-bottom: 14px;
+        }
+
+        .supplier-scene-title {
+          font-size: clamp(2.2rem, 4vw, 4rem);
+          line-height: 0.98;
+          letter-spacing: -0.05em;
+          margin: 0 0 16px;
+        }
+
+        .supplier-scene-title-hero {
+          max-width: 780px;
+          font-size: clamp(2.8rem, 5vw, 5rem);
+        }
+
+        .supplier-scene-description {
+          color: var(--text-secondary);
+          font-size: 18px;
+          line-height: 1.78;
+          margin: 0;
+          max-width: 720px;
+        }
+
+        .supplier-scene-description-large {
+          font-size: 19px;
+        }
+
+        .supplier-scene-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 28px;
+        }
+
+        .supplier-scene-sidecard {
+          padding: 26px;
+          border-radius: 24px;
+          background: var(--bg-muted);
           border: 1px solid var(--border-muted);
-          overflow: hidden;
-          box-shadow: 0 28px 70px rgba(0,0,0,0.18);
+          color: var(--text-primary);
         }
 
-        .supplier-tour-stage::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at top left, rgba(255,255,255,0.05), transparent 34%);
-          pointer-events: none;
+        .supplier-sidecard-label {
+          color: var(--text-tertiary);
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          margin-bottom: 12px;
         }
 
-        .supplier-tour-content {
-          animation: supplierTourFade 380ms cubic-bezier(0.22, 1, 0.36, 1);
+        .supplier-sidecard-title {
+          font-size: 24px;
+          line-height: 1.1;
+          margin-bottom: 10px;
         }
 
-        .supplier-tour-dot {
+        .supplier-sidecard-text {
+          color: var(--text-secondary);
+          line-height: 1.7;
+        }
+
+        .supplier-card-grid,
+        .supplier-steps-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .supplier-feature-card,
+        .supplier-step-card {
+          padding: 24px;
+          border-radius: 24px;
+          background: var(--bg-muted);
+          border: 1px solid var(--border-subtle);
+          transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease;
+        }
+
+        .supplier-feature-card:hover,
+        .supplier-step-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--border-default);
+        }
+
+        .supplier-feature-card h3,
+        .supplier-step-card h3 {
+          margin: 0 0 10px;
+          font-size: 20px;
+        }
+
+        .supplier-feature-card p,
+        .supplier-step-card p {
+          margin: 0;
+          color: var(--text-secondary);
+          line-height: 1.7;
+        }
+
+        .supplier-step-number {
+          color: var(--text-tertiary);
+          font-size: 14px;
+          letter-spacing: 0.12em;
+          font-weight: 700;
+          margin-bottom: 10px;
+        }
+
+        .supplier-bullets-wrap {
+          display: grid;
+          gap: 14px;
+          max-width: 760px;
+        }
+
+        .supplier-bullet-row {
+          display: flex;
+          gap: 14px;
+          align-items: flex-start;
+          padding: 18px 0;
+          border-bottom: 1px solid var(--border-subtle);
+          color: var(--text-primary);
+          font-size: 18px;
+        }
+
+        .supplier-bullet-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: var(--text-primary);
+          opacity: 0.72;
+          margin-top: 8px;
+          flex: 0 0 auto;
+        }
+
+        .supplier-scene-final {
+          text-align: center;
+          align-items: center;
+        }
+
+        .supplier-scene-final .supplier-scene-content {
+          max-width: 760px;
+        }
+
+        .supplier-countdown-row {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 14px;
+        }
+
+        .supplier-count-unit {
+          min-width: 96px;
+          padding: 18px 16px;
+          border-radius: 20px;
+          background: var(--bg-muted);
+          border: 1px solid var(--border-muted);
+          text-align: center;
+        }
+
+        .supplier-count-value {
+          font-size: 30px;
+          line-height: 1;
+          font-weight: 700;
+        }
+
+        .supplier-count-label {
+          margin-top: 8px;
+          font-size: 12px;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .supplier-scene-actions-final {
+          justify-content: center;
+          margin-top: 0;
+        }
+
+        .supplier-journey-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 18px;
+          padding: 18px 4px 0;
+        }
+
+        .supplier-scene-dots {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .supplier-scene-dot {
           width: 10px;
           height: 10px;
           border-radius: 999px;
@@ -387,38 +650,49 @@ export default function SupplierAccess() {
           padding: 0;
         }
 
-        .supplier-tour-dot.active {
+        .supplier-scene-dot.active {
           width: 34px;
           background: var(--text-primary);
         }
 
-        .supplier-tour-nav {
-          border-radius: 14px;
-          padding: 14px 18px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, background 220ms ease, border-color 220ms ease;
+        .supplier-nav-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
         }
 
-        .supplier-tour-nav:hover {
-          transform: translateY(-1px);
-        }
+        @media (max-width: 959px) {
+          .supplier-access-main {
+            padding-top: 20px;
+          }
 
-        .supplier-tour-nav-primary {
-          background: var(--text-primary);
-          color: var(--bg-base);
-          border: none;
-        }
+          .supplier-journey-stage,
+          .supplier-scene {
+            min-height: auto;
+          }
 
-        .supplier-tour-nav-secondary {
-          background: transparent;
-          color: var(--text-primary);
-          border: 1px solid var(--border-default);
+          .supplier-scene {
+            padding: 28px;
+          }
+
+          .supplier-scene-hero {
+            grid-template-columns: 1fr;
+          }
+
+          .supplier-scene-title-hero {
+            font-size: 2.9rem;
+          }
+
+          .supplier-topbar-actions {
+            display: none;
+          }
+
+          .supplier-journey-footer {
+            flex-direction: column;
+            align-items: flex-start;
+          }
         }
       `}</style>
-
-      <Footer lang="en" />
     </div>
   );
 }
