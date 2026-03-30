@@ -62,7 +62,7 @@ const T = {
     save: 'حفظ', cancel: 'إلغاء', saving: '...',
     edit: 'تعديل', delete: 'حذف', confirmDelete: 'هل تبي تحذف هذا المنتج؟',
     active: 'نشط', inactive: 'موقوف', toggleActive: 'تفعيل/إيقاف',
-    needsAttention: 'يحتاج انتباهك', acceptedOffer: 'عرض مقبول — أضف رقم التتبع',
+    needsAttention: 'يحتاج انتباهك', acceptedOffer: 'عرض مقبول — تواصل مع التاجر',
     offerRejected: 'تم رفض عرضك على',
     uploadImage: 'رفع صورة', uploadVideo: 'رفع فيديو',
     uploadingImage: 'جاري رفع الصورة...', uploadingVideo: 'جاري رفع الفيديو...',
@@ -95,7 +95,7 @@ const T = {
     save: 'Save', cancel: 'Cancel', saving: '...',
     edit: 'Edit', delete: 'Delete', confirmDelete: 'Delete this product?',
     active: 'Active', inactive: 'Paused', toggleActive: 'Toggle',
-    needsAttention: 'Needs Attention', acceptedOffer: 'Offer accepted — Add tracking number',
+    needsAttention: 'Needs Attention', acceptedOffer: 'Offer accepted — Contact trader',
     offerRejected: 'Your offer was rejected on',
     uploadImage: 'Upload Image', uploadVideo: 'Upload Video',
     uploadingImage: 'Uploading...', uploadingVideo: 'Uploading...',
@@ -128,7 +128,7 @@ const T = {
     save: '保存', cancel: '取消', saving: '...',
     edit: '编辑', delete: '删除', confirmDelete: '确认删除此产品？',
     active: '上架', inactive: '下架', toggleActive: '切换状态',
-    needsAttention: '需要处理', acceptedOffer: '报价已接受 — 请添加物流单号',
+    needsAttention: '需要处理', acceptedOffer: '报价已接受 — 联系采购商',
     offerRejected: '您的报价被拒绝',
     uploadImage: '上传图片', uploadVideo: '上传视频',
     uploadingImage: '上传中...', uploadingVideo: '上传中...',
@@ -650,22 +650,51 @@ export default function DashboardSupplier({ user, profile, lang }) {
   };
 
   const cancelOffer = async (o) => {
-    if (!window.confirm(isAr ? 'هل تريد إلغاء هذا العرض؟' : 'Cancel this offer?')) return;
-    await sb.from('offers').update({ status: 'cancelled' }).eq('id', o.id);
+    const requestStatus = o.requests?.status || '';
+    const isAcceptedBeforePayment = o.status === 'accepted' && !['paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'].includes(requestStatus);
+
+    if (!window.confirm(isAcceptedBeforePayment
+      ? (isAr ? 'هل تريد سحب العرض المقبول وإعادة الطلب للتاجر؟' : 'Withdraw this accepted offer and reopen the request for the trader?')
+      : (isAr ? 'هل تريد إلغاء هذا العرض؟' : 'Cancel this offer?'))) return;
+
+    if (isAcceptedBeforePayment) {
+      await sb.from('offers').update({ status: 'cancelled' }).eq('id', o.id);
+      await sb.from('requests').update({ status: 'open', shipping_status: 'open' }).eq('id', o.request_id);
+    } else {
+      await sb.from('offers').update({ status: 'cancelled' }).eq('id', o.id);
+    }
+
     const buyerId = o.requests?.buyer_id;
     if (buyerId) {
       const title = getTitle(o.requests);
       await sb.from('notifications').insert({
         user_id: buyerId,
         type: 'offer_cancelled',
-        title_ar: `قام المورد بسحب عرضه على طلبك: ${o.requests?.title_ar || title}`,
-        title_en: `Supplier withdrew their offer on: ${o.requests?.title_en || title}`,
-        title_zh: `供应商撤回了报价: ${o.requests?.title_zh || title}`,
+        title_ar: isAcceptedBeforePayment
+          ? `قام المورد بسحب العرض المقبول على طلبك: ${o.requests?.title_ar || title}`
+          : `قام المورد بسحب عرضه على طلبك: ${o.requests?.title_ar || title}`,
+        title_en: isAcceptedBeforePayment
+          ? `Supplier withdrew the accepted offer on: ${o.requests?.title_en || title}`
+          : `Supplier withdrew their offer on: ${o.requests?.title_en || title}`,
+        title_zh: isAcceptedBeforePayment
+          ? `供应商撤回了已接受的报价: ${o.requests?.title_zh || title}`
+          : `供应商撤回了报价: ${o.requests?.title_zh || title}`,
         ref_id: o.request_id,
         is_read: false,
       });
+      await sb.from('messages').insert({
+        sender_id: user.id,
+        receiver_id: buyerId,
+        content: isAcceptedBeforePayment
+          ? (isAr ? `قام المورد بسحب العرض المقبول على الطلب: ${title}` : `The supplier withdrew the accepted offer on: ${title}`)
+          : (isAr ? `قام المورد بسحب عرضه على الطلب: ${title}` : `The supplier withdrew the offer on: ${title}`),
+        is_read: false,
+      });
     }
+
     loadMyOffers();
+    loadPendingTracking();
+    loadStats();
   };
 
   const toggleOfferForm = (id) => {
@@ -838,7 +867,20 @@ export default function DashboardSupplier({ user, profile, lang }) {
                           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3, ...arFont }}>{t.acceptedOffer}</p>
                           <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{getTitle(o.requests)}</p>
                         </div>
-                        <span style={{ color: 'var(--text-disabled)', fontSize: 14 }}>→</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {o.requests?.buyer_id && (
+                            <button
+                              className="btn-outline"
+                              style={{ minHeight: 32, padding: '6px 12px', fontSize: 10 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nav(`/chat/${o.requests.buyer_id}`);
+                              }}>
+                              {t.contactTrader}
+                            </button>
+                          )}
+                          <span style={{ color: 'var(--text-disabled)', fontSize: 14 }}>→</span>
+                        </div>
                       </div>
                     ))}
                     {rejectedOffers.map((o, i) => (
@@ -1153,9 +1195,21 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
                   {o.status === 'accepted' && !['paid','shipping','delivered','ready_to_ship'].includes(o.requests?.status || '') && (
                     <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', ...arFont }}>
+                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 10, ...arFont }}>
                         {isAr ? 'في انتظار إتمام الدفع من التاجر' : 'Awaiting payment completion'}
                       </p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {o.requests?.buyer_id && (
+                          <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 36 }}>
+                            {t.contactTrader}
+                          </button>
+                        )}
+                        <button
+                          style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px 14px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 36 }}
+                          onClick={() => cancelOffer(o)}>
+                          {isAr ? 'سحب العرض' : lang === 'zh' ? '撤回报价' : 'Withdraw Offer'}
+                        </button>
+                      </div>
                     </div>
                   )}
 

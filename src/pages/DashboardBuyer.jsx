@@ -851,10 +851,17 @@ export default function DashboardBuyer({ user, profile, lang }) {
                             {o.status === 'accepted' && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {!['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
-                                  <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary"
-                                    style={{ padding: '9px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 36 }}>
-                                    {isAr ? 'ادفع الآن' : 'Pay Now'}
-                                  </button>
+                                  <>
+                                    <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary"
+                                      style={{ padding: '9px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 36 }}>
+                                      {isAr ? 'ادفع الآن' : 'Pay Now'}
+                                    </button>
+                                    <button
+                                      onClick={() => setCancelConfirmReq(r)}
+                                      style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
+                                      {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
+                                    </button>
+                                  </>
                                 )}
                                 {r.status === 'paid' && (
                                   <p style={{ fontSize: 10, letterSpacing: 1, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
