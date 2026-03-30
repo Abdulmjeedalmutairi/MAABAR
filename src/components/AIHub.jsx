@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+import IdeaToProduct from './IdeaToProduct';
 
 /* ─────────────────────────────────────────
    Constants
@@ -27,22 +28,16 @@ const fmt = (n) => n ? Number(n).toLocaleString('ar-SA', { maximumFractionDigits
 ───────────────────────────────────────── */
 const TOOLS = {
   ar: [
-    { id: 'assistant', icon: '◎', label: 'مساعد الطلبات',  sub: 'ابنِ طلبك بالذكاء الاصطناعي' },
-    { id: 'calc',      icon: '◈', label: 'حاسبة التاجر',   sub: 'تكلفة · شحن · ربح' },
-    { id: 'negotiator',icon: '◇', label: 'مفاوض AI',       sub: 'رد احترافي للمورد' },
-    { id: 'market',    icon: '◉', label: 'تحليل السوق',    sub: 'السوق السعودي + مورد صيني' },
+    { id: 'assistant', icon: '◎', label: 'مساعد معبر', sub: 'يفهم فكرتك، يخدمك، ويرتب طلبك' },
+    { id: 'calc', icon: '◈', label: 'الحاسبة', sub: 'تكلفة · شحن · ربح' },
   ],
   en: [
-    { id: 'assistant', icon: '◎', label: 'Request Assistant', sub: 'Build your request with AI' },
-    { id: 'calc',      icon: '◈', label: 'Trader Calculator', sub: 'Cost · Shipping · Profit' },
-    { id: 'negotiator',icon: '◇', label: 'AI Negotiator',     sub: 'Pro reply to supplier' },
-    { id: 'market',    icon: '◉', label: 'Market Analysis',   sub: 'Saudi market + Chinese supplier' },
+    { id: 'assistant', icon: '◎', label: 'Maabar Assistant', sub: 'Understands, guides, and structures your request' },
+    { id: 'calc', icon: '◈', label: 'Calculator', sub: 'Cost · Shipping · Profit' },
   ],
   zh: [
-    { id: 'assistant', icon: '◎', label: '请求助手',   sub: '用AI构建您的请求' },
-    { id: 'calc',      icon: '◈', label: '贸易计算器', sub: '成本·运输·利润' },
-    { id: 'negotiator',icon: '◇', label: 'AI谈判助手', sub: '专业供应商回复' },
-    { id: 'market',    icon: '◉', label: '市场分析',   sub: '沙特市场+中国供应商' },
+    { id: 'assistant', icon: '◎', label: 'Maabar 助手', sub: '理解需求、协助沟通并整理请求' },
+    { id: 'calc', icon: '◈', label: '计算器', sub: '成本 · 运输 · 利润' },
   ],
 };
 
@@ -1058,9 +1053,7 @@ export default function AIHub({ lang, user, profile }) {
 
       {/* ── Tool Panels ──────────────────────── */}
       {activeTool === 'assistant' && (
-        <div style={panelStyle}>
-          <AssistantTool lang={lang} user={user} onClose={closeTool} />
-        </div>
+        <IdeaToProduct lang={lang} user={user} onClose={closeTool} />
       )}
       {activeTool === 'calc' && (
         <div style={panelStyle}>
