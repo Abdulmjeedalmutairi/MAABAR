@@ -1,6 +1,6 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 
 const UNIFONIC_APP_SID   = '';
@@ -145,12 +145,13 @@ const L = {
 export default function Login({ setUser, setProfile, lang }) {
   const nav = useNavigate();
   const { role: roleParam } = useParams();
+  const [searchParams] = useSearchParams();
   const role       = roleParam === 'supplier' ? 'supplier' : 'buyer';
   const isSupplier = role === 'supplier';
   const isAr       = lang === 'ar';
   const l          = L[lang] || L.ar;
 
-  const [mode, setMode]           = useState('signin');
+  const [mode, setMode]           = useState(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
   const [email, setEmail]         = useState('');
   const [pass, setPass]           = useState('');
   const [msg, setMsg]             = useState('');

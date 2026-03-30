@@ -92,7 +92,7 @@ export default function SupplierAccess() {
   const totalScenes = 5;
   const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
 
-  const goToApply = () => nav('/login/supplier');
+  const goToApply = () => nav('/login/supplier?mode=signup');
   const goHome = () => nav('/');
   const nextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
   const prevScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
