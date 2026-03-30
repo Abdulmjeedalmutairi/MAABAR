@@ -62,6 +62,51 @@ function getRepresentativeOpening(lang: Lang = 'ar', representativeName = 'سل�
   return `مرحبا، معك ${representativeName} من معبر.`;
 }
 
+async function callGroq({
+  apiKey,
+  model = 'llama-3.3-70b-versatile',
+  systemInstruction,
+  prompt,
+  responseMimeType,
+}: {
+  apiKey: string;
+  model?: string;
+  systemInstruction: string;
+  prompt: string;
+  responseMimeType?: 'application/json' | 'text/plain';
+}) {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.4,
+      ...(responseMimeType === 'application/json' ? { response_format: { type: 'json_object' } } : {}),
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || 'Groq request failed');
+  }
+
+  const text = data?.choices?.[0]?.message?.content?.trim();
+
+  if (!text) {
+    throw new Error('Empty Groq response');
+  }
+
+  return text;
+}
+
 async function callGemini({
   apiKey,
   model = 'gemini-2.0-flash',
@@ -115,6 +160,39 @@ async function callGemini({
   return text;
 }
 
+async function callProvider({
+  systemInstruction,
+  prompt,
+  responseMimeType,
+}: {
+  systemInstruction: string;
+  prompt: string;
+  responseMimeType?: 'application/json' | 'text/plain';
+}) {
+  const groqApiKey = Deno.env.get('GROQ_API_KEY');
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+  if (groqApiKey) {
+    return callGroq({
+      apiKey: groqApiKey,
+      systemInstruction,
+      prompt,
+      responseMimeType,
+    });
+  }
+
+  if (geminiApiKey) {
+    return callGemini({
+      apiKey: geminiApiKey,
+      systemInstruction,
+      prompt,
+      responseMimeType,
+    });
+  }
+
+  throw new Error('Missing GROQ_API_KEY or GEMINI_API_KEY secret');
+}
+
 function buildIdeaPrompt(payload: IdeaToProductPayload) {
   const language = payload.language || 'ar';
   const answers = payload.answers || [];
@@ -154,11 +232,6 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
-
-    if (!apiKey) {
-      return json({ error: 'Missing GEMINI_API_KEY secret' }, 500);
-    }
 
     const body = (await request.json()) as RequestBody;
     const personaName = body.personaName || 'وكيل معبر';
@@ -192,8 +265,7 @@ Rules:
 - No emojis.
 - No markdown. No commentary.`;
 
-      const text = await callGemini({
-        apiKey,
+      const text = await callProvider({
         systemInstruction,
         prompt: buildIdeaPrompt(payload),
         responseMimeType: 'application/json',
@@ -217,8 +289,7 @@ Rules:
 - Do not add emojis.
 - Return only the translated message text.`;
 
-      const translatedText = await callGemini({
-        apiKey,
+      const translatedText = await callProvider({
         systemInstruction,
         prompt: `Conversation role: ${payload.conversationRole || 'trade_chat'}\nMessage:\n${payload.text}`,
         responseMimeType: 'text/plain',
@@ -248,8 +319,7 @@ Rules:
 - No emojis.
 - No markdown. No extra commentary.`;
 
-      const text = await callGemini({
-        apiKey,
+      const text = await callProvider({
         systemInstruction,
         prompt: buildSupportPrompt(payload),
         responseMimeType: 'application/json',

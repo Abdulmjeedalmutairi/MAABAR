@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
-import { generateIdeaToProductReport } from '../lib/maabarAi/client';
+import { generateIdeaToProductReport, requestSupportReply } from '../lib/maabarAi/client';
 import { MAABAR_AI_PERSONA_NAME } from '../lib/maabarAi/config';
 
 const SAUDI_REPRESENTATIVE_NAMES = [
@@ -181,8 +181,22 @@ function getInitialMessages(language = 'ar', representativeName = 'سلمان') 
 
   return [
     `مرحبا، معك ${representativeName} من معبر.`,
-    'وش عندك؟',
+    'كيف اقدر اساعدك ؟',
   ];
+}
+
+function TypingBubble({ isAr }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+      <div style={{ maxWidth: '86%', padding: '14px 16px', borderRadius: 16, background: '#23242A', color: '#F5F2EC', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {[0, 1, 2].map((dot) => (
+            <span key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: '#8F9198', display: 'inline-block', opacity: 0.35, animation: `maabarTyping 1.2s ${dot * 0.15}s infinite ease-in-out` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ReportRow({ label, value, isAr }) {
@@ -204,31 +218,25 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const [minimized, setMinimized] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [phase, setPhase] = useState('chat');
-  const [routeMode, setRouteMode] = useState(null);
   const [idea, setIdea] = useState('');
-  const [questionIndex, setQuestionIndex] = useState(-1);
-  const [answers, setAnswers] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState(() =>
     initialMessages.map((content, index) => ({ id: index + 1, role: 'assistant', content }))
   );
 
-  const questions = useMemo(() => (
-    routeMode === 'supplier_match' ? t.supplierQuestions : t.buildQuestions
-  ), [routeMode, t]);
+  const hasUserMessages = useMemo(() => messages.some((message) => message.role === 'user'), [messages]);
 
   const resetAll = () => {
     setDraftText('');
     setPhase('chat');
-    setRouteMode(null);
     setIdea('');
-    setQuestionIndex(-1);
-    setAnswers([]);
     setResult(null);
     setError('');
     setSubmitting(false);
+    setIsTyping(false);
     setMessages(initialMessages.map((content, index) => ({ id: Date.now() + index, role: 'assistant', content })));
   };
 
@@ -236,16 +244,24 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, content }]);
   };
 
-  const generateReport = async (initialIdea, mode, collectedAnswers) => {
+  const generateReport = async () => {
+    const userConversation = messages
+      .filter((message) => message.role === 'user')
+      .map((message) => message.content)
+      .join('\n');
+
+    const sourceIdea = userConversation || idea;
+    if (!sourceIdea.trim()) return;
+
     setPhase('generating');
     setError('');
     try {
       const report = await generateIdeaToProductReport({
         language: lang,
-        mode,
-        initialIdea,
-        questions,
-        answers: collectedAnswers,
+        mode: detectIntent(sourceIdea),
+        initialIdea: sourceIdea,
+        questions: [],
+        answers: [],
       });
       setResult(report);
       setPhase('report');
@@ -259,35 +275,31 @@ export default function IdeaToProduct({ lang, user, onClose }) {
 
   const handleSend = async () => {
     const value = draftText.trim();
-    if (!value) return;
+    if (!value || isTyping) return;
+
+    const nextConversation = messages.map((message) => ({ role: message.role, content: message.content }));
     setDraftText('');
+    setIdea((prev) => prev || value);
     appendMessage('user', value);
+    setIsTyping(true);
+    setError('');
 
-    if (!routeMode) {
-      const detected = detectIntent(value);
-      const nextQuestions = detected === 'supplier_match' ? t.supplierQuestions : t.buildQuestions;
-      setRouteMode(detected);
-      setIdea(value);
-      const intro = detected === 'supplier_match' ? t.supplierRouteIntro : t.buildRouteIntro;
-      appendMessage('assistant', `${intro}\n\n${nextQuestions[0]}`);
-      setQuestionIndex(0);
-      return;
-    }
-
-    if (questionIndex >= 0) {
-      const nextAnswers = [...answers, value];
-      setAnswers(nextAnswers);
-
-      if (questionIndex < questions.length - 1) {
-        const nextIndex = questionIndex + 1;
-        setQuestionIndex(nextIndex);
-        appendMessage('assistant', questions[nextIndex]);
-        return;
-      }
-
-      setQuestionIndex(-1);
-      appendMessage('assistant', t.generating);
-      await generateReport(idea, routeMode, nextAnswers);
+    try {
+      const supportResult = await requestSupportReply({
+        language: lang,
+        conversation: nextConversation,
+        userMessage: value,
+        userProfile: {
+          role: 'buyer',
+          representativeName,
+        },
+      });
+      appendMessage('assistant', supportResult?.reply || t.error);
+    } catch (_error) {
+      appendMessage('assistant', t.error);
+      setError(t.error);
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -348,6 +360,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18 }}>
+      <style>{`@keyframes maabarTyping { 0%, 80%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-3px); opacity: 1; } }`}</style>
       <div style={{ width: '100%', maxWidth: 760, height: 'min(88vh, 860px)', background: '#141519', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
         <div style={{ padding: '20px 24px', background: '#191A1F', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
           <div>
@@ -364,6 +377,8 @@ export default function IdeaToProduct({ lang, user, onClose }) {
           {messages.map((message) => (
             <Bubble key={message.id} role={message.role} isAr={isAr}>{message.content}</Bubble>
           ))}
+
+          {isTyping && <TypingBubble isAr={isAr} />}
 
           {phase === 'report' && result && (
             <div style={{ marginTop: 8, padding: 18, background: '#1F2025', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18 }}>
@@ -428,10 +443,18 @@ export default function IdeaToProduct({ lang, user, onClose }) {
                   direction: isAr ? 'rtl' : 'ltr',
                 }}
               />
-              <button onClick={handleSend} disabled={!draftText.trim()} style={{ minWidth: 112, background: draftText.trim() ? '#E8E3D8' : '#555', color: '#141414', border: 'none', padding: '14px 18px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: draftText.trim() ? 'pointer' : 'default', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              <button onClick={handleSend} disabled={!draftText.trim() || isTyping} style={{ minWidth: 112, background: draftText.trim() && !isTyping ? '#E8E3D8' : '#555', color: '#141414', border: 'none', padding: '14px 18px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: draftText.trim() && !isTyping ? 'pointer' : 'default', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {t.send}
               </button>
             </div>
+            {hasUserMessages && (
+              <button
+                onClick={generateReport}
+                disabled={isTyping}
+                style={{ marginTop: 10, width: '100%', background: 'transparent', color: '#E8E3D8', border: '1px solid rgba(232,227,216,0.18)', padding: '12px 14px', borderRadius: 14, fontSize: 12, cursor: isTyping ? 'default' : 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: isTyping ? 0.5 : 1 }}>
+                {isAr ? 'حوّل المحادثة إلى تقرير احترافي' : lang === 'zh' ? '将对话整理成专业报告' : 'Turn this conversation into a professional brief'}
+              </button>
+            )}
           </div>
         )}
       </div>
