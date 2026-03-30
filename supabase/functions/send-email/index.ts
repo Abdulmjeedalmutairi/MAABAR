@@ -283,31 +283,31 @@ const templates = {
 <meta name="supported-color-schemes" content="light only">
 <title>${d.subject || 'مَعبر'}</title>
 </head>
-<body style="margin:0;padding:24px 10px;background:#171717;font-family:Tahoma,Arial,sans-serif;color:#f3f3f3;direction:rtl;text-align:right">
-  <div style="max-width:560px;margin:0 auto;background:#222329;border:1px solid #2b2c31;border-radius:12px;overflow:hidden">
-    <div style="padding:30px 24px;background:#ffffff;text-align:center;border-bottom:1px solid #e8e8e8">
-      <div style="font-size:26px;line-height:1.4;font-weight:800;color:#111111;letter-spacing:.3px">${d.logoText || 'مَعبر | Maabar'}</div>
+<body style="margin:0;padding:0;background:#4b4b4f;font-family:Tahoma,Arial,sans-serif;color:#f3f3f3;direction:rtl;text-align:right">
+  <div style="max-width:560px;margin:0 auto;background:#4b4b4f;overflow:hidden">
+    <div style="padding:28px 24px;background:#0b0b0d;text-align:center">
+      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:280px;width:100%;height:auto;display:inline-block" />` : `<div style="font-size:26px;line-height:1.4;font-weight:800;color:#ffffff;letter-spacing:.3px">${d.logoText || 'مَعبر | Maabar'}</div>`}
     </div>
-    <div style="padding:34px 32px 38px;background:#222329;direction:rtl;text-align:right">
-      <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:#9a9a9f">${d.kicker || 'مَعبر | Maabar'}</p>
+    <div style="padding:38px 32px 40px;background:#4b4b4f;direction:rtl;text-align:right">
+      <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:#cfcfd2">${d.kicker || 'مَعبر | Maabar'}</p>
       <h1 style="margin:0 0 12px;font-size:36px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
       ${d.subheadline ? `<p style="margin:0 0 22px;font-size:24px;line-height:1.8;font-weight:700;color:#ffffff">${d.subheadline}</p>` : ''}
-      ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#e1e1e3">${p}</p>`).join('') : ''}
+      ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#ececef">${p}</p>`).join('') : ''}
       ${Array.isArray(d.bullets) && d.bullets.length ? `
-      <div style="margin:28px 0;padding:22px 22px;background:#2a2b30;border-radius:10px;border:1px solid #2f3036">
+      <div style="margin:28px 0;padding:22px 22px;background:#4b4b4f;border-radius:0;border-top:1px solid #2a2a2d;border-bottom:1px solid #2a2a2d">
         <p style="margin:0 0 16px;font-size:18px;line-height:1.8;font-weight:700;color:#ffffff">${d.bulletsTitle || 'المزايا'}</p>
-        <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside;color:#e1e1e3">
-          ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#e1e1e3">${item}</li>`).join('')}
+        <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside;color:#ececef">
+          ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#ececef">${item}</li>`).join('')}
         </ul>
       </div>` : ''}
       ${d.footnote ? `<p style="margin:0 0 28px;font-size:19px;line-height:1.9;font-weight:800;color:#ffffff">${d.footnote}</p>` : ''}
       <div style="text-align:center;margin-top:28px">
-        <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#ffffff;color:#111111;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
+        <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;padding:16px 28px;border-radius:8px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
       </div>
     </div>
-    <div style="padding:24px 20px;background:#2a2b30;border-top:1px solid #313238;text-align:center">
+    <div style="padding:24px 20px;background:#4b4b4f;border-top:1px solid #2f2f33;text-align:center">
       <div style="font-size:16px;font-weight:800;letter-spacing:4px;color:#ffffff">MAABAR</div>
-      <div style="font-size:12px;color:#b7b7bb;margin-top:8px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
+      <div style="font-size:12px;color:#e1e1e3;margin-top:8px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
     </div>
   </div>
 </body>
