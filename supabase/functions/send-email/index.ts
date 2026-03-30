@@ -63,14 +63,8 @@ function wrap(content, options = {}) {
             </td>
           </tr>
           <tr>
-            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:24px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#111113" style="width:100%;background:#111113;background-color:#111113;background-image:linear-gradient(#111113,#111113);border:1px solid rgba(255,255,255,.06);border-radius:16px;">
-                <tr>
-                  <td bgcolor="#111113" style="background:#111113;background-color:#111113;background-image:linear-gradient(#111113,#111113);padding:28px 24px;border-radius:16px;">
-                    ${darkBlend(content, '#111113')}
-                  </td>
-                </tr>
-              </table>
+            <td bgcolor="#101114" style="background:#101114;background-color:#101114;background-image:linear-gradient(#101114,#101114);padding:40px 32px;">
+              ${darkBlend(content, '#101114')}
             </td>
           </tr>
           <tr>
@@ -420,8 +414,8 @@ const templates = {
     <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
       ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : darkBlend(brandLockup(), '#0a0a0b')}
     </div>
-    <div style="padding:24px;background:#0a0a0b">
-      <div style="padding:30px 24px;background:#111113;background-image:linear-gradient(#111113,#111113);border:1px solid rgba(255,255,255,.06);border-radius:16px;direction:${locale.dir};text-align:${locale.align}">
+    <div style="padding:0;background:#0a0a0b">
+      <div style="padding:42px 32px;background:#101114;background-image:linear-gradient(#101114,#101114);direction:${locale.dir};text-align:${locale.align}">
         ${darkBlend(`
         <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:rgba(255,255,255,.42)">${d.kicker || 'مَعبر | MAABAR'}</p>
         <h1 style="margin:0 0 12px;font-size:36px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
