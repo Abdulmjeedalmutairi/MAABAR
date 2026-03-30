@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { generateIdeaToProductReport, requestProductConversationReply } from '../lib/maabarAi/client';
@@ -216,6 +216,8 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const representativeName = useMemo(() => SAUDI_REPRESENTATIVE_NAMES[Math.floor(Math.random() * SAUDI_REPRESENTATIVE_NAMES.length)], []);
   const initialMessages = useMemo(() => getInitialMessages(lang, representativeName), [lang, representativeName]);
   const [minimized, setMinimized] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  const bodyRef = useRef(null);
   const [draftText, setDraftText] = useState('');
   const [phase, setPhase] = useState('chat');
   const [idea, setIdea] = useState('');
@@ -228,6 +230,17 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   );
 
   const hasUserMessages = useMemo(() => messages.some((message) => message.role === 'user'), [messages]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!bodyRef.current) return;
+    bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [messages, isTyping, phase]);
 
   const resetAll = () => {
     setDraftText('');
@@ -359,9 +372,9 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 18 }}>
       <style>{`@keyframes maabarTyping { 0%, 80%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-3px); opacity: 1; } }`}</style>
-      <div style={{ width: '100%', maxWidth: 760, height: 'min(88vh, 860px)', background: '#141519', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : 760, height: isMobile ? '100dvh' : 'min(88vh, 860px)', background: '#141519', border: '1px solid rgba(255,255,255,0.07)', borderRadius: isMobile ? 0 : 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: isMobile ? 'none' : '0 30px 80px rgba(0,0,0,0.5)' }}>
         <div style={{ padding: '20px 24px', background: '#191A1F', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
           <div>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#F4F1EB', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.title}</p>
@@ -373,7 +386,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 14, background: 'linear-gradient(180deg, #17181D 0%, #141519 100%)', direction: isAr ? 'rtl' : 'ltr' }}>
+        <div ref={bodyRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: isMobile ? '18px 14px' : '24px 22px', display: 'flex', flexDirection: 'column', gap: 14, background: 'linear-gradient(180deg, #17181D 0%, #141519 100%)', direction: isAr ? 'rtl' : 'ltr' }}>
           {messages.map((message) => (
             <Bubble key={message.id} role={message.role} isAr={isAr}>{message.content}</Bubble>
           ))}
@@ -386,7 +399,6 @@ export default function IdeaToProduct({ lang, user, onClose }) {
               <ReportRow label={t.reportFields.product} value={lang === 'zh' ? result.product_name_zh : (isAr ? result.product_name_ar : result.product_name_en)} isAr={isAr} />
               <ReportRow label={t.reportFields.factory} value={result.factory_type} isAr={isAr} />
               <ReportRow label={t.reportFields.city} value={result.city} isAr={isAr} />
-              <ReportRow label={t.reportFields.cost} value={result.price_estimate} isAr={isAr} />
               <ReportRow label={t.reportFields.moq} value={result.moq} isAr={isAr} />
               <ReportRow label={t.reportFields.timeline} value={result.timeline} isAr={isAr} />
               <ReportRow label={t.reportFields.category} value={CAT_LABEL[lang]?.[result.category] || result.category} isAr={isAr} />
@@ -415,7 +427,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
         </div>
 
         {phase !== 'report' && (
-          <div style={{ padding: 18, borderTop: '1px solid rgba(255,255,255,0.06)', background: '#17181D' }}>
+          <div style={{ padding: isMobile ? '14px 12px calc(14px + env(safe-area-inset-bottom))' : 18, borderTop: '1px solid rgba(255,255,255,0.06)', background: '#17181D' }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <textarea
                 value={draftText}

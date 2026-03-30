@@ -82,7 +82,7 @@ Return ONLY valid JSON with these exact fields:
   "specs": "Key specifications and user requirements",
   "factory_type": "Type of supplier or factory needed",
   "city": "Best Chinese manufacturing city",
-  "price_estimate": "Estimated target/unit price in USD if possible",
+  "price_estimate": "Leave this empty unless the user explicitly provided a target price",
   "moq": "Recommended minimum order quantity",
   "timeline": "Estimated production timeline",
   "request_description": "Professional supplier-ready brief for matching and sourcing",
@@ -118,6 +118,7 @@ Rules:
 - If this is the first reply, open with: ${getRepresentativeOpening(payload.language, representativeName)}
 - If the user greets you, greet back naturally.
 - If the user is describing a product idea, help shape the idea before suggesting suppliers.
+- Do not ask about payment method.
 - Do not rush to tell them to post a request unless the concept is already clear.
 - Ask only one concise follow-up question at a time.
 - Understand short and typo-heavy Arabic.
