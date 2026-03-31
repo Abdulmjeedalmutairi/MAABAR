@@ -3,7 +3,11 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
 import { sendMaabarEmail } from '../lib/maabarEmail';
-import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
+import {
+  getSupplierOnboardingState,
+  getSupplierPrimaryRoute,
+  shouldPromoteSupplierToReview,
+} from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 import { buildAuthCallbackUrl } from '../lib/authRedirects';
 
@@ -12,7 +16,7 @@ const L = {
     buyerTitle: 'أهلاً بك في مَعبر',
     buyerSub: 'تسوّق من موردين صينيين موثوقين',
     supplierTitle: 'طلب انضمام المورد',
-    supplierSub: 'هذه هي صفحة التسجيل الموحدة للموردين. أدخل بيانات الشركة الأساسية مرة واحدة، أضف رابط متجرك أو موقعك، أكّد بريدك الإلكتروني، ثم سننقلك إلى صفحة حالة الطلب تحت المراجعة.',
+    supplierSub: 'هذه هي صفحة الدخول والتقديم الموحدة للموردين. إذا كان حسابك معتمداً بالفعل فسجّل الدخول مباشرة. وإذا كنت تتقدّم لأول مرة فأدخل بيانات الشركة الأساسية، أضف روابط صفحاتك التجارية، أكّد بريدك الإلكتروني، ثم سننقلك إلى صفحة حالة الطلب.',
     email: 'البريد الإلكتروني',
     pass: 'كلمة المرور',
     firstName: 'الاسم الأول',
@@ -23,7 +27,7 @@ const L = {
     supCompany: 'اسم الشركة',
     whatsapp: 'واتساب',
     wechat: 'WeChat',
-    tradeLink: 'رابط موقع الشركة أو متجر Alibaba',
+    tradeLink: 'روابط الصفحات التجارية',
     country: 'الدولة',
     supCity: 'المدينة',
     speciality: 'التخصص (اختياري)',
@@ -57,7 +61,7 @@ const L = {
     buyerTitle: 'Welcome to Maabar',
     buyerSub: 'Shop from verified Chinese suppliers',
     supplierTitle: 'Supplier application',
-    supplierSub: 'This is the single shared supplier signup page. Submit your basic company details once, add your trade profile link, confirm your email, and we will take you straight into your pending-review status page.',
+    supplierSub: 'This is the shared supplier access page for both sign-in and first-time applications. If your supplier account is already approved, sign in directly. If you are applying for the first time, submit the basic company details, add your trade page links, confirm your email, and we will take you to the application-status page.',
     email: 'Email',
     pass: 'Password',
     firstName: 'First Name',
@@ -68,7 +72,7 @@ const L = {
     supCompany: 'Company Name',
     whatsapp: 'WhatsApp',
     wechat: 'WeChat',
-    tradeLink: 'Company Website or Alibaba Store URL',
+    tradeLink: 'Trade Page Links',
     country: 'Country',
     supCity: 'City',
     speciality: 'Specialty (optional)',
@@ -102,7 +106,7 @@ const L = {
     buyerTitle: '欢迎来到 Maabar',
     buyerSub: '从认证中国供应商采购',
     supplierTitle: '供应商申请',
-    supplierSub: '这是统一的供应商注册申请页。一次填写基础公司资料、补充店铺或官网链接并确认邮箱后，系统会直接带您进入待审核状态页。',
+    supplierSub: '这是供应商统一入口页，同时支持已批准账户登录和首次申请。若您的账户已经获批，请直接登录；若您是首次申请，请填写基础公司资料、补充贸易页面链接并完成邮箱确认，系统会带您进入申请状态页。',
     email: '电子邮件',
     pass: '密码',
     firstName: '名',
@@ -113,7 +117,7 @@ const L = {
     supCompany: '公司名称',
     whatsapp: 'WhatsApp',
     wechat: 'WeChat',
-    tradeLink: '公司官网或阿里巴巴店铺链接',
+    tradeLink: '贸易页面链接',
     country: '国家',
     supCity: '城市',
     speciality: '专业领域（可选）',
@@ -152,14 +156,14 @@ const SUPPLIER_SIGNUP_CONTENT = {
     introBody: 'هذا التسجيل الأول ليس تحققاً كاملاً. الفكرة هنا أن ترسل هوية الشركة الأساسية ورابطاً تجارياً موثوقاً، ثم نبدأ المراجعة بعد تأكيد البريد.',
     steps: ['بيانات شركة أساسية', 'تأكيد البريد الإلكتروني', 'حالة تحت المراجعة ثم تواصل الفريق'],
     checklist: [
-      'استخدم اسم الشركة الرسمي أو الاسم المعروف في Alibaba/1688',
-      'أضف رابط متجر أو موقع يمكن للفريق مراجعته بسرعة',
+      'استخدم اسم الشركة الرسمي أو الاسم الذي يعرفك به المشترون',
+      'أضف رابط صفحة تجارية حقيقية أو موقعاً رسمياً يمكن للفريق مراجعته بسرعة',
       'WeChat مفيد جداً إذا كان هذا هو أسلوب التواصل الأساسي لديك',
     ],
     companyHint: 'الأفضل كتابة اسم الشركة القانوني أو اسم المتجر المعروف لدى المشترين.',
     countryHint: 'إذا كانت شركتك مسجلة في الصين فاكتب الصين / China / 中国 حسب ما تفضّل.',
     cityHint: 'أدخل المدينة التي يعمل منها فريقك التجاري أو المصنع.',
-    tradeLinkHint: 'الروابط المقبولة تشمل متجر Alibaba أو صفحة 1688 أو حساب Made-in-China أو الموقع الرسمي للشركة.',
+    tradeLinkHint: 'أضف رابط صفحة المنتج أو صفحة الشركة أو المتجر أو الموقع الرسمي. يمكنك إدخال أكثر من رابط وفصلها بسطر جديد.',
     specialityHint: 'مثال: أدوات مطبخ، تعبئة وتغليف، إلكترونيات استهلاكية.',
     contactTitle: 'قنوات التواصل المفضلة',
     contactBody: 'WeChat اختياري لكنه يبني الثقة أكثر مع المورد الصيني لأنه القناة الأكثر توقعاً في هذه المرحلة.',
@@ -170,17 +174,17 @@ const SUPPLIER_SIGNUP_CONTENT = {
   en: {
     introTag: 'For Chinese suppliers',
     introTitle: 'Submit only the basics now — then wait in a clear review-status page',
-    introBody: 'This first signup is intentionally lighter than full verification. The goal is to capture a credible company identity and trade link first, then start review after email confirmation.',
+    introBody: 'This first signup is intentionally lighter than full verification. The goal is to capture a credible company identity and trade page first, then start review only after real email confirmation.',
     steps: ['Basic company profile', 'Email confirmation', 'Pending review then direct team follow-up'],
     checklist: [
-      'Use the legal company name or the name buyers know from Alibaba / 1688',
-      'Add a real store link or company website that can be reviewed quickly',
+      'Use the legal company name or the name buyers already know',
+      'Add a real trade page or company website that can be reviewed quickly',
       'WeChat is optional, but it helps if that is your normal business channel',
     ],
     companyHint: 'Best if this matches your legal company name or the storefront name buyers already know.',
     countryHint: 'If the company is registered in mainland China, enter China / 中国 if that is how you present it publicly.',
     cityHint: 'Enter the city your sales team or factory operates from.',
-    tradeLinkHint: 'Accepted links include an Alibaba storefront, 1688 page, Made-in-China profile, or company website.',
+    tradeLinkHint: 'Add a product page, company profile, storefront, or company website. You can include more than one link by placing each one on a new line.',
     specialityHint: 'Optional — e.g. kitchenware, packaging, consumer electronics.',
     contactTitle: 'Preferred contact channels',
     contactBody: 'WeChat is optional, but for many Chinese suppliers it is the fastest trust-building contact method during review.',
@@ -194,14 +198,14 @@ const SUPPLIER_SIGNUP_CONTENT = {
     introBody: '首次申请故意保持轻量，不是一次性做完整认证。先提交可信的公司身份和贸易资料链接，邮箱确认后再正式进入审核。',
     steps: ['基础公司资料', '邮箱确认', '待审核状态页 + 团队跟进'],
     checklist: [
-      '请填写营业主体名称，或买家熟悉的 Alibaba / 1688 店铺名称',
-      '请提供真实可访问的店铺链接或官网，方便快速审核',
+      '请填写营业主体名称，或买家已经熟悉的公司/店铺名称',
+      '请提供真实可访问的贸易页面或官网，方便快速审核',
       'WeChat 虽然不是必填，但如果这是您的常用商务渠道，建议填写',
     ],
     companyHint: '建议填写营业执照主体名称，或买家已经熟悉的店铺名称。',
     countryHint: '如果公司注册在中国大陆，可填写 China / 中国。',
     cityHint: '填写销售团队或工厂所在城市即可。',
-    tradeLinkHint: '支持 Alibaba 店铺、1688 页面、Made-in-China 主页或公司官网。',
+    tradeLinkHint: '可填写产品页、公司主页、店铺页或官网。若有多个链接，可按换行逐条填写。',
     specialityHint: '可选，例如：厨房用品、包装材料、消费电子。',
     contactTitle: '优先联系渠道',
     contactBody: 'WeChat 不是必填，但对中国供应商来说，它通常是审核阶段最自然、最容易建立信任的联系方式。',
@@ -213,6 +217,25 @@ const SUPPLIER_SIGNUP_CONTENT = {
 
 function trimValue(value) {
   return typeof value === 'string' ? value.trim() : value;
+}
+
+function normalizeTradeLinkList(value) {
+  if (Array.isArray(value)) {
+    return value.map(trimValue).filter(Boolean);
+  }
+
+  return String(value || '')
+    .split(/\r?\n/)
+    .map(trimValue)
+    .filter(Boolean);
+}
+
+function serializeTradeLinks(value) {
+  return normalizeTradeLinkList(value).join('\n');
+}
+
+function getPrimaryTradeLink(value) {
+  return normalizeTradeLinkList(value)[0] || '';
 }
 
 function buildFieldErrorMap({
@@ -279,7 +302,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [supCompany, setSupCompany] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [wechat, setWechat] = useState('');
-  const [tradeLink, setTradeLink] = useState('');
+  const [tradeLinksInput, setTradeLinksInput] = useState('');
   const [country, setCountry] = useState('');
   const [supCity, setSupCity] = useState('');
   const [speciality, setSpeciality] = useState('');
@@ -290,7 +313,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   useEffect(() => {
     if (!user || !profile || !isSupplier || profile.role !== 'supplier') return;
-    nav(getSupplierPrimaryRoute(profile), { replace: true });
+    nav(getSupplierPrimaryRoute(profile, user), { replace: true });
   }, [user, profile, isSupplier, nav]);
 
   const hasPendingAiReview = () => {
@@ -311,7 +334,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       supCompany,
       country,
       supCity,
-      tradeLink,
+      tradeLink: serializeTradeLinks(tradeLinksInput),
     },
     agreedTerms,
     langPack: l,
@@ -327,12 +350,14 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     supCompany,
     country,
     supCity,
-    tradeLink,
+    tradeLinksInput,
     agreedTerms,
     l,
   ]);
 
   const requiredAsterisk = <span style={{ color: '#d66b6b' }}> *</span>;
+  const normalizedTradeLinks = useMemo(() => normalizeTradeLinkList(tradeLinksInput), [tradeLinksInput]);
+  const primaryTradeLink = normalizedTradeLinks[0] || '';
 
   const getEmailConfirmationRedirect = (nextPath = '/dashboard') => buildAuthCallbackUrl(nextPath, isSupplier ? 'supplier' : 'buyer');
 
@@ -411,16 +436,29 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     setUser(data.user);
     const { data: profile } = await sb
       .from('profiles')
-      .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,reg_number,years_experience,license_photo,factory_photo')
+      .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,trade_links,reg_number,years_experience,license_photo,factory_photo')
       .eq('id', data.user.id)
       .single();
 
-    if (profile) setProfile(profile);
+    let nextProfile = profile;
 
-    if (profile?.role === 'supplier') {
-      const supplierState = getSupplierOnboardingState(profile);
+    if (nextProfile?.role === 'supplier' && shouldPromoteSupplierToReview(nextProfile, data.user)) {
+      const { data: promotedProfile } = await sb
+        .from('profiles')
+        .update({ status: 'pending' })
+        .eq('id', data.user.id)
+        .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,trade_links,reg_number,years_experience,license_photo,factory_photo')
+        .single();
+
+      if (promotedProfile) nextProfile = promotedProfile;
+    }
+
+    if (nextProfile) setProfile(nextProfile);
+
+    if (nextProfile?.role === 'supplier') {
+      const supplierState = getSupplierOnboardingState(nextProfile, data.user);
       if (!supplierState.canAccessOperationalFeatures) {
-        nav(getSupplierPrimaryRoute(profile));
+        nav(getSupplierPrimaryRoute(nextProfile, data.user));
         return;
       }
     }
@@ -457,7 +495,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         supCompany,
         country,
         supCity,
-        tradeLink,
+        tradeLink: serializeTradeLinks(tradeLinksInput),
       },
       agreedTerms,
       langPack: l,
@@ -474,7 +512,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     const metaData = {
       role,
-      status: isSupplier ? 'pending' : 'active',
+      status: isSupplier ? 'draft' : 'active',
       ...(!isSupplier && {
         full_name: `${trimValue(firstName)} ${trimValue(lastName)}`.trim(),
         phone: trimValue(phone),
@@ -485,7 +523,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         company_name: trimValue(supCompany),
         whatsapp: trimValue(whatsapp),
         wechat: trimValue(wechat),
-        trade_link: trimValue(tradeLink),
+        trade_link: primaryTradeLink,
+        trade_links: normalizedTradeLinks,
         speciality: trimValue(speciality),
         country: trimValue(country),
         city: trimValue(supCity),
@@ -520,7 +559,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             email: trimValue(email),
             whatsapp: trimValue(whatsapp),
             wechat: trimValue(wechat),
-            tradeLink: trimValue(tradeLink),
+            tradeLink: primaryTradeLink,
+            tradeLinks: normalizedTradeLinks,
             country: trimValue(country),
             city: trimValue(supCity),
             speciality: trimValue(speciality),
@@ -961,7 +1001,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
                   <div style={fieldStyle}>
                     <label style={labelStyle}>{l.tradeLink}{requiredAsterisk}</label>
-                    <input style={getFieldInputStyle('tradeLink')} value={tradeLink} onChange={(e) => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
+                    <textarea
+                      style={getFieldInputStyle('tradeLink', { minHeight: 108, resize: 'vertical', lineHeight: 1.7 })}
+                      value={tradeLinksInput}
+                      onChange={(e) => setTradeLinksInput(e.target.value)}
+                      placeholder={'https://example.com/company\nhttps://example.com/store'}
+                      dir="ltr"
+                    />
                     {getErrorText('tradeLink')}
                     <p style={helperTextStyle}>{supplierSignupContent.tradeLinkHint}</p>
                   </div>

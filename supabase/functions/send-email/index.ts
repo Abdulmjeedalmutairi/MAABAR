@@ -133,7 +133,7 @@ const templates = {
 <div class="ir"><span class="ik">التخصص</span><span class="iv">${d.speciality || '-'}</span></div>
 <div class="ir"><span class="ik">WhatsApp</span><span class="iv">${d.whatsapp || '-'}</span></div>
 <div class="ir"><span class="ik">WeChat</span><span class="iv">${d.wechat || '-'}</span></div>
-<div class="ir"><span class="ik">الرابط التجاري</span><span class="iv">${d.tradeLink || '-'}</span></div>
+<div class="ir"><span class="ik">روابط الصفحات التجارية</span><span class="iv">${(Array.isArray(d.tradeLinks) ? d.tradeLinks.filter(Boolean).join(' • ') : '') || d.tradeLink || '-'}</span></div>
 <div class="ir"><span class="ik">التحقق لاحقاً</span><span class="iv">السجل التجاري والرخصة والمستندات الكاملة تُجمع في خطوة التحقق اللاحقة عند الحاجة</span></div>
 </div>
 <div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة المورد ←</a></div>

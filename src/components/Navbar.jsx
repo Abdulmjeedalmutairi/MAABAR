@@ -16,8 +16,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
-  const supplierState = isSupplier ? getSupplierOnboardingState(profile) : null;
-  const supplierPrimaryRoute = isSupplier ? getSupplierPrimaryRoute(profile) : '/dashboard';
+  const supplierState = isSupplier ? getSupplierOnboardingState(profile, user) : null;
+  const supplierPrimaryRoute = isSupplier ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
   const supplierDashboardLabel = supplierState?.canAccessOperationalFeatures
     ? (isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard')
     : supplierState?.isUnderReviewStage

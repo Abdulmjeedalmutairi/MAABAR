@@ -15,7 +15,9 @@ import { sendMaabarEmail } from './lib/maabarEmail';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
+  getSupplierTradeLinks,
   shouldNotifyAdminOfConfirmedSupplier,
+  shouldPromoteSupplierToReview,
 } from './lib/supplierOnboarding';
 
 // Pages
@@ -66,6 +68,7 @@ function App() {
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
+        setLoading(true);
         loadProfile(session.user.id, 1, session.user);
       } else {
         setLoading(false);
@@ -74,6 +77,8 @@ function App() {
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        setLoading(true);
+        setProfile(null);
         setProfileError(false);
         loadProfile(session.user.id, 1, session.user);
       } else {
@@ -129,6 +134,7 @@ function App() {
           whatsapp: profileRow.whatsapp || '',
           wechat: profileRow.wechat || '',
           tradeLink: profileRow.trade_link || '',
+          tradeLinks: getSupplierTradeLinks(profileRow),
         },
       });
 
@@ -154,12 +160,29 @@ function App() {
       return loadProfile(id, attempt + 1, sessionUser);
     }
 
-    if (data) {
-      setProfile(data);
+    let profileRow = data;
+
+    if (profileRow && shouldPromoteSupplierToReview(profileRow, sessionUser)) {
+      const { data: promotedProfile, error: promoteError } = await sb
+        .from('profiles')
+        .update({ status: 'pending' })
+        .eq('id', id)
+        .select('*')
+        .single();
+
+      if (!promoteError && promotedProfile) {
+        profileRow = promotedProfile;
+      } else if (promoteError) {
+        console.error('supplier review promotion error:', promoteError);
+      }
+    }
+
+    if (profileRow) {
+      setProfile(profileRow);
       setProfileError(false);
-      await maybeNotifyAdminOfConfirmedSupplier(data, sessionUser);
+      await maybeNotifyAdminOfConfirmedSupplier(profileRow, sessionUser);
       // Send trader welcome email once after email confirmation — deduplicated via ref + notifications table
-      if (data?.role === 'buyer' && data?.status === 'active' && !welcomeEmailSentRef.current) {
+      if (profileRow?.role === 'buyer' && profileRow?.status === 'active' && !welcomeEmailSentRef.current) {
         welcomeEmailSentRef.current = true;
         try {
           const { data: existing } = await sb.from('notifications')
@@ -167,8 +190,8 @@ function App() {
           if (!existing || existing.length === 0) {
             await sendMaabarEmail({
               type: 'trader_welcome',
-              to: data.email,
-              data: { name: data.full_name || '', lang },
+              to: profileRow.email,
+              data: { name: profileRow.full_name || '', lang },
             });
             await sb.from('notifications').insert({
               user_id: id, type: 'trader_welcome_sent',
@@ -185,7 +208,12 @@ function App() {
     }
     setLoading(false);
 
-    if (!data) return; // Don't set up realtime if profile didn't load
+    if (!profileRow) return; // Don't set up realtime if profile didn't load
+
+    if (window._profileChannel) {
+      sb.removeChannel(window._profileChannel);
+      window._profileChannel = null;
+    }
 
     // Realtime — لو الأدمن غيّر status المورد يتحدث فوراً
     const ch = sb.channel(`profile-status-${id}`)
@@ -200,7 +228,7 @@ function App() {
   };
 
   const DashboardRouter = () => {
-    if (loading) return <div className="loading">...</div>;
+    if (loading || (user && !profile && !profileError)) return <div className="loading">...</div>;
     if (profileError) return (
       <div style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -211,7 +239,7 @@ function App() {
           فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.
         </p>
         <button
-          onClick={() => { setProfileError(false); setLoading(true); loadProfile(user?.id); }}
+          onClick={() => { setProfileError(false); setLoading(true); loadProfile(user?.id, 1, user); }}
           style={{
             background: 'rgba(255,255,255,0.88)', color: '#0a0a0b',
             border: 'none', padding: '12px 28px', borderRadius: 6,
@@ -233,7 +261,7 @@ function App() {
     if (!profile) return <DashboardBuyer {...sharedProps} />;
     if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
     if (profile.role === 'supplier') {
-      const supplierState = getSupplierOnboardingState(profile);
+      const supplierState = getSupplierOnboardingState(profile, user);
 
       if (supplierState.isRejectedStage)
         return (
@@ -346,8 +374,8 @@ function App() {
     const isAuthCallbackPage = location.pathname === '/auth/callback';
     const isChromelessPage = isSupplierAccessPage || isAuthCallbackPage;
     const pageDir = isChromelessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
-    const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile) : null;
-    const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile) : '/dashboard';
+    const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
+    const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
     const withSupplierOperationalAccess = (element) => {
       if (supplierState && !supplierState.canAccessOperationalFeatures) {
         return <Navigate to={supplierPrimaryRoute} replace />;

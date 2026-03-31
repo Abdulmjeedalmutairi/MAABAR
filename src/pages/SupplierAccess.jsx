@@ -14,17 +14,17 @@ const T = {
     back: 'Back',
     restart: 'Restart journey',
     currentlyOpen: 'Currently open',
-    heroEyebrow: 'Founding supplier access',
-    heroTitle: 'A clearer path for serious Chinese suppliers entering Saudi demand',
-    heroBody: 'Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi buyers. This page explains exactly what a supplier will see: one shared signup, email confirmation, pending review, then full access after approval.',
-    heroCardTitle: 'Designed for suppliers used to Alibaba / 1688 style workflows',
-    heroCardBody: 'We keep the first step lighter: basic company profile now, deeper verification later, and no duplicate registration loops.',
+    heroEyebrow: 'Maabar for suppliers',
+    heroTitle: 'A clearer path for Chinese suppliers reaching Saudi buyers',
+    heroBody: 'Maabar is a Saudi B2B platform connecting Chinese suppliers with Saudi buyers. This page explains the supplier journey clearly: apply once, confirm the email, wait in a visible review-status page, and sign in directly once approved.',
+    heroCardTitle: 'Built around a supplier-first onboarding flow',
+    heroCardBody: 'The first step stays light: basic company profile now, deeper verification later, and no duplicate registration loop.',
     heroPills: ['One signup only', 'Alibaba / 1688 / Made-in-China links accepted', 'No payout details at first signup'],
     marketplacesLabel: 'Accepted trade profile examples',
     marketplaces: ['Alibaba store', '1688 page', 'Made-in-China profile', 'Company website'],
-    benefitsEyebrow: 'Why join early',
-    benefitsTitle: 'Why this feels different from open-listing marketplaces',
-    benefitsBody: 'Chinese suppliers expect market visibility, but they also expect clarity. Early access here is positioned around Saudi demand, faster review, and less low-intent noise.',
+    benefitsEyebrow: 'Why suppliers use Maabar',
+    benefitsTitle: 'Why this feels clearer than open-listing marketplaces',
+    benefitsBody: 'Chinese suppliers want visibility, but they also want clarity. The goal here is clearer Saudi demand, less low-intent noise, and a review flow that is easy to understand.',
     benefits: [
       { title: 'Earlier Saudi positioning', description: 'Approved suppliers prepare their presence before wider supplier onboarding becomes crowded.' },
       { title: 'Cleaner demand signal', description: 'The goal is not mass listing volume. It is curated access around real buyer demand.' },
@@ -33,7 +33,7 @@ const T = {
     ],
     flowEyebrow: 'How it works',
     flowTitle: 'What the supplier journey looks like, step by step',
-    flowBody: 'No second application and no hidden extra signup page. Complete the basic supplier application once, confirm the email, then your account moves into a pending-review state while Maabar checks the application.',
+    flowBody: 'No second application and no hidden extra signup page. Complete the basic supplier application once, confirm the email, then your account moves into a visible review state while Maabar checks the application. If your account is already approved, you should sign in instead of applying again.',
     steps: [
       { step: '01', title: 'Submit the basic company profile', description: 'Company name, city, country, trade profile link, and optional WeChat / WhatsApp.' },
       { step: '02', title: 'Confirm the email address', description: 'Review does not really start until the submitted email is confirmed.' },
@@ -49,9 +49,9 @@ const T = {
     trustLaterItems: ['Payout details', 'Full business-license upload', 'Factory photo package', 'Long verification forms'],
     reviewTitle: 'Review expectations',
     reviewItems: ['Manual supplier screening, not instant auto-approval', 'Application status stays visible while you wait', 'Team contact usually happens by email first, then direct follow-up if needed'],
-    finalEyebrow: 'Limited intake',
-    finalTitle: 'Apply before the current early-access window closes',
-    finalBody: 'We are onboarding a limited number of Chinese suppliers before the broader launch. Strong, credible applications move into review first, and approved accounts unlock early supplier access ahead of the wider rollout.',
+    finalEyebrow: 'Ready to continue?',
+    finalTitle: 'Apply if you are new — sign in if your supplier account is already approved',
+    finalBody: 'New supplier applications move into review only after real email confirmation. Approved suppliers should return here to sign in directly and open their supplier dashboard.',
     deadlineLabel: 'Time left in current intake',
     days: 'Days',
     hours: 'Hours',
@@ -63,6 +63,7 @@ const T = {
     continueApplication: 'Continue supplier application',
     viewStatus: 'View application status',
     openDashboard: 'Open supplier dashboard',
+    approvedSignIn: 'Approved supplier? Sign in',
   },
   zh: {
     journey: ['首批通道', '为什么要尽早加入', '流程说明', '哪些信息最能建立信任', '在窗口关闭前申请'],
@@ -71,17 +72,17 @@ const T = {
     back: '返回',
     restart: '重新查看',
     currentlyOpen: '当前开放中',
-    heroEyebrow: '创始供应商早期通道',
+    heroEyebrow: 'Maabar 供应商入口',
     heroTitle: '给中国供应商一个更清晰的沙特市场入驻路径',
-    heroBody: 'Maabar 是一家沙特 B2B 平台，连接精选中国供应商与沙特买家。这个页面会把流程讲清楚：统一申请页、邮箱确认、待审核状态页，以及通过审核后再开放完整后台。',
-    heroCardTitle: '更符合阿里巴巴 / 1688 供应商熟悉的节奏',
+    heroBody: 'Maabar 是一家沙特 B2B 平台，连接中国供应商与沙特买家。这个页面会把供应商路径讲清楚：只申请一次、完成邮箱确认、进入明确的审核状态页，审核通过后直接登录后台。',
+    heroCardTitle: '围绕供应商真实流程设计',
     heroCardBody: '第一步保持轻量：先提交基础公司资料，深度认证放到后面，不做重复注册和来回跳转。',
     heroPills: ['只需注册一次', '支持 Alibaba / 1688 / Made-in-China 店铺链接', '首次申请不需要收款资料'],
     marketplacesLabel: '可接受的贸易资料链接示例',
     marketplaces: ['Alibaba 店铺', '1688 页面', 'Made-in-China 主页', '公司官网'],
-    benefitsEyebrow: '为什么尽早加入',
-    benefitsTitle: '这和普通开放式平台有什么不同',
-    benefitsBody: '中国供应商习惯看曝光机会，但更在意规则是否清楚。这里的早期入驻强调的是沙特买家需求、优先审核，以及更少低质量噪音。',
+    benefitsEyebrow: '为什么供应商会用 Maabar',
+    benefitsTitle: '为什么这比开放式平台更清楚',
+    benefitsBody: '中国供应商会关注曝光，但更看重规则是否清楚。这里强调的是更明确的沙特买家需求、更少低质量噪音，以及容易理解的审核流程。',
     benefits: [
       { title: '更早占位沙特买家需求', description: '审核通过的供应商可以在更大规模开放前先建立展示位置。' },
       { title: '需求信号更干净', description: '目标不是堆积供应商数量，而是围绕真实买家需求做精选引入。' },
@@ -90,7 +91,7 @@ const T = {
     ],
     flowEyebrow: '流程说明',
     flowTitle: '供应商实际会经历的步骤',
-    flowBody: '不会有第二套注册，也不会让您重复填表。基础供应商申请只提交一次，确认邮箱后，账户会直接进入待审核状态，等待 Maabar 团队审核。',
+    flowBody: '不会有第二套注册，也不会让您重复填表。基础供应商申请只提交一次，确认邮箱后，账户会进入明确可见的审核状态，等待 Maabar 团队审核。如果您的账户已经获批，就应直接登录，而不是重新申请。',
     steps: [
       { step: '01', title: '提交基础公司资料', description: '公司名称、所在国家和城市、贸易资料链接，以及可选的 WeChat / WhatsApp。' },
       { step: '02', title: '先完成邮箱确认', description: '只有邮箱确认完成后，团队审核才会真正开始。' },
@@ -106,9 +107,9 @@ const T = {
     trustLaterItems: ['收款资料', '完整营业执照上传', '整套工厂照片', '很长的认证表单'],
     reviewTitle: '审核预期',
     reviewItems: ['不是即时自动通过，而是人工筛选', '等待期间会有明确的状态页', '通常会先通过邮箱联系，需要时再进一步跟进'],
-    finalEyebrow: '限量开放',
-    finalTitle: '在当前早期窗口关闭前提交申请',
-    finalBody: '我们正在大规模开放前，先引入一批可信的中国供应商。资料更完整、可信度更高的申请会优先进入审核，通过后即可在更广泛开放前先获得早期权限。',
+    finalEyebrow: '准备继续？',
+    finalTitle: '新供应商请申请，已批准账户请直接登录',
+    finalBody: '新申请只有在邮箱真实确认后才会进入审核。已经批准的供应商应从这里直接登录并打开供应商后台。',
     deadlineLabel: '当前入驻窗口剩余时间',
     days: '天',
     hours: '小时',
@@ -120,6 +121,7 @@ const T = {
     continueApplication: '继续完成申请',
     viewStatus: '查看审核状态',
     openDashboard: '打开供应商后台',
+    approvedSignIn: '已批准供应商？直接登录',
   },
   ar: {
     journey: ['وصول تأسيسي', 'لماذا الانضمام المبكر', 'كيف تعمل الرحلة', 'ما الذي يبني الثقة', 'قدّم قبل الإطلاق'],
@@ -128,17 +130,17 @@ const T = {
     back: 'رجوع',
     restart: 'ابدأ من جديد',
     currentlyOpen: 'مفتوح حالياً',
-    heroEyebrow: 'وصول الموردين الأوائل',
-    heroTitle: 'مسار أوضح للمورد الصيني الراغب بدخول الطلب السعودي',
-    heroBody: 'مَعبر منصة سعودية B2B تربط الموردين الصينيين المختارين بالمشترين السعوديين. هذه الصفحة تشرح الرحلة بوضوح: تسجيل موحد، تأكيد بريد، حالة انتظار تحت المراجعة، ثم وصول كامل بعد الموافقة.',
-    heroCardTitle: 'منطق أقرب لما يتوقعه المورد المعتاد على Alibaba و1688',
+    heroEyebrow: 'مَعبر للموردين',
+    heroTitle: 'مسار أوضح للمورد الصيني للوصول إلى المشتري السعودي',
+    heroBody: 'مَعبر منصة سعودية B2B تربط الموردين الصينيين بالمشترين السعوديين. هذه الصفحة تشرح الرحلة بوضوح: تقديم واحد فقط، ثم تأكيد البريد، ثم صفحة حالة طلب واضحة، وبعد الموافقة يكون الدخول المباشر إلى لوحة المورد.',
+    heroCardTitle: 'الرحلة مبنية بما يناسب المورد أولاً',
     heroCardBody: 'الخطوة الأولى خفيفة: بيانات شركة أساسية الآن، والتحقق الأعمق لاحقاً، بدون تسجيل مكرر أو دوّامة صفحات.',
     heroPills: ['تسجيل واحد فقط', 'روابط Alibaba / 1688 / Made-in-China مقبولة', 'لا توجد بيانات استلام أرباح في التسجيل الأول'],
     marketplacesLabel: 'أمثلة الروابط المقبولة',
     marketplaces: ['متجر Alibaba', 'صفحة 1688', 'حساب Made-in-China', 'الموقع الرسمي للشركة'],
-    benefitsEyebrow: 'لماذا تنضم مبكراً',
-    benefitsTitle: 'ما الذي يجعل هذا مختلفاً عن منصات الإدراج المفتوح',
-    benefitsBody: 'المورد الصيني يهتم بالظهور، لكنه يهتم أكثر بوضوح القواعد. هنا التركيز على الطلب السعودي، أولوية المراجعة، وتقليل الضوضاء منخفضة الجودة.',
+    benefitsEyebrow: 'لماذا يستخدم المورد مَعبر',
+    benefitsTitle: 'ما الذي يجعل هذه الرحلة أوضح من المنصات المفتوحة',
+    benefitsBody: 'المورد الصيني يهتم بالظهور، لكنه يهتم أكثر بوضوح القواعد. هنا التركيز على طلب سعودي أوضح، وضوضاء أقل، ومسار مراجعة مفهوم من البداية.',
     benefits: [
       { title: 'تموضع أبكر أمام الطلب السعودي', description: 'الموردون الموافق عليهم يجهزون حضورهم قبل التوسع الأوسع للموردين.' },
       { title: 'إشارة طلب أنظف', description: 'الهدف ليس حشد أكبر عدد من الحسابات، بل وصول منتقى حول طلبات فعلية.' },
@@ -147,7 +149,7 @@ const T = {
     ],
     flowEyebrow: 'كيف تعمل الرحلة',
     flowTitle: 'ماذا سيرى المورد خطوة بخطوة',
-    flowBody: 'لا يوجد تسجيل ثانٍ ولا نماذج مكررة. ترسل طلب المورد الأساسي مرة واحدة، تؤكد البريد الإلكتروني، ثم ينتقل الحساب مباشرة إلى حالة انتظار تحت المراجعة حتى يراجع الفريق الطلب.',
+    flowBody: 'لا يوجد تسجيل ثانٍ ولا نماذج مكررة. ترسل طلب المورد الأساسي مرة واحدة، تؤكد البريد الإلكتروني، ثم ينتقل الحساب إلى حالة مراجعة واضحة حتى يراجع الفريق الطلب. وإذا كان حسابك معتمداً بالفعل فيفترض أن تسجّل الدخول مباشرة بدلاً من إعادة التقديم.',
     steps: [
       { step: '01', title: 'أرسل بيانات الشركة الأساسية', description: 'اسم الشركة، الدولة والمدينة، رابط المتجر أو الموقع، ووسائل تواصل اختيارية مثل WeChat وWhatsApp.' },
       { step: '02', title: 'أكّد البريد الإلكتروني أولاً', description: 'المراجعة لا تبدأ فعلياً قبل تأكيد البريد المرسل في الطلب.' },
@@ -163,9 +165,9 @@ const T = {
     trustLaterItems: ['بيانات استلام الأرباح', 'رفع الرخصة التجارية كاملة', 'باقة صور المصنع', 'نماذج تحقق طويلة'],
     reviewTitle: 'توقعات المراجعة',
     reviewItems: ['مراجعة يدوية وليست قبولاً آلياً فورياً', 'حالة الطلب تبقى ظاهرة أثناء الانتظار', 'التواصل يبدأ غالباً عبر البريد ثم متابعة مباشرة عند الحاجة'],
-    finalEyebrow: 'وصول محدود',
-    finalTitle: 'قدّم قبل إغلاق نافذة الوصول الحالية',
-    finalBody: 'نحن نستقبل عدداً محدوداً من الموردين الصينيين قبل الإطلاق الأوسع. الطلبات الأقوى والأوضح تدخل المراجعة أولاً، والموافق عليها تحصل على وصول مبكر قبل فتح المسار على نطاق أوسع.',
+    finalEyebrow: 'جاهز تكمّل؟',
+    finalTitle: 'إذا كنت جديداً فابدأ الطلب — وإذا كان حسابك معتمداً فسجّل الدخول',
+    finalBody: 'طلبات الموردين الجديدة لا تدخل المراجعة إلا بعد تأكيد البريد فعلياً. أما الموردون الموافق عليهم فيفترض أن يعودوا من هنا إلى تسجيل الدخول المباشر وفتح لوحة المورد.',
     deadlineLabel: 'الوقت المتبقي في نافذة القبول الحالية',
     days: 'أيام',
     hours: 'ساعات',
@@ -177,6 +179,7 @@ const T = {
     continueApplication: 'أكمل طلب المورد',
     viewStatus: 'عرض حالة الطلب',
     openDashboard: 'افتح لوحة المورد',
+    approvedSignIn: 'حسابك معتمد؟ سجّل الدخول',
   },
 };
 
@@ -216,8 +219,8 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
     return () => clearInterval(timer);
   }, []);
 
-  const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile) : null;
-  const supplierPrimaryRoute = supplierState ? getSupplierPrimaryRoute(profile) : '/login/supplier?mode=signup';
+  const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
+  const supplierPrimaryRoute = supplierState ? getSupplierPrimaryRoute(profile, user) : '/login/supplier?mode=signup';
   const hasExistingSupplierAccount = Boolean(user && profile?.role === 'supplier');
   const totalScenes = 5;
   const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
@@ -231,13 +234,17 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
 
   const finalApplyLabel = hasExistingSupplierAccount ? ctaCopy : copy.applyNow;
   const goToApply = () => nav(supplierPrimaryRoute);
+  const goToSignIn = () => nav('/login/supplier');
 
   return (
     <div dir={pageDir} lang={lang} className={`supplier-access-page supplier-scene-${activeScene}`}>
       <div className="supplier-access-topbar">
         <div className="supplier-access-shell supplier-access-topbar-inner">
           <BrandLogo as="button" size="sm" align={isAr ? 'flex-end' : 'flex-start'} onClick={() => nav('/')} />
-          <button onClick={goToApply} className="supplier-primary-btn">{copy.skip}</button>
+          <div className="supplier-topbar-actions">
+            <button onClick={goToSignIn} className="supplier-secondary-btn">{copy.approvedSignIn}</button>
+            <button onClick={goToApply} className="supplier-primary-btn">{copy.skip}</button>
+          </div>
         </div>
       </div>
 
@@ -422,6 +429,9 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
                 {activeScene === totalScenes - 1 ? (
                   <>
                     <button onClick={() => setActiveScene(0)} className="supplier-secondary-btn">{copy.restart}</button>
+                    {!hasExistingSupplierAccount ? (
+                      <button onClick={goToSignIn} className="supplier-secondary-btn">{copy.approvedSignIn}</button>
+                    ) : null}
                     <button onClick={goToApply} className="supplier-primary-btn">{finalApplyLabel}</button>
                   </>
                 ) : (
@@ -464,6 +474,12 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
+        }
+        .supplier-topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
         }
         .supplier-access-main {
           min-height: calc(100vh - 72px);

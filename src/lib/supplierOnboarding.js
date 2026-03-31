@@ -104,6 +104,7 @@ export function getSupplierVerificationState(profile = {}) {
 export function getSupplierStageFromStatus(rawStatus, options = {}) {
   const status = normalizeSupplierStatus(rawStatus);
   const applicationComplete = options?.applicationComplete;
+  const emailConfirmed = options?.emailConfirmed;
 
   if (status === 'active') return 'approved';
   if (status === 'rejected') return 'rejected';
@@ -111,6 +112,7 @@ export function getSupplierStageFromStatus(rawStatus, options = {}) {
 
   if (status === 'draft') return 'application';
   if (applicationComplete === false) return 'application';
+  if (emailConfirmed === false) return 'application';
 
   return 'under_review';
 }
@@ -137,9 +139,25 @@ export function hasConfirmedEmail(sessionUser) {
   return Boolean(sessionUser?.email_confirmed_at || sessionUser?.confirmed_at);
 }
 
+export function getSupplierTradeLinks(profile = {}) {
+  const tradeLinks = [];
+  const addTradeLink = (value) => {
+    const normalized = typeof value === 'string' ? value.trim() : '';
+    if (!normalized || tradeLinks.includes(normalized)) return;
+    tradeLinks.push(normalized);
+  };
+
+  if (Array.isArray(profile?.trade_links)) {
+    profile.trade_links.forEach(addTradeLink);
+  }
+
+  addTradeLink(profile?.trade_link);
+  return tradeLinks;
+}
+
 export function shouldNotifyAdminOfConfirmedSupplier(profile = {}, sessionUser = null) {
   if (profile?.role !== 'supplier' || !hasConfirmedEmail(sessionUser)) return false;
-  const supplierState = getSupplierOnboardingState(profile);
+  const supplierState = getSupplierOnboardingState(profile, sessionUser);
   return supplierState.isUnderReviewStage;
 }
 
@@ -148,7 +166,7 @@ export function buildSupplierTrustSignals(profile = {}) {
   const trustSignals = [];
 
   if (normalizedStatus === 'active') trustSignals.push('maabar_reviewed');
-  if (profile?.trade_link) trustSignals.push('trade_profile_available');
+  if (getSupplierTradeLinks(profile).length > 0) trustSignals.push('trade_profile_available');
   if (profile?.wechat) trustSignals.push('wechat_available');
   if (profile?.whatsapp) trustSignals.push('whatsapp_available');
   if (Array.isArray(profile?.factory_images) && profile.factory_images.length > 0) trustSignals.push('factory_media_available');
@@ -180,12 +198,14 @@ export function normalizeSupplierDocStoragePath(rawValue) {
   }
 }
 
-export function getSupplierOnboardingState(profile = {}) {
+export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
   const application = getSupplierApplicationState(profile);
   const verification = getSupplierVerificationState(profile);
   const normalizedStatus = normalizeSupplierStatus(profile?.status);
+  const emailConfirmed = sessionUser ? hasConfirmedEmail(sessionUser) : null;
   const stage = getSupplierStageFromStatus(normalizedStatus, {
     applicationComplete: application.isApplicationComplete,
+    emailConfirmed,
   });
 
   const canAccessOperationalFeatures = stage === 'approved';
@@ -204,6 +224,8 @@ export function getSupplierOnboardingState(profile = {}) {
     stage,
     stageLabel: getSupplierStageLabel(stage),
     trustSignals: buildSupplierTrustSignals(profile),
+    tradeLinks: getSupplierTradeLinks(profile),
+    emailConfirmed,
     maabarSupplierId: getSupplierMaabarId(profile),
     isApplicationStage: stage === 'application',
     isUnderReviewStage: stage === 'under_review',
@@ -222,6 +244,15 @@ export function getSupplierOnboardingState(profile = {}) {
   };
 }
 
-export function getSupplierPrimaryRoute(profile = {}) {
-  return getSupplierOnboardingState(profile).routeGuardRedirect;
+export function shouldPromoteSupplierToReview(profile = {}, sessionUser = null) {
+  if (profile?.role !== 'supplier' || !hasConfirmedEmail(sessionUser)) return false;
+
+  const normalizedStatus = normalizeSupplierStatus(profile?.status);
+  const { isApplicationComplete } = getSupplierApplicationState(profile);
+
+  return isApplicationComplete && normalizedStatus === 'draft';
+}
+
+export function getSupplierPrimaryRoute(profile = {}, sessionUser = null) {
+  return getSupplierOnboardingState(profile, sessionUser).routeGuardRedirect;
 }

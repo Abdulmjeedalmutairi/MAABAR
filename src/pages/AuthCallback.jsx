@@ -101,7 +101,7 @@ export default function AuthCallback({ user, profile, lang }) {
     if (status !== 'ready' || !user) return;
 
     if (profile?.role === 'supplier') {
-      nav(getSupplierPrimaryRoute(profile), { replace: true });
+      nav(getSupplierPrimaryRoute(profile, user), { replace: true });
       return;
     }
 
