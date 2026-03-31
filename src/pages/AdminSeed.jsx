@@ -84,11 +84,19 @@ export default function AdminSeed({ user, lang }) {
   };
 
   const loadPendingSuppliers = async () => {
-    const { data } = await sb.from('profiles')
+    setPendingSuppliersError(null);
+    const { data, error } = await sb.from('profiles')
       .select('id,role,status,full_name,company_name,city,country,speciality,whatsapp,wechat,trade_link,reg_number,license_photo,factory_photo,pay_method,alipay_account,swift_code,bank_name,years_experience,num_employees,created_at,email,bio_ar,bio_en,bio_zh')
       .eq('role', 'supplier')
       .in('status', getSupplierReviewQueueStatuses())
       .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('loadPendingSuppliers error:', error);
+      setPendingSuppliersError(`${error.code}: ${error.message}`);
+      return;
+    }
+
     if (data) setPendingSuppliers(data.filter((supplier) => getSupplierOnboardingState(supplier).isUnderReviewStage));
   };
 
