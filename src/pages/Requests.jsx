@@ -73,6 +73,7 @@ export default function Requests({ lang, user, profile }) {
   const [budgetRange, setBudgetRange] = useState({ min: '', max: '' });
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers]       = useState({});
+  const [submittingOfferId, setSubmittingOfferId] = useState(null);
   const [usdRate, setUsdRate]     = useState(3.75);
   useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
   const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
@@ -171,50 +172,74 @@ export default function Requests({ lang, user, profile }) {
   };
 
   const submitOffer = async (requestId, buyerId) => {
-    const o = offers[requestId];
-    if (!o?.price || !o?.moq || !o?.days) {
-      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : lang === 'zh' ? '请填写必填字段' : 'Fill required fields');
+    const o = offers[requestId] || {};
+    const price = parseFloat(o.price);
+    const days = parseInt(o.days, 10);
+    const moq = String(o.moq || '').trim();
+    const origin = String(o.origin || 'China').trim();
+    const note = String(o.note || '').trim();
+
+    if (!Number.isFinite(price) || price <= 0 || !moq || !Number.isFinite(days) || days <= 0) {
+      alert(isAr ? 'تأكد من السعر و MOQ ومدة التسليم قبل الإرسال' : lang === 'zh' ? '请先确认价格、起订量和交期是否 صحيحة' : 'Please check price, MOQ, and delivery days before sending');
       return;
     }
-    // Prevent duplicate offers
-    const { data: existing } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').single();
-    if (existing) { alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request'); return; }
-    const { error } = await sb.from('offers').insert({
-      request_id: requestId, supplier_id: user.id,
-      price: parseFloat(o.price), moq: o.moq,
-      delivery_days: parseInt(o.days), origin: o.origin, note: o.note, status: 'pending',
-    });
-    if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
-    // Update request status to offers_received when first offer comes in
-    await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
-    await sb.from('notifications').insert({
-      user_id: buyerId, type: 'new_offer',
-      title_ar: 'وصلك عرض جديد على طلبك',
-      title_en: 'You received a new offer',
-      title_zh: '您收到了新报价',
-      ref_id: requestId, is_read: false,
-    });
+
+    setSubmittingOfferId(requestId);
     try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          type: 'new_offer',
-          data: {
-            recipientUserId: buyerId,
-            name: 'Trader',
-            requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
-            supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
-            price: o.price,
-            deliveryDays: o.days,
-            lang,
-          },
-        }),
+      const { data: existing, error: existingError } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').limit(1).maybeSingle();
+      if (existingError) throw existingError;
+      if (existing) {
+        alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request');
+        return;
+      }
+
+      const { error } = await sb.from('offers').insert({
+        request_id: requestId,
+        supplier_id: user.id,
+        price,
+        moq,
+        delivery_days: days,
+        origin,
+        note: note || null,
+        status: 'pending',
       });
-    } catch (e) { console.error('email error:', e); }
-    alert(isAr ? 'تم إرسال عرضك!' : 'Offer submitted!');
-    toggleOfferForm(requestId);
-    loadRequests();
+      if (error) throw error;
+
+      await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
+      await sb.from('notifications').insert({
+        user_id: buyerId, type: 'new_offer',
+        title_ar: 'وصلك عرض جديد على طلبك',
+        title_en: 'You received a new offer',
+        title_zh: '您收到了新报价',
+        ref_id: requestId, is_read: false,
+      });
+      try {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'new_offer',
+            data: {
+              recipientUserId: buyerId,
+              name: 'Trader',
+              requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
+              supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
+              price,
+              deliveryDays: days,
+              lang,
+            },
+          }),
+        });
+      } catch (e) { console.error('email error:', e); }
+      alert(isAr ? 'تم إرسال عرضك!' : lang === 'zh' ? '报价已发送！' : 'Offer submitted!');
+      toggleOfferForm(requestId);
+      loadRequests();
+    } catch (error) {
+      console.error('submitOffer error:', error);
+      alert(isAr ? 'حدث خطأ أثناء إرسال العرض' : lang === 'zh' ? '发送报价时出错' : 'Error sending offer');
+    } finally {
+      setSubmittingOfferId(null);
+    }
   };
 
   const filtered = requests
@@ -222,8 +247,8 @@ export default function Requests({ lang, user, profile }) {
       (r.title_ar || '').includes(search) ||
       (r.title_en || '').toLowerCase().includes(search.toLowerCase())
     )
-    .filter(r => !budgetRange.min || !r.budget || (parseFloat(r.budget) >= parseFloat(budgetRange.min)))
-    .filter(r => !budgetRange.max || !r.budget || (parseFloat(r.budget) <= parseFloat(budgetRange.max)));
+    .filter(r => !budgetRange.min || !r.budget_per_unit || (parseFloat(r.budget_per_unit) >= parseFloat(budgetRange.min)))
+    .filter(r => !budgetRange.max || !r.budget_per_unit || (parseFloat(r.budget_per_unit) <= parseFloat(budgetRange.max)));
 
   const fmtDate = (d) => {
     if (!d) return '';
@@ -724,9 +749,9 @@ export default function Requests({ lang, user, profile }) {
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)}
-                      style={{ minHeight: 40 }}>
-                      {isAr ? 'إرسال العرض' : 'Send Offer'}
+                    <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)} disabled={submittingOfferId === r.id}
+                      style={{ minHeight: 40, opacity: submittingOfferId === r.id ? 0.7 : 1 }}>
+                      {submittingOfferId === r.id ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '发送中...' : 'Sending...') : (isAr ? 'إرسال العرض' : lang === 'zh' ? '发送报价' : 'Send Offer')}
                     </button>
                     <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}
                       style={{ minHeight: 40 }}>

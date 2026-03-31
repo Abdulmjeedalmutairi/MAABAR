@@ -859,10 +859,10 @@ export default function DashboardBuyer({ user, profile, lang }) {
                               )}
                             </div>
                             <p style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4 }}>
-                              {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>SAR</span>
+                              {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
                             </p>
                             <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 14 }}>
-                              MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}
+                              MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : 'Origin'}: ${o.origin}` : ''}
                             </p>
 
                             {o.status === 'pending' && (
