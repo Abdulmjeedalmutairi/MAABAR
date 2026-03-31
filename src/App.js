@@ -21,6 +21,7 @@ import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
 import PendingApproval from './pages/PendingApproval';
+import AuthCallback from './pages/AuthCallback';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Support from './pages/Support';
@@ -52,6 +53,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
   const welcomeEmailSentRef = React.useRef(false);
+  const supplierAdminEmailSentRef = React.useRef(new Set());
 
   useEffect(() => {
     fetchDisplayRates().then(setExchangeRates);
@@ -59,7 +61,7 @@ function App() {
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
-        loadProfile(session.user.id);
+        loadProfile(session.user.id, 1, session.user);
       } else {
         setLoading(false);
       }
@@ -68,7 +70,7 @@ function App() {
       setUser(session?.user ?? null);
       if (session?.user) {
         setProfileError(false);
-        loadProfile(session.user.id);
+        loadProfile(session.user.id, 1, session.user);
       } else {
         setProfile(null); setLoading(false);
         if (window._profileChannel) { sb.removeChannel(window._profileChannel); window._profileChannel = null; }
@@ -96,18 +98,69 @@ function App() {
     });
   };
 
-  const loadProfile = async (id, attempt = 1) => {
+  const maybeNotifyAdminOfConfirmedSupplier = async (profileRow, sessionUser) => {
+    const isConfirmedSupplier = profileRow?.role === 'supplier' && Boolean(sessionUser?.email_confirmed_at);
+    if (!isConfirmedSupplier) return;
+    if (supplierAdminEmailSentRef.current.has(profileRow.id)) return;
+
+    supplierAdminEmailSentRef.current.add(profileRow.id);
+
+    try {
+      const { data: existing } = await sb.from('notifications')
+        .select('id')
+        .eq('user_id', profileRow.id)
+        .eq('type', 'supplier_admin_notified')
+        .limit(1);
+
+      if (existing?.length) return;
+
+      const _ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+      const _URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
+
+      await fetch(_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_ANON}` },
+        body: JSON.stringify({
+          type: 'admin_new_supplier',
+          data: {
+            companyName: profileRow.company_name || profileRow.full_name || '',
+            email: profileRow.email || sessionUser?.email || '',
+            country: profileRow.country || '',
+            city: profileRow.city || '',
+            speciality: profileRow.speciality || '',
+            whatsapp: profileRow.whatsapp || '',
+            wechat: profileRow.wechat || '',
+            tradeLink: profileRow.trade_link || '',
+          },
+        }),
+      });
+
+      await sb.from('notifications').insert({
+        user_id: profileRow.id,
+        type: 'supplier_admin_notified',
+        title_ar: 'تم إشعار الإدارة بطلب المورد بعد تأكيد البريد',
+        title_en: 'Admin was notified after supplier email confirmation',
+        is_read: true,
+      });
+    } catch (notifyError) {
+      supplierAdminEmailSentRef.current.delete(profileRow.id);
+      console.error('supplier admin notification error:', notifyError);
+    }
+  };
+
+  const loadProfile = async (id, attempt = 1, sessionUser = null) => {
     const { data, error } = await sb.from('profiles').select('*').eq('id', id).single();
 
     if (!data && attempt < 5) {
       // DB trigger may not have run yet — retry up to 4 times with backoff
       await new Promise(r => setTimeout(r, attempt * 800));
-      return loadProfile(id, attempt + 1);
+      return loadProfile(id, attempt + 1, sessionUser);
     }
 
     if (data) {
       setProfile(data);
       setProfileError(false);
+      await maybeNotifyAdminOfConfirmedSupplier(data, sessionUser);
       // Send trader welcome email once after email confirmation — deduplicated via ref + notifications table
       if (data?.role === 'buyer' && data?.status === 'active' && !welcomeEmailSentRef.current) {
         welcomeEmailSentRef.current = true;
@@ -272,7 +325,9 @@ function App() {
   function AppContent() {
     const location = useLocation();
     const isSupplierAccessPage = location.pathname === '/supplier-access';
-    const pageDir = isSupplierAccessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
+    const isAuthCallbackPage = location.pathname === '/auth/callback';
+    const isChromelessPage = isSupplierAccessPage || isAuthCallbackPage;
+    const pageDir = isChromelessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
     const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile) : null;
     const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile) : '/dashboard';
     const withSupplierOperationalAccess = (element) => {
@@ -284,13 +339,14 @@ function App() {
 
     return (
       <div dir={pageDir}>
-        {!isSupplierAccessPage && <Navbar {...sharedProps} />}
+        {!isChromelessPage && <Navbar {...sharedProps} />}
         <Routes>
           <Route path="/"               element={<Home            {...sharedProps} />} />
           <Route path="/products"       element={<Products        {...sharedProps} />} />
           <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
           <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
           <Route path="/login"          element={<Login           {...sharedProps} />} />
+          <Route path="/auth/callback"  element={<AuthCallback    {...sharedProps} />} />
           <Route path="/dashboard"      element={<DashboardRouter />} />
           <Route path="/about"          element={<About           {...sharedProps} />} />
           <Route path="/contact"        element={<Contact         {...sharedProps} />} />
@@ -312,7 +368,7 @@ function App() {
           <Route path="*"               element={<NotFound        {...sharedProps} />} />
         </Routes>
 
-        {!isSupplierAccessPage && (!profile || profile?.role === 'buyer') && (
+        {!isChromelessPage && (!profile || profile?.role === 'buyer') && (
           <AIHub lang={lang} user={user} profile={profile} />
         )}
       </div>

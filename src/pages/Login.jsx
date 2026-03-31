@@ -4,6 +4,7 @@ import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
+import { buildAuthCallbackUrl } from '../lib/authRedirects';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3V0emFsbXN6ZnFmY29meXdmZXR2LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJ1dHphbG1zenFmcWNvZnl3ZmV0diIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzczNjYxODQwLCJleHAiOjIwODkyMzc4NDB9.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -196,6 +197,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('');
   const [loading, setLoading] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [resendMsgType, setResendMsgType] = useState('');
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
@@ -264,6 +269,46 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   const requiredAsterisk = <span style={{ color: '#d66b6b' }}> *</span>;
 
+  const getEmailConfirmationRedirect = (nextPath = '/dashboard') => buildAuthCallbackUrl(nextPath, isSupplier ? 'supplier' : 'buyer');
+
+  const resendConfirmationEmail = async (targetEmail) => {
+    const normalizedEmail = trimValue(targetEmail || email);
+    if (!normalizedEmail) {
+      setResendMsg(l.fillRequired);
+      setResendMsgType('error');
+      return;
+    }
+
+    setResendingConfirmation(true);
+    setResendMsg('');
+    setResendMsgType('');
+
+    const { error } = await sb.auth.resend({
+      type: 'signup',
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: getEmailConfirmationRedirect('/dashboard'),
+      },
+    });
+
+    setResendingConfirmation(false);
+
+    if (error) {
+      setResendMsg(error.message);
+      setResendMsgType('error');
+      return;
+    }
+
+    setResendMsg(
+      lang === 'ar'
+        ? `أعدنا إرسال رسالة التفعيل إلى ${normalizedEmail}`
+        : lang === 'zh'
+          ? `确认邮件已重新发送至 ${normalizedEmail}`
+          : `We resent the confirmation email to ${normalizedEmail}`
+    );
+    setResendMsgType('success');
+  };
+
   const doSignIn = async () => {
     if (!trimValue(email) || !trimValue(pass)) {
       setShowValidation(true);
@@ -279,6 +324,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     if (error) {
       const lowerMessage = error.message.toLowerCase();
       if (lowerMessage.includes('email not confirmed')) {
+        setSubmittedEmail(trimValue(email));
         setMsg(l.emailNotConfirmed);
       } else if (lowerMessage.includes('invalid login credentials') || lowerMessage.includes('invalid email or password')) {
         setMsg(l.wrongCredentials);
@@ -291,6 +337,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     if (isSupplier && !data.user?.email_confirmed_at) {
       await sb.auth.signOut();
+      setSubmittedEmail(trimValue(email));
       setMsg(l.emailNotConfirmed);
       setMsgType('error');
       return;
@@ -380,9 +427,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       }),
     };
 
-    const emailRedirectTo = hasPendingAiReview()
-      ? `https://maabar.io${getIdeaFlowResumePath()}`
-      : 'https://maabar.io/dashboard';
+    const emailRedirectTo = getEmailConfirmationRedirect(
+      hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard'
+    );
 
     const { error } = await sb.auth.signUp({
       email: trimValue(email),
@@ -426,6 +473,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         console.error('supplier signup email error:', emailError);
       }
 
+      setSubmittedEmail(trimValue(email));
+      setResendMsg('');
+      setResendMsgType('');
       setMsg(l.pendingMsg);
       setMsgType('success');
       return;
@@ -443,9 +493,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   const doGoogleLogin = async () => {
     const resumePath = hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard';
-    const redirectTo = process.env.NODE_ENV === 'development'
-      ? `${window.location.origin}${resumePath}`
-      : `https://maabar.io${resumePath}`;
+    const redirectTo = buildAuthCallbackUrl(resumePath, 'buyer');
 
     await sb.auth.signInWithOAuth({
       provider: 'google',
@@ -601,6 +649,109 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
               {msg}
             </div>
           )}
+
+          {isSupplier && submittedEmail && (msgType === 'success' || msg === l.emailNotConfirmed) ? (
+            <div style={{
+              marginBottom: 22,
+              padding: '16px 18px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-subtle)',
+            }}>
+              <p style={{
+                margin: '0 0 6px',
+                fontSize: 11,
+                letterSpacing: 1.5,
+                textTransform: 'uppercase',
+                color: 'var(--text-disabled)',
+              }}>
+                {isAr ? 'بريد التفعيل' : lang === 'zh' ? '确认邮箱' : 'Confirmation email'}
+              </p>
+              <p style={{
+                margin: 0,
+                fontSize: 14,
+                color: 'var(--text-primary)',
+                lineHeight: 1.8,
+                fontFamily: 'var(--font-sans)',
+                wordBreak: 'break-word',
+              }}>
+                {submittedEmail}
+              </p>
+              <p style={{
+                margin: '10px 0 0',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.7,
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              }}>
+                {isAr
+                  ? 'لن يدخل طلبك مراجعة الفريق إلا بعد تأكيد هذا البريد. إذا كان العنوان خطأ، عدّل الإيميل أولاً أو اطلب إعادة الإرسال.'
+                  : lang === 'zh'
+                    ? '只有在此邮箱完成确认后，团队审核才会开始。如果邮箱填错，请先修改邮箱或重新发送确认邮件。'
+                    : 'Your application will not enter team review until this email is confirmed. If the address is wrong, correct it first or resend the confirmation email.'}
+              </p>
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+                <button
+                  onClick={() => resendConfirmationEmail(submittedEmail)}
+                  disabled={resendingConfirmation}
+                  style={{
+                    background: 'rgba(255,255,255,0.88)',
+                    color: '#0a0a0b',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    minHeight: 42,
+                    padding: '10px 16px',
+                    cursor: resendingConfirmation ? 'not-allowed' : 'pointer',
+                    opacity: resendingConfirmation ? 0.5 : 1,
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  {resendingConfirmation
+                    ? '...'
+                    : (isAr ? 'إعادة إرسال التفعيل' : lang === 'zh' ? '重新发送确认邮件' : 'Resend confirmation')}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMsg('');
+                    setMsgType('');
+                    setSubmittedEmail('');
+                    setResendMsg('');
+                    setResendMsgType('');
+                    setEmail('');
+                    setPass('');
+                    setMode('signup');
+                  }}
+                  style={{
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-md)',
+                    minHeight: 42,
+                    padding: '10px 16px',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                  }}
+                >
+                  {isAr ? 'استخدام بريد مختلف' : lang === 'zh' ? '使用其他邮箱' : 'Use a different email'}
+                </button>
+              </div>
+
+              {resendMsg ? (
+                <p style={{
+                  margin: '12px 0 0',
+                  fontSize: 12,
+                  lineHeight: 1.7,
+                  color: resendMsgType === 'error' ? '#d66b6b' : '#7bc091',
+                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                }}>
+                  {resendMsg}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {!isSupplier || msgType !== 'success' ? (
             <>
@@ -867,6 +1018,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     setMode(mode === 'signin' ? 'signup' : 'signin');
                     setMsg('');
                     setMsgType('');
+                    setSubmittedEmail('');
+                    setResendMsg('');
+                    setResendMsgType('');
                     setShowValidation(false);
                   }}
                   style={{

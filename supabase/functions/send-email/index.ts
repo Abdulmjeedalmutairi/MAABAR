@@ -619,11 +619,14 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const welcomeTpl = templates.supplier_welcome(data || {});
-      const adminTpl = templates.admin_new_supplier(data || {});
-      const [welcomeResult, adminResult] = await Promise.all([
-        sendEmail(data.email, welcomeTpl.subject, welcomeTpl.html),
-        sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html),
-      ]);
+      const welcomeResult = await sendEmail(data.email, welcomeTpl.subject, welcomeTpl.html);
+
+      let adminResult = null;
+      if (data?.sendAdmin === true) {
+        const adminTpl = templates.admin_new_supplier(data || {});
+        adminResult = await sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html);
+      }
+
       return new Response(JSON.stringify({ ok: true, welcomeResult, adminResult }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
