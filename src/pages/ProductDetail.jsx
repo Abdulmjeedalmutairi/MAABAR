@@ -7,6 +7,7 @@ import { buildProductSpecs, getProductGalleryImages } from '../lib/productMedia'
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
+  getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 
@@ -55,16 +56,29 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
   const loadProduct = async () => {
     setLoading(true);
-    const { data } = await sb
-      .from('products')
-      .select('*,profiles(id,company_name,city,country,rating,reviews_count,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,min_order_value)')
-      .eq('id', id)
-      .single();
 
-    if (data) {
-      const canViewProduct = isSupplierPubliclyVisible(data.profiles?.status)
-        || (profile?.role === 'supplier' && user?.id === data.supplier_id);
-      setProduct(canViewProduct ? data : null);
+    const { data: publicProduct } = await sb
+      .from('products')
+      .select('*,profiles!inner(id,company_name,city,country,rating,reviews_count,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,min_order_value)')
+      .eq('id', id)
+      .in('profiles.status', getSupplierPublicVisibilityStatuses())
+      .maybeSingle();
+
+    if (publicProduct) {
+      setProduct(publicProduct);
+      setLoading(false);
+      return;
+    }
+
+    if (profile?.role === 'supplier' && user?.id) {
+      const { data: ownProduct } = await sb
+        .from('products')
+        .select('*,profiles(id,company_name,city,country,rating,reviews_count,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,min_order_value)')
+        .eq('id', id)
+        .eq('supplier_id', user.id)
+        .maybeSingle();
+
+      setProduct(ownProduct || null);
     } else {
       setProduct(null);
     }

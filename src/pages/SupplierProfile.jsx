@@ -37,35 +37,56 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
 
   const loadSupplier = async () => {
     setLoading(true);
-    const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
-      sb.from('profiles').select('*').eq('id', id).single(),
-      sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
-      sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name)').eq('supplier_id', id).order('created_at', { ascending: false }),
-    ]);
 
-    const canViewSupplier = s && (isSupplierPubliclyVisible(s.status) || user?.id === id);
+    const { data: publicSupplier } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .in('status', getSupplierPublicVisibilityStatuses())
+      .maybeSingle();
 
-    if (canViewSupplier) {
-      setSupplier(s);
-      if (s.speciality) {
-        const { data: sim } = await sb.from('profiles')
-          .select('id,company_name,rating,reviews_count,city,country,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,speciality')
-          .eq('role', 'supplier')
-          .in('status', getSupplierPublicVisibilityStatuses())
-          .eq('speciality', s.speciality)
-          .neq('id', id)
-          .limit(3);
-        if (sim) setSimilarSuppliers(sim);
-      }
-      if (p) setProducts(p);
-      if (r) setReviews(r);
-    } else {
+    let visibleSupplier = publicSupplier || null;
+
+    if (!visibleSupplier && user?.id === id) {
+      const { data: ownSupplier } = await sb
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      visibleSupplier = ownSupplier || null;
+    }
+
+    if (!visibleSupplier) {
       setSupplier(null);
       setProducts([]);
       setReviews([]);
       setSimilarSuppliers([]);
+      setLoading(false);
+      return;
     }
 
+    setSupplier(visibleSupplier);
+
+    const [{ data: p }, { data: r }] = await Promise.all([
+      sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
+      sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name)').eq('supplier_id', id).order('created_at', { ascending: false }),
+    ]);
+
+    if (visibleSupplier.speciality) {
+      const { data: sim } = await sb.from('profiles')
+        .select('id,company_name,rating,reviews_count,city,country,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,speciality')
+        .eq('role', 'supplier')
+        .in('status', getSupplierPublicVisibilityStatuses())
+        .eq('speciality', visibleSupplier.speciality)
+        .neq('id', id)
+        .limit(3);
+      if (sim) setSimilarSuppliers(sim);
+    } else {
+      setSimilarSuppliers([]);
+    }
+
+    setProducts(p || []);
+    setReviews(r || []);
     setLoading(false);
   };
 

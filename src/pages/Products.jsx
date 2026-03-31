@@ -8,6 +8,7 @@ import { getPrimaryProductImage } from '../lib/productMedia';
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
+  getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 
@@ -116,12 +117,15 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     setLoading(true);
     const { data } = await sb
       .from('products')
-      .select('*,profiles(company_name,rating,id,status,trade_link,wechat,factory_images,years_experience,trust_score,country,city,maabar_supplier_id)')
+      .select('*,profiles!inner(company_name,rating,id,status,trade_link,wechat,factory_images,years_experience,trust_score,country,city,maabar_supplier_id)')
       .eq('is_active', true)
+      .in('profiles.status', getSupplierPublicVisibilityStatuses())
       .order('created_at', { ascending: false });
 
     if (data) {
       setProducts(data.filter((product) => isSupplierPubliclyVisible(product.profiles?.status)));
+    } else {
+      setProducts([]);
     }
 
     setLoading(false);
