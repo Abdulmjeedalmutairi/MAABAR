@@ -14,7 +14,7 @@ const L = {
     buyerTitle: 'أهلاً بك في مَعبر',
     buyerSub: 'تسوّق من موردين صينيين موثوقين',
     supplierTitle: 'طلب انضمام المورد',
-    supplierSub: 'هذه هي صفحة التسجيل الموحدة للموردين. أدخل بيانات الشركة الأساسية مرة واحدة، أكّد بريدك الإلكتروني، ثم سننقلك إلى صفحة حالة الطلب تحت المراجعة.',
+    supplierSub: 'هذه هي صفحة التسجيل الموحدة للموردين. أدخل بيانات الشركة الأساسية مرة واحدة، أضف رابط متجرك أو موقعك، أكّد بريدك الإلكتروني، ثم سننقلك إلى صفحة حالة الطلب تحت المراجعة.',
     email: 'البريد الإلكتروني',
     pass: 'كلمة المرور',
     firstName: 'الاسم الأول',
@@ -45,7 +45,7 @@ const L = {
     termsLabel: 'أوافق على ',
     termsLink: 'الشروط والأحكام',
     mustAgreeTerms: 'يجب الموافقة على الشروط والأحكام.',
-    pendingMsg: 'تم استلام طلب المورد. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وسنحوّلك مباشرة إلى صفحة حالة الطلب تحت المراجعة.',
+    pendingMsg: 'تم استلام طلب المورد. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وسنحوّلك مباشرة إلى صفحة حالة الطلب تحت المراجعة. تبدأ المراجعة بعد تأكيد البريد، وعادةً تصل المتابعة الأولى خلال 3–5 أيام عمل.',
     googleLogin: 'دخول بـ Google',
     emailNotConfirmed: 'يرجى تأكيد بريدك الإلكتروني أولاً ثم متابعة طلب المورد.',
     wrongCredentials: 'إيميل أو كلمة مرور غير صحيحة.',
@@ -59,7 +59,7 @@ const L = {
     buyerTitle: 'Welcome to Maabar',
     buyerSub: 'Shop from verified Chinese suppliers',
     supplierTitle: 'Supplier application',
-    supplierSub: 'This is the single shared supplier signup page. Submit your basic company details once, confirm your email, and we will take you straight into your pending-review status page.',
+    supplierSub: 'This is the single shared supplier signup page. Submit your basic company details once, add your trade profile link, confirm your email, and we will take you straight into your pending-review status page.',
     email: 'Email',
     pass: 'Password',
     firstName: 'First Name',
@@ -90,7 +90,7 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions.',
-    pendingMsg: 'Your supplier application was received. We sent a confirmation email — after activation, sign in and we will take you straight into your pending-review status page.',
+    pendingMsg: 'Your supplier application was received. We sent a confirmation email — after activation, sign in and we will take you straight into your pending-review status page. Review starts after email confirmation, and the first follow-up usually happens within 3–5 business days.',
     googleLogin: 'Continue with Google',
     emailNotConfirmed: 'Please confirm your email first, then continue your supplier application.',
     wrongCredentials: 'Invalid email or password.',
@@ -104,7 +104,7 @@ const L = {
     buyerTitle: '欢迎来到 Maabar',
     buyerSub: '从认证中国供应商采购',
     supplierTitle: '供应商申请',
-    supplierSub: '这是统一的供应商注册申请页。一次填写基础公司资料、确认邮箱后，系统会直接带您进入待审核状态页。',
+    supplierSub: '这是统一的供应商注册申请页。一次填写基础公司资料、补充店铺或官网链接并确认邮箱后，系统会直接带您进入待审核状态页。',
     email: '电子邮件',
     pass: '密码',
     firstName: '名',
@@ -135,7 +135,7 @@ const L = {
     termsLabel: '我同意',
     termsLink: '条款与条件',
     mustAgreeTerms: '您必须同意条款与条件。',
-    pendingMsg: '我们已收到您的供应商申请。确认邮件已发送；激活后登录，系统会直接带您进入待审核状态页。',
+    pendingMsg: '我们已收到您的供应商申请。确认邮件已发送；激活后登录，系统会直接带您进入待审核状态页。邮箱确认后审核才会开始，首次跟进通常会在 3–5 个工作日内进行。',
     googleLogin: '使用 Google 登录',
     emailNotConfirmed: '请先确认邮箱，然后继续供应商申请。',
     wrongCredentials: '邮箱或密码错误。',
@@ -144,6 +144,72 @@ const L = {
     requiredTerms: '您必须同意条款与条件。',
     formErrorSummary: '有必填项未完成，已用红色高亮显示。',
     cities: ['利雅得', '吉达', '麦加', '麦地那', '达曼', '霍拜尔', '塔布克', '艾卜哈', '盖西姆', '哈伊勒', '吉赞', '纳季兰'],
+  },
+};
+
+const SUPPLIER_SIGNUP_CONTENT = {
+  ar: {
+    introTag: 'للموردين الصينيين',
+    introTitle: 'قدّم بيانات أساسية فقط — ثم انتظر داخل صفحة حالة واضحة',
+    introBody: 'هذا التسجيل الأول ليس تحققاً كاملاً. الفكرة هنا أن ترسل هوية الشركة الأساسية ورابطاً تجارياً موثوقاً، ثم نبدأ المراجعة بعد تأكيد البريد.',
+    steps: ['بيانات شركة أساسية', 'تأكيد البريد الإلكتروني', 'حالة تحت المراجعة ثم تواصل الفريق'],
+    checklist: [
+      'استخدم اسم الشركة الرسمي أو الاسم المعروف في Alibaba/1688',
+      'أضف رابط متجر أو موقع يمكن للفريق مراجعته بسرعة',
+      'WeChat مفيد جداً إذا كان هذا هو أسلوب التواصل الأساسي لديك',
+    ],
+    companyHint: 'الأفضل كتابة اسم الشركة القانوني أو اسم المتجر المعروف لدى المشترين.',
+    countryHint: 'إذا كانت شركتك مسجلة في الصين فاكتب الصين / China / 中国 حسب ما تفضّل.',
+    cityHint: 'أدخل المدينة التي يعمل منها فريقك التجاري أو المصنع.',
+    tradeLinkHint: 'الروابط المقبولة تشمل متجر Alibaba أو صفحة 1688 أو حساب Made-in-China أو الموقع الرسمي للشركة.',
+    specialityHint: 'مثال: أدوات مطبخ، تعبئة وتغليف، إلكترونيات استهلاكية.',
+    contactTitle: 'قنوات التواصل المفضلة',
+    contactBody: 'WeChat اختياري لكنه يبني الثقة أكثر مع المورد الصيني لأنه القناة الأكثر توقعاً في هذه المرحلة.',
+    laterTitle: 'ما سنؤجله لمرحلة لاحقة',
+    laterItems: ['الرخصة التجارية الكاملة', 'صور المصنع', 'رقم التسجيل', 'بيانات استلام الأرباح'],
+    citySuggestions: ['广州', '深圳', '义乌', '宁波', '佛山', '东莞', '厦门', '杭州', '苏州', '青岛'],
+  },
+  en: {
+    introTag: 'For Chinese suppliers',
+    introTitle: 'Submit only the basics now — then wait in a clear review-status page',
+    introBody: 'This first signup is intentionally lighter than full verification. The goal is to capture a credible company identity and trade link first, then start review after email confirmation.',
+    steps: ['Basic company profile', 'Email confirmation', 'Pending review then direct team follow-up'],
+    checklist: [
+      'Use the legal company name or the name buyers know from Alibaba / 1688',
+      'Add a real store link or company website that can be reviewed quickly',
+      'WeChat is optional, but it helps if that is your normal business channel',
+    ],
+    companyHint: 'Best if this matches your legal company name or the storefront name buyers already know.',
+    countryHint: 'If the company is registered in mainland China, enter China / 中国 if that is how you present it publicly.',
+    cityHint: 'Enter the city your sales team or factory operates from.',
+    tradeLinkHint: 'Accepted links include an Alibaba storefront, 1688 page, Made-in-China profile, or company website.',
+    specialityHint: 'Optional — e.g. kitchenware, packaging, consumer electronics.',
+    contactTitle: 'Preferred contact channels',
+    contactBody: 'WeChat is optional, but for many Chinese suppliers it is the fastest trust-building contact method during review.',
+    laterTitle: 'These stay for a later stage',
+    laterItems: ['Full business license upload', 'Factory photo package', 'Registration number', 'Payout details'],
+    citySuggestions: ['Guangzhou', 'Shenzhen', 'Yiwu', 'Ningbo', 'Foshan', 'Dongguan', 'Xiamen', 'Hangzhou', 'Suzhou', 'Qingdao'],
+  },
+  zh: {
+    introTag: '面向中国供应商',
+    introTitle: '第一步只提交基础资料，然后进入清晰的待审核状态页',
+    introBody: '首次申请故意保持轻量，不是一次性做完整认证。先提交可信的公司身份和贸易资料链接，邮箱确认后再正式进入审核。',
+    steps: ['基础公司资料', '邮箱确认', '待审核状态页 + 团队跟进'],
+    checklist: [
+      '请填写营业主体名称，或买家熟悉的 Alibaba / 1688 店铺名称',
+      '请提供真实可访问的店铺链接或官网，方便快速审核',
+      'WeChat 虽然不是必填，但如果这是您的常用商务渠道，建议填写',
+    ],
+    companyHint: '建议填写营业执照主体名称，或买家已经熟悉的店铺名称。',
+    countryHint: '如果公司注册在中国大陆，可填写 China / 中国。',
+    cityHint: '填写销售团队或工厂所在城市即可。',
+    tradeLinkHint: '支持 Alibaba 店铺、1688 页面、Made-in-China 主页或公司官网。',
+    specialityHint: '可选，例如：厨房用品、包装材料、消费电子。',
+    contactTitle: '优先联系渠道',
+    contactBody: 'WeChat 不是必填，但对中国供应商来说，它通常是审核阶段最自然、最容易建立信任的联系方式。',
+    laterTitle: '后续阶段再补充',
+    laterItems: ['完整营业执照上传', '工厂照片资料', '注册号', '收款信息'],
+    citySuggestions: ['广州', '深圳', '义乌', '宁波', '佛山', '东莞', '厦门', '杭州', '苏州', '青岛'],
   },
 };
 
@@ -190,6 +256,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const isSupplier = role === 'supplier';
   const isAr = lang === 'ar';
   const l = L[lang] || L.ar;
+  const supplierSignupContent = SUPPLIER_SIGNUP_CONTENT[lang] || SUPPLIER_SIGNUP_CONTENT.en;
 
   const [mode, setMode] = useState(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
@@ -546,6 +613,15 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       : null
   );
 
+  const helperTextStyle = {
+    marginTop: 7,
+    marginBottom: 0,
+    fontSize: 12,
+    color: 'var(--text-disabled)',
+    lineHeight: 1.7,
+    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+  };
+
   const TERMS_AR = [
     { title: '١. تعريف المنصة', body: 'مَعبر هي منصة وساطة تجارية إلكترونية تربط التجار السعوديين بالموردين الصينيين. تعمل مَعبر بوصفها وسيطاً تجارياً فقط، وليست طرفاً في أي صفقة.' },
     { title: '٢. شروط التسجيل', body: 'للتاجر: يجب أن يكون مقيماً أو يمارس نشاطاً تجارياً في المملكة العربية السعودية.\nللمورد: يجب أن يكون لديه سجل تجاري ساري، ويخضع لمراجعة وموافقة مَعبر قبل التفعيل.' },
@@ -824,6 +900,40 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
               {isSupplier && mode === 'signup' && (
                 <>
+                  <div style={{
+                    marginBottom: 20,
+                    padding: '16px 18px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+                  }}>
+                    <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
+                      {supplierSignupContent.introTag}
+                    </div>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.35, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {supplierSignupContent.introTitle}
+                    </h3>
+                    <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {supplierSignupContent.introBody}
+                    </p>
+                    <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+                      {supplierSignupContent.steps.map((item, index) => (
+                        <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <span style={{ minWidth: 24, height: 24, borderRadius: 999, border: '1px solid var(--border-default)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 11 }}>{index + 1}</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {supplierSignupContent.checklist.map((item) => (
+                        <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-primary)', opacity: 0.75, marginTop: 7, flex: '0 0 auto' }} />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, marginTop: 8, fontWeight: 500 }}>
                     {l.supInfo}
                   </div>
@@ -835,30 +945,39 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     <label style={labelStyle}>{l.supCompany}{requiredAsterisk}</label>
                     <input style={getFieldInputStyle('supCompany')} value={supCompany} onChange={(e) => setSupCompany(e.target.value)} />
                     {getErrorText('supCompany')}
+                    <p style={helperTextStyle}>{supplierSignupContent.companyHint}</p>
                   </div>
 
                   <div style={{ display: 'flex', gap: 14 }}>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.country}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('country')} value={country} onChange={(e) => setCountry(e.target.value)} placeholder={isAr ? 'الصين' : 'China'} />
+                      <input style={getFieldInputStyle('country')} value={country} onChange={(e) => setCountry(e.target.value)} placeholder={isAr ? 'الصين' : lang === 'zh' ? '中国 / China' : 'China'} />
                       {getErrorText('country')}
+                      <p style={helperTextStyle}>{supplierSignupContent.countryHint}</p>
                     </div>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.supCity}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('supCity')} value={supCity} onChange={(e) => setSupCity(e.target.value)} placeholder={isAr ? 'قوانغتشو' : 'Guangzhou'} />
+                      <input style={getFieldInputStyle('supCity')} value={supCity} onChange={(e) => setSupCity(e.target.value)} placeholder={isAr ? 'قوانغتشو' : lang === 'zh' ? '广州' : 'Guangzhou'} list="supplier-city-suggestions" />
                       {getErrorText('supCity')}
+                      <p style={helperTextStyle}>{supplierSignupContent.cityHint}</p>
                     </div>
                   </div>
+                  <datalist id="supplier-city-suggestions">
+                    {supplierSignupContent.citySuggestions.map((cityOption) => (
+                      <option key={cityOption} value={cityOption} />
+                    ))}
+                  </datalist>
 
                   <div style={fieldStyle}>
                     <label style={labelStyle}>{l.tradeLink}{requiredAsterisk}</label>
                     <input style={getFieldInputStyle('tradeLink')} value={tradeLink} onChange={(e) => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
                     {getErrorText('tradeLink')}
+                    <p style={helperTextStyle}>{supplierSignupContent.tradeLinkHint}</p>
                   </div>
 
                   <div style={fieldStyle}>
                     <label style={labelStyle}>{l.speciality}</label>
-                    <input style={inputStyle} value={speciality} onChange={(e) => setSpeciality(e.target.value)} placeholder={isAr ? 'مثال: إلكترونيات منزلية' : lang === 'zh' ? '例如：家居电子' : 'Optional — e.g. home electronics'} />
+                    <input style={inputStyle} value={speciality} onChange={(e) => setSpeciality(e.target.value)} placeholder={supplierSignupContent.specialityHint} />
                   </div>
 
                   <div style={{
@@ -868,6 +987,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     border: '1px solid var(--border-subtle)',
                     background: 'var(--bg-subtle)',
                   }}>
+                    <p style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {supplierSignupContent.contactTitle}
+                    </p>
                     <div style={{ display: 'flex', gap: 14 }}>
                       <div style={{ flex: 1 }}>
                         <label style={labelStyle}>{l.wechat}</label>
@@ -878,9 +1000,28 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                         <input style={inputStyle} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
                       </div>
                     </div>
-                    <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: 10, marginBottom: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {l.contactHint}
+                    <p style={{ ...helperTextStyle, marginTop: 10 }}>{supplierSignupContent.contactBody}</p>
+                    <p style={{ ...helperTextStyle, marginTop: 8 }}>{l.contactHint}</p>
+                  </div>
+
+                  <div style={{
+                    marginBottom: 16,
+                    padding: '14px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'rgba(255,255,255,0.02)',
+                  }}>
+                    <p style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {supplierSignupContent.laterTitle}
                     </p>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {supplierSignupContent.laterItems.map((item) => (
+                        <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-primary)', opacity: 0.55, marginTop: 7, flex: '0 0 auto' }} />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -4, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>

@@ -1,68 +1,188 @@
-import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
+import usePageTitle from '../hooks/usePageTitle';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 
 const ACCESS_DEADLINE = '2026-04-14T23:59:59Z';
 
-const earlyBenefits = [
-  {
-    title: 'Early access to Saudi demand',
-    description: 'Enter Maabar before wider supplier onboarding opens and position your company closer to real Saudi buyer demand.',
+const T = {
+  en: {
+    journey: ['Founding access', 'Why join early', 'How it works', 'What builds trust', 'Apply before launch'],
+    skip: 'Skip to application',
+    next: 'Next',
+    back: 'Back',
+    restart: 'Restart journey',
+    currentlyOpen: 'Currently open',
+    heroEyebrow: 'Founding supplier access',
+    heroTitle: 'A clearer path for serious Chinese suppliers entering Saudi demand',
+    heroBody: 'Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi buyers. This page explains exactly what a supplier will see: one shared signup, email confirmation, pending review, then full access after approval.',
+    heroCardTitle: 'Designed for suppliers used to Alibaba / 1688 style workflows',
+    heroCardBody: 'We keep the first step lighter: basic company profile now, deeper verification later, and no duplicate registration loops.',
+    heroPills: ['One signup only', 'Alibaba / 1688 / Made-in-China links accepted', 'No payout details at first signup'],
+    marketplacesLabel: 'Accepted trade profile examples',
+    marketplaces: ['Alibaba store', '1688 page', 'Made-in-China profile', 'Company website'],
+    benefitsEyebrow: 'Why join early',
+    benefitsTitle: 'Why this feels different from open-listing marketplaces',
+    benefitsBody: 'Chinese suppliers expect market visibility, but they also expect clarity. Early access here is positioned around Saudi demand, faster review, and less low-intent noise.',
+    benefits: [
+      { title: 'Earlier Saudi positioning', description: 'Approved suppliers prepare their presence before wider supplier onboarding becomes crowded.' },
+      { title: 'Cleaner demand signal', description: 'The goal is not mass listing volume. It is curated access around real buyer demand.' },
+      { title: 'Arabic–Chinese coordination support', description: 'The product direction is built around cross-language communication and Saudi buyer access.' },
+      { title: 'Selective intake builds trust', description: 'A reviewed supplier pool feels safer than a marketplace full of anonymous low-quality listings.' },
+    ],
+    flowEyebrow: 'How it works',
+    flowTitle: 'What the supplier journey looks like, step by step',
+    flowBody: 'No second application and no hidden extra signup page. Complete the basic supplier application once, confirm the email, then your account moves into a pending-review state while Maabar checks the application.',
+    steps: [
+      { step: '01', title: 'Submit the basic company profile', description: 'Company name, city, country, trade profile link, and optional WeChat / WhatsApp.' },
+      { step: '02', title: 'Confirm the email address', description: 'Review does not really start until the submitted email is confirmed.' },
+      { step: '03', title: 'Wait in a visible review stage', description: 'After confirmation, the supplier lands on an application-status page instead of a confusing locked dashboard.' },
+      { step: '04', title: 'Direct team contact before unlock', description: 'If approved, the team unlocks the full supplier dashboard and buyer-facing access.' },
+    ],
+    trustEyebrow: 'What builds trust',
+    trustTitle: 'The main questions a Chinese supplier wants answered upfront',
+    trustBody: 'Suppliers used to Alibaba-style onboarding usually want to know what is required now, what is not required yet, and how the review queue actually works.',
+    trustNowTitle: 'Prepare these now',
+    trustNowItems: ['Company name that buyers can recognize', 'A real trade profile link or company website', 'City and country of the company', 'Preferred contact method such as WeChat'],
+    trustLaterTitle: 'Not required in the first signup',
+    trustLaterItems: ['Payout details', 'Full business-license upload', 'Factory photo package', 'Long verification forms'],
+    reviewTitle: 'Review expectations',
+    reviewItems: ['Manual supplier screening, not instant auto-approval', 'Application status stays visible while you wait', 'Team contact usually happens by email first, then direct follow-up if needed'],
+    finalEyebrow: 'Limited intake',
+    finalTitle: 'Apply before the current early-access window closes',
+    finalBody: 'We are onboarding a limited number of Chinese suppliers before the broader launch. Strong, credible applications move into review first, and approved accounts unlock early supplier access ahead of the wider rollout.',
+    deadlineLabel: 'Time left in current intake',
+    days: 'Days',
+    hours: 'Hours',
+    minutes: 'Minutes',
+    finalChecklist: ['Shared signup only', 'No payout setup at first signup', 'Pending review after email confirmation'],
+    applyNow: 'Apply now',
+    applyEarly: 'Apply for early supplier access',
+    applyStandard: 'Apply as a supplier',
+    continueApplication: 'Continue supplier application',
+    viewStatus: 'View application status',
+    openDashboard: 'Open supplier dashboard',
   },
-  {
-    title: 'Founding supplier advantage',
-    description: 'Approved suppliers move first, with time to prepare their presence before broader supplier traffic arrives.',
+  zh: {
+    journey: ['首批通道', '为什么要尽早加入', '流程说明', '哪些信息最能建立信任', '在窗口关闭前申请'],
+    skip: '直接进入申请',
+    next: '下一步',
+    back: '返回',
+    restart: '重新查看',
+    currentlyOpen: '当前开放中',
+    heroEyebrow: '创始供应商早期通道',
+    heroTitle: '给中国供应商一个更清晰的沙特市场入驻路径',
+    heroBody: 'Maabar 是一家沙特 B2B 平台，连接精选中国供应商与沙特买家。这个页面会把流程讲清楚：统一申请页、邮箱确认、待审核状态页，以及通过审核后再开放完整后台。',
+    heroCardTitle: '更符合阿里巴巴 / 1688 供应商熟悉的节奏',
+    heroCardBody: '第一步保持轻量：先提交基础公司资料，深度认证放到后面，不做重复注册和来回跳转。',
+    heroPills: ['只需注册一次', '支持 Alibaba / 1688 / Made-in-China 店铺链接', '首次申请不需要收款资料'],
+    marketplacesLabel: '可接受的贸易资料链接示例',
+    marketplaces: ['Alibaba 店铺', '1688 页面', 'Made-in-China 主页', '公司官网'],
+    benefitsEyebrow: '为什么尽早加入',
+    benefitsTitle: '这和普通开放式平台有什么不同',
+    benefitsBody: '中国供应商习惯看曝光机会，但更在意规则是否清楚。这里的早期入驻强调的是沙特买家需求、优先审核，以及更少低质量噪音。',
+    benefits: [
+      { title: '更早占位沙特买家需求', description: '审核通过的供应商可以在更大规模开放前先建立展示位置。' },
+      { title: '需求信号更干净', description: '目标不是堆积供应商数量，而是围绕真实买家需求做精选引入。' },
+      { title: '支持阿拉伯语与中文协同', description: '产品方向本身就考虑了跨语言沟通与沙特买家协作。' },
+      { title: '精选审核更容易建立信任', description: '相比匿名、质量参差的平台，经过筛选的供应商池更可信。' },
+    ],
+    flowEyebrow: '流程说明',
+    flowTitle: '供应商实际会经历的步骤',
+    flowBody: '不会有第二套注册，也不会让您重复填表。基础供应商申请只提交一次，确认邮箱后，账户会直接进入待审核状态，等待 Maabar 团队审核。',
+    steps: [
+      { step: '01', title: '提交基础公司资料', description: '公司名称、所在国家和城市、贸易资料链接，以及可选的 WeChat / WhatsApp。' },
+      { step: '02', title: '先完成邮箱确认', description: '只有邮箱确认完成后，团队审核才会真正开始。' },
+      { step: '03', title: '进入清晰可见的待审核页面', description: '确认后会进入申请状态页，而不是看到一个莫名其妙被锁住的后台。' },
+      { step: '04', title: '团队联系后再解锁完整权限', description: '审核通过后，完整供应商后台和买家侧可见权限才会开放。' },
+    ],
+    trustEyebrow: '哪些信息最能建立信任',
+    trustTitle: '中国供应商通常最想先确认的几点',
+    trustBody: '熟悉 Alibaba 式入驻的供应商，通常最关心：现在到底要提交什么、哪些资料暂时不用交、审核过程是否透明。',
+    trustNowTitle: '现在建议准备',
+    trustNowItems: ['买家能识别的公司名称', '真实可打开的店铺链接或公司官网', '公司所在城市和国家', '优先联系渠道，例如 WeChat'],
+    trustLaterTitle: '首次申请暂时不需要',
+    trustLaterItems: ['收款资料', '完整营业执照上传', '整套工厂照片', '很长的认证表单'],
+    reviewTitle: '审核预期',
+    reviewItems: ['不是即时自动通过，而是人工筛选', '等待期间会有明确的状态页', '通常会先通过邮箱联系，需要时再进一步跟进'],
+    finalEyebrow: '限量开放',
+    finalTitle: '在当前早期窗口关闭前提交申请',
+    finalBody: '我们正在大规模开放前，先引入一批可信的中国供应商。资料更完整、可信度更高的申请会优先进入审核，通过后即可在更广泛开放前先获得早期权限。',
+    deadlineLabel: '当前入驻窗口剩余时间',
+    days: '天',
+    hours: '小时',
+    minutes: '分钟',
+    finalChecklist: ['统一申请页，只填一次', '首次申请不需要收款设置', '邮箱确认后进入待审核状态'],
+    applyNow: '立即申请',
+    applyEarly: '申请早期供应商通道',
+    applyStandard: '申请成为供应商',
+    continueApplication: '继续完成申请',
+    viewStatus: '查看审核状态',
+    openDashboard: '打开供应商后台',
   },
-  {
-    title: 'Selective review, not open listing',
-    description: 'Supplier applications are reviewed carefully so early access stays focused, credible, and high quality.',
+  ar: {
+    journey: ['وصول تأسيسي', 'لماذا الانضمام المبكر', 'كيف تعمل الرحلة', 'ما الذي يبني الثقة', 'قدّم قبل الإطلاق'],
+    skip: 'انتقل إلى الطلب',
+    next: 'التالي',
+    back: 'رجوع',
+    restart: 'ابدأ من جديد',
+    currentlyOpen: 'مفتوح حالياً',
+    heroEyebrow: 'وصول الموردين الأوائل',
+    heroTitle: 'مسار أوضح للمورد الصيني الراغب بدخول الطلب السعودي',
+    heroBody: 'مَعبر منصة سعودية B2B تربط الموردين الصينيين المختارين بالمشترين السعوديين. هذه الصفحة تشرح الرحلة بوضوح: تسجيل موحد، تأكيد بريد، حالة انتظار تحت المراجعة، ثم وصول كامل بعد الموافقة.',
+    heroCardTitle: 'منطق أقرب لما يتوقعه المورد المعتاد على Alibaba و1688',
+    heroCardBody: 'الخطوة الأولى خفيفة: بيانات شركة أساسية الآن، والتحقق الأعمق لاحقاً، بدون تسجيل مكرر أو دوّامة صفحات.',
+    heroPills: ['تسجيل واحد فقط', 'روابط Alibaba / 1688 / Made-in-China مقبولة', 'لا توجد بيانات استلام أرباح في التسجيل الأول'],
+    marketplacesLabel: 'أمثلة الروابط المقبولة',
+    marketplaces: ['متجر Alibaba', 'صفحة 1688', 'حساب Made-in-China', 'الموقع الرسمي للشركة'],
+    benefitsEyebrow: 'لماذا تنضم مبكراً',
+    benefitsTitle: 'ما الذي يجعل هذا مختلفاً عن منصات الإدراج المفتوح',
+    benefitsBody: 'المورد الصيني يهتم بالظهور، لكنه يهتم أكثر بوضوح القواعد. هنا التركيز على الطلب السعودي، أولوية المراجعة، وتقليل الضوضاء منخفضة الجودة.',
+    benefits: [
+      { title: 'تموضع أبكر أمام الطلب السعودي', description: 'الموردون الموافق عليهم يجهزون حضورهم قبل التوسع الأوسع للموردين.' },
+      { title: 'إشارة طلب أنظف', description: 'الهدف ليس حشد أكبر عدد من الحسابات، بل وصول منتقى حول طلبات فعلية.' },
+      { title: 'دعم للتنسيق العربي–الصيني', description: 'اتجاه المنتج مبني من الأصل على دعم التواصل بين المشترين السعوديين والموردين الصينيين.' },
+      { title: 'الانتقائية ترفع الثقة', description: 'مجمّع موردين مراجَع بعناية يبدو أكثر مصداقية من سوق مفتوح مليء بالحسابات المجهولة.' },
+    ],
+    flowEyebrow: 'كيف تعمل الرحلة',
+    flowTitle: 'ماذا سيرى المورد خطوة بخطوة',
+    flowBody: 'لا يوجد تسجيل ثانٍ ولا نماذج مكررة. ترسل طلب المورد الأساسي مرة واحدة، تؤكد البريد الإلكتروني، ثم ينتقل الحساب مباشرة إلى حالة انتظار تحت المراجعة حتى يراجع الفريق الطلب.',
+    steps: [
+      { step: '01', title: 'أرسل بيانات الشركة الأساسية', description: 'اسم الشركة، الدولة والمدينة، رابط المتجر أو الموقع، ووسائل تواصل اختيارية مثل WeChat وWhatsApp.' },
+      { step: '02', title: 'أكّد البريد الإلكتروني أولاً', description: 'المراجعة لا تبدأ فعلياً قبل تأكيد البريد المرسل في الطلب.' },
+      { step: '03', title: 'ادخل إلى صفحة حالة واضحة', description: 'بعد التأكيد، ينتقل المورد إلى صفحة حالة الطلب بدلاً من لوحة مقفلة ومربكة.' },
+      { step: '04', title: 'يتواصل الفريق قبل فتح الوصول الكامل', description: 'بعد الموافقة، تُفتح لوحة المورد الكاملة والوصول المرتبط بالمشترين.' },
+    ],
+    trustEyebrow: 'ما الذي يبني الثقة',
+    trustTitle: 'أهم ما يريد المورد الصيني فهمه من البداية',
+    trustBody: 'المورد المعتاد على نمط Alibaba يريد أن يعرف بسرعة: ماذا أرسل الآن، ماذا لا أحتاجه بعد، وكيف تتم المراجعة فعلياً.',
+    trustNowTitle: 'حضّر هذه المعلومات الآن',
+    trustNowItems: ['اسم شركة واضح يمكن للمشتري التعرّف عليه', 'رابط متجر حقيقي أو موقع رسمي', 'مدينة ودولة الشركة', 'وسيلة تواصل مفضلة مثل WeChat'],
+    trustLaterTitle: 'غير مطلوب في التسجيل الأول',
+    trustLaterItems: ['بيانات استلام الأرباح', 'رفع الرخصة التجارية كاملة', 'باقة صور المصنع', 'نماذج تحقق طويلة'],
+    reviewTitle: 'توقعات المراجعة',
+    reviewItems: ['مراجعة يدوية وليست قبولاً آلياً فورياً', 'حالة الطلب تبقى ظاهرة أثناء الانتظار', 'التواصل يبدأ غالباً عبر البريد ثم متابعة مباشرة عند الحاجة'],
+    finalEyebrow: 'وصول محدود',
+    finalTitle: 'قدّم قبل إغلاق نافذة الوصول الحالية',
+    finalBody: 'نحن نستقبل عدداً محدوداً من الموردين الصينيين قبل الإطلاق الأوسع. الطلبات الأقوى والأوضح تدخل المراجعة أولاً، والموافق عليها تحصل على وصول مبكر قبل فتح المسار على نطاق أوسع.',
+    deadlineLabel: 'الوقت المتبقي في نافذة القبول الحالية',
+    days: 'أيام',
+    hours: 'ساعات',
+    minutes: 'دقائق',
+    finalChecklist: ['تسجيل موحّد مرة واحدة', 'لا توجد بيانات payout في التسجيل الأول', 'الحساب يدخل المراجعة بعد تأكيد البريد'],
+    applyNow: 'قدّم الآن',
+    applyEarly: 'قدّم للوصول المبكر',
+    applyStandard: 'قدّم كمورد',
+    continueApplication: 'أكمل طلب المورد',
+    viewStatus: 'عرض حالة الطلب',
+    openDashboard: 'افتح لوحة المورد',
   },
-  {
-    title: 'A cleaner market entry path',
-    description: 'Maabar is designed to help serious Chinese suppliers enter Saudi B2B demand with more structure and less noise.',
-  },
-];
-
-const howItWorks = [
-  {
-    step: '01',
-    title: 'Complete the shared supplier signup',
-    description: 'Use the single supplier signup page to submit your basic company details once.',
-  },
-  {
-    step: '02',
-    title: 'Confirm your email',
-    description: 'After email confirmation, your account moves straight into the pending-review state.',
-  },
-  {
-    step: '03',
-    title: 'Wait for Maabar review',
-    description: 'The team reviews your application and contacts you directly before unlocking full supplier access.',
-  },
-];
-
-const whyMaabar = [
-  'Direct positioning around Saudi buyer demand',
-  'Arabic–Chinese communication support',
-  'Structured onboarding before public launch',
-  'Selective supplier access instead of open-listing clutter',
-];
-
-const sceneTitles = [
-  'Founding supplier access',
-  'Why join early',
-  'How it works',
-  'Why Maabar',
-  'Apply before launch',
-];
+};
 
 function getTimeLeft() {
   const diff = new Date(ACCESS_DEADLINE).getTime() - Date.now();
-  if (diff <= 0) {
-    return { days: 0, hours: 0, minutes: 0, expired: true };
-  }
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, expired: true };
 
   return {
     days: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -81,8 +201,12 @@ function CountUnit({ label, value }) {
   );
 }
 
-export default function SupplierAccess({ user, profile }) {
-  usePageTitle('supplier-access', 'en');
+export default function SupplierAccess({ user, profile, lang = 'en' }) {
+  const copy = T[lang] || T.en;
+  const isAr = lang === 'ar';
+  const pageDir = isAr ? 'rtl' : 'ltr';
+  usePageTitle('supplier-access', lang);
+
   const nav = useNavigate();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
   const [activeScene, setActiveScene] = useState(0);
@@ -95,32 +219,25 @@ export default function SupplierAccess({ user, profile }) {
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile) : null;
   const supplierPrimaryRoute = supplierState ? getSupplierPrimaryRoute(profile) : '/login/supplier?mode=signup';
   const hasExistingSupplierAccount = Boolean(user && profile?.role === 'supplier');
-  const ctaCopy = useMemo(() => {
-    if (supplierState?.isApprovedStage) return 'Open supplier dashboard';
-    if (supplierState?.isUnderReviewStage) return 'View application status';
-    if (supplierState?.isApplicationStage) return 'Continue supplier application';
-    return timeLeft.expired ? 'Apply as a supplier' : 'Apply for early supplier access';
-  }, [supplierState, timeLeft.expired]);
   const totalScenes = 5;
   const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
 
+  const ctaCopy = useMemo(() => {
+    if (supplierState?.isApprovedStage) return copy.openDashboard;
+    if (supplierState?.isUnderReviewStage) return copy.viewStatus;
+    if (supplierState?.isApplicationStage) return copy.continueApplication;
+    return timeLeft.expired ? copy.applyStandard : copy.applyEarly;
+  }, [copy, supplierState, timeLeft.expired]);
+
+  const finalApplyLabel = hasExistingSupplierAccount ? ctaCopy : copy.applyNow;
   const goToApply = () => nav(supplierPrimaryRoute);
-  const goHome = () => nav('/');
-  const jumpToScene = (index) => setActiveScene(index);
-  const goToPrevScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
-  const goToNextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
-  const isFinalScene = activeScene === totalScenes - 1;
-  const finalApplyLabel = hasExistingSupplierAccount ? ctaCopy : 'Apply now';
 
   return (
-    <div dir="ltr" lang="en" className={`supplier-access-page supplier-scene-${activeScene}`}>
+    <div dir={pageDir} lang={lang} className={`supplier-access-page supplier-scene-${activeScene}`}>
       <div className="supplier-access-topbar">
         <div className="supplier-access-shell supplier-access-topbar-inner">
-          <BrandLogo as="button" size="sm" align="flex-start" onClick={goHome} />
-
-          <div className="supplier-topbar-actions">
-            <button onClick={goToApply} className="supplier-topbar-cta">Skip to apply</button>
-          </div>
+          <BrandLogo as="button" size="sm" align={isAr ? 'flex-end' : 'flex-start'} onClick={() => nav('/')} />
+          <button onClick={goToApply} className="supplier-primary-btn">{copy.skip}</button>
         </div>
       </div>
 
@@ -131,48 +248,61 @@ export default function SupplierAccess({ user, profile }) {
               <div className="supplier-journey-progress-fill" style={{ width: `${sceneProgress}%` }} />
             </div>
             <div className="supplier-journey-progress-meta">
-              <span>Journey</span>
+              <span>{copy.journey[activeScene]}</span>
               <span>{activeScene + 1} / {totalScenes}</span>
             </div>
           </div>
 
           <div className="supplier-journey-stage">
-            <div className="supplier-stage-glow supplier-stage-glow-a" />
-            <div className="supplier-stage-glow supplier-stage-glow-b" />
-
             {activeScene === 0 && (
-              <section key="scene-0" className="supplier-scene supplier-scene-hero supplier-scene-enter">
+              <section className="supplier-scene supplier-scene-hero supplier-scene-enter">
                 <div className="supplier-scene-content">
-                  <div className="supplier-scene-eyebrow">Founding supplier access</div>
-                  <h1 className="supplier-scene-title supplier-scene-title-hero">Secure early access to Saudi buyers before the wider launch</h1>
-                  <p className="supplier-scene-description supplier-scene-description-large">
-                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This page only explains the journey — when you apply, you move into the shared supplier signup.
-                  </p>
-                  <div className="supplier-scene-actions">
-                    <button onClick={goToNextScene} className="supplier-primary-btn">Next</button>
-                    <button onClick={goToApply} className="supplier-secondary-btn">Skip to apply</button>
+                  <div className="supplier-scene-eyebrow">{copy.heroEyebrow}</div>
+                  <h1 className="supplier-scene-title supplier-scene-title-hero">{copy.heroTitle}</h1>
+                  <p className="supplier-scene-description supplier-scene-description-large">{copy.heroBody}</p>
+
+                  <div className="supplier-pill-row">
+                    {copy.heroPills.map((item) => <span key={item} className="supplier-pill">{item}</span>)}
+                  </div>
+
+                  <div className="supplier-marketplace-wrap">
+                    <div className="supplier-mini-label">{copy.marketplacesLabel}</div>
+                    <div className="supplier-marketplace-row">
+                      {copy.marketplaces.map((item) => <span key={item} className="supplier-marketplace-badge">{item}</span>)}
+                    </div>
                   </div>
                 </div>
-                <div className="supplier-scene-sidecard supplier-lift-card">
-                  <div className="supplier-sidecard-label">Currently open</div>
-                  <div className="supplier-sidecard-title">Founding supplier intake stays intentionally limited</div>
-                  <div className="supplier-sidecard-text">The first wave stays selective so approved suppliers enter with better positioning and a cleaner review path.</div>
+
+                <div className="supplier-side-stack">
+                  <div className="supplier-scene-sidecard">
+                    <div className="supplier-sidecard-label">{copy.currentlyOpen}</div>
+                    <div className="supplier-sidecard-title">{copy.heroCardTitle}</div>
+                    <div className="supplier-sidecard-text">{copy.heroCardBody}</div>
+                  </div>
+
+                  <div className="supplier-summary-card">
+                    {copy.finalChecklist.map((item) => (
+                      <div key={item} className="supplier-summary-row">
+                        <span className="supplier-summary-dot" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </section>
             )}
 
             {activeScene === 1 && (
-              <section key="scene-1" className="supplier-scene supplier-scene-enter">
+              <section className="supplier-scene supplier-scene-enter">
                 <div className="supplier-scene-content">
-                  <div className="supplier-scene-eyebrow">Why join early</div>
-                  <h2 className="supplier-scene-title">Position your company before broader supplier rollout begins</h2>
-                  <p className="supplier-scene-description">
-                    This is not about joining another crowded listing page. It is about entering earlier, being reviewed sooner, and showing up with stronger positioning before public supplier expansion.
-                  </p>
+                  <div className="supplier-scene-eyebrow">{copy.benefitsEyebrow}</div>
+                  <h2 className="supplier-scene-title">{copy.benefitsTitle}</h2>
+                  <p className="supplier-scene-description">{copy.benefitsBody}</p>
                 </div>
+
                 <div className="supplier-card-grid">
-                  {earlyBenefits.map((item, index) => (
-                    <div key={item.title} className="supplier-feature-card supplier-lift-card" style={{ animationDelay: `${index * 70}ms` }}>
+                  {copy.benefits.map((item) => (
+                    <div key={item.title} className="supplier-feature-card">
                       <h3>{item.title}</h3>
                       <p>{item.description}</p>
                     </div>
@@ -182,17 +312,16 @@ export default function SupplierAccess({ user, profile }) {
             )}
 
             {activeScene === 2 && (
-              <section key="scene-2" className="supplier-scene supplier-scene-enter">
+              <section className="supplier-scene supplier-scene-enter">
                 <div className="supplier-scene-content">
-                  <div className="supplier-scene-eyebrow">How it works</div>
-                  <h2 className="supplier-scene-title">A short, clear path from signup to review</h2>
-                  <p className="supplier-scene-description">
-                    No second registration and no duplicate forms: complete the lightweight signup once, confirm your email, then wait inside a controlled pending-review state while the team checks your application.
-                  </p>
+                  <div className="supplier-scene-eyebrow">{copy.flowEyebrow}</div>
+                  <h2 className="supplier-scene-title">{copy.flowTitle}</h2>
+                  <p className="supplier-scene-description">{copy.flowBody}</p>
                 </div>
+
                 <div className="supplier-steps-grid">
-                  {howItWorks.map((item, index) => (
-                    <div key={item.step} className="supplier-step-card supplier-lift-card" style={{ animationDelay: `${index * 90}ms` }}>
+                  {copy.steps.map((item) => (
+                    <div key={item.step} className="supplier-step-card">
                       <div className="supplier-step-number">{item.step}</div>
                       <h3>{item.title}</h3>
                       <p>{item.description}</p>
@@ -203,42 +332,68 @@ export default function SupplierAccess({ user, profile }) {
             )}
 
             {activeScene === 3 && (
-              <section key="scene-3" className="supplier-scene supplier-scene-enter">
+              <section className="supplier-scene supplier-scene-enter">
                 <div className="supplier-scene-content">
-                  <div className="supplier-scene-eyebrow">Why Maabar</div>
-                  <h2 className="supplier-scene-title">Built for Saudi buyer access, not open-listing clutter</h2>
-                  <p className="supplier-scene-description">
-                    Maabar is structured around Saudi market entry, buyer–supplier coordination, and a more curated supplier intake instead of generic marketplace noise.
-                  </p>
+                  <div className="supplier-scene-eyebrow">{copy.trustEyebrow}</div>
+                  <h2 className="supplier-scene-title">{copy.trustTitle}</h2>
+                  <p className="supplier-scene-description">{copy.trustBody}</p>
                 </div>
-                <div className="supplier-bullets-wrap">
-                  {whyMaabar.map((item, index) => (
-                    <div key={item} className="supplier-bullet-row supplier-bullet-row-enter" style={{ animationDelay: `${index * 80}ms` }}>
-                      <span className="supplier-bullet-dot" />
-                      <span>{item}</span>
+
+                <div className="supplier-trust-grid">
+                  <div className="supplier-trust-card">
+                    <div className="supplier-trust-title">{copy.trustNowTitle}</div>
+                    {copy.trustNowItems.map((item) => (
+                      <div key={item} className="supplier-summary-row">
+                        <span className="supplier-summary-dot" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="supplier-trust-card">
+                    <div className="supplier-trust-title">{copy.trustLaterTitle}</div>
+                    {copy.trustLaterItems.map((item) => (
+                      <div key={item} className="supplier-summary-row">
+                        <span className="supplier-summary-dot" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="supplier-trust-card supplier-trust-card-wide">
+                    <div className="supplier-trust-title">{copy.reviewTitle}</div>
+                    <div className="supplier-review-grid">
+                      {copy.reviewItems.map((item) => (
+                        <div key={item} className="supplier-review-item">{item}</div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </section>
             )}
 
             {activeScene === 4 && (
-              <section key="scene-4" className="supplier-scene supplier-scene-final supplier-scene-enter">
+              <section className="supplier-scene supplier-scene-final supplier-scene-enter">
                 <div className="supplier-scene-content">
-                  <div className="supplier-scene-eyebrow">Limited access</div>
-                  <h2 className="supplier-scene-title">Apply before the public launch window closes</h2>
-                  <p className="supplier-scene-description">
-                    We are onboarding a limited number of Chinese suppliers before official launch. Strong applications move into review first, then approved accounts unlock early supplier access and full dashboard functionality ahead of the broader rollout.
-                  </p>
+                  <div className="supplier-scene-eyebrow">{copy.finalEyebrow}</div>
+                  <h2 className="supplier-scene-title">{copy.finalTitle}</h2>
+                  <p className="supplier-scene-description">{copy.finalBody}</p>
                 </div>
+
+                <div className="supplier-mini-label">{copy.deadlineLabel}</div>
                 <div className="supplier-countdown-row">
-                  <CountUnit label="Days" value={timeLeft.days} />
-                  <CountUnit label="Hours" value={timeLeft.hours} />
-                  <CountUnit label="Minutes" value={timeLeft.minutes} />
+                  <CountUnit label={copy.days} value={timeLeft.days} />
+                  <CountUnit label={copy.hours} value={timeLeft.hours} />
+                  <CountUnit label={copy.minutes} value={timeLeft.minutes} />
                 </div>
-                <div className="supplier-scene-actions supplier-scene-actions-final">
-                  <button onClick={goToApply} className="supplier-primary-btn">{finalApplyLabel}</button>
-                  <button onClick={() => jumpToScene(0)} className="supplier-secondary-btn">Restart journey</button>
+
+                <div className="supplier-summary-card supplier-summary-card-center">
+                  {copy.finalChecklist.map((item) => (
+                    <div key={item} className="supplier-summary-row">
+                      <span className="supplier-summary-dot" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
@@ -249,27 +404,33 @@ export default function SupplierAccess({ user, profile }) {
               {Array.from({ length: totalScenes }).map((_, index) => (
                 <button
                   key={`scene-dot-${index}`}
-                  onClick={() => jumpToScene(index)}
+                  onClick={() => setActiveScene(index)}
                   className={`supplier-scene-dot${index === activeScene ? ' active' : ''}`}
-                  aria-label={`Go to scene ${index + 1}`}
+                  aria-label={`${copy.journey[index]} ${index + 1}`}
                 />
               ))}
             </div>
-            {activeScene > 0 && (
-              <div className="supplier-journey-footer-controls">
-                <div className="supplier-mobile-journey-buttons">
-                  <button onClick={goToPrevScene} className="supplier-secondary-btn supplier-mobile-nav-btn">
-                    Back
+
+            <div className="supplier-footer-actions">
+              {activeScene > 0 ? (
+                <button onClick={() => setActiveScene((prev) => Math.max(prev - 1, 0))} className="supplier-secondary-btn">
+                  {copy.back}
+                </button>
+              ) : <span />}
+
+              <div className="supplier-footer-cta-wrap">
+                {activeScene === totalScenes - 1 ? (
+                  <>
+                    <button onClick={() => setActiveScene(0)} className="supplier-secondary-btn">{copy.restart}</button>
+                    <button onClick={goToApply} className="supplier-primary-btn">{finalApplyLabel}</button>
+                  </>
+                ) : (
+                  <button onClick={() => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1))} className="supplier-primary-btn">
+                    {copy.next}
                   </button>
-                  <button
-                    onClick={isFinalScene ? goToApply : goToNextScene}
-                    className="supplier-primary-btn supplier-mobile-nav-btn supplier-mobile-nav-btn-primary"
-                  >
-                    {isFinalScene ? finalApplyLabel : 'Next'}
-                  </button>
-                </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </main>
@@ -282,17 +443,13 @@ export default function SupplierAccess({ user, profile }) {
             radial-gradient(circle at bottom right, rgba(255,255,255,0.04), transparent 24%),
             var(--bg-base);
           color: var(--text-primary);
-          text-align: left;
         }
-
         .supplier-access-shell {
           width: 100%;
           max-width: 1180px;
           margin: 0 auto;
-          padding-left: 20px;
-          padding-right: 20px;
+          padding: 0 20px;
         }
-
         .supplier-access-topbar {
           position: sticky;
           top: 0;
@@ -301,22 +458,19 @@ export default function SupplierAccess({ user, profile }) {
           backdrop-filter: blur(18px);
           border-bottom: 1px solid var(--border-subtle);
         }
-
         .supplier-access-topbar-inner {
+          min-height: 72px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          min-height: 72px;
         }
-
-        .supplier-topbar-actions {
+        .supplier-access-main {
+          min-height: calc(100vh - 72px);
           display: flex;
-          gap: 12px;
           align-items: center;
+          padding: 30px 0 34px;
         }
-
-        .supplier-topbar-cta,
         .supplier-primary-btn,
         .supplier-secondary-btn {
           border-radius: 14px;
@@ -324,41 +478,25 @@ export default function SupplierAccess({ user, profile }) {
           font-size: 14px;
           font-weight: 700;
           cursor: pointer;
-          transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 260ms ease;
-          -webkit-tap-highlight-color: transparent;
+          transition: transform 180ms ease, opacity 180ms ease, background 180ms ease, border-color 180ms ease;
         }
-
-        .supplier-topbar-cta:hover,
         .supplier-primary-btn:hover,
         .supplier-secondary-btn:hover {
           transform: translateY(-1px);
         }
-
+        .supplier-primary-btn {
+          background: var(--text-primary);
+          color: var(--bg-base);
+          border: none;
+        }
         .supplier-secondary-btn {
           background: transparent;
           color: var(--text-primary);
           border: 1px solid var(--border-default);
         }
-
-        .supplier-topbar-cta,
-        .supplier-primary-btn {
-          background: var(--text-primary);
-          color: var(--bg-base);
-          border: none;
-          box-shadow: 0 16px 34px rgba(255,255,255,0.08);
-        }
-
-        .supplier-access-main {
-          min-height: calc(100vh - 72px);
-          display: flex;
-          align-items: center;
-          padding: 30px 0 34px;
-        }
-
         .supplier-journey-progress-wrap {
           margin-bottom: 18px;
         }
-
         .supplier-journey-progress-bar {
           width: 100%;
           height: 6px;
@@ -367,15 +505,12 @@ export default function SupplierAccess({ user, profile }) {
           overflow: hidden;
           margin-bottom: 12px;
         }
-
         .supplier-journey-progress-fill {
           height: 100%;
           border-radius: 999px;
           background: linear-gradient(90deg, rgba(255,255,255,0.72), var(--text-primary));
-          transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1);
-          box-shadow: 0 0 18px rgba(255,255,255,0.16);
+          transition: width 280ms ease;
         }
-
         .supplier-journey-progress-meta {
           display: flex;
           justify-content: space-between;
@@ -385,78 +520,15 @@ export default function SupplierAccess({ user, profile }) {
           text-transform: uppercase;
           letter-spacing: 0.14em;
         }
-
         .supplier-journey-stage {
-          position: relative;
-          overflow: hidden;
           min-height: 64vh;
           border-radius: 30px;
           border: 1px solid var(--border-subtle);
           background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
           box-shadow: 0 34px 90px rgba(0,0,0,0.22);
-          isolation: isolate;
+          overflow: hidden;
         }
-
-        .supplier-stage-glow {
-          position: absolute;
-          border-radius: 999px;
-          filter: blur(18px);
-          opacity: 0.55;
-          pointer-events: none;
-          z-index: 0;
-          animation: supplierAmbientFloat 14s ease-in-out infinite;
-        }
-
-        .supplier-stage-glow-a {
-          inset: auto auto -110px -60px;
-          width: 220px;
-          height: 220px;
-          background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%);
-        }
-
-        .supplier-stage-glow-b {
-          inset: -50px -45px auto auto;
-          width: 210px;
-          height: 210px;
-          background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 68%);
-          animation-direction: reverse;
-          animation-duration: 18s;
-        }
-
-        @keyframes supplierAmbientFloat {
-          0%, 100% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          50% {
-            transform: translate3d(12px, -12px, 0) scale(1.05);
-          }
-        }
-
-        @keyframes supplierSceneEnter {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.985);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @keyframes supplierCardEnter {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
         .supplier-scene {
-          position: relative;
-          z-index: 1;
           min-height: 64vh;
           display: flex;
           flex-direction: column;
@@ -464,125 +536,137 @@ export default function SupplierAccess({ user, profile }) {
           gap: 24px;
           padding: 46px;
         }
-
         .supplier-scene-enter {
-          animation: supplierSceneEnter 440ms cubic-bezier(0.22, 1, 0.36, 1);
+          animation: supplierSceneEnter 340ms ease;
         }
-
         .supplier-scene-hero {
           display: grid;
-          grid-template-columns: minmax(0, 1.14fr) minmax(260px, 0.86fr);
-          align-items: center;
+          grid-template-columns: minmax(0, 1.15fr) minmax(290px, 0.85fr);
           gap: 24px;
+          align-items: center;
         }
-
-        .supplier-scene-content {
-          max-width: 760px;
+        .supplier-side-stack {
+          display: grid;
+          gap: 14px;
         }
-
-        .supplier-scene-eyebrow {
+        .supplier-scene-eyebrow,
+        .supplier-mini-label,
+        .supplier-sidecard-label,
+        .supplier-step-number {
           color: var(--text-tertiary);
           font-size: 11px;
           text-transform: uppercase;
-          letter-spacing: 0.17em;
-          margin-bottom: 12px;
+          letter-spacing: 0.16em;
         }
-
         .supplier-scene-title {
           font-size: clamp(2rem, 3vw, 3.1rem);
-          line-height: 1.02;
+          line-height: 1.03;
           letter-spacing: -0.05em;
           margin: 0 0 14px;
         }
-
         .supplier-scene-title-hero {
-          max-width: 760px;
-          font-size: clamp(2.25rem, 4.1vw, 3.85rem);
+          font-size: clamp(2.25rem, 4vw, 3.85rem);
         }
-
         .supplier-scene-description {
           color: var(--text-secondary);
           font-size: 16px;
           line-height: 1.75;
           margin: 0;
-          max-width: 720px;
+          max-width: 760px;
         }
-
         .supplier-scene-description-large {
           font-size: 17px;
         }
-
-        .supplier-scene-actions {
+        .supplier-pill-row,
+        .supplier-marketplace-row {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
-          margin-top: 22px;
         }
-
-        .supplier-lift-card {
-          animation: supplierCardEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        .supplier-pill-row {
+          margin-top: 18px;
         }
-
+        .supplier-marketplace-wrap {
+          margin-top: 18px;
+        }
+        .supplier-pill,
+        .supplier-marketplace-badge {
+          padding: 8px 12px;
+          border-radius: 999px;
+          border: 1px solid var(--border-subtle);
+          background: rgba(255,255,255,0.04);
+          font-size: 12px;
+          color: var(--text-secondary);
+        }
+        .supplier-scene-sidecard,
+        .supplier-summary-card,
+        .supplier-feature-card,
+        .supplier-step-card,
+        .supplier-trust-card,
+        .supplier-count-unit,
+        .supplier-review-item {
+          border-radius: 24px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-muted);
+        }
         .supplier-scene-sidecard {
           padding: 24px;
-          border-radius: 24px;
           background: linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.03));
-          border: 1px solid var(--border-muted);
-          color: var(--text-primary);
-          box-shadow: 0 20px 42px rgba(0,0,0,0.18);
-          animation: supplierAmbientFloat 12s ease-in-out infinite, supplierCardEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-
-        .supplier-sidecard-label {
-          color: var(--text-tertiary);
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          margin-bottom: 10px;
-        }
-
         .supplier-sidecard-title {
           font-size: 23px;
-          line-height: 1.1;
-          margin-bottom: 12px;
+          line-height: 1.15;
+          margin: 12px 0;
         }
-
         .supplier-sidecard-text {
           color: var(--text-secondary);
+          font-size: 14px;
           line-height: 1.75;
+        }
+        .supplier-summary-card {
+          padding: 18px 20px;
+          display: grid;
+          gap: 10px;
+        }
+        .supplier-summary-card-center {
+          width: min(680px, 100%);
+          margin: 0 auto;
+        }
+        .supplier-summary-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          color: var(--text-primary);
+          line-height: 1.65;
           font-size: 14px;
         }
-
+        .supplier-summary-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--text-primary);
+          opacity: 0.75;
+          margin-top: 8px;
+          flex: 0 0 auto;
+        }
         .supplier-card-grid,
         .supplier-steps-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 14px;
         }
-
         .supplier-feature-card,
-        .supplier-step-card {
+        .supplier-step-card,
+        .supplier-trust-card {
           padding: 22px;
-          border-radius: 22px;
-          background: var(--bg-muted);
-          border: 1px solid var(--border-subtle);
-          transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease;
         }
-
-        .supplier-feature-card:hover,
-        .supplier-step-card:hover {
-          transform: translateY(-4px);
-          border-color: var(--border-default);
-          box-shadow: 0 16px 36px rgba(0,0,0,0.18);
-        }
-
         .supplier-feature-card h3,
-        .supplier-step-card h3 {
+        .supplier-step-card h3,
+        .supplier-trust-title {
           margin: 0 0 10px;
-          font-size: 19px;
-          line-height: 1.22;
+          font-size: 18px;
+          line-height: 1.25;
         }
-
         .supplier-feature-card p,
         .supplier-step-card p {
           margin: 0;
@@ -590,79 +674,45 @@ export default function SupplierAccess({ user, profile }) {
           line-height: 1.72;
           font-size: 14px;
         }
-
-        .supplier-step-number {
-          color: var(--text-tertiary);
-          font-size: 13px;
-          letter-spacing: 0.12em;
-          font-weight: 700;
-          margin-bottom: 10px;
-        }
-
-        .supplier-bullets-wrap {
+        .supplier-trust-grid {
           display: grid;
-          gap: 8px;
-          max-width: 760px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
         }
-
-        .supplier-bullet-row {
-          display: flex;
+        .supplier-trust-card-wide {
+          grid-column: 1 / -1;
+        }
+        .supplier-review-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 12px;
-          align-items: flex-start;
-          padding: 16px 0;
-          border-bottom: 1px solid var(--border-subtle);
-          color: var(--text-primary);
-          font-size: 17px;
-          line-height: 1.58;
         }
-
-        .supplier-bullet-row-enter {
-          animation: supplierCardEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        .supplier-review-item {
+          padding: 16px 18px;
+          color: var(--text-secondary);
+          line-height: 1.7;
+          font-size: 14px;
         }
-
-        .supplier-bullet-dot {
-          width: 9px;
-          height: 9px;
-          border-radius: 50%;
-          background: var(--text-primary);
-          opacity: 0.72;
-          margin-top: 9px;
-          flex: 0 0 auto;
-          box-shadow: 0 0 14px rgba(255,255,255,0.14);
-        }
-
         .supplier-scene-final {
           text-align: center;
           align-items: center;
         }
-
-        .supplier-scene-final .supplier-scene-content {
-          max-width: 760px;
-        }
-
         .supplier-countdown-row {
           display: flex;
           flex-wrap: wrap;
           justify-content: center;
           gap: 12px;
         }
-
         .supplier-count-unit {
           min-width: 98px;
           padding: 18px 14px;
-          border-radius: 20px;
-          background: var(--bg-muted);
-          border: 1px solid var(--border-muted);
           text-align: center;
-          box-shadow: 0 10px 24px rgba(0,0,0,0.16);
         }
-
         .supplier-count-value {
           font-size: 30px;
           line-height: 1;
           font-weight: 700;
         }
-
         .supplier-count-label {
           margin-top: 7px;
           font-size: 11px;
@@ -670,426 +720,78 @@ export default function SupplierAccess({ user, profile }) {
           text-transform: uppercase;
           letter-spacing: 0.08em;
         }
-
-        .supplier-scene-actions-final {
-          justify-content: center;
-          margin-top: 0;
-        }
-
         .supplier-journey-footer {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 14px 4px 0;
+          display: grid;
+          gap: 16px;
+          margin-top: 18px;
         }
-
         .supplier-scene-dots {
           display: flex;
-          gap: 8px;
-          align-items: center;
           justify-content: center;
+          gap: 8px;
         }
-
         .supplier-scene-dot {
           width: 10px;
           height: 10px;
           border-radius: 999px;
           border: none;
-          background: var(--border-strong);
+          background: rgba(255,255,255,0.18);
           cursor: pointer;
-          transition: all 240ms cubic-bezier(0.22, 1, 0.36, 1);
-          padding: 0;
+          transition: transform 160ms ease, background 160ms ease;
         }
-
-        .supplier-scene-dot:hover {
-          transform: scale(1.08);
-        }
-
         .supplier-scene-dot.active {
-          width: 34px;
           background: var(--text-primary);
-          box-shadow: 0 0 14px rgba(255,255,255,0.18);
+          transform: scale(1.15);
         }
-
-        .supplier-journey-footer-controls {
-          width: 100%;
-          max-width: 720px;
+        .supplier-footer-actions {
           display: flex;
-          align-items: center;
           justify-content: space-between;
-          gap: 16px;
-          padding: 14px 16px;
-          border-radius: 22px;
-          border: 1px solid var(--border-subtle);
-          background: rgba(255,255,255,0.03);
-          box-shadow: 0 14px 30px rgba(0,0,0,0.14);
+          gap: 12px;
+          align-items: center;
         }
-
-        .supplier-mobile-journey-summary {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          min-width: 0;
-        }
-
-        .supplier-mobile-journey-summary strong {
-          font-size: 14px;
-          color: var(--text-primary);
-          line-height: 1.35;
-        }
-
-        .supplier-mobile-journey-step {
-          color: var(--text-tertiary);
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-        }
-
-        .supplier-mobile-journey-buttons {
+        .supplier-footer-cta-wrap {
           display: flex;
           gap: 10px;
-          width: auto;
-          flex-shrink: 0;
+          flex-wrap: wrap;
+          justify-content: flex-end;
         }
-
-        .supplier-mobile-nav-btn {
-          min-height: 46px;
-          min-width: 112px;
+        @keyframes supplierSceneEnter {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
-        .supplier-mobile-nav-btn-primary {
-          flex: 1 1 auto;
-        }
-
-        @media (max-width: 959px) {
-          .supplier-access-shell {
-            padding-left: 16px;
-            padding-right: 16px;
+        @media (max-width: 900px) {
+          .supplier-scene-hero,
+          .supplier-trust-grid,
+          .supplier-footer-actions {
+            grid-template-columns: 1fr;
+            display: grid;
           }
-
-          .supplier-access-main {
-            padding-top: 18px;
-            padding-bottom: 24px;
-            align-items: flex-start;
+          .supplier-footer-actions {
+            justify-content: stretch;
           }
-
-          .supplier-journey-stage,
+          .supplier-footer-cta-wrap {
+            justify-content: stretch;
+          }
+          .supplier-footer-cta-wrap .supplier-primary-btn,
+          .supplier-footer-cta-wrap .supplier-secondary-btn,
+          .supplier-footer-actions > .supplier-secondary-btn {
+            width: 100%;
+          }
+        }
+        @media (max-width: 768px) {
           .supplier-scene {
+            padding: 28px 20px;
             min-height: auto;
           }
-
-          .supplier-scene {
-            padding: 30px 22px;
-            gap: 20px;
-          }
-
-          .supplier-scene-hero {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-
-          .supplier-scene-title {
-            font-size: clamp(1.72rem, 6.2vw, 2.25rem);
-          }
-
+          .supplier-scene-title,
           .supplier-scene-title-hero {
-            font-size: clamp(1.9rem, 7.5vw, 2.7rem);
+            letter-spacing: -0.03em;
           }
-
-          .supplier-scene-description,
-          .supplier-scene-description-large {
-            font-size: 14px;
-            line-height: 1.62;
-          }
-
-          .supplier-feature-card h3,
-          .supplier-step-card h3 {
-            font-size: 17px;
-          }
-
-          .supplier-bullet-row {
-            font-size: 14px;
-            padding: 12px 0;
-          }
-
-          .supplier-topbar-actions {
-            display: none;
-          }
-
-          .supplier-journey-footer-controls {
-            position: sticky;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-            width: 100%;
-            margin-top: 6px;
-            padding: 12px;
-            border-radius: 20px;
-            background: rgba(10,10,11,0.92);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 16px 30px rgba(0,0,0,0.2);
-          }
-
-          .supplier-mobile-journey-buttons {
-            width: 100%;
-          }
-
-          .supplier-mobile-nav-btn {
-            flex: 1 1 0;
-          }
-
-          .supplier-scene-actions .supplier-primary-btn,
-          .supplier-scene-actions .supplier-secondary-btn {
-            flex: 1 1 100%;
-            width: 100%;
-          }
-
-          .supplier-scene-0 .supplier-scene-actions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
-            margin-top: 18px;
-          }
-
-          .supplier-scene-0 .supplier-scene-actions .supplier-primary-btn,
-          .supplier-scene-0 .supplier-scene-actions .supplier-secondary-btn {
-            flex: 1 1 auto;
-            width: 100%;
-          }
-
-          .supplier-countdown-row {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            width: 100%;
-          }
-
-          .supplier-count-unit {
-            min-width: 0;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .supplier-access-topbar-inner {
-            min-height: 56px;
-          }
-
-          .supplier-access-main {
-            padding-top: 8px;
-            padding-bottom: 14px;
-          }
-
-          .supplier-journey-progress-wrap {
-            margin-bottom: 8px;
-          }
-
-          .supplier-journey-progress-bar {
-            height: 5px;
-            margin-bottom: 8px;
-          }
-
-          .supplier-journey-progress-meta {
-            font-size: 9px;
-            letter-spacing: 0.1em;
-          }
-
-          .supplier-journey-stage {
-            border-radius: 20px;
-          }
-
-          .supplier-scene {
-            padding: 16px 13px;
-            gap: 12px;
-          }
-
-          .supplier-scene-0 .supplier-scene {
-            padding: 14px 13px 12px;
-            gap: 10px;
-          }
-
-          .supplier-scene-0 .supplier-scene-hero {
-            min-height: auto;
-            align-content: start;
-            gap: 10px;
-          }
-
-          .supplier-scene-0 .supplier-scene-content {
-            max-width: none;
-          }
-
-          .supplier-scene-eyebrow {
-            font-size: 9px;
-            margin-bottom: 6px;
-            letter-spacing: 0.14em;
-          }
-
-          .supplier-scene-title {
-            margin-bottom: 8px;
-            font-size: clamp(1.5rem, 6.9vw, 1.95rem);
-            line-height: 1.04;
-          }
-
-          .supplier-scene-0 .supplier-scene-title-hero {
-            font-size: clamp(1.56rem, 7.1vw, 2.02rem);
-            max-width: 13ch;
-          }
-
-          .supplier-scene-description,
-          .supplier-scene-description-large,
-          .supplier-scene-0 .supplier-scene-description-large {
-            font-size: 13px;
-            line-height: 1.5;
-            max-width: 34ch;
-          }
-
           .supplier-card-grid,
-          .supplier-steps-grid {
+          .supplier-steps-grid,
+          .supplier-review-grid,
+          .supplier-trust-grid {
             grid-template-columns: 1fr;
-            gap: 10px;
-          }
-
-          .supplier-feature-card,
-          .supplier-step-card,
-          .supplier-scene-sidecard {
-            padding: 14px;
-            border-radius: 18px;
-          }
-
-          .supplier-feature-card h3,
-          .supplier-step-card h3 {
-            margin-bottom: 7px;
-            font-size: 15px;
-          }
-
-          .supplier-feature-card p,
-          .supplier-step-card p {
-            font-size: 12px;
-            line-height: 1.5;
-          }
-
-          .supplier-step-number {
-            font-size: 11px;
-            margin-bottom: 7px;
-          }
-
-          .supplier-scene-0 .supplier-scene-sidecard {
-            padding: 12px;
-            border-radius: 16px;
-            display: grid;
-            gap: 5px;
-          }
-
-          .supplier-sidecard-title {
-            font-size: 18px;
-          }
-
-          .supplier-sidecard-text {
-            font-size: 12px;
-            line-height: 1.45;
-          }
-
-          .supplier-scene-0 .supplier-sidecard-label {
-            margin-bottom: 2px;
-            font-size: 9px;
-          }
-
-          .supplier-scene-0 .supplier-sidecard-title {
-            margin-bottom: 0;
-            font-size: 15px;
-            line-height: 1.2;
-          }
-
-          .supplier-scene-0 .supplier-sidecard-text {
-            font-size: 11.5px;
-            line-height: 1.42;
-          }
-
-          .supplier-bullets-wrap {
-            gap: 4px;
-          }
-
-          .supplier-bullet-row {
-            gap: 10px;
-            padding: 10px 0;
-            font-size: 13px;
-            line-height: 1.42;
-          }
-
-          .supplier-bullet-dot {
-            width: 8px;
-            height: 8px;
-            margin-top: 6px;
-          }
-
-          .supplier-scene-actions {
-            margin-top: 14px;
-            gap: 8px;
-          }
-
-          .supplier-countdown-row {
-            gap: 8px;
-          }
-
-          .supplier-count-unit {
-            padding: 12px 8px;
-            border-radius: 15px;
-          }
-
-          .supplier-count-value {
-            font-size: 22px;
-          }
-
-          .supplier-count-label {
-            margin-top: 5px;
-            font-size: 9px;
-          }
-
-          .supplier-journey-footer {
-            gap: 8px;
-            padding-top: 10px;
-          }
-
-          .supplier-scene-dot {
-            width: 8px;
-            height: 8px;
-          }
-
-          .supplier-scene-dot.active {
-            width: 28px;
-          }
-
-          .supplier-journey-footer-controls {
-            gap: 10px;
-            padding: 10px;
-            border-radius: 18px;
-          }
-
-          .supplier-mobile-journey-summary strong {
-            font-size: 13px;
-            line-height: 1.3;
-          }
-
-          .supplier-mobile-journey-step {
-            font-size: 9px;
-            letter-spacing: 0.1em;
-          }
-
-          .supplier-mobile-journey-buttons {
-            gap: 8px;
-          }
-
-          .supplier-primary-btn,
-          .supplier-secondary-btn {
-            min-height: 40px;
-            padding: 10px 13px;
-            font-size: 12px;
-            border-radius: 12px;
-          }
-
-          .supplier-mobile-nav-btn {
-            min-width: 0;
           }
         }
       `}</style>
