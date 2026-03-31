@@ -110,15 +110,6 @@ export default function SupplierAccess({ user, profile }) {
   const goToNextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
   const isFinalScene = activeScene === totalScenes - 1;
   const finalApplyLabel = hasExistingSupplierAccount ? ctaCopy : 'Apply now';
-  const footerPrimaryLabel = isFinalScene ? finalApplyLabel : 'Next';
-  const handleFooterPrimaryAction = () => {
-    if (isFinalScene) {
-      goToApply();
-      return;
-    }
-
-    goToNextScene();
-  };
 
   return (
     <div dir="ltr" lang="en" className={`supplier-access-page supplier-scene-${activeScene}`}>
@@ -127,7 +118,7 @@ export default function SupplierAccess({ user, profile }) {
           <BrandLogo as="button" size="sm" align="flex-start" onClick={goHome} />
 
           <div className="supplier-topbar-actions">
-            <button onClick={goToApply} className="supplier-topbar-cta">{hasExistingSupplierAccount ? ctaCopy : 'Apply now'}</button>
+            <button onClick={goToApply} className="supplier-topbar-cta">Skip to apply</button>
           </div>
         </div>
       </div>
@@ -158,7 +149,7 @@ export default function SupplierAccess({ user, profile }) {
                   </p>
                   <div className="supplier-scene-actions">
                     <button onClick={goToNextScene} className="supplier-primary-btn">Next</button>
-                    <button onClick={goToApply} className="supplier-secondary-btn">Skip</button>
+                    <button onClick={goToApply} className="supplier-secondary-btn">Skip to apply</button>
                   </div>
                 </div>
                 <div className="supplier-scene-sidecard supplier-lift-card">
@@ -262,23 +253,6 @@ export default function SupplierAccess({ user, profile }) {
                   aria-label={`Go to scene ${index + 1}`}
                 />
               ))}
-            </div>
-            <div className="supplier-journey-footer-controls">
-              <div className="supplier-mobile-journey-summary">
-                <span className="supplier-mobile-journey-step">Step {activeScene + 1} of {totalScenes}</span>
-                <strong>{sceneTitles[activeScene]}</strong>
-              </div>
-              <div className="supplier-mobile-journey-buttons">
-                <button onClick={goToApply} className="supplier-secondary-btn supplier-mobile-nav-btn">
-                  Skip
-                </button>
-                <button
-                  onClick={handleFooterPrimaryAction}
-                  className="supplier-primary-btn supplier-mobile-nav-btn supplier-mobile-nav-btn-primary"
-                >
-                  {footerPrimaryLabel}
-                </button>
-              </div>
             </div>
           </div>
         </div>
