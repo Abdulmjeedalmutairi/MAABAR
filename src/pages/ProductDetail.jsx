@@ -46,7 +46,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
 
-  useEffect(() => { loadProduct(); }, [id]);
+  useEffect(() => { loadProduct(); }, [id, profile?.role, user?.id]);
 
   useEffect(() => {
     const firstImage = getProductGalleryImages(product)[0] || null;
@@ -60,7 +60,15 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
       .select('*,profiles(id,company_name,city,country,rating,reviews_count,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,min_order_value)')
       .eq('id', id)
       .single();
-    if (data) setProduct(data);
+
+    if (data) {
+      const canViewProduct = isSupplierPubliclyVisible(data.profiles?.status)
+        || (profile?.role === 'supplier' && user?.id === data.supplier_id);
+      setProduct(canViewProduct ? data : null);
+    } else {
+      setProduct(null);
+    }
+
     setLoading(false);
   };
 

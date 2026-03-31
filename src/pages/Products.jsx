@@ -116,10 +116,14 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     setLoading(true);
     const { data } = await sb
       .from('products')
-      .select('*,profiles(company_name,rating,id,status,trade_link,wechat,factory_images,years_experience,trust_score,country,city)')
+      .select('*,profiles(company_name,rating,id,status,trade_link,wechat,factory_images,years_experience,trust_score,country,city,maabar_supplier_id)')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
-    if (data) setProducts(data);
+
+    if (data) {
+      setProducts(data.filter((product) => isSupplierPubliclyVisible(product.profiles?.status)));
+    }
+
     setLoading(false);
   };
 
