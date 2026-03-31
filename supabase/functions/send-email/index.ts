@@ -6,6 +6,7 @@ const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || 'https://utzalmszfqfcof
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || '';
 const ADMIN_EMAIL = 'info@maabar.io';
 const FROM = 'مَعبر | MAABAR <hello@maabar.io>';
+const EMAIL_LOGO_URL = 'https://maabar.io/email-logo-header.svg';
 const adminSb = SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
 
 const cors = {
@@ -63,8 +64,8 @@ function wrap(content, options = {}) {
       <td align="center" bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:0;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
           <tr>
-            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:34px 24px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
-              ${darkBlend(brandLockup('header'), '#0a0a0b')}
+            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:0;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
+              <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />
             </td>
           </tr>
           <tr>
@@ -73,8 +74,8 @@ function wrap(content, options = {}) {
             </td>
           </tr>
           <tr>
-            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:22px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
-              ${darkBlend(brandLockup('header'), '#0a0a0b')}
+            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:18px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
+              <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:260px;height:auto;border:0;margin:0 auto;" />
               <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px;line-height:1.8;">
                 <a href="https://maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">maabar.io</a>
                 &nbsp;·&nbsp;
@@ -417,7 +418,7 @@ const templates = {
 <body style="margin:0;padding:0;background:#0a0a0b;font-family:${locale.font};color:#f3f3f3;direction:${locale.dir};text-align:${locale.align}">
   <div style="max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden">
     <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
-      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : darkBlend(brandLockup('header'), '#0a0a0b')}
+      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />` : `<img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />`}
     </div>
     <div style="padding:0;background:#0a0a0b">
       <div style="padding:42px 32px;background:#101114;background-image:linear-gradient(#101114,#101114);direction:${locale.dir};text-align:${locale.align}">
@@ -441,7 +442,7 @@ const templates = {
       </div>
     </div>
     <div style="padding:22px 24px 34px;background:#0a0a0b;border-top:1px solid rgba(255,255,255,.06);text-align:center">
-      ${darkBlend(brandLockup('footer'), '#0a0a0b')}
+      <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:260px;height:auto;border:0;margin:0 auto;" />
       <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
     </div>
   </div>
