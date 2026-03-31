@@ -3,6 +3,7 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+import { buildSupplierTrustSignals, isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 
 const CATEGORIES = {
   ar: [
@@ -64,8 +65,9 @@ export default function Suppliers({ lang, user }) {
     let query = sb.from('profiles')
       .select('*, products(id), reviews(id)')
       .eq('role', 'supplier')
-      .eq('status', 'active')
       .order('rating', { ascending: false });
+
+    query = query.in('status', ['active', 'approved']);
 
     if (activeCat !== 'all') query = query.eq('speciality', activeCat);
 
@@ -97,7 +99,7 @@ export default function Suppliers({ lang, user }) {
             {isAr ? 'الموردون' : lang === 'zh' ? '供应商' : 'Suppliers'}
           </h1>
           <p className={`page-sub${isAr ? ' ar' : ''}`}>
-            {isAr ? 'موردون صينيون معتمدون جاهزون للتعامل' : lang === 'zh' ? '经过认证的中国供应商' : 'Verified Chinese suppliers ready to work with you'}
+            {isAr ? 'موردون صينيون مراجعون من مَعبر مع إشارات ثقة أوضح قبل بدء التفاوض' : lang === 'zh' ? '展示经过 Maabar 审核、信任信号更清晰的中国供应商' : 'Browse China-based suppliers reviewed by Maabar with clearer trust signals before negotiation'}
           </p>
         </div>
       </div>
@@ -152,7 +154,11 @@ export default function Suppliers({ lang, user }) {
         {/* SUPPLIERS GRID */}
         {!loading && filtered.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {filtered.map((s, idx) => (
+            {filtered.map((s, idx) => {
+              const trustSignals = buildSupplierTrustSignals(s);
+              const isReviewedSupplier = isSupplierPubliclyVisible(s.status);
+
+              return (
               <div key={s.id}
                 onClick={() => nav(`/supplier/${s.id}`)}
                 style={{
@@ -175,7 +181,7 @@ export default function Suppliers({ lang, user }) {
                       <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {s.company_name || '—'}
                       </p>
-                      {s.status === 'approved' && (
+                      {isReviewedSupplier && (
                         <span title={isAr ? 'مورد معتمد من فريق مَعبر' : 'Verified by Maabar team'} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 3,
                           padding: '2px 7px', borderRadius: 20,
@@ -235,25 +241,44 @@ export default function Suppliers({ lang, user }) {
                       {s.products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
                     </span>
                   )}
-                  {s.sample_available && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 20, color: 'rgba(139,120,255,0.85)', letterSpacing: 1 }}>
-                      {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample Available'}
+                  {trustSignals.includes('trade_profile_available') && (
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.18)', borderRadius: 20, color: '#5a9a72', letterSpacing: 0.6 }}>
+                      {isAr ? 'رابط متجر موثق' : lang === 'zh' ? '店铺链接已提供' : 'Trade link on file'}
+                    </span>
+                  )}
+                  {trustSignals.includes('wechat_available') && (
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 20, color: 'rgba(139,120,255,0.85)', letterSpacing: 0.6 }}>
+                      WeChat
+                    </span>
+                  )}
+                  {trustSignals.includes('factory_media_available') && (
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
+                      {isAr ? 'صور منشأة' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                     </span>
                   )}
                 </div>
 
                 {/* TRUST SCORE */}
-                {s.trust_score > 0 && (
+                {(s.trust_score > 0 || trustSignals.length > 0) && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1 }}>
-                        {isAr ? 'مستوى الثقة' : 'Trust Score'}
+                        {isAr ? 'إشارات الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}
                       </span>
-                      <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{s.trust_score}%</span>
+                      {s.trust_score > 0 && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{s.trust_score}%</span>}
                     </div>
-                    <div style={{ height: 2, background: 'var(--border-subtle)', borderRadius: 1, overflow: 'hidden' }}>
-                      <div style={{ width: `${s.trust_score}%`, height: '100%', background: 'rgba(139,120,255,0.5)', borderRadius: 1 }} />
-                    </div>
+                    {s.trust_score > 0 && (
+                      <div style={{ height: 2, background: 'var(--border-subtle)', borderRadius: 1, overflow: 'hidden', marginBottom: 8 }}>
+                        <div style={{ width: `${s.trust_score}%`, height: '100%', background: 'rgba(139,120,255,0.5)', borderRadius: 1 }} />
+                      </div>
+                    )}
+                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
+                      {isAr
+                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'الحساب بانتظار المراجعة'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}${trustSignals.includes('wechat_available') ? ' · WeChat متوفر' : ''}`
+                        : lang === 'zh'
+                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '等待平台审核'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}${trustSignals.includes('wechat_available') ? ' · 可通过 WeChat 联系' : ''}`
+                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Awaiting review'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}${trustSignals.includes('wechat_available') ? ' · WeChat available' : ''}`}
+                    </p>
                   </div>
                 )}
 
@@ -284,7 +309,8 @@ export default function Suppliers({ lang, user }) {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

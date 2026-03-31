@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import { buildDisplayPrice } from '../lib/displayCurrency';
 import { buildProductSpecs, getPrimaryProductImage, getProductGalleryImages } from '../lib/productMedia';
+import { buildSupplierTrustSignals, isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -23,13 +24,15 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const [calcProduct, setCalcProduct] = useState(null);
   const [calcResult, setCalcResult] = useState(null);
   const isAr = lang === 'ar';
+  const supplierTrustSignals = buildSupplierTrustSignals(supplier || {});
+  const isReviewedSupplier = isSupplierPubliclyVisible(supplier?.status);
 
   useEffect(() => { loadSupplier(); }, [id]);
 
   const loadSupplier = async () => {
     setLoading(true);
     const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
-      sb.from('profiles').select('id,company_name,city,country,rating,reviews_count,avatar_url,bio_ar,bio_en,bio_zh,speciality,status,factory_images').eq('id', id).single(),
+      sb.from('profiles').select('id,company_name,city,country,rating,reviews_count,avatar_url,bio_ar,bio_en,bio_zh,speciality,status,factory_images,trade_link,wechat,whatsapp,years_experience,trust_score,created_at,min_order_value,deals_completed,completion_rate,export_years').eq('id', id).single(),
       sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name)').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
@@ -162,7 +165,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
             <h1 className={`profile-name${isAr ? ' ar' : ''}`} style={{ margin: 0 }}>{supplier.company_name}</h1>
-            {supplier.status === 'approved' && (
+            {isReviewedSupplier && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '3px 10px',
@@ -233,7 +236,58 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           {isAr ? 'للحماية الكاملة — أتمّ صفقتك عبر معبر' : lang === 'zh' ? '获得完整保障 — 通过Maabar完成交易' : 'For full protection — complete your deal on Maabar'}
         </div>
 
-        {(supplier.bio_ar || supplier.bio_en) && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 12,
+          marginBottom: 28,
+        }}>
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
+              {isAr ? 'مراجعة مَعبر' : lang === 'zh' ? 'Maabar 审核' : 'Maabar review'}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isReviewedSupplier
+                ? (isAr ? 'تمت مراجعة هذا المورد وإتاحته للمشترين على المنصة.' : lang === 'zh' ? '该供应商已通过 Maabar 审核并对买家开放。' : 'This supplier has been reviewed by Maabar and is visible to buyers.')
+                : (isAr ? 'الملف ما زال قيد المراجعة.' : lang === 'zh' ? '该供应商资料仍在审核中。' : 'This supplier profile is still under review.')}
+            </p>
+          </div>
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
+              {isAr ? 'دلائل الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr
+                ? `${supplierTrustSignals.includes('trade_profile_available') ? 'رابط الشركة متوفر' : 'لا يوجد رابط شركة معروض'}${supplierTrustSignals.includes('wechat_available') ? ' · WeChat متاح' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · صور منشأة متاحة' : ''}`
+                : lang === 'zh'
+                  ? `${supplierTrustSignals.includes('trade_profile_available') ? '已提供店铺/官网链接' : '暂未展示店铺链接'}${supplierTrustSignals.includes('wechat_available') ? ' · 支持 WeChat 沟通' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · 提供工厂图片' : ''}`
+                  : `${supplierTrustSignals.includes('trade_profile_available') ? 'trade profile available' : 'no public trade profile shown'}${supplierTrustSignals.includes('wechat_available') ? ' · WeChat available' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · factory photos available' : ''}`}
+            </p>
+          </div>
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
+              {isAr ? 'طريقة العمل' : lang === 'zh' ? '合作方式' : 'Working model'}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr ? 'التفاوض والاتفاق يتمان عبر معبر، مع حماية أوضح للدفعات والتوثيق.' : lang === 'zh' ? '建议通过 Maabar 完成沟通、报价与交易，以获得更清晰的付款与记录保障。' : 'Use Maabar for communication, quoting, and transaction flow to keep payment and records protected.'}
+            </p>
+          </div>
+        </div>
+
+        {supplier.trade_link && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
+            <a href={supplier.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+              {isAr ? 'عرض رابط الشركة / المتجر' : lang === 'zh' ? '查看官网 / 店铺链接' : 'View company / store link'}
+            </a>
+            {supplier.wechat && (
+              <span style={{ fontSize: 11, padding: '0 12px', minHeight: 38, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                WeChat: {supplier.wechat}
+              </span>
+            )}
+          </div>
+        )}
+
+        {(supplier.bio_ar || supplier.bio_en || supplier.bio_zh) && (
           <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
             {isAr ? supplier.bio_ar || supplier.bio_en : supplier.bio_en || supplier.bio_ar}
           </p>

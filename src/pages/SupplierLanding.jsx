@@ -1,21 +1,28 @@
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
-import BrandLogo from '../components/BrandLogo';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+import BrandLogo from '../components/BrandLogo';
 
 const T = {
   ar: {
     tag: 'مَعبر للموردين',
     title: 'وصّل منتجك\nللسوق السعودي',
-    sub: 'المشترون السعوديون يرفعون طلباتهم مباشرة — قدم عرضك في ثوانٍ بدون وسطاء.',
+    sub: 'بوابة تأسيسية أوضح للموردين الصينيين: سجّل الشركة، أضف رابط متجرك، ثم تابع حالة الطلب بخطوات ومراجعة واضحة بدل الغموض.',
     cta: 'انضم كمورد مجاناً ←',
     statLabel: 'طلب مفتوح الآن',
     features: [
-      { icon: '📋', t: 'شوف الطلبات مباشرة', d: 'المشترون يحددون وش يبون، الكمية، والمواصفات — أنت بس تقدم السعر.' },
-      { icon: '⚡', t: 'تنافس وافوز', d: 'موردون متعددون يتنافسون على نفس الطلب — الأفضل سعراً وجودةً يفوز.' },
-      { icon: '🔒', t: 'دفع مضمون', d: 'المبلغ محجوز في النظام ولا يصلك إلا بعد تأكيد الاستلام.' },
+      { icon: '📋', t: 'شوف الطلبات مباشرة', d: 'المشترون يحددون وش يبون، الكمية، والمواصفات — وأنت ترد بعرض مهني واضح.' },
+      { icon: '⚡', t: 'قدّم عرضاً احترافياً', d: 'أضف السعر وMOQ ومدة التسليم والشحن والملاحظات التجارية بطريقة أوضح للمشتري.' },
+      { icon: '🔒', t: 'دفع موثّق', d: 'إتمام الصفقة عبر مَعبر يعطي حماية أفضل للتوثيق والدفع والتواصل.' },
+    ],
+    trustTitle: 'ما الذي يتوقعه المورد الصيني هنا؟',
+    trustItems: [
+      'لا نطلب الرخصة أو صور المصنع في أول شاشة تسجيل — فقط الأساسيات الموثوقة.',
+      'روابط Alibaba / 1688 / الموقع الرسمي مقبولة كمصدر ثقة أولي.',
+      'WeChat اختياري لكنه مفيد إذا كان هذا مسار التواصل المعتاد لديك.',
+      'بعد تأكيد البريد تدخل مباشرة إلى صفحة حالة طلب واضحة مع توقع زمني تقريبي.',
     ],
     bottomTitle: 'جاهز تبدأ؟',
     copyright: 'مَعبر © 2026'
@@ -23,13 +30,20 @@ const T = {
   en: {
     tag: 'Maabar for Suppliers',
     title: 'Reach the\nSaudi Market',
-    sub: 'Saudi buyers post their requests directly — submit your quote in seconds, no middlemen.',
+    sub: 'A clearer founding-supplier entry for Chinese exporters: register the company, add your store link, then track application status with less ambiguity.',
     cta: 'Join as Supplier — Free →',
     statLabel: 'open requests now',
     features: [
-      { icon: '📋', t: 'See requests directly', d: 'Buyers specify exactly what they need — you just submit a price.' },
-      { icon: '⚡', t: 'Compete and win', d: 'Multiple suppliers compete — best price wins.' },
-      { icon: '🔒', t: 'Guaranteed payment', d: 'Payment moves when the buyer decides — every deal builds trust.' },
+      { icon: '📋', t: 'See requests directly', d: 'Buyers specify quantity, specs, and budget direction — you respond with a cleaner commercial quote.' },
+      { icon: '⚡', t: 'Quote more professionally', d: 'Present MOQ, lead time, shipping, and trade notes in a way that feels closer to a real RFQ workflow.' },
+      { icon: '🔒', t: 'Protected deal flow', d: 'Closing the transaction on Maabar keeps payment, records, and communication more structured.' },
+    ],
+    trustTitle: 'What Chinese suppliers usually want to know first',
+    trustItems: [
+      'Initial signup stays light — no business license upload on the first screen.',
+      'Alibaba / 1688 / official company website links are accepted as first-pass trade proof.',
+      'WeChat is optional, but recommended if it is your normal business channel.',
+      'After email confirmation, you land in a dedicated application-status page with review expectations.',
     ],
     bottomTitle: 'Ready to start?',
     copyright: 'Maabar © 2026'
@@ -37,13 +51,20 @@ const T = {
   zh: {
     tag: 'Maabar 供应商平台',
     title: '进入\n沙特市场',
-    sub: '沙特买家直接发布采购需求 — 秒级提交报价，无中间商。',
+    sub: '更清晰的中国供应商入驻路径：先提交公司基础资料和店铺链接，再进入明确的申请状态页，不再靠猜测审核进度。',
     cta: '免费加入供应商 →',
     statLabel: '个开放询价',
     features: [
-      { icon: '📋', t: '直接查看询价', d: '买家明确需求 — 您只需提交价格。' },
-      { icon: '⚡', t: '竞争获胜', d: '多个供应商竞争同一订单 — 最优价格获胜。' },
-      { icon: '🔒', t: '付款保障', d: '资金托管，买家确认收货后才释放。' },
+      { icon: '📋', t: '直接查看询价', d: '买家会写明数量、规格和采购方向，您可直接提交更专业的报价。' },
+      { icon: '⚡', t: '报价更像正式 RFQ', d: '更清楚地填写 MOQ、交期、运费和商业备注，让买家更容易比较。' },
+      { icon: '🔒', t: '交易更有保障', d: '通过 Maabar 完成沟通与交易，付款、记录和流程都会更清晰。' },
+    ],
+    trustTitle: '中国供应商最关心的几点',
+    trustItems: [
+      '首次注册保持轻量，不会在第一屏就要求上传完整营业执照。',
+      '支持 Alibaba / 1688 / 官网链接作为第一步贸易证明。',
+      'WeChat 不是必填，但如果这是您的常用商务渠道，建议填写。',
+      '邮箱确认后，系统会直接带您进入明确的申请状态页，并给出审核预期。',
     ],
     bottomTitle: '准备好开始了吗？',
     copyright: 'Maabar © 2026'
@@ -87,6 +108,46 @@ export default function SupplierLanding({ lang }) {
         </div>
       </div>
 
+      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 24px 12px' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1.05fr 0.95fr',
+          gap: 16,
+          alignItems: 'stretch',
+        }} className="supplier-trust-grid">
+          <div style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', padding: '22px 22px 20px' }}>
+            <p style={{ fontSize: 10, letterSpacing: 2.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.42)', marginBottom: 12 }}>{t.trustTitle}</p>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {t.trustItems.map((item) => (
+                <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'rgba(255,255,255,0.72)' }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.78)', marginTop: 7, flex: '0 0 auto' }} />
+                  <span style={{ fontSize: 13, lineHeight: 1.75, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', padding: '22px' }}>
+            <p style={{ fontSize: 10, letterSpacing: 2.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.42)', marginBottom: 12 }}>
+              {isAr ? 'كيف تسير العملية' : lang === 'zh' ? '流程怎么走' : 'How the flow works'}
+            </p>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {[
+                isAr ? '1) تسجيل أساسي للشركة + رابط تجاري' : lang === 'zh' ? '1) 提交公司基础资料 + 店铺链接' : '1) Submit basic company details + a trade link',
+                isAr ? '2) تأكيد البريد الإلكتروني' : lang === 'zh' ? '2) 确认邮箱' : '2) Confirm your email',
+                isAr ? '3) دخول مباشر إلى صفحة حالة الطلب تحت المراجعة' : lang === 'zh' ? '3) 直接进入待审核状态页' : '3) Land directly in the application-status page',
+                isAr ? '4) متابعة من فريق مَعبر إذا لزم توضيح أو عند الموافقة' : lang === 'zh' ? '4) 如需补充资料或审核通过，Maabar 团队会直接联系您' : '4) Maabar follows up directly if clarification is needed or once approved',
+              ].map((item, index) => (
+                <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <span style={{ minWidth: 26, height: 26, borderRadius: 999, border: '1px solid rgba(255,255,255,0.14)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11 }}>{index + 1}</span>
+                  <span style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(255,255,255,0.72)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* FEATURES */}
       <div className="sl-features">
         <p className="section-label" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -113,6 +174,14 @@ export default function SupplierLanding({ lang }) {
         <div className="footer-logo"><BrandLogo size="sm" /></div>
         <p className="footer-copy">{t.copyright}</p>
       </footer>
+
+      <style>{`
+        @media (max-width: 860px) {
+          .supplier-trust-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -302,7 +302,7 @@ export default function Requests({ lang, user, profile }) {
           </h1>
           <p className={`page-sub${isAr ? ' ar' : ''}`}>
             {isSupplier
-              ? (isAr ? 'قدم عرضك على الطلبات المفتوحة' : 'Submit offers on open requests')
+              ? (isAr ? 'قدّم عرضاً احترافياً وواضحاً على الطلبات المفتوحة' : lang === 'zh' ? '针对开放需求提交更专业、更清晰的报价' : 'Submit a cleaner, more professional quote on open requests')
               : (isAr ? 'اكتب طلبك وموردون صينيون يتنافسون لك' : 'Post your request and suppliers compete for you')}
           </p>
         </div>
@@ -568,6 +568,23 @@ export default function Requests({ lang, user, profile }) {
       {isSupplier && (
         <div className="list-wrap">
 
+          <div style={{
+            marginBottom: 18,
+            padding: '16px 18px',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border-subtle)',
+            background: 'var(--bg-subtle)',
+            display: 'grid',
+            gap: 8,
+          }}>
+            <p style={{ fontSize: 11, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', margin: 0 }}>
+              {isAr ? 'معيار العرض المهني' : lang === 'zh' ? '专业报价标准' : 'Professional quote standard'}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr ? 'كلما كان عرضك أوضح في السعر وMOQ ومدة التسليم وطريقة الشحن والملاحظات، زادت ثقة التاجر السعودي وارتفعت فرصة الرد.' : lang === 'zh' ? '单价、MOQ、交期、运输方式和补充说明越清楚，沙特买家越容易信任并回复。' : 'The clearer your unit price, MOQ, lead time, shipping method, and notes are, the easier it is for a Saudi buyer to trust and answer.'}
+            </p>
+          </div>
+
           <div className="search-bar" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <input className="search-input"
               placeholder={isAr ? 'ابحث...' : 'Search...'}
@@ -696,6 +713,43 @@ export default function Requests({ lang, user, profile }) {
                       </span>
                     )}
                   </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginTop: 14 }}>
+                    <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity'}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>{r.quantity || '—'}</p>
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget'}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>{r.budget_per_unit ? `${r.budget_per_unit} SAR` : (isAr ? 'غير محددة' : lang === 'zh' ? '未说明' : 'Not specified')}</p>
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment plan'}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>{r.payment_plan ? `${r.payment_plan}%` : '—'}</p>
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'العينة' : lang === 'zh' ? '样品要求' : 'Sample'}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>
+                        {r.sample_requirement === 'required'
+                          ? (isAr ? 'إلزامية' : lang === 'zh' ? '必须提供' : 'Required')
+                          : r.sample_requirement === 'preferred'
+                            ? (isAr ? 'مفضلة' : lang === 'zh' ? '优先提供' : 'Preferred')
+                            : (isAr ? 'غير مطلوبة' : lang === 'zh' ? '无需样品' : 'Not required')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {r.reference_image && (
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
+                      <img src={r.reference_image} alt="request reference" style={{ width: 72, height: 56, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }} />
+                      <div>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'صورة مرجعية' : lang === 'zh' ? '参考图片' : 'Reference image'}</p>
+                        <a href={r.reference_image} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--text-primary)', textDecoration: 'none' }}>
+                          {isAr ? 'فتح الصورة' : lang === 'zh' ? '查看图片' : 'Open image'}
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button className="btn-quote" onClick={() => toggleOfferForm(r.id)}>
@@ -715,6 +769,14 @@ export default function Requests({ lang, user, profile }) {
                   marginBottom: 10,
                   borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
                 }}>
+                  <div style={{ marginBottom: 16, padding: '14px 16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+                    <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8 }}>
+                      {isAr ? 'ماذا يجعل العرض أقوى؟' : lang === 'zh' ? '怎样让报价更专业？' : 'What makes this quote stronger?'}
+                    </p>
+                    <p style={{ fontSize: 12, lineHeight: 1.75, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'اذكر سعراً قابلاً للتنفيذ، MOQ الحقيقي، مدة التسليم الواقعية، وطريقة الشحن أو مصطلح التجارة. وإذا كانت هناك ملاحظات مهمة مثل التغليف أو التخصيص أو الشهادة فضعها في الملاحظة.' : lang === 'zh' ? '请填写可执行的单价、真实 MOQ、实际交期，以及运输方式或贸易条款。如有包装、定制、认证等关键信息，建议在备注中说明。' : 'Use a realistic unit price, true MOQ, realistic lead time, and a clear shipping method or trade term. Use the note to mention packaging, customization, certification, or other key commercial details.'}
+                    </p>
+                  </div>
                   <div className="form-grid">
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
@@ -806,12 +868,13 @@ export default function Requests({ lang, user, profile }) {
                   </div>
                   <div className="form-group">
                     <label className={`form-label${isAr ? ' ar' : ''}`}>
-                      {isAr ? 'ملاحظة' : 'Note'}
+                      {isAr ? 'ملاحظة تجارية' : lang === 'zh' ? '商务备注' : 'Commercial note'}
                     </label>
                     <textarea className="form-input" rows={2}
                       style={{ resize: 'none', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
                       value={offers[r.id]?.note || ''}
                       onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))}
+                      placeholder={isAr ? 'مثل: التغليف، OEM، الشهادات، صلاحية العرض، وقت التجهيز...' : lang === 'zh' ? '例如：包装方式、OEM 定制、认证、报价有效期、备货时间…' : 'e.g. packaging, OEM/customization, certifications, quote validity, production readiness...'}
                     />
                   </div>
                   {(offers[r.id]?.price || offers[r.id]?.shippingCost) && (

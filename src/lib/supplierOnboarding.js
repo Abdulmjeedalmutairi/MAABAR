@@ -12,6 +12,59 @@ export const SUPPLIER_VERIFICATION_REQUIRED_KEYS = [
   'factory_photo',
 ];
 
+const SUPPLIER_STATUS_EQUIVALENTS = {
+  draft: 'draft',
+  incomplete: 'draft',
+  pending: 'pending_review',
+  under_review: 'pending_review',
+  submitted: 'pending_review',
+  review: 'pending_review',
+  approved: 'active',
+  active: 'active',
+  rejected: 'rejected',
+  disabled: 'inactive',
+  inactive: 'inactive',
+  suspended: 'inactive',
+};
+
+export function normalizeSupplierStatus(rawStatus) {
+  const normalized = String(rawStatus || 'pending').trim().toLowerCase();
+  return SUPPLIER_STATUS_EQUIVALENTS[normalized] || 'pending_review';
+}
+
+export function getSupplierStageFromStatus(rawStatus) {
+  const status = normalizeSupplierStatus(rawStatus);
+
+  if (status === 'active') return 'approved';
+  if (status === 'rejected') return 'rejected';
+  if (status === 'draft') return 'application';
+  return 'under_review';
+}
+
+export function isSupplierApproved(rawStatus) {
+  return normalizeSupplierStatus(rawStatus) === 'active';
+}
+
+export function isSupplierPubliclyVisible(rawStatus) {
+  return isSupplierApproved(rawStatus);
+}
+
+export function buildSupplierTrustSignals(profile = {}) {
+  const normalizedStatus = normalizeSupplierStatus(profile?.status);
+  const trustSignals = [];
+
+  if (normalizedStatus === 'active') trustSignals.push('maabar_reviewed');
+  if (profile?.trade_link) trustSignals.push('trade_profile_available');
+  if (profile?.wechat) trustSignals.push('wechat_available');
+  if (profile?.whatsapp) trustSignals.push('whatsapp_available');
+  if (Array.isArray(profile?.factory_images) && profile.factory_images.length > 0) trustSignals.push('factory_media_available');
+  if (Number(profile?.years_experience) > 0) trustSignals.push('experience_declared');
+  if (Number(profile?.reviews_count) > 0) trustSignals.push('review_history');
+  if (Number(profile?.trust_score) > 0) trustSignals.push('trust_score');
+
+  return trustSignals;
+}
+
 export function normalizeSupplierDocStoragePath(rawValue) {
   if (!rawValue || typeof rawValue !== 'string') return '';
 
@@ -86,14 +139,9 @@ export function getSupplierVerificationState(profile = {}) {
 export function getSupplierOnboardingState(profile = {}) {
   const application = getSupplierApplicationState(profile);
   const verification = getSupplierVerificationState(profile);
-  const status = profile?.status || 'pending';
+  const normalizedStatus = normalizeSupplierStatus(profile?.status);
+  const stage = getSupplierStageFromStatus(normalizedStatus);
   const hasSubmittedApplication = application.isApplicationComplete || verification.isVerificationComplete;
-
-  // Current supplier model: one shared signup only, then pending-review until approval.
-  let stage = 'under_review';
-  if (status === 'active') stage = 'approved';
-  else if (status === 'rejected') stage = 'rejected';
-  else if (status === 'draft' || status === 'incomplete') stage = 'application';
 
   const canAccessOperationalFeatures = stage === 'approved';
   const routeGuardRedirect = stage === 'application' ? '/dashboard?tab=verification' : '/dashboard';
@@ -107,8 +155,10 @@ export function getSupplierOnboardingState(profile = {}) {
     completedRequiredCount: application.applicationCompletedRequiredCount,
     progressPercent: application.applicationProgressPercent,
     isVerificationComplete: hasSubmittedApplication,
-    status,
+    rawStatus: profile?.status || 'pending',
+    status: normalizedStatus,
     stage,
+    trustSignals: buildSupplierTrustSignals(profile),
     isApplicationStage: stage === 'application',
     isUnderReviewStage: stage === 'under_review',
     isApprovedStage: stage === 'approved',

@@ -322,6 +322,7 @@ function ProductForm({
   usdRate,
   categories,
   saveLabel,
+  lang,
 }) {
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const productCategories = (categories || []).filter(c => c.val !== 'all');
@@ -386,6 +387,24 @@ function ProductForm({
                   <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.6 }}>{t.videoLimitHint} · {t.maxVideo}</p>
                 </>}
           </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 22, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+        <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase', marginBottom: 10 }}>
+          {isAr ? 'نصيحة قبل النشر' : lang === 'zh' ? '发布前建议' : 'Before you publish'}
+        </p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {[
+            isAr ? 'ابدأ بالاسم الصيني كما يعرفه فريق المبيعات أو المتجر، ثم أضف الاسم الإنجليزي للمشتري.' : lang === 'zh' ? '先填写销售团队或店铺常用的中文产品名，再补英文名给买家查看。' : 'Start with the Chinese product name your sales team/store already uses, then add the buyer-facing English name.',
+            isAr ? 'اكتب وصفاً إنجليزياً عملياً يوضح المادة والاستخدام وأهم نقطة جودة.' : lang === 'zh' ? '英文描述建议直接说明材质、用途和最重要的质量点。' : 'Use the English description for material, use case, and the main quality point buyers should notice.',
+            isAr ? 'تفاصيل التغليف وOEM ومدة التجهيز ترفع الثقة عند المورد الصيني وعند المشتري السعودي أيضاً.' : lang === 'zh' ? '包装信息、OEM 定制能力和交期会明显提升中方供应商专业感，也方便沙特买家判断。' : 'Packaging details, OEM capability, and lead time noticeably improve professionalism for both Chinese suppliers and Saudi buyers.',
+          ].map((item) => (
+            <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-primary)', opacity: 0.7, marginTop: 7, flex: '0 0 auto' }} />
+              <span style={{ fontSize: 12, lineHeight: 1.75, color: 'var(--text-secondary)', ...arFont }}>{item}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -640,7 +659,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [myReviews, setMyReviews] = useState([]);
   const supplierState = getSupplierOnboardingState({ ...(profile || {}), ...verification, ...payout });
   const needsVerification = !supplierState.isVerificationComplete;
-  const needsPayoutSetup = profile?.status === 'active' && !supplierState.isPayoutComplete;
+  const needsPayoutSetup = supplierState.isApprovedStage && !supplierState.isPayoutComplete;
   const isOnboardingLimited = !supplierState.canAccessOperationalFeatures;
   const supplierTabs = isOnboardingLimited
     ? tabs.filter((tab) => supplierState.limitedTabs.includes(tab.id))
@@ -2136,7 +2155,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               {productComposerStep === 'preview' ? (
                 <ProductPreviewPanel product={normalizeProductDraftMedia(product)} onPublish={addProduct} onBack={() => setProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
               ) : (
-                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
+                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} />
               )}
               {productSaveMsg && (
                 <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : productSaveMsg === t.productSavedWithFallback ? '#a08850' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -2224,7 +2243,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 14, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.payoutTitle}</h2>
               <p style={{ maxWidth: 720, fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1.9, marginBottom: 24, ...arFont }}>{t.payoutIntro}</p>
 
-              {profile?.status !== 'active' ? (
+              {!supplierState.isApprovedStage ? (
                 <div style={{ maxWidth: 720, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-muted)', background: 'var(--bg-subtle)' }}>
                   <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, ...arFont }}>{t.payoutLocked}</p>
                 </div>
