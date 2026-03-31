@@ -66,6 +66,7 @@ function wrap(content, options = {}) {
           <tr>
             <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:0;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
               <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />
+              ${darkBlend(brandLockup('header'), '#0a0a0b')}
             </td>
           </tr>
           <tr>
@@ -75,7 +76,7 @@ function wrap(content, options = {}) {
           </tr>
           <tr>
             <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:18px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
-              <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:260px;height:auto;border:0;margin:0 auto;" />
+              ${darkBlend(brandLockup('footer'), '#0a0a0b')}
               <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px;line-height:1.8;">
                 <a href="https://maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">maabar.io</a>
                 &nbsp;·&nbsp;
@@ -419,6 +420,7 @@ const templates = {
   <div style="max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden">
     <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
       ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />` : `<img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />`}
+      ${darkBlend(brandLockup('header'), '#0a0a0b')}
     </div>
     <div style="padding:0;background:#0a0a0b">
       <div style="padding:42px 32px;background:#101114;background-image:linear-gradient(#101114,#101114);direction:${locale.dir};text-align:${locale.align}">
@@ -442,7 +444,7 @@ const templates = {
       </div>
     </div>
     <div style="padding:22px 24px 34px;background:#0a0a0b;border-top:1px solid rgba(255,255,255,.06);text-align:center">
-      <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:260px;height:auto;border:0;margin:0 auto;" />
+      ${darkBlend(brandLockup('footer'), '#0a0a0b')}
       <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
     </div>
   </div>
