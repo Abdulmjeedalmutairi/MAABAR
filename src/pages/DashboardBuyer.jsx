@@ -10,6 +10,11 @@ import {
   getOfferShippingMethod,
   hasOfferShippingCost,
 } from '../lib/offerPricing';
+import {
+  buildSupplierTrustSignals,
+  getSupplierMaabarId,
+  isSupplierPubliclyVisible,
+} from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -224,7 +229,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
     if (data) {
       const withOffers = await Promise.all(data.map(async r => {
-        const { data: offers } = await sb.from('offers').select('*,profiles(company_name,rating,reviews_count,id)').eq('request_id', r.id);
+        const { data: offers } = await sb.from('offers').select('*,profiles(company_name,rating,reviews_count,id,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,city,country)').eq('request_id', r.id);
         return { ...r, offers: offers || [] };
       }));
       setMyRequests(withOffers);
@@ -872,42 +877,105 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                 {isAr ? 'الأقل إجمالاً' : lang === 'zh' ? '总价最低' : 'Lowest Total'}
                               </span>
                             )}
-                            <div style={{ marginBottom: 8 }}>
-                              <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 3 }}>
-                                {o.profiles?.company_name || '—'}
-                              </p>
-                              {o.profiles?.rating > 0 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span style={{ color: '#a08050', fontSize: 11 }}>{'★'.repeat(Math.round(o.profiles.rating))}{'☆'.repeat(5 - Math.round(o.profiles.rating))}</span>
-                                  <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>{o.profiles.rating.toFixed(1)} ({o.profiles.reviews_count || 0})</span>
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
-                              <p style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
-                                {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
-                              </p>
-                              <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
-                                {isAr ? 'سعر الوحدة' : lang === 'zh' ? '产品单价' : 'Unit price'}
-                              </p>
-                              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                {isAr ? 'تكلفة المنتجات' : lang === 'zh' ? '产品合计' : 'Products total'}: {getOfferProductSubtotal(o, r).toFixed(2)} USD
-                              </p>
-                              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                {isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}: {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} USD` : (isAr ? 'غير محدد بشكل منفصل' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
-                              </p>
-                              {getOfferShippingMethod(o) && (
-                                <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                  {isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping method'}: {getOfferShippingMethod(o)}
-                                </p>
-                              )}
-                              <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
-                                {isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated total'}: {offerEstimatedTotal.toFixed(2)} USD
-                              </p>
-                              <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
-                                MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}
-                              </p>
-                            </div>
+                            {(() => {
+                              const supplierTrustSignals = buildSupplierTrustSignals(o.profiles || {});
+                              const isReviewedSupplier = isSupplierPubliclyVisible(o.profiles?.status);
+                              const supplierMaabarId = getSupplierMaabarId(o.profiles || {});
+
+                              return (
+                                <>
+                                  <div style={{ marginBottom: 10 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                                      <p style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 0, fontWeight: 500 }}>
+                                        {o.profiles?.company_name || '—'}
+                                      </p>
+                                      {isReviewedSupplier && (
+                                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                                          ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {o.profiles?.rating > 0 && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
+                                        <span style={{ color: '#a08050', fontSize: 11 }}>{'★'.repeat(Math.round(o.profiles.rating))}{'☆'.repeat(5 - Math.round(o.profiles.rating))}</span>
+                                        <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>{o.profiles.rating.toFixed(1)} ({o.profiles.reviews_count || 0})</span>
+                                      </div>
+                                    )}
+                                    {(supplierMaabarId || o.profiles?.city || o.profiles?.country || o.profiles?.years_experience) && (
+                                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', lineHeight: 1.6, marginBottom: 0 }}>
+                                        {supplierMaabarId ? `${isAr ? 'معرّف المورد' : lang === 'zh' ? '供应商编号' : 'Supplier ID'}: ${supplierMaabarId}` : ''}
+                                        {supplierMaabarId && (o.profiles?.city || o.profiles?.country) ? ' · ' : ''}
+                                        {[o.profiles?.city, o.profiles?.country].filter(Boolean).join(', ')}
+                                        {(supplierMaabarId || o.profiles?.city || o.profiles?.country) && o.profiles?.years_experience ? ' · ' : ''}
+                                        {o.profiles?.years_experience ? (isAr ? `${o.profiles.years_experience} سنة خبرة` : lang === 'zh' ? `${o.profiles.years_experience} 年经验` : `${o.profiles.years_experience} years`) : ''}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  {(supplierTrustSignals.length > 0 || o.profiles?.trust_score > 0) && (
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                                      {supplierTrustSignals.includes('trade_profile_available') && (
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                                          {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
+                                        </span>
+                                      )}
+                                      {supplierTrustSignals.includes('wechat_available') && (
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                                          WeChat
+                                        </span>
+                                      )}
+                                      {supplierTrustSignals.includes('factory_media_available') && (
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                          {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
+                                        </span>
+                                      )}
+                                      {o.profiles?.trust_score > 0 && (
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                          {isAr ? `ثقة ${o.profiles.trust_score}%` : lang === 'zh' ? `信任度 ${o.profiles.trust_score}%` : `Trust ${o.profiles.trust_score}%`}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <div style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
+                                    <p style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
+                                      {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                                    </p>
+                                    <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                                      {isAr ? 'سعر الوحدة' : lang === 'zh' ? '产品单价' : 'Unit price'}
+                                    </p>
+                                    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                      {isAr ? 'تكلفة المنتجات' : lang === 'zh' ? '产品合计' : 'Products total'}: {getOfferProductSubtotal(o, r).toFixed(2)} USD
+                                    </p>
+                                    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                      {isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}: {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} USD` : (isAr ? 'غير محدد بشكل منفصل' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
+                                    </p>
+                                    {getOfferShippingMethod(o) && (
+                                      <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                        {isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping method'}: {getOfferShippingMethod(o)}
+                                      </p>
+                                    )}
+                                    <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
+                                      {isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated total'}: {offerEstimatedTotal.toFixed(2)} USD
+                                    </p>
+                                    <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                                      MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : lang === 'zh' ? '天' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}
+                                    </p>
+                                  </div>
+
+                                  {o.note && (
+                                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)' }}>
+                                      <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
+                                        {isAr ? 'ملاحظة تجارية' : lang === 'zh' ? '商务备注' : 'Commercial note'}
+                                      </p>
+                                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                                        {o.note}
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
 
                             {o.status === 'pending' && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -5,11 +5,48 @@ import { sb } from '../supabase';
 import Footer from '../components/Footer';
 import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
+import {
+  buildSupplierTrustSignals,
+  isSupplierPubliclyVisible,
+} from '../lib/supplierOnboarding';
 
 const CATEGORIES = {
-  ar: ['الكل', 'إلكترونيات', 'أثاث', 'ملابس', 'مواد بناء', 'غذاء', 'أخرى'],
-  en: ['All', 'Electronics', 'Furniture', 'Clothing', 'Building Materials', 'Food', 'Other'],
-  zh: ['全部', '电子产品', '家具', '服装', '建材', '食品', '其他'],
+  ar: [
+    { val: 'all', label: 'الكل' },
+    { val: 'electronics', label: 'إلكترونيات' },
+    { val: 'furniture', label: 'أثاث' },
+    { val: 'clothing', label: 'ملابس' },
+    { val: 'building', label: 'مواد بناء' },
+    { val: 'food', label: 'غذاء' },
+    { val: 'other', label: 'أخرى' },
+  ],
+  en: [
+    { val: 'all', label: 'All' },
+    { val: 'electronics', label: 'Electronics' },
+    { val: 'furniture', label: 'Furniture' },
+    { val: 'clothing', label: 'Clothing' },
+    { val: 'building', label: 'Building Materials' },
+    { val: 'food', label: 'Food' },
+    { val: 'other', label: 'Other' },
+  ],
+  zh: [
+    { val: 'all', label: '全部' },
+    { val: 'electronics', label: '电子产品' },
+    { val: 'furniture', label: '家具' },
+    { val: 'clothing', label: '服装' },
+    { val: 'building', label: '建材' },
+    { val: 'food', label: '食品' },
+    { val: 'other', label: '其他' },
+  ],
+};
+
+const TRUST_BADGE_STYLE = {
+  fontSize: 10,
+  padding: '3px 9px',
+  borderRadius: 20,
+  letterSpacing: 0.4,
+  display: 'inline-flex',
+  alignItems: 'center',
 };
 
 /* ─── Skeleton ───────────────────────────── */
@@ -28,18 +65,49 @@ const SkeletonItem = () => (
   </div>
 );
 
+function buildSearchableText(product = {}) {
+  return [
+    product.name_ar,
+    product.name_en,
+    product.name_zh,
+    product.desc_ar,
+    product.desc_en,
+    product.desc_zh,
+    product.profiles?.company_name,
+    product.profiles?.city,
+    product.profiles?.country,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function getProductDisplayName(product, lang) {
+  if (lang === 'ar') return product.name_ar || product.name_en || product.name_zh;
+  if (lang === 'zh') return product.name_zh || product.name_en || product.name_ar;
+  return product.name_en || product.name_zh || product.name_ar;
+}
+
+function getProductSecondaryName(product, lang) {
+  if (lang === 'zh') return product.name_en || product.name_ar || '';
+  if (lang === 'ar') return product.name_zh || product.name_en || '';
+  return product.name_zh || product.name_ar || '';
+}
+
 /* ─── Main ───────────────────────────────── */
 export default function Products({ lang, user, profile, displayCurrency, exchangeRates }) {
   const nav = useNavigate();
-  const [products, setProducts]         = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState('');
-  const [activeCategory, setActiveCategory] = useState(0);
-  const [sortBy, setSortBy]             = useState('newest');
-  const [priceRange, setPriceRange]     = useState({ min: '', max: '' });
-  const isAr       = lang === 'ar';
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
-  const cats       = CATEGORIES[lang] || CATEGORIES.ar;
+  const cats = CATEGORIES[lang] || CATEGORIES.ar;
+
+  usePageTitle('products', lang);
 
   useEffect(() => { loadProducts(); }, []);
 
@@ -47,7 +115,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     setLoading(true);
     const { data } = await sb
       .from('products')
-      .select('*,profiles(company_name,rating,id)')
+      .select('*,profiles(company_name,rating,id,status,trade_link,wechat,factory_images,years_experience,trust_score,country,city)')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
     if (data) setProducts(data);
@@ -55,10 +123,8 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
   };
 
   const filtered = products
-    .filter(p =>
-      (p.name_ar || '').includes(search) ||
-      (p.name_en || '').toLowerCase().includes(search.toLowerCase())
-    )
+    .filter(p => buildSearchableText(p).includes(search.trim().toLowerCase()))
+    .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => {
       const converted = buildDisplayPrice({
         amount: p.price_from,
@@ -82,7 +148,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     .sort((a, b) => {
       const aPrice = buildDisplayPrice({ amount: a.price_from, sourceCurrency: a.currency || 'USD', displayCurrency: displayCurrency || a.currency || 'USD', rates: exchangeRates, lang }).displayAmount;
       const bPrice = buildDisplayPrice({ amount: b.price_from, sourceCurrency: b.currency || 'USD', displayCurrency: displayCurrency || b.currency || 'USD', rates: exchangeRates, lang }).displayAmount;
-      if (sortBy === 'price_asc')  return aPrice - bPrice;
+      if (sortBy === 'price_asc') return aPrice - bPrice;
       if (sortBy === 'price_desc') return bPrice - aPrice;
       return new Date(b.created_at) - new Date(a.created_at);
     });
@@ -90,28 +156,46 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
   return (
     <div className="full-page">
 
-      {/* ── Header ─────────────────────────── */}
       <div className="page-header">
         <div>
           <h1 className={`page-title${isAr ? ' ar' : ''}`}>
             {isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products'}
           </h1>
           <p className={`page-sub${isAr ? ' ar' : ''}`}>
-            {isAr ? 'تصفح منتجات الموردين الصينيين المعتمدين'
-              : lang === 'zh' ? '浏览认证中国供应商产品'
-              : 'Browse verified Chinese supplier products'}
+            {isAr
+              ? 'تصفح منتجات الموردين الصينيين المعتمدين مع تفاصيل أوضح للثقة وMOQ والعينات والتجهيز.'
+              : lang === 'zh'
+                ? '浏览认证中国供应商产品，查看更清晰的 MOQ、样品、交期与信任信息。'
+                : 'Browse verified Chinese supplier products with clearer MOQ, sample, lead time, and trust details.'}
           </p>
         </div>
       </div>
 
       <div className="list-wrap">
+        <div style={{
+          marginBottom: 18,
+          padding: '14px 16px',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-subtle)',
+          background: 'var(--bg-subtle)',
+        }}>
+          <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
+            {isAr ? 'مستوى عرض أقرب للمصنع' : lang === 'zh' ? '更贴近工厂的上架方式' : 'Factory-style listing clarity'}
+          </p>
+          <p style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {isAr
+              ? 'أسماء صينية عند توفرها، وMOQ، والعينات، ووقت التجهيز، وإشارات ثقة المورد معروضة بشكل أوضح قبل التواصل.'
+              : lang === 'zh'
+                ? '如有中文品名、MOQ、样品、备货周期与供应商信任信号，会在联系前更清楚地展示。'
+                : 'Chinese factory naming, MOQ, samples, lead time, and supplier trust signals are surfaced more clearly before you contact the supplier.'}
+          </p>
+        </div>
 
-        {/* ── Search + Sort ───────────────── */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <input
               className="search-input"
-              placeholder={isAr ? 'ابحث عن منتج...' : lang === 'zh' ? '搜索产品...' : 'Search products...'}
+              placeholder={isAr ? 'ابحث بالعربي أو الإنجليزي أو الصيني...' : lang === 'zh' ? '可搜索中文 / 英文 / 阿文产品名...' : 'Search Arabic, English, or Chinese product names...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
               dir={isAr ? 'rtl' : 'ltr'}
@@ -139,28 +223,26 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           </select>
         </div>
 
-        {/* ── Categories ─────────────────── */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
-          {cats.map((c, i) => (
-            <button key={i} onClick={() => setActiveCategory(i)} style={{
+          {cats.map(c => (
+            <button key={c.val} onClick={() => setActiveCategory(c.val)} style={{
               padding: '6px 14px',
               fontSize: 12,
-              background: activeCategory === i ? 'var(--bg-raised)' : 'transparent',
-              color: activeCategory === i ? 'var(--text-primary)' : 'var(--text-disabled)',
+              background: activeCategory === c.val ? 'var(--bg-raised)' : 'transparent',
+              color: activeCategory === c.val ? 'var(--text-primary)' : 'var(--text-disabled)',
               border: '1px solid',
-              borderColor: activeCategory === i ? 'var(--border-muted)' : 'var(--border-subtle)',
+              borderColor: activeCategory === c.val ? 'var(--border-muted)' : 'var(--border-subtle)',
               borderRadius: 20,
               cursor: 'pointer',
               transition: 'all 0.15s',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
               minHeight: 32,
             }}>
-              {c}
+              {c.label}
             </button>
           ))}
         </div>
 
-        {/* ── Price Filter ───────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
             {isAr ? 'السعر:' : lang === 'zh' ? '价格:' : 'Price:'}
@@ -193,24 +275,21 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           )}
         </div>
 
-        {/* ── Count ──────────────────────── */}
         {!loading && (
           <p style={{ color: 'var(--text-disabled)', fontSize: 12, marginBottom: 16, letterSpacing: 0.3 }}>
             {filtered.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
           </p>
         )}
 
-        {/* ── Skeleton ───────────────────── */}
         {loading && [1, 2, 3, 4].map(i => <SkeletonItem key={i} />)}
 
-        {/* ── Empty ──────────────────────── */}
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ color: 'var(--text-disabled)', fontSize: 14, marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? 'لا توجد منتجات' : lang === 'zh' ? '暂无产品' : 'No products found'}
+              {isAr ? 'لا توجد منتجات مطابقة' : lang === 'zh' ? '暂无匹配产品' : 'No products found'}
             </p>
-            {search && (
-              <button onClick={() => setSearch('')} style={{
+            {(search || activeCategory !== 'all') && (
+              <button onClick={() => { setSearch(''); setActiveCategory('all'); }} style={{
                 background: 'none',
                 border: '1px solid var(--border-subtle)',
                 color: 'var(--text-secondary)',
@@ -221,68 +300,127 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                 transition: 'all 0.15s',
                 minHeight: 36,
               }}>
-                {isAr ? 'مسح البحث' : lang === 'zh' ? '清除搜索' : 'Clear search'}
+                {isAr ? 'إعادة ضبط الفلاتر' : lang === 'zh' ? '重置筛选' : 'Reset filters'}
               </button>
             )}
           </div>
         )}
 
-        {/* ── Products list ──────────────── */}
-        {!loading && filtered.map((p, idx) => (
-          <div
-            key={p.id}
-            className="product-list-item"
-            style={{ animation: `fadeIn 0.3s ease ${idx * 0.04}s both` }}
-            onClick={() => nav(`/products/${p.id}`)}
-          >
-            <div className="product-img">
-              {getPrimaryProductImage(p)
-                ? <img src={getPrimaryProductImage(p)} alt="" />
-                : <span style={{ fontSize: 22, opacity: 0.25 }}>◻</span>}
-            </div>
+        {!loading && filtered.map((p, idx) => {
+          const supplierTrustSignals = buildSupplierTrustSignals(p.profiles || {});
+          const isReviewedSupplier = isSupplierPubliclyVisible(p.profiles?.status);
+          const secondaryName = getProductSecondaryName(p, lang);
 
-            <div className="product-info">
-              <h3 className={`product-name${isAr ? ' ar' : ''}`}>
-                {isAr
-                  ? p.name_ar || p.name_en
-                  : lang === 'zh'
-                  ? p.name_zh || p.name_en
-                  : p.name_en || p.name_ar}
-              </h3>
-              {(() => {
-                const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
-                return (
-                  <>
-                    <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>
-                    {price.isConverted && (
-                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>
-                        {isAr ? `الأصل: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Source: ${price.formattedSource}`}
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-              <p className="product-meta">
-                MOQ: {p.moq || '—'} · {p.profiles?.company_name || ''}
-              </p>
-            </div>
+          return (
+            <div
+              key={p.id}
+              className="product-list-item"
+              style={{ animation: `fadeIn 0.3s ease ${idx * 0.04}s both` }}
+              onClick={() => nav(`/products/${p.id}`)}
+            >
+              <div className="product-img">
+                {getPrimaryProductImage(p)
+                  ? <img src={getPrimaryProductImage(p)} alt="" />
+                  : <span style={{ fontSize: 22, opacity: 0.25 }}>◻</span>}
+              </div>
 
-            <div className="product-btns" onClick={e => e.stopPropagation()}>
-              <button
-                className="btn-dark-sm"
-                onClick={() => nav(`/products/${p.id}`)}>
-                {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
-              </button>
-              {!isSupplier && (
+              <div className="product-info">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
+                  <h3 className={`product-name${isAr ? ' ar' : ''}`}>
+                    {getProductDisplayName(p, lang)}
+                  </h3>
+                  {isReviewedSupplier && (
+                    <span style={{
+                      ...TRUST_BADGE_STYLE,
+                      background: 'rgba(58,122,82,0.1)',
+                      border: '1px solid rgba(58,122,82,0.2)',
+                      color: '#5a9a72',
+                    }}>
+                      ✓ {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified supplier'}
+                    </span>
+                  )}
+                </div>
+
+                {secondaryName && secondaryName !== getProductDisplayName(p, lang) && (
+                  <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 6, fontFamily: lang === 'zh' ? 'inherit' : 'var(--font-sans)' }}>
+                    {lang === 'zh'
+                      ? `英文 / 其他名称：${secondaryName}`
+                      : isAr
+                        ? `اسم المصنع / الاسم البديل: ${secondaryName}`
+                        : `Factory / alternate name: ${secondaryName}`}
+                  </p>
+                )}
+
+                {(() => {
+                  const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
+                  return (
+                    <>
+                      <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>
+                      {price.isConverted && (
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>
+                          {isAr ? `الأصل: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Source: ${price.formattedSource}`}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+
+                <p className="product-meta">
+                  MOQ: {p.moq || '—'} · {p.profiles?.company_name || '—'}
+                  {(p.profiles?.city || p.profiles?.country) && ` · ${[p.profiles?.city, p.profiles?.country].filter(Boolean).join(', ')}`}
+                </p>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {p.sample_available && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: '#2d7a4f' }}>
+                      {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample available'}
+                    </span>
+                  )}
+                  {p.spec_lead_time_days && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.9)' }}>
+                      {isAr ? `تجهيز ${p.spec_lead_time_days} يوم` : lang === 'zh' ? `交期 ${p.spec_lead_time_days} 天` : `Lead time ${p.spec_lead_time_days}d`}
+                    </span>
+                  )}
+                  {p.spec_customization && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                      {isAr ? 'OEM / تخصيص' : lang === 'zh' ? '支持 OEM / 定制' : 'OEM / customization'}
+                    </span>
+                  )}
+                  {supplierTrustSignals.includes('trade_profile_available') && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                      {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺/官网链接' : 'Trade link'}
+                    </span>
+                  )}
+                  {supplierTrustSignals.includes('wechat_available') && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                      WeChat
+                    </span>
+                  )}
+                  {supplierTrustSignals.includes('factory_media_available') && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                      {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="product-btns" onClick={e => e.stopPropagation()}>
                 <button
-                  className="btn-outline"
+                  className="btn-dark-sm"
                   onClick={() => nav(`/products/${p.id}`)}>
-                  {isAr ? 'اشترِ الآن' : lang === 'zh' ? '立即购买' : 'Buy Now'}
+                  {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
                 </button>
-              )}
+                {!isSupplier && (
+                  <button
+                    className="btn-outline"
+                    onClick={() => nav(`/products/${p.id}`)}>
+                    {isAr ? 'اشترِ الآن' : lang === 'zh' ? '立即购买' : 'Buy Now'}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <Footer lang={lang} />
