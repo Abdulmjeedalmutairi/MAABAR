@@ -404,53 +404,126 @@ const templates = {
 </div>`),
   }),
   custom_marketing: (d) => {
-    const locale = localeMeta(d.lang || 'ar');
+    const infoRows = Array.isArray(d.infoRows) ? d.infoRows : [];
+    const paragraphs = Array.isArray(d.paragraphs) ? d.paragraphs : [];
+    const renderedParagraphs = paragraphs
+      .map((p) => `<div style="font-size:15px;line-height:2;color:#888888;margin:0 0 16px 0;font-weight:400;font-family:'Cairo',Tahoma,Arial,sans-serif;">${p}</div>`)
+      .join('');
+    const renderedInfoRows = infoRows.length
+      ? infoRows
+          .map((row, index) => `
+ <tr>
+ <td style="font-size:13px;color:#666;padding:6px 0;${index < infoRows.length - 1 ? 'border-bottom:1px solid #222;' : ''}font-family:'Cairo',Tahoma,Arial,sans-serif;">${row?.label || '-'}</td>
+ <td align="left" style="font-size:13px;color:#aaa;padding:6px 0;${index < infoRows.length - 1 ? 'border-bottom:1px solid #222;' : ''}font-family:'Cairo',Tahoma,Arial,sans-serif;">${row?.value || '-'}</td>
+ </tr>`)
+          .join('')
+      : `
+ <tr>
+ <td style="font-size:13px;color:#666;padding:6px 0;border-bottom:1px solid #222;font-family:'Cairo',Tahoma,Arial,sans-serif;">عنوان المعلومة</td>
+ <td align="left" style="font-size:13px;color:#aaa;padding:6px 0;border-bottom:1px solid #222;font-family:'Cairo',Tahoma,Arial,sans-serif;">القيمة</td>
+ </tr>
+ <tr>
+ <td style="font-size:13px;color:#666;padding:6px 0;border-bottom:1px solid #222;font-family:'Cairo',Tahoma,Arial,sans-serif;">عنوان المعلومة</td>
+ <td align="left" style="font-size:13px;color:#aaa;padding:6px 0;border-bottom:1px solid #222;font-family:'Cairo',Tahoma,Arial,sans-serif;">القيمة</td>
+ </tr>
+ <tr>
+ <td style="font-size:13px;color:#666;padding:6px 0;font-family:'Cairo',Tahoma,Arial,sans-serif;">عنوان المعلومة</td>
+ <td align="left" style="font-size:13px;color:#aaa;padding:6px 0;font-family:'Cairo',Tahoma,Arial,sans-serif;">القيمة</td>
+ </tr>`;
+
+    const contentHtml = d.contentHtml || `
+ <div style="font-size:10px;letter-spacing:2px;color:#444;margin-bottom:14px;font-family:'Cairo',Tahoma,Arial,sans-serif;">
+ ${d.emailType || d.kicker || 'نوع الإيميل هنا'}
+ </div>
+
+ <div style="font-size:24px;line-height:1.6;font-weight:700;color:#ffffff;margin:0 0 16px 0;font-family:'Cairo',Tahoma,Arial,sans-serif;">
+ ${d.headline || 'العنوان الرئيسي للإيميل'}
+ </div>
+
+ ${renderedParagraphs || `<div style="font-size:15px;line-height:2;color:#888888;margin:0 0 28px 0;font-weight:400;font-family:'Cairo',Tahoma,Arial,sans-serif;">${d.body || 'النص الرئيسي للإيميل يكتب هنا. يمكن أن يكون فقرة واحدة أو أكثر حسب نوع الإيميل.'}</div>`}
+
+ <div style="height:1px;background:#1e1e22;margin:0 0 28px 0;"></div>
+
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+ <tr>
+ <td style="background:#1a1a1f;border-radius:8px;padding:20px 20px;">
+ <div style="font-size:10px;letter-spacing:2px;color:#444;margin-bottom:12px;font-family:'Cairo',Tahoma,Arial,sans-serif;">${d.detailsTitle || 'التفاصيل'}</div>
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+ ${renderedInfoRows}
+ </table>
+ </td>
+ </tr>
+ </table>
+
+ ${d.hideCta ? '' : `
+ <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 0 0;">
+ <tr>
+ <td align="center" style="background:#ffffff;border-radius:6px;padding:13px 32px;">
+ <a href="${d.ctaUrl || '#'}" style="font-size:14px;font-weight:700;color:#111114;text-decoration:none;font-family:'Cairo',Tahoma,Arial,sans-serif;">
+ ${d.ctaText || 'نص الزر هنا ←'}
+ </a>
+ </td>
+ </tr>
+ </table>`}`;
+
     return ({
-    subject: d.subject || 'مَعبر',
-    html: `<!DOCTYPE html>
-<html lang="${locale.lang}" dir="${locale.dir}">
+      subject: d.subject || 'مَعبر',
+      html: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="color-scheme" content="dark only">
-<meta name="supported-color-schemes" content="dark only">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light only" />
 <title>${d.subject || 'مَعبر'}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet" />
 </head>
-<body style="margin:0;padding:0;background:#0a0a0b;font-family:${locale.font};color:#f3f3f3;direction:${locale.dir};text-align:${locale.align}">
-  <div style="max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden">
-    <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
-      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />` : `<img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />`}
-      ${darkBlend(brandLockup('header'), '#0a0a0b')}
-    </div>
-    <div style="padding:0;background:#0a0a0b">
-      <div style="padding:42px 32px;background:#101114;background-image:linear-gradient(#101114,#101114);direction:${locale.dir};text-align:${locale.align}">
-        ${darkBlend(`
-        <p style="margin:0 0 18px;font-size:12px;letter-spacing:2px;color:rgba(255,255,255,.42)">${d.kicker || 'مَعبر | MAABAR'}</p>
-        <h1 style="margin:0 0 12px;font-size:36px;line-height:1.45;font-weight:800;color:#ffffff">${d.headline || 'مَعبر'}</h1>
-        ${d.subheadline ? `<p style="margin:0 0 22px;font-size:24px;line-height:1.8;font-weight:700;color:#ffffff">${d.subheadline}</p>` : ''}
-        ${Array.isArray(d.paragraphs) ? d.paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:18px;line-height:2;color:#ececef">${p}</p>`).join('') : ''}
-        ${Array.isArray(d.bullets) && d.bullets.length ? `
-        <div style="margin:28px 0;padding:22px;background:#16161a;background-image:linear-gradient(#16161a,#16161a);border:1px solid rgba(255,255,255,.06);border-radius:12px">
-          <p style="margin:0 0 16px;font-size:18px;line-height:1.8;font-weight:700;color:#ffffff">${d.bulletsTitle || 'المزايا'}</p>
-          <ul style="margin:0;padding:0 22px 0 0;list-style:disc;list-style-position:inside;color:#ececef">
-            ${d.bullets.map((item) => `<li style="margin:0 0 12px;font-size:18px;line-height:1.9;color:#ececef">${item}</li>`).join('')}
-          </ul>
-        </div>` : ''}
-        ${d.footnote ? `<p style="margin:0 0 28px;font-size:19px;line-height:1.9;font-weight:800;color:#ffffff">${d.footnote}</p>` : ''}
-        <div style="text-align:center;margin-top:28px">
-          <a href="${d.ctaUrl || 'https://maabar.io'}" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${d.ctaText || 'اعرف أكثر ←'}</a>
-        </div>
-        `, '#111113')}
-      </div>
-    </div>
-    <div style="padding:22px 24px 34px;background:#0a0a0b;border-top:1px solid rgba(255,255,255,.06);text-align:center">
-      ${darkBlend(brandLockup('footer'), '#0a0a0b')}
-      <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background:#111114;font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111114;width:100%;border-collapse:collapse;">
+<tr>
+<td align="center" style="padding:0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border-collapse:collapse;">
+
+ <tr>
+ <td align="center" style="background:#111114;padding:28px 24px;border-bottom:1px solid #222226;">
+ <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+ <tr>
+ <td align="center" style="font-size:19px;font-weight:700;color:#ffffff;font-family:'Cairo',Tahoma,Arial,sans-serif;letter-spacing:0.3px;">
+ مَعبر &nbsp;<span style="color:#383838;">|</span>&nbsp; <span style="color:#aaaaaa;font-size:16px;font-weight:600;">MAABAR</span>
+ </td>
+ </tr>
+ <tr>
+ <td align="center" style="font-size:11px;color:#383838;padding-top:5px;letter-spacing:2px;font-family:Arial,sans-serif;">
+ 迈巴尔
+ </td>
+ </tr>
+ </table>
+ </td>
+ </tr>
+
+ <tr>
+ <td style="background:#111114;padding:44px 32px 36px 32px;text-align:right;direction:rtl;">
+ ${contentHtml}
+ </td>
+ </tr>
+
+ <tr>
+ <td align="center" style="background:#0d0d10;padding:20px 24px;border-top:1px solid #1a1a1f;">
+ <div style="font-size:10px;letter-spacing:2px;color:#333;font-family:Arial,sans-serif;">
+ MAABAR.IO &nbsp;·&nbsp; مَعبر &nbsp;·&nbsp; 迈巴尔
+ </div>
+ </td>
+ </tr>
+
+</table>
+</td>
+</tr>
+</table>
+
 </body>
 </html>`,
-  });
+    });
   },
 };
 
