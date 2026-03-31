@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
 import { getSupplierVerificationState } from '../lib/supplierOnboarding';
+import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 
 const UNIFONIC_APP_SID   = '';
 
@@ -175,32 +176,9 @@ export default function Login({ setUser, setProfile, lang }) {
   const [supCity, setSupCity]         = useState('');
   const [speciality, setSpeciality]   = useState('');
 
-  const createAiDraftRequestAfterAuth = async (userId) => {
-    const draft = sessionStorage.getItem('maabar_ai_draft');
-    if (!draft) return false;
-    try {
-      const parsed = JSON.parse(draft);
-      if (!(parsed.title_ar || parsed.title_en)) return false;
-      const { error } = await sb.from('requests').insert({
-        buyer_id: userId,
-        title_ar: parsed.title_ar || parsed.title_en,
-        title_en: parsed.title_en || parsed.title_ar,
-        title_zh: parsed.title_zh || parsed.title_en || parsed.title_ar,
-        quantity: parsed.quantity || '',
-        description: parsed.description || '',
-        category: parsed.category || 'other',
-        status: 'open',
-      });
-      if (error) {
-        console.error('AI draft request insert failed:', error);
-        return false;
-      }
-      sessionStorage.removeItem('maabar_ai_draft');
-      return true;
-    } catch (e) {
-      console.error('AI draft parse failed:', e);
-      return false;
-    }
+  const hasPendingAiReview = () => {
+    if (isSupplier) return false;
+    return hasIdeaFlowDraft();
   };
 
   const doSignIn = async () => {
@@ -223,13 +201,12 @@ export default function Login({ setUser, setProfile, lang }) {
     setUser(data.user);
     const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city,reg_number,years_experience,license_photo,factory_photo').eq('id', data.user.id).single();
     if (profile) setProfile(profile);
-    const aiDraftCreated = await createAiDraftRequestAfterAuth(data.user.id);
-    if (aiDraftCreated) {
-      nav('/dashboard?tab=requests');
-      return;
-    }
     if (profile?.role === 'supplier' && profile?.status === 'pending' && !getSupplierVerificationState(profile).isVerificationComplete) {
       nav('/dashboard?tab=verification');
+      return;
+    }
+    if (hasPendingAiReview()) {
+      nav(getIdeaFlowResumePath());
       return;
     }
     const draft = sessionStorage.getItem('maabar_request_draft');
@@ -284,9 +261,8 @@ export default function Login({ setUser, setProfile, lang }) {
     setUser(authData.user);
     const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', authData.user.id).single();
     if (profile) setProfile(profile);
-    const aiDraftCreated = await createAiDraftRequestAfterAuth(authData.user.id);
-    if (aiDraftCreated) {
-      nav('/dashboard?tab=requests');
+    if (hasPendingAiReview()) {
+      nav(getIdeaFlowResumePath());
       return;
     }
     const draft = sessionStorage.getItem('maabar_request_draft');
@@ -315,7 +291,10 @@ export default function Login({ setUser, setProfile, lang }) {
         city: supCity,
       }),
     };
-    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard', data: metaData } });
+    const emailRedirectTo = hasPendingAiReview()
+      ? `https://maabar.io${getIdeaFlowResumePath()}`
+      : 'https://maabar.io/dashboard';
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo, data: metaData } });
     setLoading(false);
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     if (isSupplier) {
@@ -333,9 +312,10 @@ export default function Login({ setUser, setProfile, lang }) {
   };
 
   const doGoogleLogin = async () => {
+    const resumePath = hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard';
     const redirectTo = process.env.NODE_ENV === 'development'
-      ? window.location.origin + '/dashboard'
-      : 'https://maabar.io/dashboard';
+      ? `${window.location.origin}${resumePath}`
+      : `https://maabar.io${resumePath}`;
     await sb.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo }

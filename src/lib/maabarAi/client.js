@@ -118,6 +118,8 @@ Rules:
 - If this is the first reply, open with: ${getRepresentativeOpening(payload.language, representativeName)}
 - If the user greets you, greet back naturally.
 - If the user is describing a product idea, help shape the idea before suggesting suppliers.
+- If the user clearly wants supplier matching and the current information is enough, set nextStep to supplier_ready and enoughInfo to true.
+- If the user declines adding more details, do not keep looping; move forward when the information is sufficient.
 - Do not ask about payment method.
 - Do not rush to tell them to post a request unless the concept is already clear.
 - Ask only one concise follow-up question at a time.

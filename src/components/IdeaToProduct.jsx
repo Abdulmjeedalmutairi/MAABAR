@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { generateIdeaToProductReport, requestProductConversationReply } from '../lib/maabarAi/client';
 import { MAABAR_AI_PERSONA_NAME } from '../lib/maabarAi/config';
+import {
+  buildIdeaRequestDraft,
+  clearIdeaFlowDraft,
+  loadIdeaFlowDraft,
+  saveIdeaFlowDraft,
+} from '../lib/ideaToProductFlow';
 
 const SAUDI_REPRESENTATIVE_NAMES = [
   'سلمان', 'فيصل', 'تركي', 'عبدالعزيز', 'سعود', 'نورة', 'العنود', 'الجوهرة', 'ريم', 'لولوة'
@@ -14,34 +20,63 @@ const CAT_LABEL = {
   zh: { electronics: '电子产品', furniture: '家具', clothing: '服装', building: '建材', food: '食品', other: '其他' },
 };
 
+const PAYMENT_PLAN_LABEL = {
+  ar: {
+    30: '30% مقدماً',
+    50: '50% مقدماً',
+    100: '100% مقدماً',
+  },
+  en: {
+    30: '30% upfront',
+    50: '50% upfront',
+    100: '100% upfront',
+  },
+  zh: {
+    30: '预付 30%',
+    50: '预付 50%',
+    100: '预付 100%',
+  },
+};
+
+const SAMPLE_LABEL = {
+  ar: {
+    none: 'لا حاجة لعينة',
+    preferred: 'عينة مفضلة إن توفرت',
+    required: 'عينة إلزامية',
+  },
+  en: {
+    none: 'No sample needed',
+    preferred: 'Sample preferred if available',
+    required: 'Sample is mandatory',
+  },
+  zh: {
+    none: '无需样品',
+    preferred: '如方便可提供样品',
+    required: '必须提供样品',
+  },
+};
+
 const COPY = {
   ar: {
     title: 'صنّع فكرتك',
     subtitle: `${MAABAR_AI_PERSONA_NAME} يحوّل الفكرة إلى طلب تصنيع احترافي`,
     minimized: 'صنّع فكرتك — متابعة',
-    intro: 'اكتب لي فكرتك أو قل مباشرة: أبي أوصل لموردين، وأنا أمشي معك بخطوات قصيرة وواضحة.',
     placeholder: 'اكتب رسالتك هنا...',
     send: 'إرسال',
     generating: 'أرتب فكرتك الآن وأبني لك brief احترافي...',
     report: 'تقرير التصنيع',
+    review: 'راجع الطلب قبل الإرسال',
+    reviewHint: 'هذا هو الطلب الذي سيصل للموردين المطابقين لتخصصك. عدّل فقط ما يلزم ثم أرسله.',
     submit: 'إرسال لموردين مختصين',
     loginSubmit: 'تسجيل الدخول للإرسال',
     newChat: 'محادثة جديدة',
     error: 'حدث خطأ، حاول مرة أخرى',
     reportReady: 'جهزت لك التقرير. راجعه، وإذا مناسب أرسله لموردين مختصين مباشرة.',
+    sentSuccess: 'تم إرسال طلبك للموردين المطابقين. تقدر تتابع العروض من لوحة التحكم.',
     supplierRouteIntro: 'واضح أنك تريد الوصول لموردين بسرعة. خلني آخذ منك الحد الأدنى فقط ثم أجهز الطلب بشكل احترافي.',
     buildRouteIntro: 'ممتاز. خلني أفهم فكرتك بشكل مرتب، وبعدها أطلع لك brief جاهز للتصنيع.',
-    supplierQuestions: [
-      'وش المنتج أو الفكرة بشكل مختصر؟',
-      'كم الكمية الأولية تقريبًا؟',
-      'هل عندك ميزانية أو سعر مستهدف للوحدة؟',
-    ],
-    buildQuestions: [
-      'وش نوع المنتج أو استخدامه الأساسي؟',
-      'هل فيه خامات أو مواصفات مهمة؟',
-      'كم الكمية الأولية تقريبًا؟',
-      'هل عندك ميزانية أو سعر مستهدف؟',
-    ],
+    budgetOptional: 'الميزانية للوحدة (اختياري)',
+    requestPreviewNote: 'الإرسال ينشر طلبك المفتوح تحت هذا التصنيف حتى يراه الموردون المناسبون.',
     reportFields: {
       product: 'المنتج',
       factory: 'نوع المصنع',
@@ -52,34 +87,37 @@ const COPY = {
       category: 'التخصص',
       specs: 'المواصفات',
     },
+    reviewFields: {
+      titleAr: 'اسم المنتج بالعربي',
+      titleEn: 'اسم المنتج بالإنجليزي',
+      quantity: 'الكمية المطلوبة',
+      category: 'التصنيف',
+      description: 'تفاصيل الطلب',
+      paymentPlan: 'خطة الدفع',
+      sampleRequirement: 'متطلبات العينة',
+    },
+    requiredDraft: 'أكمل اسم المنتج والكمية قبل الإرسال',
   },
   en: {
     title: 'Build Your Product',
     subtitle: `${MAABAR_AI_PERSONA_NAME} turns your idea into a professional manufacturing brief`,
     minimized: 'Build Your Product — Continue',
-    intro: 'Tell me your idea — or just say “connect me to suppliers” — and I will guide you in short, clear steps.',
     placeholder: 'Write your message...',
     send: 'Send',
     generating: 'Preparing your manufacturing brief...',
     report: 'Manufacturing Report',
+    review: 'Review before sending',
+    reviewHint: 'This is the request that will be sent to the best-matched suppliers. Adjust anything important, then send it.',
     submit: 'Send to matched suppliers',
     loginSubmit: 'Login to submit',
     newChat: 'New Chat',
     error: 'Something went wrong, please try again',
     reportReady: 'Your report is ready. Review it and send it to matched suppliers when ready.',
+    sentSuccess: 'Your request was sent to matched suppliers. You can track offers from your dashboard.',
     supplierRouteIntro: 'Got it — you want supplier matching fast. I’ll only ask for the essentials, then prepare a clean brief.',
     buildRouteIntro: 'Great. I’ll understand your idea first, then turn it into a professional manufacturing brief.',
-    supplierQuestions: [
-      'What is the product or idea in one short line?',
-      'What is the approximate initial quantity?',
-      'Do you have a target budget or unit price?',
-    ],
-    buildQuestions: [
-      'What is the product and main use case?',
-      'Any key materials or specifications?',
-      'What is the approximate initial quantity?',
-      'Do you have a target budget or unit price?',
-    ],
+    budgetOptional: 'Budget per unit (optional)',
+    requestPreviewNote: 'Sending publishes your request under this category so the right suppliers can see it.',
     reportFields: {
       product: 'Product',
       factory: 'Factory Type',
@@ -90,34 +128,37 @@ const COPY = {
       category: 'Category',
       specs: 'Specifications',
     },
+    reviewFields: {
+      titleAr: 'Product Name (AR)',
+      titleEn: 'Product Name (EN)',
+      quantity: 'Required Quantity',
+      category: 'Category',
+      description: 'Request Details',
+      paymentPlan: 'Payment Plan',
+      sampleRequirement: 'Sample Requirement',
+    },
+    requiredDraft: 'Add a product name and quantity before sending',
   },
   zh: {
     title: '打造您的产品',
     subtitle: `${MAABAR_AI_PERSONA_NAME} 将想法整理成专业制造需求`,
     minimized: '继续打造产品',
-    intro: '告诉我您的想法，或直接说“帮我对接供应商”，我会用清晰简短的步骤协助您。',
     placeholder: '请输入内容...',
     send: '发送',
     generating: '正在整理您的制造需求...',
     report: '制造报告',
+    review: '发送前确认',
+    reviewHint: '这份需求将发送给最匹配的供应商。请先确认并修改必要内容，再发送。',
     submit: '发送给匹配供应商',
     loginSubmit: '登录后发送',
     newChat: '新对话',
     error: '出错了，请重试',
     reportReady: '报告已准备好。确认后可直接发送给匹配供应商。',
+    sentSuccess: '需求已发送给匹配供应商。您可以在控制台查看报价。',
     supplierRouteIntro: '了解，您想尽快对接供应商。我先收集最核心的信息，再为您整理成专业需求。',
     buildRouteIntro: '很好。我先了解您的产品想法，然后整理成专业制造 brief。',
-    supplierQuestions: [
-      '请简要描述产品或想法？',
-      '预计首批数量是多少？',
-      '您是否有目标预算或单价？',
-    ],
-    buildQuestions: [
-      '产品是什么？主要用途是什么？',
-      '是否有关键材料或规格要求？',
-      '预计首批数量是多少？',
-      '您是否有目标预算或单价？',
-    ],
+    budgetOptional: '单价预算（可选）',
+    requestPreviewNote: '发送后会按当前分类发布需求，方便匹配供应商查看。',
     reportFields: {
       product: '产品',
       factory: '工厂类型',
@@ -128,6 +169,16 @@ const COPY = {
       category: '类别',
       specs: '规格要求',
     },
+    reviewFields: {
+      titleAr: '阿拉伯语产品名',
+      titleEn: '英语产品名',
+      quantity: '需求数量',
+      category: '类别',
+      description: '需求详情',
+      paymentPlan: '付款方案',
+      sampleRequirement: '样品要求',
+    },
+    requiredDraft: '发送前请补充产品名和数量',
   },
 };
 
@@ -185,7 +236,7 @@ function getInitialMessages(language = 'ar', representativeName = 'سلمان') 
   ];
 }
 
-function TypingBubble({ isAr }) {
+function TypingBubble() {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
       <div style={{ maxWidth: '86%', padding: '14px 16px', borderRadius: 16, background: '#23242A', color: '#F5F2EC', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -209,6 +260,38 @@ function ReportRow({ label, value, isAr }) {
   );
 }
 
+function FormLabel({ children, isAr }) {
+  return (
+    <p style={{ color: '#8F9198', fontSize: 11, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+      {children}
+    </p>
+  );
+}
+
+function FieldInput({ isAr, as = 'input', ...props }) {
+  const Comp = as;
+  return (
+    <Comp
+      {...props}
+      style={{
+        width: '100%',
+        background: '#17181D',
+        color: '#F4F1EB',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 12,
+        padding: '12px 14px',
+        fontSize: 13,
+        lineHeight: 1.8,
+        outline: 'none',
+        resize: as === 'textarea' ? 'vertical' : 'none',
+        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+        direction: isAr ? 'rtl' : 'ltr',
+        ...props.style,
+      }}
+    />
+  );
+}
+
 export default function IdeaToProduct({ lang, user, onClose }) {
   const nav = useNavigate();
   const isAr = lang === 'ar';
@@ -222,6 +305,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const [phase, setPhase] = useState('chat');
   const [idea, setIdea] = useState('');
   const [result, setResult] = useState(null);
+  const [reviewDraft, setReviewDraft] = useState(() => buildIdeaRequestDraft({}, {}));
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -230,7 +314,25 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     initialMessages.map((content, index) => ({ id: index + 1, role: 'assistant', content }))
   );
 
-  const hasUserMessages = useMemo(() => messages.some((message) => message.role === 'user'), [messages]);
+  useEffect(() => {
+    const storedDraft = loadIdeaFlowDraft();
+    if (!storedDraft) return;
+
+    const storedMessages = Array.isArray(storedDraft.messages) && storedDraft.messages.length > 0
+      ? storedDraft.messages
+      : initialMessages.map((content, index) => ({ id: Date.now() + index, role: 'assistant', content }));
+
+    setMessages(storedMessages.map((message, index) => ({
+      id: message.id || Date.now() + index,
+      role: message.role,
+      content: message.content,
+    })));
+    setIdea(storedDraft.initialIdea || '');
+    setResult(storedDraft.report || null);
+    setReviewDraft(buildIdeaRequestDraft(storedDraft.report || {}, storedDraft.requestDraft || {}));
+    setBriefReady(Boolean(storedDraft.report));
+    setPhase(storedDraft.report ? 'report' : (storedDraft.phase || 'chat'));
+  }, [initialMessages]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -244,10 +346,12 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   }, [messages, isTyping, phase]);
 
   const resetAll = () => {
+    clearIdeaFlowDraft();
     setDraftText('');
     setPhase('chat');
     setIdea('');
     setResult(null);
+    setReviewDraft(buildIdeaRequestDraft({}, {}));
     setError('');
     setSubmitting(false);
     setIsTyping(false);
@@ -259,8 +363,21 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role, content }]);
   };
 
-  const generateReport = async (sourceOverride = '') => {
-    const userConversation = messages
+  const persistFlowDraft = ({ report = result, nextReviewDraft = reviewDraft, nextMessages = messages, nextPhase = phase, pendingAuth = !user, initialIdea = idea }) => {
+    saveIdeaFlowDraft({
+      lang,
+      phase: nextPhase,
+      report,
+      requestDraft: nextReviewDraft,
+      messages: nextMessages,
+      initialIdea,
+      pendingAuth,
+    });
+  };
+
+  const generateReport = async (sourceOverride = '', messageOverride = null) => {
+    const conversationMessages = Array.isArray(messageOverride) ? messageOverride : messages;
+    const userConversation = conversationMessages
       .filter((message) => message.role === 'user')
       .map((message) => message.content)
       .join('\n');
@@ -278,9 +395,21 @@ export default function IdeaToProduct({ lang, user, onClose }) {
         questions: [],
         answers: [],
       });
+      const nextMessages = [...conversationMessages, { id: Date.now() + Math.random(), role: 'assistant', content: t.reportReady }];
+      const nextReviewDraft = buildIdeaRequestDraft(report, reviewDraft);
       setResult(report);
+      setReviewDraft(nextReviewDraft);
+      setMessages(nextMessages);
       setPhase('report');
-      appendMessage('assistant', t.reportReady);
+      setBriefReady(true);
+      persistFlowDraft({
+        report,
+        nextReviewDraft,
+        nextMessages,
+        nextPhase: 'report',
+        pendingAuth: !user,
+        initialIdea: sourceIdea,
+      });
     } catch (_error) {
       setError(t.error);
       setPhase('chat');
@@ -293,9 +422,10 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     if (!value || isTyping) return;
 
     const nextConversation = messages.map((message) => ({ role: message.role, content: message.content }));
+    const nextMessagesWithUser = [...messages, { id: Date.now() + Math.random(), role: 'user', content: value }];
     setDraftText('');
     setIdea((prev) => prev || value);
-    appendMessage('user', value);
+    setMessages(nextMessagesWithUser);
     setIsTyping(true);
     setError('');
 
@@ -309,55 +439,83 @@ export default function IdeaToProduct({ lang, user, onClose }) {
           representativeName,
         },
       });
-      appendMessage('assistant', productReply?.reply || t.error);
-      const readyForBrief = Boolean(productReply?.enoughInfo || productReply?.nextStep === 'brief_ready');
+      const cleanReply = lang === 'ar'
+        ? String(productReply?.reply || t.error).replace(/[\u3400-\u9FFF]+/g, '').replace(/\s{2,}/g, ' ').trim()
+        : (productReply?.reply || t.error);
+      const nextMessages = [...nextMessagesWithUser, { id: Date.now() + Math.random(), role: 'assistant', content: cleanReply || t.error }];
+      setMessages(nextMessages);
+      const readyForBrief = Boolean(productReply?.enoughInfo || ['brief_ready', 'supplier_ready'].includes(productReply?.nextStep));
       setBriefReady(readyForBrief);
       if (readyForBrief) {
-        await generateReport([...nextConversation.filter((message) => message.role === 'user').map((message) => message.content), value].join('\n'));
+        await generateReport(
+          [...nextConversation.filter((message) => message.role === 'user').map((message) => message.content), value].join('\n'),
+          nextMessages,
+        );
+      } else {
+        persistFlowDraft({ nextMessages, nextPhase: 'chat', initialIdea: idea || value });
       }
     } catch (_error) {
-      appendMessage('assistant', t.error);
+      const nextMessages = [...nextMessagesWithUser, { id: Date.now() + Math.random(), role: 'assistant', content: t.error }];
+      setMessages(nextMessages);
       setError(t.error);
     } finally {
       setIsTyping(false);
     }
   };
 
+  const updateReviewDraft = (field, value) => {
+    setReviewDraft((prev) => {
+      const nextDraft = { ...prev, [field]: value };
+      persistFlowDraft({ nextReviewDraft: nextDraft, nextPhase: 'report' });
+      return nextDraft;
+    });
+  };
+
   const submitRequest = async () => {
-    if (!result) return;
+    const normalizedDraft = buildIdeaRequestDraft(result || {}, reviewDraft || {});
+    if (!(normalizedDraft.title_ar || normalizedDraft.title_en) || !String(normalizedDraft.quantity || '').trim()) {
+      setError(t.requiredDraft);
+      return;
+    }
+
     if (!user) {
-      const draft = {
-        title_ar: result.product_name_ar,
-        title_en: result.product_name_en,
-        title_zh: result.product_name_zh || result.product_name_en,
-        description: result.request_description,
-        quantity: result.moq,
-        category: result.category,
-      };
-      sessionStorage.setItem('maabar_ai_draft', JSON.stringify(draft));
+      persistFlowDraft({ nextReviewDraft: normalizedDraft, nextPhase: 'report', pendingAuth: true });
       if (onClose) onClose();
-      nav('/login');
+      nav('/login/buyer');
       return;
     }
 
     setSubmitting(true);
-    const { error: requestError } = await sb.from('requests').insert({
+    setError('');
+    const payload = {
       buyer_id: user.id,
-      title_ar: result.product_name_ar,
-      title_en: result.product_name_en,
-      title_zh: result.product_name_zh || result.product_name_en,
-      quantity: result.moq,
-      description: result.request_description,
-      category: result.category,
+      title_ar: normalizedDraft.title_ar || normalizedDraft.title_en,
+      title_en: normalizedDraft.title_en || normalizedDraft.title_ar,
+      title_zh: normalizedDraft.title_zh || normalizedDraft.title_en || normalizedDraft.title_ar,
+      quantity: normalizedDraft.quantity || '',
+      description: normalizedDraft.description || result?.request_description || result?.specs || '',
+      category: normalizedDraft.category || result?.category || 'other',
       status: 'open',
-    });
+      budget_per_unit: normalizedDraft.budget_per_unit ? parseFloat(normalizedDraft.budget_per_unit) : null,
+      payment_plan: normalizedDraft.payment_plan ? parseInt(normalizedDraft.payment_plan, 10) : null,
+      sample_requirement: normalizedDraft.sample_requirement || null,
+      reference_image: normalizedDraft.reference_image || normalizedDraft.image_url || null,
+    };
+
+    const { data, error: requestError } = await sb.from('requests').insert(payload).select('id').single();
     setSubmitting(false);
     if (requestError) {
       setError(t.error);
       return;
     }
+
+    clearIdeaFlowDraft();
+    try {
+      window.sessionStorage.removeItem('maabar_request_draft');
+    } catch {}
+    appendMessage('assistant', t.sentSuccess);
     if (onClose) onClose();
-    nav('/requests');
+    nav(data?.id ? `/dashboard?tab=requests&request=${data.id}` : '/dashboard?tab=requests');
   };
 
   if (minimized) {
@@ -389,7 +547,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setMinimized(true)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', color: '#F4F1EB', fontSize: 14, cursor: 'pointer', padding: '4px 12px', borderRadius: 10 }}>—</button>
-            <button onClick={() => { resetAll(); if (onClose) onClose(); }} style={{ background: 'none', border: 'none', color: '#F4F1EB', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
+            <button onClick={() => { if (phase === 'report') persistFlowDraft({ nextPhase: 'report' }); else clearIdeaFlowDraft(); if (onClose) onClose(); }} style={{ background: 'none', border: 'none', color: '#F4F1EB', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
           </div>
         </div>
 
@@ -398,7 +556,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
             <Bubble key={message.id} role={message.role} isAr={isAr}>{message.content}</Bubble>
           ))}
 
-          {isTyping && <TypingBubble isAr={isAr} />}
+          {isTyping && <TypingBubble />}
 
           {phase === 'report' && result && (
             <div style={{ marginTop: 8, padding: 18, background: '#1F2025', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18 }}>
@@ -415,6 +573,103 @@ export default function IdeaToProduct({ lang, user, onClose }) {
                   {result.specs || result.request_description}
                 </div>
               </div>
+
+              <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#8B8E96', marginBottom: 10 }}>{t.review}</p>
+                <p style={{ color: '#B8BBC4', fontSize: 12, lineHeight: 1.8, marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reviewHint}</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <FormLabel isAr={isAr}>{t.reviewFields.titleAr}</FormLabel>
+                    <FieldInput isAr={isAr} value={reviewDraft.title_ar || ''} onChange={(event) => updateReviewDraft('title_ar', event.target.value)} />
+                  </div>
+                  <div>
+                    <FormLabel isAr={isAr}>{t.reviewFields.titleEn}</FormLabel>
+                    <FieldInput isAr={isAr} value={reviewDraft.title_en || ''} onChange={(event) => updateReviewDraft('title_en', event.target.value)} dir="ltr" />
+                  </div>
+                  <div>
+                    <FormLabel isAr={isAr}>{t.reviewFields.quantity}</FormLabel>
+                    <FieldInput isAr={isAr} value={reviewDraft.quantity || ''} onChange={(event) => updateReviewDraft('quantity', event.target.value)} />
+                  </div>
+                  <div>
+                    <FormLabel isAr={isAr}>{t.budgetOptional}</FormLabel>
+                    <FieldInput isAr={isAr} type="number" min="0" value={reviewDraft.budget_per_unit || ''} onChange={(event) => updateReviewDraft('budget_per_unit', event.target.value)} dir="ltr" />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <FormLabel isAr={isAr}>{t.reviewFields.category}</FormLabel>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {Object.entries(CAT_LABEL[lang] || CAT_LABEL.en).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => updateReviewDraft('category', value)}
+                        style={{
+                          padding: '7px 14px',
+                          fontSize: 12,
+                          borderRadius: 20,
+                          cursor: 'pointer',
+                          background: reviewDraft.category === value ? '#E8E3D8' : 'transparent',
+                          color: reviewDraft.category === value ? '#141414' : '#D6D8DD',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <FormLabel isAr={isAr}>{t.reviewFields.description}</FormLabel>
+                  <FieldInput isAr={isAr} as="textarea" rows={5} value={reviewDraft.description || ''} onChange={(event) => updateReviewDraft('description', event.target.value)} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginTop: 12 }}>
+                  <div>
+                    <FormLabel isAr={isAr}>{t.reviewFields.paymentPlan}</FormLabel>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {Object.entries(PAYMENT_PLAN_LABEL[lang] || PAYMENT_PLAN_LABEL.en).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => updateReviewDraft('payment_plan', value)}
+                          style={{
+                            padding: '7px 12px',
+                            fontSize: 12,
+                            borderRadius: 20,
+                            cursor: 'pointer',
+                            background: String(reviewDraft.payment_plan) === String(value) ? '#E8E3D8' : 'transparent',
+                            color: String(reviewDraft.payment_plan) === String(value) ? '#141414' : '#D6D8DD',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <FormLabel isAr={isAr}>{t.reviewFields.sampleRequirement}</FormLabel>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {Object.entries(SAMPLE_LABEL[lang] || SAMPLE_LABEL.en).map(([value, label]) => (
+                        <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: '#D6D8DD', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <input type="radio" name="idea-sample-requirement" checked={reviewDraft.sample_requirement === value} onChange={() => updateReviewDraft('sample_requirement', value)} style={{ accentColor: '#E8E3D8' }} />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p style={{ color: '#8F9198', fontSize: 11, lineHeight: 1.8, marginTop: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {t.requestPreviewNote}
+                </p>
+              </div>
+
               <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
                 <button onClick={submitRequest} disabled={submitting} style={{ flex: 1, minWidth: 180, background: '#E8E3D8', color: '#141414', border: 'none', padding: '14px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: submitting ? 0.65 : 1 }}>
                   {user ? t.submit : t.loginSubmit}

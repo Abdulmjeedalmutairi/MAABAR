@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import IdeaToProduct from './IdeaToProduct';
+import { hasIdeaFlowDraft, shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
 
 /* ─────────────────────────────────────────
    Constants
@@ -942,6 +943,8 @@ opportunity_score: من 0 إلى 100.`,
    MAIN — AIHub
 ───────────────────────────────────────── */
 export default function AIHub({ lang, user, profile }) {
+  const nav = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTool, setActiveTool] = useState(null);
   const menuRef = useRef(null);
@@ -956,6 +959,17 @@ export default function AIHub({ lang, user, profile }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (!shouldResumeIdeaFlow(location.search) || !hasIdeaFlowDraft()) return;
+    setActiveTool('assistant');
+    const params = new URLSearchParams(location.search);
+    params.delete('openAiReview');
+    nav({
+      pathname: location.pathname,
+      search: params.toString() ? `?${params.toString()}` : '',
+    }, { replace: true });
+  }, [location.pathname, location.search, nav]);
 
   const openTool = (id) => { setActiveTool(id); setMenuOpen(false); };
   const closeTool = () => setActiveTool(null);
