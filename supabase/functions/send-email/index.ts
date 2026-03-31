@@ -119,19 +119,25 @@ MAABAR.IO &nbsp;·&nbsp; مَعبر &nbsp;·&nbsp; 迈巴尔
 
 const templates = {
   admin_new_supplier: (d) => ({
-    subject: `مورد جديد يطلب التسجيل — ${d.companyName || ''}`,
+    subject: `مورد جديد أرسل التحقق — ${d.companyName || ''}`,
     to: ADMIN_EMAIL,
     html: wrap(`
 <div class="bd">
-<p class="gr">مورد جديد</p>
-<p class="tg">New Supplier Application</p>
+<p class="gr">Supplier verification submitted</p>
+<p class="tg">New Supplier Review Queue Item</p>
 <div class="ib">
 <p class="il">تفاصيل المورد</p>
 <div class="ir"><span class="ik">اسم الشركة</span><span class="iv">${d.companyName || '-'}</span></div>
 <div class="ir"><span class="ik">الإيميل</span><span class="iv">${d.email || '-'}</span></div>
+<div class="ir"><span class="ik">الدولة / المدينة</span><span class="iv">${[d.country, d.city].filter(Boolean).join(' / ') || '-'}</span></div>
+<div class="ir"><span class="ik">التخصص</span><span class="iv">${d.speciality || '-'}</span></div>
 <div class="ir"><span class="ik">WhatsApp</span><span class="iv">${d.whatsapp || '-'}</span></div>
 <div class="ir"><span class="ik">WeChat</span><span class="iv">${d.wechat || '-'}</span></div>
-<div class="ir"><span class="ik">طريقة الدفع</span><span class="iv">${d.payMethod || '-'}</span></div>
+<div class="ir"><span class="ik">رقم التسجيل</span><span class="iv">${d.regNum || '-'}</span></div>
+<div class="ir"><span class="ik">سنوات الخبرة</span><span class="iv">${d.yearsExp || '-'}</span></div>
+<div class="ir"><span class="ik">عدد الموظفين</span><span class="iv">${d.employees || '-'}</span></div>
+<div class="ir"><span class="ik">الرابط التجاري</span><span class="iv">${d.tradeLink || '-'}</span></div>
+<div class="ir"><span class="ik">الوثائق</span><span class="iv">تم رفعها داخل التخزين الخاص — راجعها من لوحة الإدارة</span></div>
 </div>
 <div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة المورد ←</a></div>
 </div>`),
@@ -184,22 +190,22 @@ const templates = {
     const lang = d.lang || 'ar';
     const t = {
       ar: {
-        subject: 'طلبك وصلنا — مَعبر',
-        eyebrow: 'Application Received',
+        subject: 'تم استلام التحقق التجاري — مَعبر',
+        eyebrow: 'Verification Received',
         title: `أهلاً ${d.name || ''}،`,
-        body: 'استلمنا طلب تسجيلك كمورد. فريقنا سيراجع بياناتك خلال 24 ساعة وسنرسل لك إيميلاً فور اتخاذ القرار.',
+        body: 'استلمنا بيانات التحقق التجاري والمستندات الخاصة بك. فريق مَعبر سيراجعها الآن وسنرسل لك إيميلاً فور اتخاذ القرار.',
       },
       en: {
-        subject: 'We received your application — Maabar',
-        eyebrow: 'Application Received',
+        subject: 'Your business verification was received — Maabar',
+        eyebrow: 'Verification Received',
         title: `Hello ${d.name || ''},`,
-        body: 'We received your supplier application. Our team will review your details within 24 hours and email you once a decision is made.',
+        body: 'We received your business verification details and documents. Maabar team is now reviewing them and will email you once a decision is made.',
       },
       zh: {
-        subject: '我们已收到您的申请 — Maabar',
-        eyebrow: 'Application Received',
+        subject: '我们已收到您的企业认证资料 — Maabar',
+        eyebrow: 'Verification Received',
         title: `${d.name || ''}，您好`,
-        body: '我们已收到您的供应商申请。团队将在 24 小时内审核您的资料，并在有结果后通过邮件通知您。',
+        body: '我们已收到您的企业认证信息和文件。Maabar 团队正在审核，结果出来后会通过邮件通知您。',
       },
     }[lang] || {
       subject: 'طلبك وصلنا — مَعبر',

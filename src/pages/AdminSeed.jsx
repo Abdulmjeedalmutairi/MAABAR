@@ -1,7 +1,8 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sb } from '../supabase';
+import { sb, SUPABASE_URL as SUPABASE_PROJECT_URL } from '../supabase';
+import { getSupplierVerificationState } from '../lib/supplierOnboarding';
 
 const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
@@ -19,6 +20,7 @@ export default function AdminSeed({ user, lang }) {
   const [verifying, setVerifying] = useState({});
   const [verifyResults, setVerifyResults] = useState({});
   const [actionLoading, setActionLoading] = useState({});
+  const [docLoading, setDocLoading] = useState({});
   const [overviewUsers, setOverviewUsers] = useState([]);
   const [overviewRequests, setOverviewRequests] = useState([]);
   const [overviewDeals, setOverviewDeals] = useState([]);
@@ -79,11 +81,43 @@ export default function AdminSeed({ user, lang }) {
 
   const loadPendingSuppliers = async () => {
     const { data } = await sb.from('profiles')
-      .select('id,role,status,full_name,company_name,city,country,speciality,whatsapp,wechat,trade_link,reg_number,license_photo,factory_photo,pay_method,alipay_account,swift_code,bank_name,years_experience,num_employees,created_at,email')
+      .select('id,role,status,full_name,company_name,city,country,speciality,whatsapp,wechat,trade_link,reg_number,license_photo,factory_photo,pay_method,alipay_account,swift_code,bank_name,years_experience,num_employees,created_at,email,bio_ar,bio_en,bio_zh')
       .eq('role', 'supplier')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
-    if (data) setPendingSuppliers(data);
+    if (data) setPendingSuppliers(data.filter((supplier) => getSupplierVerificationState(supplier).isVerificationComplete));
+  };
+
+  const openSupplierDoc = async (supplierId, docType) => {
+    const docKey = `${supplierId}-${docType}`;
+    setDocLoading(prev => ({ ...prev, [docKey]: true }));
+    try {
+      const { data: sessionData } = await sb.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Missing access token');
+
+      const res = await fetch('https://utzalmszfqfcofywfetv.supabase.co/functions/v1/admin-supplier-doc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ supplierId, docType }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.signedUrl) {
+        throw new Error(payload?.error || 'Failed to open document');
+      }
+
+      const signedUrl = payload.signedUrl.startsWith('http') ? payload.signedUrl : `${SUPABASE_PROJECT_URL}${payload.signedUrl}`;
+      window.open(signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('openSupplierDoc error:', error);
+      alert(isAr ? 'تعذر فتح المستند بشكل آمن الآن' : 'Unable to open the document securely right now');
+    } finally {
+      setDocLoading(prev => ({ ...prev, [docKey]: false }));
+    }
   };
 
   const verifySupplier = async (supplier) => {
@@ -490,18 +524,16 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                       )}
                       {/* Documents */}
                       {(s.license_photo || s.factory_photo) && (
-                        <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
                           {s.license_photo && (
-                            <a href={s.license_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                              <img src={s.license_photo} alt="رخصة تجارية" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
-                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 4 }}>رخصة تجارية</p>
-                            </a>
+                            <button onClick={() => openSupplierDoc(s.id, 'license')} style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.14)', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 11 }}>
+                              {docLoading[`${s.id}-license`] ? '...' : '📄 رخصة تجارية'}
+                            </button>
                           )}
                           {s.factory_photo && (
-                            <a href={s.factory_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                              <img src={s.factory_photo} alt="صورة المصنع" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 3, border: '1px solid rgba(255,255,255,0.15)' }} />
-                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 4 }}>صورة المصنع</p>
-                            </a>
+                            <button onClick={() => openSupplierDoc(s.id, 'factory')} style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.14)', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 11 }}>
+                              {docLoading[`${s.id}-factory`] ? '...' : '🏭 صورة المصنع'}
+                            </button>
                           )}
                         </div>
                       )}
@@ -572,18 +604,16 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                         ) : null)}
                       </div>
                       {(s.license_photo || s.factory_photo) && (
-                        <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
                           {s.license_photo && (
-                            <a href={s.license_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', textAlign: 'center' }}>
-                              <img src={s.license_photo} alt="رخصة" style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)' }} />
-                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>رخصة تجارية</p>
-                            </a>
+                            <button onClick={() => openSupplierDoc(s.id, 'license')} style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.14)', padding: '10px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>
+                              {docLoading[`${s.id}-license`] ? '...' : 'فتح الرخصة بشكل آمن'}
+                            </button>
                           )}
                           {s.factory_photo && (
-                            <a href={s.factory_photo} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', textAlign: 'center' }}>
-                              <img src={s.factory_photo} alt="مصنع" style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.15)' }} />
-                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>صورة المصنع</p>
-                            </a>
+                            <button onClick={() => openSupplierDoc(s.id, 'factory')} style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.14)', padding: '10px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>
+                              {docLoading[`${s.id}-factory`] ? '...' : 'فتح صورة المصنع بشكل آمن'}
+                            </button>
                           )}
                         </div>
                       )}

@@ -82,6 +82,17 @@ function supplierWelcomeHtml(name: string): string {
 }
 
 async function adminAlertHtml(profile: Record<string, unknown>): Promise<string> {
+  const isVerificationComplete = Boolean(
+    profile.reg_number &&
+    profile.years_experience &&
+    profile.license_photo &&
+    profile.factory_photo
+  );
+
+  if (!isVerificationComplete) {
+    return '<p>Supplier verification not complete yet.</p>';
+  }
+
   const summary = `
 Company: ${profile.company_name || 'N/A'}
 City: ${profile.city || 'N/A'}
@@ -89,13 +100,12 @@ Country: ${profile.country || 'N/A'}
 Specialty: ${profile.speciality || 'N/A'}
 WeChat: ${profile.wechat || 'N/A'}
 WhatsApp: ${profile.whatsapp || 'N/A'}
-Payment Method: ${profile.pay_method || 'N/A'}
 Years Experience: ${profile.years_experience ?? 'N/A'}
 Company Reg Number: ${profile.reg_number || 'N/A'}
 Trade Link: ${profile.trade_link || 'N/A'}
-Employees: ${profile.employees_count ?? 'N/A'}
-Business License: ${profile.license_url ? 'Uploaded' : 'Not uploaded'}
-Factory Photo: ${profile.factory_image_url ? 'Uploaded' : 'Not uploaded'}
+Employees: ${profile.num_employees ?? 'N/A'}
+Business License: ${profile.license_photo ? 'Uploaded to private storage' : 'Not uploaded'}
+Factory Photo: ${profile.factory_photo ? 'Uploaded to private storage' : 'Not uploaded'}
   `.trim();
 
   let aiTable = '<p><em>AI analysis unavailable</em></p>';
@@ -137,11 +147,10 @@ ${summary}`,
   }
 
   return `
-<h2>New Supplier Application — Maabar</h2>
+<h2>New Supplier Verification Submission — Maabar</h2>
 <h3>Supplier Details</h3>
 <pre style="background:#f5f5f5;padding:12px;font-size:13px">${summary}</pre>
-${profile.license_url ? `<p><a href="${profile.license_url}">View Business License</a></p>` : ''}
-${profile.factory_image_url ? `<p><a href="${profile.factory_image_url}">View Factory Photo</a></p>` : ''}
+<p>Verification documents are stored in private storage. Review them from the admin dashboard.</p>
 ${aiTable}`;
 }
 

@@ -28,6 +28,17 @@ serve(async (req) => {
     const { data: profile } = await sb.from('profiles').select('*').eq('id', record.id).single();
     if (!profile) return new Response('Profile not found', { status: 404 });
 
+    const isVerificationComplete = Boolean(
+      profile.reg_number &&
+      profile.years_experience &&
+      profile.license_photo &&
+      profile.factory_photo
+    );
+
+    if (!isVerificationComplete) {
+      return new Response('Supplier verification not complete yet', { status: 200 });
+    }
+
     // Build supplier data summary
     const supplierSummary = `
 Company: ${profile.company_name || 'N/A'}
@@ -36,13 +47,12 @@ Country: ${profile.country || 'N/A'}
 Specialty: ${profile.speciality || 'N/A'}
 WeChat: ${profile.wechat || 'N/A'}
 WhatsApp: ${profile.whatsapp || 'N/A'}
-Payment Method: ${profile.pay_method || 'N/A'}
 Years Experience: ${profile.years_experience ?? 'N/A'}
 Company Reg Number: ${profile.reg_number || 'N/A'}
 Trade Link: ${profile.trade_link || 'N/A'}
-Employees: ${profile.employees_count ?? 'N/A'}
-Business License: ${profile.license_url ? 'Uploaded' : 'Not uploaded'}
-Factory Photo: ${profile.factory_image_url ? 'Uploaded' : 'Not uploaded'}
+Employees: ${profile.num_employees ?? 'N/A'}
+Business License: ${profile.license_photo ? 'Uploaded to private storage' : 'Not uploaded'}
+Factory Photo: ${profile.factory_photo ? 'Uploaded to private storage' : 'Not uploaded'}
     `.trim();
 
     // AI analysis via Claude
@@ -86,11 +96,10 @@ ${supplierSummary}`,
     }
 
     const html = `
-<h2>New Supplier Application — Maabar</h2>
+<h2>New Supplier Verification Submission — Maabar</h2>
 <h3>Supplier Details</h3>
 <pre style="background:#f5f5f5;padding:12px">${supplierSummary}</pre>
-${profile.license_url ? `<p><a href="${profile.license_url}">View Business License</a></p>` : ''}
-${profile.factory_image_url ? `<p><a href="${profile.factory_image_url}">View Factory Photo</a></p>` : ''}
+<p>Verification documents are stored in private storage. Review them from the admin dashboard.</p>
 ${aiAnalysis}
 `;
 

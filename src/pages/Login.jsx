@@ -1,12 +1,10 @@
-import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
+import { getSupplierVerificationState } from '../lib/supplierOnboarding';
 
 const UNIFONIC_APP_SID   = '';
-const SUPABASE_ANON_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
-const SEND_EMAILS_URL    = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 
 const SPECIALITIES = [
   { val: 'electronics',   ar: 'إلكترونيات',              en: 'Electronics',               zh: '电子产品' },
@@ -34,15 +32,12 @@ const L = {
     firstName: 'الاسم الأول', lastName: 'الاسم الأخير',
     phone: 'رقم الجوال', city: 'المدينة',
     companyName: 'اسم الشركة / النشاط (اختياري)',
-    supCompany: 'اسم الشركة', whatsapp: 'واتساب (اختياري)', wechat: 'WeChat *',
-    payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)',
-    alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *',
-    tradeLink: 'رابط متجر Alibaba أو الموقع (اختياري)', regNum: 'رقم تسجيل الشركة *',
-    country: 'الدولة', supCity: 'المدينة',
-    speciality: 'التخصص',
-    yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)',
-    businessLicense: 'صورة رخصة الأعمال / الهوية *', factoryPhoto: 'صورة المصنع / المستودع *',
-    uploading: 'جاري الرفع...', uploaded: 'تم الرفع ✓',
+    supCompany: 'اسم الشركة *', whatsapp: 'واتساب', wechat: 'WeChat',
+    tradeLink: 'رابط متجر Alibaba أو الموقع (اختياري)',
+    country: 'الدولة *', supCity: 'المدينة *',
+    speciality: 'التخصص *',
+    contactHint: 'أدخل WeChat أو WhatsApp على الأقل',
+    verificationLater: 'بيانات التحقق والمستندات ستُطلب منك بعد تسجيل الدخول.',
     signin: 'تسجيل الدخول', signup: 'إنشاء حساب',
     toSignup: 'ما عندك حساب؟', toSignupLink: 'سجل الآن',
     toSignin: 'عندك حساب؟', toSigninLink: 'سجل دخولك',
@@ -51,7 +46,7 @@ const L = {
     termsLabel: 'أوافق على ',
     termsLink: 'الشروط والأحكام',
     mustAgreeTerms: 'يجب الموافقة على الشروط والأحكام',
-    pendingMsg: 'تم استلام طلبك. يرجى تأكيد بريدك الإلكتروني لتفعيل الحساب.',
+    pendingMsg: 'أرسلنا رسالة تأكيد إلى بريدك. بعد التفعيل سجّل دخولك وأكمل التحقق التجاري.',
     googleLogin: 'دخول بـ Google',
     otpTitle: 'تأكيد رقم الجوال',
     otpSub: 'أرسلنا رمز التحقق إلى رقمك',
@@ -72,15 +67,12 @@ const L = {
     firstName: 'First Name', lastName: 'Last Name',
     phone: 'Phone', city: 'City',
     companyName: 'Company / Business (optional)',
-    supCompany: 'Company Name', whatsapp: 'WhatsApp (optional)', wechat: 'WeChat *',
-    payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)',
-    alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *',
-    tradeLink: 'Alibaba Store or Website URL (optional)', regNum: 'Company Registration Number *',
-    country: 'Country', supCity: 'City',
-    speciality: 'Specialty',
-    yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)',
-    businessLicense: 'Business License or ID Photo *', factoryPhoto: 'Factory or Warehouse Photo *',
-    uploading: 'Uploading...', uploaded: 'Uploaded ✓',
+    supCompany: 'Company Name *', whatsapp: 'WhatsApp', wechat: 'WeChat',
+    tradeLink: 'Alibaba Store or Website URL (optional)',
+    country: 'Country *', supCity: 'City *',
+    speciality: 'Specialty *',
+    contactHint: 'Add at least one contact method: WeChat or WhatsApp',
+    verificationLater: 'Business verification details and documents will be requested after sign-in.',
     signin: 'Sign In', signup: 'Create Account',
     toSignup: "Don't have an account?", toSignupLink: 'Sign up',
     toSignin: 'Already have an account?', toSigninLink: 'Sign in',
@@ -89,7 +81,7 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions',
-    pendingMsg: "We've received your application. Please check your email to activate your account.",
+    pendingMsg: 'We sent a confirmation email. After activation, sign in and complete your business verification.',
     googleLogin: 'Continue with Google',
     otpTitle: 'Verify your phone',
     otpSub: 'We sent a verification code to your number',
@@ -110,15 +102,12 @@ const L = {
     firstName: '名', lastName: '姓',
     phone: '电话', city: '城市',
     companyName: '公司/商业名称（可选）',
-    supCompany: '公司名称', whatsapp: 'WhatsApp（可选）', wechat: 'WeChat *',
-    payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)',
-    alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *',
-    tradeLink: '阿里巴巴店铺或网站链接（可选）', regNum: '公司注册号 *',
-    country: '国家', supCity: '城市',
-    speciality: '专业领域',
-    yearsExp: '从业年限 *', employees: '员工人数（可选）',
-    businessLicense: '营业执照或身份证照片 *', factoryPhoto: '工厂或仓库照片 *',
-    uploading: '上传中...', uploaded: '已上传 ✓',
+    supCompany: '公司名称 *', whatsapp: 'WhatsApp', wechat: 'WeChat',
+    tradeLink: '阿里巴巴店铺或网站链接（可选）',
+    country: '国家 *', supCity: '城市 *',
+    speciality: '专业领域 *',
+    contactHint: '至少填写一种联系方式：WeChat 或 WhatsApp',
+    verificationLater: '登录后再补充企业认证资料和文件。',
     signin: '登录', signup: '创建账户',
     toSignup: '没有账户？', toSignupLink: '立即注册',
     toSignin: '已有账户？', toSigninLink: '登录',
@@ -127,7 +116,7 @@ const L = {
     termsLabel: '我同意',
     termsLink: '条款与条件',
     mustAgreeTerms: '您必须同意条款与条件',
-    pendingMsg: '我们已收到您的申请。请检查您的电子邮件以激活账户。',
+    pendingMsg: '确认邮件已发送。激活后请登录并完成企业认证。',
     googleLogin: '使用Google登录',
     otpTitle: '验证手机号',
     otpSub: '我们已向您的号码发送验证码',
@@ -181,21 +170,10 @@ export default function Login({ setUser, setProfile, lang }) {
   const [supCompany, setSupCompany]   = useState('');
   const [whatsapp, setWhatsapp]       = useState('');
   const [wechat, setWechat]           = useState('');
-  const [payMethod, setPayMethod]     = useState('');
-  const [alipayAccount, setAlipayAccount] = useState('');
-  const [swiftCode, setSwiftCode]     = useState('');
-  const [bankName, setBankName]       = useState('');
   const [tradeLink, setTradeLink]     = useState('');
-  const [regNum, setRegNum]           = useState('');
   const [country, setCountry]         = useState('');
   const [supCity, setSupCity]         = useState('');
   const [speciality, setSpeciality]   = useState('');
-  const [yearsExp, setYearsExp]       = useState('');
-  const [employees, setEmployees]     = useState('');
-  const [licenseUrl, setLicenseUrl]   = useState('');
-  const [factoryUrl, setFactoryUrl]   = useState('');
-  const [uploadingLicense, setUploadingLicense] = useState(false);
-  const [uploadingFactory, setUploadingFactory] = useState(false);
 
   const createAiDraftRequestAfterAuth = async (userId) => {
     const draft = sessionStorage.getItem('maabar_ai_draft');
@@ -243,11 +221,15 @@ export default function Login({ setUser, setProfile, lang }) {
       return;
     }
     setUser(data.user);
-    const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city').eq('id', data.user.id).single();
+    const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city,reg_number,years_experience,license_photo,factory_photo').eq('id', data.user.id).single();
     if (profile) setProfile(profile);
     const aiDraftCreated = await createAiDraftRequestAfterAuth(data.user.id);
     if (aiDraftCreated) {
       nav('/dashboard?tab=requests');
+      return;
+    }
+    if (profile?.role === 'supplier' && profile?.status === 'pending' && !getSupplierVerificationState(profile).isVerificationComplete) {
+      nav('/dashboard?tab=verification');
       return;
     }
     const draft = sessionStorage.getItem('maabar_request_draft');
@@ -312,72 +294,31 @@ export default function Login({ setUser, setProfile, lang }) {
     nav(hasDraft ? '/requests' : '/dashboard');
   };
 
-  const uploadSupplierDoc = async (file, type) => {
-    if (!file) return null;
-    const setter = type === 'license' ? setUploadingLicense : setUploadingFactory;
-    setter(true);
-    const path = `${Date.now()}_${type}.${file.name.split('.').pop()}`;
-    const { error } = await sb.storage.from('supplier-docs').upload(path, file, { upsert: true });
-    setter(false);
-    if (error) { console.error('upload error:', error); return null; }
-    const { data: { publicUrl } } = sb.storage.from('supplier-docs').getPublicUrl(path);
-    return publicUrl;
-  };
-
   const doSignUp = async () => {
     if (!email || !pass) { setMsg(l.fillRequired); setMsgType('error'); return; }
     if (mode === 'signup' && !agreedTerms) { setMsg(l.mustAgreeTerms); setMsgType('error'); return; }
     if (!isSupplier && (!firstName || !lastName || !phone || !city)) { setMsg(l.fillRequired); setMsgType('error'); return; }
-    if (isSupplier && (!supCompany || !wechat || !payMethod || !yearsExp || !regNum || !licenseUrl || !factoryUrl)) {
+    if (isSupplier && (!supCompany || !country || !supCity || !speciality || (!wechat && !whatsapp))) {
       setMsg(l.fillRequired); setMsgType('error'); return;
     }
-    if (isSupplier && payMethod === 'alipay' && !alipayAccount) { setMsg(l.fillRequired); setMsgType('error'); return; }
-    if (isSupplier && payMethod === 'swift' && (!swiftCode || !bankName)) { setMsg(l.fillRequired); setMsgType('error'); return; }
     setLoading(true);
     const metaData = {
       role, status: isSupplier ? 'pending' : 'active',
       ...(!isSupplier && { full_name: `${firstName} ${lastName}`, phone, city, company_name: companyName }),
       ...(isSupplier && {
-        company_name: supCompany, whatsapp, wechat,
-        pay_method: payMethod,
-        reg_number: regNum,
+        company_name: supCompany,
+        whatsapp,
+        wechat,
         trade_link: tradeLink,
         speciality,
         country,
         city: supCity,
-        license_photo: licenseUrl,
-        factory_photo: factoryUrl,
-        alipay_account: payMethod === 'alipay' ? alipayAccount : null,
-        swift_code: payMethod === 'swift' ? swiftCode : null,
-        bank_name: payMethod === 'swift' ? bankName : null,
-        years_experience: yearsExp || null,
-        num_employees: employees || null,
       }),
     };
     const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://maabar.io/dashboard', data: metaData } });
     setLoading(false);
     if (error) { setMsg(error.message); setMsgType('error'); return; }
     if (isSupplier) {
-      // Profile created by DB trigger (handle_new_user) from raw_user_meta_data — no client upsert needed
-      // Send supplier_signup_bundle immediately at signup (before email confirmation)
-      try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'supplier_signup_bundle',
-            data: {
-              name: supCompany || '',
-              companyName: supCompany,
-              email: data.user.email,
-              whatsapp,
-              wechat,
-              payMethod,
-              lang,
-            },
-          }),
-        });
-      } catch (e) { console.error('email error:', e); }
       setMsg(l.pendingMsg);
       setMsgType('success');
       return;
@@ -658,7 +599,7 @@ export default function Login({ setUser, setProfile, lang }) {
                   </div>
                 </div>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.speciality} *</label>
+                  <label style={labelStyle}>{l.speciality}</label>
                   <select style={{ ...inputStyle, cursor: 'pointer' }} value={speciality} onChange={e => setSpeciality(e.target.value)}>
                     <option value="">{isAr ? 'اختر تخصصك' : lang === 'zh' ? '选择专业' : 'Select specialty'}</option>
                     {SPECIALITIES.map(s => (
@@ -668,105 +609,16 @@ export default function Login({ setUser, setProfile, lang }) {
                     ))}
                   </select>
                 </div>
-                <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.payMethod}</label>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                    {['alipay', 'swift'].map(m => (
-                      <button key={m} type="button" onClick={() => setPayMethod(m)} style={{
-                        flex: 1, padding: '10px',
-                        background: payMethod === m ? 'var(--bg-raised)' : 'transparent',
-                        border: '1px solid',
-                        borderColor: payMethod === m ? 'var(--border-strong)' : 'var(--border-subtle)',
-                        color: payMethod === m ? 'var(--text-primary)' : 'var(--text-disabled)',
-                        fontSize: 12, cursor: 'pointer',
-                        borderRadius: 'var(--radius-md)', transition: 'all 0.15s',
-                        minHeight: 40, fontFamily: 'var(--font-sans)',
-                      }}>
-                        {m === 'alipay' ? l.alipay : l.swift}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {payMethod === 'alipay' && (
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>{l.alipayAccount}</label>
-                    <input style={inputStyle} value={alipayAccount} onChange={e => setAlipayAccount(e.target.value)} dir="ltr" />
-                  </div>
-                )}
-                {payMethod === 'swift' && (
-                  <div style={{ display: 'flex', gap: 14 }}>
-                    <div style={{ ...fieldStyle, flex: 1 }}>
-                      <label style={labelStyle}>{l.swiftCode}</label>
-                      <input style={inputStyle} value={swiftCode} onChange={e => setSwiftCode(e.target.value)} dir="ltr" />
-                    </div>
-                    <div style={{ ...fieldStyle, flex: 1 }}>
-                      <label style={labelStyle}>{l.bankName}</label>
-                      <input style={inputStyle} value={bankName} onChange={e => setBankName(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 14 }}>
-                  <div style={{ ...fieldStyle, flex: 1 }}>
-                    <label style={labelStyle}>{l.yearsExp}</label>
-                    <input style={inputStyle} type="number" min="0" value={yearsExp} onChange={e => setYearsExp(e.target.value)} dir="ltr" />
-                  </div>
-                  <div style={{ ...fieldStyle, flex: 1 }}>
-                    <label style={labelStyle}>{l.employees}</label>
-                    <input style={inputStyle} type="number" min="0" value={employees} onChange={e => setEmployees(e.target.value)} dir="ltr" />
-                  </div>
-                </div>
-                <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.regNum}</label>
-                  <input style={inputStyle} value={regNum} onChange={e => setRegNum(e.target.value)} dir="ltr" />
-                </div>
-                <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.businessLicense}</label>
-                  {licenseUrl
-                    ? <p style={{ fontSize: 12, color: '#5a9a72', marginTop: 4 }}>{l.uploaded}</p>
-                    : (
-                      <label style={{
-                        display: 'inline-block', marginTop: 6,
-                        padding: '8px 16px', fontSize: 12,
-                        border: '1px solid var(--border-default)',
-                        borderRadius: 'var(--radius-md)',
-                        color: 'var(--text-secondary)',
-                        cursor: 'pointer', transition: 'all 0.15s',
-                      }}>
-                        {uploadingLicense ? l.uploading : (isAr ? 'اختر ملف' : 'Choose File')}
-                        <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
-                          onChange={async e => {
-                            const url = await uploadSupplierDoc(e.target.files[0], 'license');
-                            if (url) setLicenseUrl(url);
-                          }} />
-                      </label>
-                    )}
-                </div>
-                <div style={fieldStyle}>
-                  <label style={labelStyle}>{l.factoryPhoto}</label>
-                  {factoryUrl
-                    ? <p style={{ fontSize: 12, color: '#5a9a72', marginTop: 4 }}>{l.uploaded}</p>
-                    : (
-                      <label style={{
-                        display: 'inline-block', marginTop: 6,
-                        padding: '8px 16px', fontSize: 12,
-                        border: '1px solid var(--border-default)',
-                        borderRadius: 'var(--radius-md)',
-                        color: 'var(--text-secondary)',
-                        cursor: 'pointer', transition: 'all 0.15s',
-                      }}>
-                        {uploadingFactory ? l.uploading : (isAr ? 'اختر صورة' : 'Choose Image')}
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
-                          onChange={async e => {
-                            const url = await uploadSupplierDoc(e.target.files[0], 'factory');
-                            if (url) setFactoryUrl(url);
-                          }} />
-                      </label>
-                    )}
-                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -6, marginBottom: 16, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {l.contactHint}
+                </p>
                 <div style={fieldStyle}>
                   <label style={labelStyle}>{l.tradeLink}</label>
                   <input style={inputStyle} value={tradeLink} onChange={e => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
                 </div>
+                <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -4, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {l.verificationLater}
+                </p>
               </>
             )}
 

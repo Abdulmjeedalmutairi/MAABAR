@@ -7,12 +7,12 @@ import { sb } from '../supabase';
 const T = {
   ar: {
     tag: 'مَعبر · المورد',
-    title: 'حسابك قيد المراجعة',
-    sub: 'شكراً لتسجيلك في مَعبر. فريقنا يراجع بياناتك وسيتواصل معك خلال 24 ساعة.',
+    title: 'تم إرسال التحقق التجاري',
+    sub: 'شكراً لك. بيانات التحقق والمستندات وصلت لفريق مَعبر وهي الآن تحت المراجعة قبل تفعيل الحساب.',
     steps: [
-      { n: '01', t: 'تم استلام طلبك', d: 'وصلنا بياناتك وهي قيد المراجعة.' },
-      { n: '02', t: 'مراجعة البيانات', d: 'فريق مَعبر يتحقق من بيانات شركتك.' },
-      { n: '03', t: 'تفعيل الحساب', d: 'ستصلك رسالة بالبريد عند تفعيل حسابك.' },
+      { n: '01', t: 'استلام التحقق', d: 'وصلتنا بيانات شركتك والمستندات المطلوبة.' },
+      { n: '02', t: 'مراجعة المستندات', d: 'فريق مَعبر يتحقق من السجل التجاري وصورة المصنع.' },
+      { n: '03', t: 'قرار التفعيل', d: 'ستصلك رسالة بالبريد فور قبول الحساب أو طلب أي توضيح إضافي.' },
     ],
     note: 'للاستفسار تواصل معنا عبر البريد الإلكتروني',
     email: 'hello@maabar.io',
@@ -21,12 +21,12 @@ const T = {
   },
   en: {
     tag: 'Maabar · Supplier',
-    title: 'Account Under Review',
-    sub: 'Thank you for registering with Maabar. Our team is reviewing your details and will contact you within 24 hours.',
+    title: 'Verification Submitted',
+    sub: 'Thanks. Your business verification details and documents are now under Maabar review before account activation.',
     steps: [
-      { n: '01', t: 'Request Received', d: 'We have received your details and they are under review.' },
-      { n: '02', t: 'Data Verification', d: 'Maabar team is verifying your company information.' },
-      { n: '03', t: 'Account Activation', d: 'You will receive an email once your account is activated.' },
+      { n: '01', t: 'Verification Received', d: 'We received your company details and required documents.' },
+      { n: '02', t: 'Document Review', d: 'Maabar team is checking your registration and factory evidence.' },
+      { n: '03', t: 'Activation Decision', d: 'You will receive an email once your account is approved or if we need more clarification.' },
     ],
     note: 'For inquiries, contact us at',
     email: 'hello@maabar.io',
@@ -35,12 +35,12 @@ const T = {
   },
   zh: {
     tag: 'Maabar · 供应商',
-    title: '账户审核中',
-    sub: '感谢您注册Maabar。我们的团队正在审核您的信息，将在24小时内与您联系。',
+    title: '认证资料已提交',
+    sub: '感谢您。您的企业认证信息和文件已提交给 Maabar 团队审核，审核通过后才会激活账户。',
     steps: [
-      { n: '01', t: '已收到申请', d: '我们已收到您的信息，正在审核中。' },
-      { n: '02', t: '资料核实', d: 'Maabar团队正在核实您的公司信息。' },
-      { n: '03', t: '账户激活', d: '账户激活后您将收到电子邮件通知。' },
+      { n: '01', t: '已收到认证资料', d: '我们已收到您的公司信息和所需文件。' },
+      { n: '02', t: '文件审核', d: 'Maabar 团队正在核查注册资料与工厂证明。' },
+      { n: '03', t: '激活结果', d: '账户批准后，或需要补充说明时，都会通过邮件通知您。' },
     ],
     note: '如有疑问，请联系',
     email: 'hello@maabar.io',

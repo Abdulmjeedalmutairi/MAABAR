@@ -11,6 +11,7 @@ import {
   normalizeDisplayCurrency,
   persistDisplayCurrencyPreference,
 } from './lib/displayCurrency';
+import { getSupplierVerificationState } from './lib/supplierOnboarding';
 
 // Pages
 import Home from './pages/Home';
@@ -183,8 +184,13 @@ function App() {
     );
     if (!profile) return <DashboardBuyer {...sharedProps} />;
     if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
-    if (profile.role === 'supplier' && profile.status === 'pending')
-      return <PendingApproval {...sharedProps} />;
+    if (profile.role === 'supplier' && profile.status === 'pending') {
+      const verificationState = getSupplierVerificationState(profile);
+      if (verificationState.isVerificationComplete) {
+        return <PendingApproval {...sharedProps} />;
+      }
+      return <DashboardSupplier {...sharedProps} />;
+    }
     if (profile.role === 'supplier' && profile.status === 'rejected')
       return (
         <div style={{

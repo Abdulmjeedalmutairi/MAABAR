@@ -1,7 +1,7 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { sb } from '../supabase';
+import { sb, SUPABASE_URL } from '../supabase';
 import Footer from '../components/Footer';
 import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
 import {
@@ -12,6 +12,7 @@ import {
   normalizeProductDraftMedia,
 } from '../lib/productMedia';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import { getSupplierVerificationState, normalizeSupplierDocStoragePath } from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -88,6 +89,11 @@ const T = {
     logo: 'لوقو / صورة الشركة', factoryImages: 'صور المصنع (حتى 3)',
     uploadLogo: 'رفع اللوقو', uploadFactory: 'إضافة صورة', uploadingLogo: 'جاري الرفع...',
     saveSettings: 'حفظ الإعدادات', settingsSaved: 'تم حفظ التغييرات', days: 'يوم',
+    verificationTab: 'التحقق', verificationTitle: 'أكمل التحقق التجاري', verificationIntro: 'أرسل بيانات التحقق والمستندات من هنا بعد إنشاء الحساب. لن نطلبها في التسجيل الأولي.',
+    verificationStatusIncomplete: 'التحقق غير مكتمل', verificationStatusComplete: 'تم إرسال التحقق للمراجعة', verificationStatusLocked: 'الحساب الآن تحت المراجعة',
+    verificationCtaTitle: 'أكمل التحقق التجاري', verificationCtaBody: 'أرسل السجل التجاري وصورة المصنع وبيانات الخبرة حتى يدخل طلبك مرحلة المراجعة.', verificationCtaAction: 'أكمل التحقق ←',
+    regNumber: 'رقم تسجيل الشركة *', yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)', businessLicense: 'رخصة الأعمال أو هوية المنشأة *', factoryPhoto: 'صورة المصنع أو المستودع *', replaceFile: 'استبدال الملف', viewCurrentFile: 'عرض الملف الحالي', secureStorageNote: 'يتم حفظ هذه الملفات داخل تخزين خاص، ولا تُعرض بروابط عامة.', verificationSubmitted: 'تم إرسال التحقق بنجاح. الطلب الآن تحت المراجعة.', verificationMissing: 'يرجى تعبئة جميع حقول التحقق المطلوبة ورفع المستندات.',
+    payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف طريقة استلام الدفعات بعد قبول الحساب فقط.', payoutLocked: 'إعداد استلام الدفعات يفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل إعداد استلام الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بيانات استلام الأرباح غير مكتملة بعد.', payoutCtaAction: 'إعداد الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)', alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *',
   },
   en: {
     tag: 'Maabar · Supplier Dashboard', welcome: 'Welcome,', desc: 'Manage your offers, products and messages in one place',
@@ -123,6 +129,11 @@ const T = {
     logo: 'Company Logo', factoryImages: 'Factory Images (up to 3)',
     uploadLogo: 'Upload Logo', uploadFactory: 'Add Image', uploadingLogo: 'Uploading...',
     saveSettings: 'Save Settings', settingsSaved: 'Changes saved', days: 'days',
+    verificationTab: 'Verification', verificationTitle: 'Complete business verification', verificationIntro: 'Submit the full verification details and documents here after signup. They are no longer required during initial registration.',
+    verificationStatusIncomplete: 'Verification incomplete', verificationStatusComplete: 'Verification submitted for review', verificationStatusLocked: 'Account is currently under review',
+    verificationCtaTitle: 'Complete your business verification', verificationCtaBody: 'Submit your registration, factory evidence, and experience details so your application can enter review.', verificationCtaAction: 'Complete verification →',
+    regNumber: 'Company Registration Number *', yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)', businessLicense: 'Business License or Company ID *', factoryPhoto: 'Factory or Warehouse Photo *', replaceFile: 'Replace file', viewCurrentFile: 'View current file', secureStorageNote: 'These files are stored in private storage and are never exposed through public URLs.', verificationSubmitted: 'Verification submitted successfully. Your application is now under review.', verificationMissing: 'Please complete all required verification fields and upload the required documents.',
+    payoutTab: 'Payout', payoutTitle: 'Payout setup', payoutIntro: 'Add your payout details only after your account is approved.', payoutLocked: 'Payout setup unlocks after your account is approved.', payoutCtaTitle: 'Complete your payout setup', payoutCtaBody: 'Your account is approved, but payout details are still missing.', payoutCtaAction: 'Set up payout →', payoutSaved: 'Payout details saved', payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)', alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *',
   },
   zh: {
     tag: 'Maabar · 供应商控制台', welcome: '欢迎，', desc: '在一个地方管理您的报价、产品和消息',
@@ -158,6 +169,11 @@ const T = {
     logo: '公司Logo', factoryImages: '工厂图片（最多3张）',
     uploadLogo: '上传Logo', uploadFactory: '添加图片', uploadingLogo: '上传中...',
     saveSettings: '保存设置', settingsSaved: '保存成功', days: '天',
+    verificationTab: '认证', verificationTitle: '完成企业认证', verificationIntro: '注册后在这里补充完整认证资料和文件，初始注册不再要求一次填完。',
+    verificationStatusIncomplete: '认证未完成', verificationStatusComplete: '认证资料已提交审核', verificationStatusLocked: '账户正在审核中',
+    verificationCtaTitle: '请完成企业认证', verificationCtaBody: '请提交注册资料、工厂证明和经验信息，审核流程才会开始。', verificationCtaAction: '去完成认证 →',
+    regNumber: '公司注册号 *', yearsExp: '从业年限 *', employees: '员工人数（可选）', businessLicense: '营业执照或企业身份证明 *', factoryPhoto: '工厂或仓库照片 *', replaceFile: '更换文件', viewCurrentFile: '查看当前文件', secureStorageNote: '这些文件保存在私有存储中，不会通过公开链接暴露。', verificationSubmitted: '认证资料已提交，当前正在审核。', verificationMissing: '请填写所有必填认证信息并上传所需文件。',
+    payoutTab: '收款', payoutTitle: '收款设置', payoutIntro: '只有在账户通过审核后才需要补充收款信息。', payoutLocked: '账户审核通过后才可设置收款方式。', payoutCtaTitle: '请完成收款设置', payoutCtaBody: '您的账户已通过审核，但收款资料还未填写完整。', payoutCtaAction: '去设置收款 →', payoutSaved: '收款信息已保存', payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)', alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *',
   },
 };
 
@@ -548,7 +564,7 @@ function ProductPreviewPanel({ product, onPublish, onBack, t, isAr, saving, lang
 }
 
 /* ─── Main ───────────────────────────────── */
-export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency }) {
+export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile }) {
   const nav      = useNavigate();
   const location = useLocation();
   const t        = T[lang] || T.zh;
@@ -594,8 +610,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     preferred_display_currency: displayCurrency || 'USD',
     avatar_url: '', factory_images: [],
   });
+  const [verification, setVerification] = useState({
+    reg_number: '', years_experience: '', num_employees: '', license_photo: '', factory_photo: '',
+  });
+  const [payout, setPayout] = useState({ pay_method: '', alipay_account: '', swift_code: '', bank_name: '' });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [savingVerification, setSavingVerification] = useState(false);
+  const [verificationSaved, setVerificationSaved] = useState(false);
+  const [verificationMsg, setVerificationMsg] = useState('');
+  const [uploadingVerificationDoc, setUploadingVerificationDoc] = useState({ license: false, factory: false });
+  const [savingPayout, setSavingPayout] = useState(false);
+  const [payoutSaved, setPayoutSaved] = useState(false);
   const [productSaveMsg, setProductSaveMsg] = useState('');
   const [productComposerStep, setProductComposerStep] = useState('edit');
   const [editOfferModal, setEditOfferModal]   = useState(null);
@@ -605,7 +631,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [uploadingFactory, setUploadingFactory] = useState(false);
   const [samples, setSamples] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
-  const isNewSupplier = !profile?.company_name || !profile?.speciality;
+  const verificationState = getSupplierVerificationState({ ...(profile || {}), ...verification, ...payout });
+  const needsVerification = !verificationState.isVerificationComplete;
+  const needsPayoutSetup = profile?.status === 'active' && !verificationState.isPayoutComplete;
 
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
@@ -623,6 +651,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (activeTab === 'my-products')  loadMyProducts();
     if (activeTab === 'requests')     loadRequests();
     if (activeTab === 'settings')     loadSettings();
+    if (activeTab === 'verification') loadVerification();
+    if (activeTab === 'payout')       loadPayout();
     if (activeTab === 'samples')      loadSamples();
     if (activeTab === 'reviews')      loadMyReviews();
     if (activeTab === 'add-product')  {
@@ -640,6 +670,23 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   useEffect(() => {
     setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
   }, [displayCurrency]);
+
+  useEffect(() => {
+    if (!profile) return;
+    setVerification({
+      reg_number: profile.reg_number || '',
+      years_experience: profile.years_experience || '',
+      num_employees: profile.num_employees || '',
+      license_photo: profile.license_photo || '',
+      factory_photo: profile.factory_photo || '',
+    });
+    setPayout({
+      pay_method: profile.pay_method || '',
+      alipay_account: profile.alipay_account || '',
+      swift_code: profile.swift_code || '',
+      bank_name: profile.bank_name || '',
+    });
+  }, [profile]);
 
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
@@ -740,6 +787,160 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const loadSettings = async () => {
     const { data } = await sb.from('profiles').select('bio_ar,bio_en,bio_zh,company_name,whatsapp,wechat,city,country,trade_link,speciality,min_order_value,avatar_url,factory_images').eq('id', user.id).single();
     if (data) setSettings({ bio_ar: data.bio_ar || '', bio_en: data.bio_en || '', bio_zh: data.bio_zh || '', company_name: data.company_name || '', whatsapp: data.whatsapp || '', wechat: data.wechat || '', city: data.city || '', country: data.country || '', trade_link: data.trade_link || '', speciality: data.speciality || '', min_order_value: data.min_order_value || '', preferred_display_currency: displayCurrency || 'USD', avatar_url: data.avatar_url || '', factory_images: data.factory_images || [] });
+  };
+
+  const loadVerification = async () => {
+    const { data } = await sb.from('profiles').select('reg_number,years_experience,num_employees,license_photo,factory_photo').eq('id', user.id).single();
+    if (data) {
+      setVerification({
+        reg_number: data.reg_number || '',
+        years_experience: data.years_experience || '',
+        num_employees: data.num_employees || '',
+        license_photo: data.license_photo || '',
+        factory_photo: data.factory_photo || '',
+      });
+    }
+  };
+
+  const loadPayout = async () => {
+    const { data } = await sb.from('profiles').select('pay_method,alipay_account,swift_code,bank_name').eq('id', user.id).single();
+    if (data) {
+      setPayout({
+        pay_method: data.pay_method || '',
+        alipay_account: data.alipay_account || '',
+        swift_code: data.swift_code || '',
+        bank_name: data.bank_name || '',
+      });
+    }
+  };
+
+  const uploadVerificationDoc = async (file, type) => {
+    if (!file) return;
+    const key = type === 'license' ? 'license' : 'factory';
+    setUploadingVerificationDoc(prev => ({ ...prev, [key]: true }));
+    const extension = file.name.split('.').pop() || (file.type === 'application/pdf' ? 'pdf' : 'jpg');
+    const path = `${user.id}/${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
+    const { error } = await sb.storage.from('supplier-docs').upload(path, file, { upsert: true });
+    setUploadingVerificationDoc(prev => ({ ...prev, [key]: false }));
+    if (error) {
+      alert(isAr ? 'فشل رفع الملف' : lang === 'zh' ? '文件上传失败' : 'Failed to upload file');
+      return;
+    }
+    setVerification(prev => ({ ...prev, [type === 'license' ? 'license_photo' : 'factory_photo']: path }));
+  };
+
+  const openVerificationDoc = async (field) => {
+    const rawValue = verification?.[field];
+    const objectPath = normalizeSupplierDocStoragePath(rawValue);
+    if (!objectPath) return;
+    const { data, error } = await sb.storage.from('supplier-docs').createSignedUrl(objectPath, 60 * 10);
+    if (error || !data?.signedUrl) {
+      alert(isAr ? 'تعذر فتح الملف الآن' : lang === 'zh' ? '暂时无法打开文件' : 'Could not open the file right now');
+      return;
+    }
+    const signedUrl = data.signedUrl.startsWith('http') ? data.signedUrl : `${SUPABASE_URL}${data.signedUrl}`;
+    window.open(signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const saveVerification = async () => {
+    const nextProfile = {
+      ...profile,
+      reg_number: verification.reg_number,
+      years_experience: verification.years_experience,
+      num_employees: verification.num_employees || null,
+      license_photo: verification.license_photo,
+      factory_photo: verification.factory_photo,
+    };
+    const nextVerificationState = getSupplierVerificationState(nextProfile);
+
+    if (!nextVerificationState.isVerificationComplete) {
+      setVerificationMsg(t.verificationMissing);
+      return;
+    }
+
+    setSavingVerification(true);
+    setVerificationMsg('');
+    const payload = {
+      reg_number: verification.reg_number,
+      years_experience: parseInt(verification.years_experience, 10),
+      num_employees: verification.num_employees ? parseInt(verification.num_employees, 10) : null,
+      license_photo: verification.license_photo,
+      factory_photo: verification.factory_photo,
+    };
+    const { error } = await sb.from('profiles').update(payload).eq('id', user.id);
+    setSavingVerification(false);
+    if (error) {
+      setVerificationMsg(isAr ? 'تعذر حفظ بيانات التحقق. حاول مرة أخرى.' : lang === 'zh' ? '认证资料保存失败，请重试。' : 'Failed to save verification details. Please try again.');
+      return;
+    }
+
+    const mergedProfile = { ...profile, ...payload };
+    setProfile?.(mergedProfile);
+    setVerificationSaved(true);
+    setVerificationMsg(t.verificationSubmitted);
+
+    if (!getSupplierVerificationState(profile || {}).isVerificationComplete) {
+      try {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'supplier_signup_bundle',
+            data: {
+              name: mergedProfile.company_name || '',
+              companyName: mergedProfile.company_name || '',
+              email: user.email,
+              whatsapp: mergedProfile.whatsapp || '',
+              wechat: mergedProfile.wechat || '',
+              tradeLink: mergedProfile.trade_link || '',
+              country: mergedProfile.country || '',
+              city: mergedProfile.city || '',
+              speciality: mergedProfile.speciality || '',
+              regNum: mergedProfile.reg_number || '',
+              yearsExp: mergedProfile.years_experience || '',
+              employees: mergedProfile.num_employees || '',
+              lang,
+            },
+          }),
+        });
+      } catch (emailError) {
+        console.error('supplier verification email error:', emailError);
+      }
+    }
+  };
+
+  const savePayout = async () => {
+    if (!payout.pay_method) {
+      alert(t.fillRequired || (isAr ? 'يرجى اختيار طريقة الاستلام' : 'Please choose a payout method'));
+      return;
+    }
+    if (payout.pay_method === 'alipay' && !payout.alipay_account) {
+      alert(t.fillRequired || (isAr ? 'أدخل حساب Alipay' : 'Enter Alipay account'));
+      return;
+    }
+    if (payout.pay_method === 'swift' && (!payout.swift_code || !payout.bank_name)) {
+      alert(t.fillRequired || (isAr ? 'أدخل بيانات SWIFT والبنك' : 'Enter SWIFT and bank details'));
+      return;
+    }
+
+    setSavingPayout(true);
+    const payload = {
+      pay_method: payout.pay_method,
+      alipay_account: payout.pay_method === 'alipay' ? payout.alipay_account : null,
+      swift_code: payout.pay_method === 'swift' ? payout.swift_code : null,
+      bank_name: payout.pay_method === 'swift' ? payout.bank_name : null,
+    };
+    const { error } = await sb.from('profiles').update(payload).eq('id', user.id);
+    setSavingPayout(false);
+    if (error) {
+      alert(isAr ? 'تعذر حفظ بيانات الدفعات' : lang === 'zh' ? '收款资料保存失败' : 'Failed to save payout details');
+      return;
+    }
+
+    const mergedProfile = { ...profile, ...payload };
+    setProfile?.(mergedProfile);
+    setPayoutSaved(true);
+    setTimeout(() => setPayoutSaved(false), 3000);
   };
 
   const saveSettings = async () => {
@@ -1127,6 +1328,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const tabs = [
     { id: 'overview',     label: t.overview },
+    { id: 'verification', label: t.verificationTab, badge: needsVerification ? '!' : null },
+    { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
     { id: 'requests',     label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests' },
     { id: 'my-products',  label: t.myProducts },
     { id: 'offers',       label: t.offers },
@@ -1182,19 +1385,30 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
-              {/* ── Onboarding ── */}
-              {isNewSupplier && (
+              {/* ── Onboarding / verification ── */}
+              {needsVerification && (
                 <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-lg)' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
-                    {isAr ? '👋 مرحباً بك في مَعبر — أكمل ملفك لتبدأ' : 'Welcome to Maabar — Complete your profile to start'}
+                    {t.verificationCtaTitle}
                   </p>
                   <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 16, ...arFont, lineHeight: 1.7 }}>
-                    {isAr ? 'أضف تخصصك واسم شركتك حتى يجدك التجار السعوديون، ثم أضف أول منتج لتبدأ استقبال الطلبات' : 'Add your specialty and company name so buyers can find you, then add your first product'}
+                    {t.verificationCtaBody}
                   </p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button onClick={() => setActiveTab('settings')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'أكمل ملفك ←' : 'Complete Profile →'}</button>
-                    <button onClick={() => setActiveTab('add-product')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'أضف منتج' : 'Add Product'}</button>
+                    <button onClick={() => setActiveTab('verification')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{t.verificationCtaAction}</button>
+                    <button onClick={() => setActiveTab('settings')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'تعديل الملف' : lang === 'zh' ? '编辑资料' : 'Edit profile'}</button>
                   </div>
+                </div>
+              )}
+              {needsPayoutSetup && (
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(80,180,120,0.06)', border: '1px solid rgba(80,180,120,0.18)', borderRadius: 'var(--radius-lg)' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
+                    {t.payoutCtaTitle}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 16, ...arFont, lineHeight: 1.7 }}>
+                    {t.payoutCtaBody}
+                  </p>
+                  <button onClick={() => setActiveTab('payout')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{t.payoutCtaAction}</button>
                 </div>
               )}
               {pendingCount > 0 && (
@@ -1727,6 +1941,141 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : productSaveMsg === t.productSavedWithFallback ? '#a08850' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {productSaveMsg}
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* ── VERIFICATION ── */}
+          {activeTab === 'verification' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 14, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.verificationTitle}</h2>
+              <p style={{ maxWidth: 720, fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1.9, marginBottom: 24, ...arFont }}>{t.verificationIntro}</p>
+
+              <div style={{ marginBottom: 24, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-muted)', background: 'var(--bg-subtle)', maxWidth: 720 }}>
+                <p style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8 }}>{needsVerification ? t.verificationStatusIncomplete : t.verificationStatusComplete}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, ...arFont }}>{t.secureStorageNote}</p>
+              </div>
+
+              <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)', maxWidth: 720 }}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{t.regNumber}</label>
+                    <input className="form-input" value={verification.reg_number} onChange={e => setVerification(prev => ({ ...prev, reg_number: e.target.value }))} dir="ltr" />
+                  </div>
+                  <div className="form-group">
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{t.yearsExp}</label>
+                    <input className="form-input" type="number" min="0" value={verification.years_experience} onChange={e => setVerification(prev => ({ ...prev, years_experience: e.target.value }))} dir="ltr" />
+                  </div>
+                  <div className="form-group">
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{t.employees}</label>
+                    <input className="form-input" type="number" min="0" value={verification.num_employees} onChange={e => setVerification(prev => ({ ...prev, num_employees: e.target.value }))} dir="ltr" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginTop: 8 }}>
+                  {[{ key: 'license_photo', type: 'license', label: t.businessLicense, accept: 'image/*,.pdf' }, { key: 'factory_photo', type: 'factory', label: t.factoryPhoto, accept: 'image/*' }].map((doc) => {
+                    const isUploading = uploadingVerificationDoc[doc.type];
+                    const hasFile = Boolean(verification[doc.key]);
+                    return (
+                      <div key={doc.key} style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 16, background: 'var(--bg-base)' }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 14, ...arFont }}>{doc.label}</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                          <label className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0 14px' }}>
+                            {isUploading ? '...' : hasFile ? t.replaceFile : (isAr ? 'رفع ملف' : lang === 'zh' ? '上传文件' : 'Upload file')}
+                            <input type="file" accept={doc.accept} style={{ display: 'none' }} onChange={async (e) => {
+                              await uploadVerificationDoc(e.target.files?.[0], doc.type);
+                              e.target.value = '';
+                            }} />
+                          </label>
+                          {hasFile && (
+                            <button onClick={() => openVerificationDoc(doc.key)} className="btn-dark-sm" style={{ minHeight: 38, padding: '0 14px', fontSize: 11 }}>
+                              {t.viewCurrentFile}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button onClick={saveVerification} disabled={savingVerification} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46, marginTop: 22 }}>
+                  {savingVerification ? t.saving : t.verificationTitle}
+                </button>
+                {verificationMsg && (
+                  <p style={{ color: verificationSaved ? '#5a9a72' : '#a07070', fontSize: 13, marginTop: 12, ...arFont }}>
+                    {verificationMsg}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── PAYOUT ── */}
+          {activeTab === 'payout' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 14, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.payoutTitle}</h2>
+              <p style={{ maxWidth: 720, fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1.9, marginBottom: 24, ...arFont }}>{t.payoutIntro}</p>
+
+              {profile?.status !== 'active' ? (
+                <div style={{ maxWidth: 720, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-muted)', background: 'var(--bg-subtle)' }}>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, ...arFont }}>{t.payoutLocked}</p>
+                </div>
+              ) : (
+                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)', maxWidth: 720 }}>
+                  <div style={{ marginBottom: 18 }}>
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{t.payMethod}</label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                      {['alipay', 'swift'].map(method => (
+                        <button key={method} type="button" onClick={() => setPayout(prev => ({ ...prev, pay_method: method }))} style={{
+                          minWidth: 180,
+                          padding: '11px 14px',
+                          background: payout.pay_method === method ? 'var(--bg-raised)' : 'transparent',
+                          border: '1px solid',
+                          borderColor: payout.pay_method === method ? 'var(--border-strong)' : 'var(--border-subtle)',
+                          color: payout.pay_method === method ? 'var(--text-primary)' : 'var(--text-disabled)',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.15s',
+                          minHeight: 42,
+                        }}>
+                          {method === 'alipay' ? t.alipay : t.swift}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {payout.pay_method === 'alipay' && (
+                    <div className="form-group">
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>{t.alipayAccount}</label>
+                      <input className="form-input" value={payout.alipay_account} onChange={e => setPayout(prev => ({ ...prev, alipay_account: e.target.value }))} dir="ltr" />
+                    </div>
+                  )}
+
+                  {payout.pay_method === 'swift' && (
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label className={`form-label${isAr ? ' ar' : ''}`}>{t.swiftCode}</label>
+                        <input className="form-input" value={payout.swift_code} onChange={e => setPayout(prev => ({ ...prev, swift_code: e.target.value }))} dir="ltr" />
+                      </div>
+                      <div className="form-group">
+                        <label className={`form-label${isAr ? ' ar' : ''}`}>{t.bankName}</label>
+                        <input className="form-input" value={payout.bank_name} onChange={e => setPayout(prev => ({ ...prev, bank_name: e.target.value }))} />
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={savePayout} disabled={savingPayout} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46, marginTop: 10 }}>
+                    {savingPayout ? t.saving : t.payoutTitle}
+                  </button>
+                  {payoutSaved && (
+                    <p style={{ color: '#5a9a72', fontSize: 13, marginTop: 12, ...arFont }}>
+                      {t.payoutSaved} ✓
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
