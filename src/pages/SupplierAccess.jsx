@@ -106,12 +106,19 @@ export default function SupplierAccess({ user, profile }) {
 
   const goToApply = () => nav(supplierPrimaryRoute);
   const goHome = () => nav('/');
-  const startJourney = () => setActiveScene(1);
   const jumpToScene = (index) => setActiveScene(index);
   const goToNextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
-  const goToPreviousScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
-  const isFirstScene = activeScene === 0;
   const isFinalScene = activeScene === totalScenes - 1;
+  const finalApplyLabel = hasExistingSupplierAccount ? ctaCopy : 'Apply now';
+  const footerPrimaryLabel = isFinalScene ? finalApplyLabel : 'Next';
+  const handleFooterPrimaryAction = () => {
+    if (isFinalScene) {
+      goToApply();
+      return;
+    }
+
+    goToNextScene();
+  };
 
   return (
     <div dir="ltr" lang="en" className={`supplier-access-page supplier-scene-${activeScene}`}>
@@ -150,8 +157,8 @@ export default function SupplierAccess({ user, profile }) {
                     Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This page only explains the journey — when you apply, you move into the shared supplier signup.
                   </p>
                   <div className="supplier-scene-actions">
-                    <button onClick={startJourney} className="supplier-primary-btn">Start Journey</button>
-                    <button onClick={goToApply} className="supplier-secondary-btn">{hasExistingSupplierAccount ? ctaCopy : 'Apply now'}</button>
+                    <button onClick={goToNextScene} className="supplier-primary-btn">Next</button>
+                    <button onClick={goToApply} className="supplier-secondary-btn">Skip</button>
                   </div>
                 </div>
                 <div className="supplier-scene-sidecard supplier-lift-card">
@@ -238,7 +245,7 @@ export default function SupplierAccess({ user, profile }) {
                   <CountUnit label="Minutes" value={timeLeft.minutes} />
                 </div>
                 <div className="supplier-scene-actions supplier-scene-actions-final">
-                  <button onClick={goToApply} className="supplier-primary-btn">{ctaCopy}</button>
+                  <button onClick={goToApply} className="supplier-primary-btn">{finalApplyLabel}</button>
                   <button onClick={() => jumpToScene(0)} className="supplier-secondary-btn">Restart journey</button>
                 </div>
               </section>
@@ -256,24 +263,20 @@ export default function SupplierAccess({ user, profile }) {
                 />
               ))}
             </div>
-            <p className="supplier-journey-footer-note">Use the dots to explore the journey.</p>
-
-            <div className="supplier-mobile-journey-controls">
+            <div className="supplier-journey-footer-controls">
               <div className="supplier-mobile-journey-summary">
                 <span className="supplier-mobile-journey-step">Step {activeScene + 1} of {totalScenes}</span>
                 <strong>{sceneTitles[activeScene]}</strong>
               </div>
               <div className="supplier-mobile-journey-buttons">
-                {!isFirstScene && (
-                  <button onClick={goToPreviousScene} className="supplier-secondary-btn supplier-mobile-nav-btn">
-                    Back
-                  </button>
-                )}
+                <button onClick={goToApply} className="supplier-secondary-btn supplier-mobile-nav-btn">
+                  Skip
+                </button>
                 <button
-                  onClick={isFinalScene ? goToApply : (isFirstScene ? startJourney : goToNextScene)}
+                  onClick={handleFooterPrimaryAction}
                   className="supplier-primary-btn supplier-mobile-nav-btn supplier-mobile-nav-btn-primary"
                 >
-                  {isFinalScene ? ctaCopy : (isFirstScene ? 'Start journey' : 'Continue')}
+                  {footerPrimaryLabel}
                 </button>
               </div>
             </div>
@@ -689,7 +692,7 @@ export default function SupplierAccess({ user, profile }) {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          padding: 16px 4px 0;
+          padding: 14px 4px 0;
         }
 
         .supplier-scene-dots {
@@ -720,16 +723,18 @@ export default function SupplierAccess({ user, profile }) {
           box-shadow: 0 0 14px rgba(255,255,255,0.18);
         }
 
-        .supplier-journey-footer-note {
-          margin: 0;
-          color: var(--text-tertiary);
-          font-size: 11px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .supplier-mobile-journey-controls {
-          display: none;
+        .supplier-journey-footer-controls {
+          width: 100%;
+          max-width: 720px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 16px;
+          border-radius: 22px;
+          border: 1px solid var(--border-subtle);
+          background: rgba(255,255,255,0.03);
+          box-shadow: 0 14px 30px rgba(0,0,0,0.14);
         }
 
         .supplier-mobile-journey-summary {
@@ -755,11 +760,13 @@ export default function SupplierAccess({ user, profile }) {
         .supplier-mobile-journey-buttons {
           display: flex;
           gap: 10px;
-          width: 100%;
+          width: auto;
+          flex-shrink: 0;
         }
 
         .supplier-mobile-nav-btn {
-          min-height: 48px;
+          min-height: 46px;
+          min-width: 112px;
         }
 
         .supplier-mobile-nav-btn-primary {
@@ -767,10 +774,6 @@ export default function SupplierAccess({ user, profile }) {
         }
 
         @media (max-width: 959px) {
-          .supplier-scene-0 .supplier-journey-footer {
-            display: none;
-          }
-
           .supplier-access-shell {
             padding-left: 16px;
             padding-right: 16px;
@@ -798,47 +801,50 @@ export default function SupplierAccess({ user, profile }) {
           }
 
           .supplier-scene-title {
-            font-size: clamp(1.85rem, 6.9vw, 2.45rem);
+            font-size: clamp(1.72rem, 6.2vw, 2.25rem);
           }
 
           .supplier-scene-title-hero {
-            font-size: clamp(2rem, 8.2vw, 2.95rem);
+            font-size: clamp(1.9rem, 7.5vw, 2.7rem);
           }
 
           .supplier-scene-description,
           .supplier-scene-description-large {
-            font-size: 15px;
-            line-height: 1.72;
+            font-size: 14px;
+            line-height: 1.62;
           }
 
           .supplier-feature-card h3,
           .supplier-step-card h3 {
-            font-size: 18px;
+            font-size: 17px;
           }
 
           .supplier-bullet-row {
-            font-size: 15px;
-            padding: 14px 0;
+            font-size: 14px;
+            padding: 12px 0;
           }
 
           .supplier-topbar-actions {
             display: none;
           }
 
-          .supplier-mobile-journey-controls {
+          .supplier-journey-footer-controls {
             position: sticky;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-            display: flex;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
             flex-direction: column;
-            gap: 14px;
+            align-items: stretch;
+            gap: 12px;
             width: 100%;
-            margin-top: 8px;
-            padding: 14px;
-            border-radius: 22px;
-            border: 1px solid var(--border-subtle);
+            margin-top: 6px;
+            padding: 12px;
+            border-radius: 20px;
             background: rgba(10,10,11,0.92);
             backdrop-filter: blur(18px);
-            box-shadow: 0 18px 34px rgba(0,0,0,0.22);
+            box-shadow: 0 16px 30px rgba(0,0,0,0.2);
+          }
+
+          .supplier-mobile-journey-buttons {
+            width: 100%;
           }
 
           .supplier-mobile-nav-btn {
@@ -877,44 +883,46 @@ export default function SupplierAccess({ user, profile }) {
 
         @media (max-width: 640px) {
           .supplier-access-topbar-inner {
-            min-height: 60px;
+            min-height: 56px;
           }
 
           .supplier-access-main {
-            padding-top: 10px;
-            padding-bottom: 16px;
+            padding-top: 8px;
+            padding-bottom: 14px;
           }
 
           .supplier-journey-progress-wrap {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
 
           .supplier-journey-progress-bar {
-            margin-bottom: 10px;
+            height: 5px;
+            margin-bottom: 8px;
           }
 
           .supplier-journey-progress-meta {
-            font-size: 10px;
+            font-size: 9px;
+            letter-spacing: 0.1em;
           }
 
           .supplier-journey-stage {
-            border-radius: 22px;
+            border-radius: 20px;
           }
 
           .supplier-scene {
-            padding: 18px 14px;
-            gap: 14px;
+            padding: 16px 13px;
+            gap: 12px;
           }
 
           .supplier-scene-0 .supplier-scene {
-            padding: 16px 14px 14px;
-            gap: 12px;
+            padding: 14px 13px 12px;
+            gap: 10px;
           }
 
           .supplier-scene-0 .supplier-scene-hero {
-            min-height: calc(100svh - 138px);
+            min-height: auto;
             align-content: start;
-            gap: 12px;
+            gap: 10px;
           }
 
           .supplier-scene-0 .supplier-scene-content {
@@ -922,66 +930,112 @@ export default function SupplierAccess({ user, profile }) {
           }
 
           .supplier-scene-eyebrow {
-            font-size: 10px;
-            margin-bottom: 8px;
+            font-size: 9px;
+            margin-bottom: 6px;
+            letter-spacing: 0.14em;
           }
 
           .supplier-scene-title {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: clamp(1.5rem, 6.9vw, 1.95rem);
+            line-height: 1.04;
           }
 
           .supplier-scene-0 .supplier-scene-title-hero {
-            font-size: clamp(1.72rem, 8vw, 2.24rem);
-            max-width: 12ch;
+            font-size: clamp(1.56rem, 7.1vw, 2.02rem);
+            max-width: 13ch;
           }
 
+          .supplier-scene-description,
+          .supplier-scene-description-large,
           .supplier-scene-0 .supplier-scene-description-large {
-            font-size: 14px;
-            line-height: 1.58;
-            max-width: 35ch;
+            font-size: 13px;
+            line-height: 1.5;
+            max-width: 34ch;
           }
 
           .supplier-card-grid,
           .supplier-steps-grid {
             grid-template-columns: 1fr;
+            gap: 10px;
           }
 
           .supplier-feature-card,
           .supplier-step-card,
           .supplier-scene-sidecard {
-            padding: 18px;
-            border-radius: 20px;
+            padding: 14px;
+            border-radius: 18px;
+          }
+
+          .supplier-feature-card h3,
+          .supplier-step-card h3 {
+            margin-bottom: 7px;
+            font-size: 15px;
+          }
+
+          .supplier-feature-card p,
+          .supplier-step-card p {
+            font-size: 12px;
+            line-height: 1.5;
+          }
+
+          .supplier-step-number {
+            font-size: 11px;
+            margin-bottom: 7px;
           }
 
           .supplier-scene-0 .supplier-scene-sidecard {
-            padding: 14px;
-            border-radius: 18px;
+            padding: 12px;
+            border-radius: 16px;
             display: grid;
-            gap: 6px;
+            gap: 5px;
           }
 
           .supplier-sidecard-title {
-            font-size: 20px;
+            font-size: 18px;
           }
 
-          .supplier-scene-0 .supplier-sidecard-label {
-            margin-bottom: 4px;
-            font-size: 10px;
-          }
-
-          .supplier-scene-0 .supplier-sidecard-title {
-            margin-bottom: 0;
-            font-size: 16px;
-            line-height: 1.2;
-          }
-
-          .supplier-scene-0 .supplier-sidecard-text {
+          .supplier-sidecard-text {
             font-size: 12px;
             line-height: 1.45;
           }
 
-          .supplier-scene-0 .supplier-mobile-journey-controls {
-            display: none;
+          .supplier-scene-0 .supplier-sidecard-label {
+            margin-bottom: 2px;
+            font-size: 9px;
+          }
+
+          .supplier-scene-0 .supplier-sidecard-title {
+            margin-bottom: 0;
+            font-size: 15px;
+            line-height: 1.2;
+          }
+
+          .supplier-scene-0 .supplier-sidecard-text {
+            font-size: 11.5px;
+            line-height: 1.42;
+          }
+
+          .supplier-bullets-wrap {
+            gap: 4px;
+          }
+
+          .supplier-bullet-row {
+            gap: 10px;
+            padding: 10px 0;
+            font-size: 13px;
+            line-height: 1.42;
+          }
+
+          .supplier-bullet-dot {
+            width: 8px;
+            height: 8px;
+            margin-top: 6px;
+          }
+
+          .supplier-scene-actions {
+            margin-top: 14px;
+            gap: 8px;
           }
 
           .supplier-countdown-row {
@@ -989,19 +1043,63 @@ export default function SupplierAccess({ user, profile }) {
           }
 
           .supplier-count-unit {
-            padding: 14px 10px;
-            border-radius: 16px;
+            padding: 12px 8px;
+            border-radius: 15px;
           }
 
           .supplier-count-value {
-            font-size: 24px;
+            font-size: 22px;
+          }
+
+          .supplier-count-label {
+            margin-top: 5px;
+            font-size: 9px;
+          }
+
+          .supplier-journey-footer {
+            gap: 8px;
+            padding-top: 10px;
+          }
+
+          .supplier-scene-dot {
+            width: 8px;
+            height: 8px;
+          }
+
+          .supplier-scene-dot.active {
+            width: 28px;
+          }
+
+          .supplier-journey-footer-controls {
+            gap: 10px;
+            padding: 10px;
+            border-radius: 18px;
+          }
+
+          .supplier-mobile-journey-summary strong {
+            font-size: 13px;
+            line-height: 1.3;
+          }
+
+          .supplier-mobile-journey-step {
+            font-size: 9px;
+            letter-spacing: 0.1em;
+          }
+
+          .supplier-mobile-journey-buttons {
+            gap: 8px;
           }
 
           .supplier-primary-btn,
           .supplier-secondary-btn {
-            min-height: 42px;
-            padding: 11px 14px;
-            font-size: 13px;
+            min-height: 40px;
+            padding: 10px 13px;
+            font-size: 12px;
+            border-radius: 12px;
+          }
+
+          .supplier-mobile-nav-btn {
+            min-width: 0;
           }
         }
       `}</style>
