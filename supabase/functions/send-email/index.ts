@@ -148,6 +148,8 @@ const templates = {
         eyebrow: 'Supplier Approved',
         title: `أهلاً ${d.name || ''}،`,
         body: 'تمت الموافقة على طلب انضمامك كمورد في منصة مَعبر. يمكنك الآن تسجيل الدخول والبدء في استقبال طلبات التجار السعوديين.',
+        supplierIdLabel: 'معرّف مورد مَعبر',
+        supplierIdBody: 'احتفظ بهذا المعرّف للرجوع إليه عند التواصل مع الفريق أو متابعة الحساب.',
         cta: 'ابدأ الآن ←',
       },
       en: {
@@ -155,6 +157,8 @@ const templates = {
         eyebrow: 'Supplier Approved',
         title: `Hello ${d.name || ''},`,
         body: 'Your supplier application has been approved on Maabar. You can now sign in and start receiving Saudi buyer opportunities.',
+        supplierIdLabel: 'Maabar Supplier ID',
+        supplierIdBody: 'Keep this ID for support, approval follow-up, and account reference.',
         cta: 'Start now →',
       },
       zh: {
@@ -162,6 +166,8 @@ const templates = {
         eyebrow: 'Supplier Approved',
         title: `${d.name || ''}，您好`,
         body: '您在 Maabar 的供应商申请已获批准。现在您可以登录并开始接收来自沙特买家的机会。',
+        supplierIdLabel: 'Maabar 供应商编号',
+        supplierIdBody: '建议保留此编号，方便联系团队、跟进审核和识别账户。',
         cta: '立即开始 →',
       },
     }[lang] || {
@@ -169,8 +175,18 @@ const templates = {
       eyebrow: 'Supplier Approved',
       title: `أهلاً ${d.name || ''}،`,
       body: 'تمت الموافقة على طلب انضمامك كمورد في منصة مَعبر. يمكنك الآن تسجيل الدخول والبدء في استقبال طلبات التجار السعوديين.',
+      supplierIdLabel: 'معرّف مورد مَعبر',
+      supplierIdBody: 'احتفظ بهذا المعرّف للرجوع إليه عند التواصل مع الفريق أو متابعة الحساب.',
       cta: 'ابدأ الآن ←',
     };
+
+    const supplierIdBlock = d.maabarSupplierId
+      ? `<div style="margin-top:18px;padding:16px 18px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);">
+<p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);">${t.supplierIdLabel}</p>
+<p style="margin:0;font-size:20px;line-height:1.5;color:#f5f5f2;font-weight:800;letter-spacing:.06em;">${d.maabarSupplierId}</p>
+<p style="margin:8px 0 0;font-size:13px;line-height:1.9;color:#a8a8ad;">${t.supplierIdBody}</p>
+</div>`
+      : '';
 
     return ({
       subject: t.subject,
@@ -178,6 +194,7 @@ const templates = {
 <div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
 <p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
+${supplierIdBlock}
 <div style="text-align:center;margin-top:28px"><a href="https://maabar.io/login/supplier" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
 `, { lang }),
     });
@@ -582,7 +599,7 @@ function normalizeLang(value) {
 async function resolveEmailContext(to, data = {}) {
   const explicitLang = normalizeLang(data?.lang || data?.language || data?.locale || data?.preferredLanguage);
   if (!adminSb) {
-    return { recipient: to || '', lang: explicitLang || 'ar' };
+    return { recipient: to || '', lang: explicitLang || 'ar', profileRow: null };
   }
 
   let profileRow = null;
@@ -606,7 +623,7 @@ async function resolveEmailContext(to, data = {}) {
     profileRow?.preferredLanguage,
   ) || 'ar';
 
-  return { recipient, lang: inferredLang };
+  return { recipient, lang: inferredLang, profileRow };
 }
 
 serve(async (req) => {
@@ -644,7 +661,11 @@ serve(async (req) => {
     const factory = templates[type];
     if (!factory) return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const emailContext = await resolveEmailContext(to, data || {});
-    const payload = { ...(data || {}), lang: normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar' };
+    const payload = {
+      ...(data || {}),
+      lang: normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar',
+      maabarSupplierId: data?.maabarSupplierId || emailContext.profileRow?.maabar_supplier_id || '',
+    };
     const tpl = factory(payload);
     const recipient = tpl.to || emailContext.recipient;
     if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });

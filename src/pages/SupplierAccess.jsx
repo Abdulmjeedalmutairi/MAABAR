@@ -223,7 +223,7 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
   const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
 
   const ctaCopy = useMemo(() => {
-    if (supplierState?.isApprovedStage) return copy.openDashboard;
+    if (supplierState?.isApprovedStage || supplierState?.isInactiveStage) return copy.openDashboard;
     if (supplierState?.isUnderReviewStage) return copy.viewStatus;
     if (supplierState?.isApplicationStage) return copy.continueApplication;
     return timeLeft.expired ? copy.applyStandard : copy.applyEarly;

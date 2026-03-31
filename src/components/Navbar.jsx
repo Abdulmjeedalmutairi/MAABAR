@@ -22,7 +22,9 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     ? (isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard')
     : supplierState?.isUnderReviewStage
       ? (isAr ? 'حالة الطلب' : lang === 'zh' ? '审核状态' : 'Application Status')
-      : (isAr ? 'طلب الانضمام' : lang === 'zh' ? '申请资料' : 'Application');
+      : supplierState?.isInactiveStage
+        ? (isAr ? 'الحساب' : lang === 'zh' ? '账户' : 'Account')
+        : (isAr ? 'طلب الانضمام' : lang === 'zh' ? '申请资料' : 'Application');
   const currentRoute = `${location.pathname}${location.search}`;
   const isNavLinkActive = (path) => (path.includes('?') ? currentRoute === path : location.pathname === path);
 

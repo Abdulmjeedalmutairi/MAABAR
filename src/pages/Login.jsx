@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
+import { sendMaabarEmail } from '../lib/maabarEmail';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 import { buildAuthCallbackUrl } from '../lib/authRedirects';
-
-const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3V0emFsbXN6ZnFmY29meXdmZXR2LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJ1dHphbG1zenFmcWNvZnl3ZmV0diIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzczNjYxODQwLCJleHAiOjIwODkyMzc4NDB9.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
 const L = {
   ar: {
@@ -514,27 +512,20 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     if (isSupplier) {
       try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        await sendMaabarEmail({
+          type: 'supplier_signup_bundle',
+          data: {
+            name: trimValue(supCompany),
+            companyName: trimValue(supCompany),
+            email: trimValue(email),
+            whatsapp: trimValue(whatsapp),
+            wechat: trimValue(wechat),
+            tradeLink: trimValue(tradeLink),
+            country: trimValue(country),
+            city: trimValue(supCity),
+            speciality: trimValue(speciality),
+            lang,
           },
-          body: JSON.stringify({
-            type: 'supplier_signup_bundle',
-            data: {
-              name: trimValue(supCompany),
-              companyName: trimValue(supCompany),
-              email: trimValue(email),
-              whatsapp: trimValue(whatsapp),
-              wechat: trimValue(wechat),
-              tradeLink: trimValue(tradeLink),
-              country: trimValue(country),
-              city: trimValue(supCity),
-              speciality: trimValue(speciality),
-              lang,
-            },
-          }),
         });
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);

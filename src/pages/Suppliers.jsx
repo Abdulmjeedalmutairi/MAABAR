@@ -3,7 +3,11 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
-import { buildSupplierTrustSignals, isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
+import {
+  buildSupplierTrustSignals,
+  getSupplierPublicVisibilityStatuses,
+  isSupplierPubliclyVisible,
+} from '../lib/supplierOnboarding';
 
 const CATEGORIES = {
   ar: [
@@ -67,7 +71,7 @@ export default function Suppliers({ lang, user }) {
       .eq('role', 'supplier')
       .order('rating', { ascending: false });
 
-    query = query.in('status', ['active', 'approved']);
+    query = query.in('status', getSupplierPublicVisibilityStatuses());
 
     if (activeCat !== 'all') query = query.eq('speciality', activeCat);
 

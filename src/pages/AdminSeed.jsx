@@ -2,11 +2,15 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb, SUPABASE_URL as SUPABASE_PROJECT_URL } from '../supabase';
-import { getSupplierOnboardingState } from '../lib/supplierOnboarding';
+import { sendMaabarEmail } from '../lib/maabarEmail';
+import {
+  getSupplierOnboardingState,
+  getSupplierPublicVisibilityStatuses,
+  getSupplierReviewQueueStatuses,
+} from '../lib/supplierOnboarding';
 
 const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
-const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
 export default function AdminSeed({ user, lang }) {
@@ -45,7 +49,7 @@ export default function AdminSeed({ user, lang }) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const [realUsers, activeSuppliers, completedDeals, completedPayments, newToday] = await Promise.all([
       sb.from('profiles').select('id', { count: 'exact' }).eq('is_seed', false),
-      sb.from('profiles').select('id', { count: 'exact' }).eq('role', 'supplier').eq('status', 'active'),
+      sb.from('profiles').select('id', { count: 'exact' }).eq('role', 'supplier').in('status', getSupplierPublicVisibilityStatuses()),
       sb.from('offers').select('id', { count: 'exact' }).eq('status', 'completed'),
       sb.from('payments').select('amount').eq('status', 'completed'),
       sb.from('profiles').select('id', { count: 'exact' }).eq('is_seed', false).gte('created_at', today.toISOString()),
@@ -83,7 +87,7 @@ export default function AdminSeed({ user, lang }) {
     const { data } = await sb.from('profiles')
       .select('id,role,status,full_name,company_name,city,country,speciality,whatsapp,wechat,trade_link,reg_number,license_photo,factory_photo,pay_method,alipay_account,swift_code,bank_name,years_experience,num_employees,created_at,email,bio_ar,bio_en,bio_zh')
       .eq('role', 'supplier')
-      .eq('status', 'pending')
+      .in('status', getSupplierReviewQueueStatuses())
       .order('created_at', { ascending: false });
     if (data) setPendingSuppliers(data.filter((supplier) => getSupplierOnboardingState(supplier).isUnderReviewStage));
   };
@@ -179,7 +183,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       const { data: updatedSupplier, error: updateError } = await sb.from('profiles')
         .update({ status: 'active' })
         .eq('id', supplier.id)
-        .eq('status', 'pending')
+        .in('status', getSupplierReviewQueueStatuses())
         .select('id,status,company_name')
         .maybeSingle();
 
@@ -204,14 +208,11 @@ WeChat: ${supplier.wechat || 'غير موجود'}
 
       const supplierEmail = supplier.email || '';
       if (supplierEmail) {
-        const emailRes = await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-          body: JSON.stringify({ type: 'supplier_approved', to: supplierEmail, data: { name: supplier.company_name || 'Supplier', lang } }),
+        await sendMaabarEmail({
+          type: 'supplier_approved',
+          to: supplierEmail,
+          data: { name: supplier.company_name || 'Supplier', lang },
         });
-        if (!emailRes.ok) {
-          throw new Error(await emailRes.text());
-        }
       } else {
         console.warn('approveSupplier: no email found for supplier', supplier.id);
       }
@@ -233,7 +234,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
       const { data: updatedSupplier, error: updateError } = await sb.from('profiles')
         .update({ status: 'rejected' })
         .eq('id', supplier.id)
-        .eq('status', 'pending')
+        .in('status', getSupplierReviewQueueStatuses())
         .select('id,status,company_name')
         .maybeSingle();
 
@@ -258,14 +259,11 @@ WeChat: ${supplier.wechat || 'غير موجود'}
 
       const supplierEmail = supplier.email || '';
       if (supplierEmail) {
-        const emailRes = await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-          body: JSON.stringify({ type: 'supplier_rejected', to: supplierEmail, data: { name: supplier.company_name || 'Supplier', lang } }),
+        await sendMaabarEmail({
+          type: 'supplier_rejected',
+          to: supplierEmail,
+          data: { name: supplier.company_name || 'Supplier', lang },
         });
-        if (!emailRes.ok) {
-          throw new Error(await emailRes.text());
-        }
       }
 
       await loadPendingSuppliers();

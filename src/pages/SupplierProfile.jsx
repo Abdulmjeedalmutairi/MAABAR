@@ -4,7 +4,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import { buildDisplayPrice } from '../lib/displayCurrency';
 import { buildProductSpecs, getPrimaryProductImage, getProductGalleryImages } from '../lib/productMedia';
-import { buildSupplierTrustSignals, isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
+import {
+  buildSupplierTrustSignals,
+  getSupplierMaabarId,
+  getSupplierPublicVisibilityStatuses,
+  isSupplierPubliclyVisible,
+} from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -26,30 +31,41 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const isAr = lang === 'ar';
   const supplierTrustSignals = buildSupplierTrustSignals(supplier || {});
   const isReviewedSupplier = isSupplierPubliclyVisible(supplier?.status);
+  const supplierMaabarId = getSupplierMaabarId(supplier || {});
 
-  useEffect(() => { loadSupplier(); }, [id]);
+  useEffect(() => { loadSupplier(); }, [id, user?.id]);
 
   const loadSupplier = async () => {
     setLoading(true);
     const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
-      sb.from('profiles').select('id,company_name,city,country,rating,reviews_count,avatar_url,bio_ar,bio_en,bio_zh,speciality,status,factory_images,trade_link,wechat,whatsapp,years_experience,trust_score,created_at,min_order_value,deals_completed,completion_rate,export_years').eq('id', id).single(),
+      sb.from('profiles').select('*').eq('id', id).single(),
       sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name)').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
-    if (s) {
+
+    const canViewSupplier = s && (isSupplierPubliclyVisible(s.status) || user?.id === id);
+
+    if (canViewSupplier) {
       setSupplier(s);
       if (s.speciality) {
         const { data: sim } = await sb.from('profiles')
-          .select('id,company_name,rating,city,avatar_url')
+          .select('id,company_name,rating,city,avatar_url,status')
           .eq('role', 'supplier')
+          .in('status', getSupplierPublicVisibilityStatuses())
           .eq('speciality', s.speciality)
           .neq('id', id)
           .limit(3);
         if (sim) setSimilarSuppliers(sim);
       }
+      if (p) setProducts(p);
+      if (r) setReviews(r);
+    } else {
+      setSupplier(null);
+      setProducts([]);
+      setReviews([]);
+      setSimilarSuppliers([]);
     }
-    if (p) setProducts(p);
-    if (r) setReviews(r);
+
     setLoading(false);
   };
 
@@ -186,6 +202,12 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             {supplier.city ? ` · ${supplier.city}` : ''}
             {supplier.country ? ` · ${supplier.country}` : ''}
           </p>
+          {supplierMaabarId && isReviewedSupplier && (
+            <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.4 }}>
+              <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'معرّف مورد مَعبر' : lang === 'zh' ? 'Maabar 供应商编号' : 'Maabar Supplier ID'}</span>
+              <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
               {products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}

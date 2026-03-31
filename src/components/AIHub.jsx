@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import IdeaToProduct from './IdeaToProduct';
 import { hasIdeaFlowDraft, shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
+import { getSupplierPublicVisibilityStatuses } from '../lib/supplierOnboarding';
 
 /* ─────────────────────────────────────────
    Constants
@@ -729,7 +730,7 @@ opportunity_score: من 0 إلى 100.`,
         .from('profiles')
         .select('id, company_name, city, rating, speciality, avatar_url')
         .eq('role', 'supplier')
-        .eq('status', 'approved')
+        .in('status', getSupplierPublicVisibilityStatuses())
         .eq('speciality', cat)
         .limit(3);
       if (sups) setMaabarSuppliers(sups);

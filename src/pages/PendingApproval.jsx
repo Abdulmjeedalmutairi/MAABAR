@@ -6,6 +6,7 @@ import {
   buildSupplierTrustSignals,
   getSupplierApplicationState,
   getSupplierOnboardingState,
+  getSupplierStageLabel,
   getSupplierVerificationState,
 } from '../lib/supplierOnboarding';
 
@@ -20,6 +21,11 @@ const T = {
     statusReviewBody: 'Your basic company profile has been received and review is in progress.',
     statusSubmitted: 'Application already submitted',
     statusSubmittedBody: 'You do not need to register again. If we need more proof, we will contact you.',
+    statusEmail: 'Email confirmation',
+    statusEmailBody: 'Review is active because this email address was already confirmed.',
+    statusEmailValue: 'Confirmed',
+    statusProof: 'Supporting proof on file',
+    statusProofBody: 'Optional verification documents already received with this application.',
     statusSla: 'Expected first follow-up',
     statusSlaBody: 'Usually within 3–5 business days after email confirmation.',
     stepsTitle: 'What happens next',
@@ -77,6 +83,11 @@ const T = {
     statusReviewBody: '您的基础公司资料已收到，团队正在审核。',
     statusSubmitted: '申请已提交',
     statusSubmittedBody: '您无需重复注册。如果需要补充证明材料，团队会直接联系您。',
+    statusEmail: '邮箱确认',
+    statusEmailBody: '由于该邮箱已经确认，审核流程现已正式开始。',
+    statusEmailValue: '已确认',
+    statusProof: '已提交证明',
+    statusProofBody: '当前申请中已存档的补充认证材料数量。',
     statusSla: '首次跟进预期',
     statusSlaBody: '通常在邮箱确认后的 3–5 个工作日内。',
     stepsTitle: '接下来会发生什么',
@@ -134,6 +145,11 @@ const T = {
     statusReviewBody: 'تم استلام بيانات الشركة الأساسية، والمراجعة جارية الآن.',
     statusSubmitted: 'الطلب مُرسل بالفعل',
     statusSubmittedBody: 'لا تحتاج لإعادة التسجيل. إذا احتجنا مستندات إضافية سنتواصل معك مباشرة.',
+    statusEmail: 'تأكيد البريد',
+    statusEmailBody: 'المراجعة مفعلة الآن لأن البريد المستخدم في الطلب تم تأكيده.',
+    statusEmailValue: 'مؤكد',
+    statusProof: 'الإثباتات المرفوعة',
+    statusProofBody: 'عدد مستندات التحقق الإضافية الموجودة حالياً في الطلب.',
     statusSla: 'أول متابعة متوقعة',
     statusSlaBody: 'عادة خلال 3–5 أيام عمل بعد تأكيد البريد.',
     stepsTitle: 'وش اللي بيصير بعد كذا؟',
@@ -309,11 +325,12 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 20 }} className="pending-status-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginBottom: 20 }} className="pending-status-grid">
           {[
             { title: t.statusNow, body: t.statusReviewBody, value: t.statusReview },
+            { title: t.statusEmail, body: t.statusEmailBody, value: t.statusEmailValue },
             { title: t.statusSubmitted, body: t.statusSubmittedBody, value: `${applicationState.applicationCompletedRequiredCount}/${applicationState.applicationRequiredCount}` },
-            { title: t.statusSla, body: t.statusSlaBody, value: '3–5d' },
+            { title: t.statusProof, body: t.statusProofBody, value: `${verificationState.completedRequiredCount}/${verificationState.requiredCount}` },
           ].map((item) => (
             <div key={item.title} style={{ borderRadius: 24, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', padding: 20 }}>
               <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', margin: '0 0 8px' }}>{item.title}</p>
@@ -469,7 +486,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
             </div>
 
             <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {t.statusNow}: <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{supplierState.stage.replace('_', ' ')}</strong>{' '}
+              {t.statusNow}: <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{getSupplierStageLabel(supplierState.stage, lang)}</strong>{' '}
               · {t.email}
             </p>
 

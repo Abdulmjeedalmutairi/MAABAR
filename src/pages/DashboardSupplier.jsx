@@ -19,7 +19,12 @@ import {
   getOfferShippingMethod,
   hasOfferShippingCost,
 } from '../lib/offerPricing';
-import { getSupplierOnboardingState, normalizeSupplierDocStoragePath } from '../lib/supplierOnboarding';
+import {
+  getSupplierMaabarId,
+  getSupplierOnboardingState,
+  getSupplierStageLabel,
+  normalizeSupplierDocStoragePath,
+} from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -63,7 +68,7 @@ const OFFER_STATUS = {
 
 const T = {
   ar: {
-    tag: 'مَعبر · لوحة المورد', welcome: 'أهلاً،', desc: 'تابع عروضك ومنتجاتك ورسائلك من مكان واحد',
+    tag: 'مَعبر · لوحة المورد', welcome: 'أهلاً،', desc: 'تابع عروضك ومنتجاتك ورسائلك من مكان واحد', supplierStageLabel: 'حالة الحساب', supplierIdLabel: 'معرّف مورد مَعبر',
     overview: 'نظرة عامة', myProducts: 'منتجاتي', offers: 'عروضي', addProduct: 'إضافة منتج',
     messages: 'الرسائل', settings: 'إعداداتي', offersCount: 'عروض مقدمة',
     productsCount: 'منتجات نشطة', messagesCount: 'رسائل جديدة',
@@ -103,7 +108,7 @@ const T = {
     payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف طريقة استلام الدفعات بعد قبول الحساب فقط.', payoutLocked: 'إعداد استلام الدفعات يفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل إعداد استلام الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بيانات استلام الأرباح غير مكتملة بعد.', payoutCtaAction: 'إعداد الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)', alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *', onboardingTitle: 'طلبك ما زال في مرحلة الانضمام', onboardingBody: 'هذه ليست لوحة تشغيل كاملة بعد. أكمل ملف الشركة والتحقق التجاري حتى ينتقل طلبك إلى المراجعة قبل الإطلاق.', onboardingProgress: 'تقدّم الطلب', onboardingLockedTitle: 'المزايا المقفلة حتى القبول', onboardingLockedBody: 'المنتجات والعروض والرسائل وتصفح الطلبات تفتح بعد مراجعة الطلب والموافقة عليه.', onboardingStepApply: '1) ابدأ الطلب', onboardingStepReview: '2) ادخل المراجعة قبل الإطلاق', onboardingStepVisibility: '3) احصل على ظهور مبكر بعد القبول', onboardingGoSettings: 'إكمال الملف', onboardingStatusDraft: 'طلب غير مكتمل', onboardingVerificationReady: 'بعد إرسال التحقق سينتقل طلبك مباشرة إلى المراجعة.', verificationSubmitAction: 'إرسال الطلب للمراجعة',
   },
   en: {
-    tag: 'Maabar · Supplier Dashboard', welcome: 'Welcome,', desc: 'Manage your offers, products and messages in one place',
+    tag: 'Maabar · Supplier Dashboard', welcome: 'Welcome,', desc: 'Manage your offers, products and messages in one place', supplierStageLabel: 'Account status', supplierIdLabel: 'Maabar Supplier ID',
     overview: 'Overview', myProducts: 'My Products', offers: 'My Offers', addProduct: 'Add Product',
     messages: 'Messages', settings: 'Settings', offersCount: 'Offers Submitted',
     productsCount: 'Active Products', messagesCount: 'New Messages',
@@ -143,7 +148,7 @@ const T = {
     payoutTab: 'Payout', payoutTitle: 'Payout setup', payoutIntro: 'Add your payout details only after your account is approved.', payoutLocked: 'Payout setup unlocks after your account is approved.', payoutCtaTitle: 'Complete your payout setup', payoutCtaBody: 'Your account is approved, but payout details are still missing.', payoutCtaAction: 'Set up payout →', payoutSaved: 'Payout details saved', payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)', alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *', onboardingTitle: 'Your account is still in the supplier application stage', onboardingBody: 'This is not the full operating dashboard yet. Complete your company profile and business verification so your application can move into pre-launch review.', onboardingProgress: 'Application progress', onboardingLockedTitle: 'Locked until approval', onboardingLockedBody: 'Products, offers, messages, and request access unlock only after your supplier application is reviewed and approved.', onboardingStepApply: '1) Start your application', onboardingStepReview: '2) Move into review before launch', onboardingStepVisibility: '3) Gain early visibility after approval', onboardingGoSettings: 'Complete profile', onboardingStatusDraft: 'Application incomplete', onboardingVerificationReady: 'Once you submit verification, your application moves directly into review.', verificationSubmitAction: 'Submit application for review',
   },
   zh: {
-    tag: 'Maabar · 供应商控制台', welcome: '欢迎，', desc: '在一个地方管理您的报价、产品和消息',
+    tag: 'Maabar · 供应商控制台', welcome: '欢迎，', desc: '在一个地方管理您的报价、产品和消息', supplierStageLabel: '账户状态', supplierIdLabel: 'Maabar 供应商编号',
     overview: '概览', myProducts: '我的产品', offers: '我的报价', addProduct: '添加产品',
     messages: '消息', settings: '账户设置', offersCount: '已提交报价',
     productsCount: '活跃产品', messagesCount: '新消息',
@@ -1388,7 +1393,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     return isAr ? Math.floor(diff / 86400) + ' ي' : Math.floor(diff / 86400) + 'd';
   };
 
-  const name         = profile?.company_name || profile?.full_name || user?.email?.split('@')[0];
+  const name = profile?.company_name || profile?.full_name || user?.email?.split('@')[0];
+  const supplierMaabarId = getSupplierMaabarId(profile || {});
   const pendingCount = pendingTracking.length + rejectedOffers.length;
 
   const tabs = [
@@ -1419,7 +1425,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         <h1 style={{ fontSize: isAr ? 34 : 40, fontWeight: 300, ...arFont, color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1.2, marginBottom: 10 }}>
           {t.welcome} {name}
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginBottom: 36, lineHeight: 1.7, ...arFont, maxWidth: 420 }}>{t.desc}</p>
+        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginBottom: 16, lineHeight: 1.7, ...arFont, maxWidth: 420 }}>{t.desc}</p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', fontSize: 11 }}>
+            <span style={{ color: 'var(--text-disabled)' }}>{t.supplierStageLabel}</span>
+            <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{getSupplierStageLabel(supplierState.stage, lang)}</strong>
+          </span>
+          {supplierMaabarId && supplierState.isApprovedStage && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.08)', color: 'rgba(139,120,255,0.9)', fontSize: 11 }}>
+              <span style={{ color: 'rgba(139,120,255,0.7)' }}>{t.supplierIdLabel}</span>
+              <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
+            </span>
+          )}
+        </div>
 
         <div style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
           {supplierTabs.map(tab => (

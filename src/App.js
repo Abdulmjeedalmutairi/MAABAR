@@ -11,7 +11,12 @@ import {
   normalizeDisplayCurrency,
   persistDisplayCurrencyPreference,
 } from './lib/displayCurrency';
-import { getSupplierOnboardingState, getSupplierPrimaryRoute } from './lib/supplierOnboarding';
+import { sendMaabarEmail } from './lib/maabarEmail';
+import {
+  getSupplierOnboardingState,
+  getSupplierPrimaryRoute,
+  shouldNotifyAdminOfConfirmedSupplier,
+} from './lib/supplierOnboarding';
 
 // Pages
 import Home from './pages/Home';
@@ -99,8 +104,7 @@ function App() {
   };
 
   const maybeNotifyAdminOfConfirmedSupplier = async (profileRow, sessionUser) => {
-    const isConfirmedSupplier = profileRow?.role === 'supplier' && Boolean(sessionUser?.email_confirmed_at);
-    if (!isConfirmedSupplier) return;
+    if (!shouldNotifyAdminOfConfirmedSupplier(profileRow, sessionUser)) return;
     if (supplierAdminEmailSentRef.current.has(profileRow.id)) return;
 
     supplierAdminEmailSentRef.current.add(profileRow.id);
@@ -114,25 +118,18 @@ function App() {
 
       if (existing?.length) return;
 
-      const _ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
-      const _URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-
-      await fetch(_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_ANON}` },
-        body: JSON.stringify({
-          type: 'admin_new_supplier',
-          data: {
-            companyName: profileRow.company_name || profileRow.full_name || '',
-            email: profileRow.email || sessionUser?.email || '',
-            country: profileRow.country || '',
-            city: profileRow.city || '',
-            speciality: profileRow.speciality || '',
-            whatsapp: profileRow.whatsapp || '',
-            wechat: profileRow.wechat || '',
-            tradeLink: profileRow.trade_link || '',
-          },
-        }),
+      await sendMaabarEmail({
+        type: 'admin_new_supplier',
+        data: {
+          companyName: profileRow.company_name || profileRow.full_name || '',
+          email: profileRow.email || sessionUser?.email || '',
+          country: profileRow.country || '',
+          city: profileRow.city || '',
+          speciality: profileRow.speciality || '',
+          whatsapp: profileRow.whatsapp || '',
+          wechat: profileRow.wechat || '',
+          tradeLink: profileRow.trade_link || '',
+        },
       });
 
       await sb.from('notifications').insert({
@@ -168,12 +165,10 @@ function App() {
           const { data: existing } = await sb.from('notifications')
             .select('id').eq('user_id', id).eq('type', 'trader_welcome_sent').limit(1);
           if (!existing || existing.length === 0) {
-            const _ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
-            const _URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-            await fetch(_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_ANON}` },
-              body: JSON.stringify({ type: 'trader_welcome', to: data.email, data: { name: data.full_name || '', lang } }),
+            await sendMaabarEmail({
+              type: 'trader_welcome',
+              to: data.email,
+              data: { name: data.full_name || '', lang },
             });
             await sb.from('notifications').insert({
               user_id: id, type: 'trader_welcome_sent',
@@ -252,6 +247,29 @@ function App() {
             </p>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
               للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'rgba(255,255,255,0.5)' }}>hello@maabar.io</a>
+            </p>
+            <button onClick={() => sb.auth.signOut()} style={{
+              background: 'none', color: 'rgba(255,255,255,0.3)',
+              border: '1px solid rgba(255,255,255,0.1)', padding: '10px 24px',
+              borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
+            }}>
+              تسجيل الخروج
+            </button>
+          </div>
+        );
+
+      if (supplierState.isInactiveStage)
+        return (
+          <div style={{
+            minHeight: '100vh', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            background: '#0a0a0b', gap: 16, padding: 24, textAlign: 'center',
+          }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
+              حساب المورد متوقف مؤقتاً.
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontFamily: 'var(--font-ar)', maxWidth: 460, lineHeight: 1.9 }}>
+              إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'rgba(255,255,255,0.5)' }}>hello@maabar.io</a>
             </p>
             <button onClick={() => sb.auth.signOut()} style={{
               background: 'none', color: 'rgba(255,255,255,0.3)',
