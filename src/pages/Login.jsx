@@ -38,7 +38,7 @@ const L = {
     country: 'الدولة *', supCity: 'المدينة *',
     speciality: 'التخصص *',
     contactHint: 'أدخل WeChat أو WhatsApp على الأقل',
-    verificationLater: 'هذا طلب مبدئي فقط. بعد تأكيد البريد وتسجيل الدخول ستكمل التحقق التجاري قبل المراجعة.',
+    verificationLater: 'هذا طلب انضمام فقط. بعد تأكيد البريد وتسجيل الدخول ستكمل التحقق التجاري قبل المراجعة.',
     signin: 'تسجيل الدخول', signup: 'إنشاء حساب',
     toSignup: 'ما عندك حساب؟', toSignupLink: 'سجل الآن',
     toSignin: 'عندك حساب؟', toSigninLink: 'سجل دخولك',
@@ -73,7 +73,7 @@ const L = {
     country: 'Country *', supCity: 'City *',
     speciality: 'Specialty *',
     contactHint: 'Add at least one contact method: WeChat or WhatsApp',
-    verificationLater: 'This is only the lightweight application start. After email confirmation and sign-in, you will complete business verification before review.',
+    verificationLater: 'This is your supplier application start. After email confirmation and sign-in, you will complete business verification before review.',
     signin: 'Sign In', signup: 'Create Account',
     toSignup: "Don't have an account?", toSignupLink: 'Sign up',
     toSignin: 'Already have an account?', toSigninLink: 'Sign in',
@@ -82,7 +82,7 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions',
-    pendingMsg: 'We received your initial application. We sent a confirmation email — after activation, sign in and complete business verification to move your application into review.',
+    pendingMsg: 'We received your supplier application. We sent a confirmation email — after activation, sign in and complete business verification to move your application into review.',
     googleLogin: 'Continue with Google',
     otpTitle: 'Verify your phone',
     otpSub: 'We sent a verification code to your number',
@@ -654,7 +654,7 @@ export default function Login({ setUser, setProfile, lang }) {
             }}>
               {loading ? '...' : mode === 'signin'
                 ? (isSupplier ? (isAr ? 'متابعة الطلب' : lang === 'zh' ? '继续申请' : 'Continue application') : l.signin)
-                : (isSupplier ? (isAr ? 'إرسال الطلب المبدئي' : lang === 'zh' ? '提交初步申请' : 'Submit initial application') : l.signup)}
+                : (isSupplier ? (isAr ? 'إرسال طلب الانضمام' : lang === 'zh' ? '提交入驻申请' : 'Submit supplier application') : l.signup)}
             </button>
 
             {/* Google Login — buyer only */}

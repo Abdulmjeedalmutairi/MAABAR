@@ -106,7 +106,6 @@ export default function SupplierAccess() {
           <BrandLogo as="button" size="sm" align="flex-start" onClick={goHome} />
 
           <div className="supplier-topbar-actions">
-            <button onClick={() => jumpToScene(0)} className="supplier-topbar-link">Start Journey</button>
             <button onClick={goToApply} className="supplier-topbar-cta">Start application</button>
           </div>
         </div>
@@ -134,7 +133,7 @@ export default function SupplierAccess() {
                     Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This is not full account activation — it is a guided supplier application before launch.
                   </p>
                   <div className="supplier-scene-actions">
-                    <button onClick={nextScene} className="supplier-primary-btn">Start Journey</button>
+                    <button onClick={nextScene} className="supplier-primary-btn">Continue</button>
                     <button onClick={goToApply} className="supplier-secondary-btn">Start application</button>
                   </div>
                 </div>
