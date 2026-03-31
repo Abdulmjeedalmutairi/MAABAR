@@ -64,7 +64,7 @@ export default function SupplierLanding({ lang }) {
   }, []);
 
   const goToRegister = () => {
-    nav('/login');
+    nav('/login/supplier?mode=signup');
   };
 
   return (

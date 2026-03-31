@@ -957,7 +957,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                         className="btn-primary"
                                         style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
                                         onClick={() => nav('/checkout', { state: { offer: o, request: r, isSecondPayment: true } })}>
-                                        {isAr ? `ادفع ${r.payment_second} ريال` : `Pay ${r.payment_second} SAR`}
+                                        {isAr ? `ادفع ${r.payment_second} ${o.currency || 'USD'}` : `Pay ${r.payment_second} ${o.currency || 'USD'}`}
                                       </button>
                                     )}
                                   </div>
@@ -1069,7 +1069,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                               id: s.id,
                               request_id: s.id,
                               supplier_id: s.supplier_id,
-                              price: s.total_price,
+                              price: (parseFloat(s.sample_price || 0) + parseFloat(s.shipping_price || 0)),
+                              currency: 'SAR',
                               delivery_days: 14,
                               status: 'accepted',
                               isDirect: true,

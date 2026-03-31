@@ -147,6 +147,8 @@ export default function Checkout({ lang, user, profile }) {
 
   const { offer, request, isSecondPayment } = location.state || {};
   const isDirectBuy = offer?.isDirect === true; // شراء مباشر أو عينة — دفعة واحدة دائماً
+  const checkoutCurrency = String(offer?.currency || 'USD').toUpperCase();
+  const currencyLabel = checkoutCurrency === 'SAR' ? t.sar : checkoutCurrency;
 
   const [payMethod, setPayMethod] = useState('card');
   const [selectedPct, setSelectedPct] = useState(isDirectBuy ? 100 : 30);
@@ -213,7 +215,7 @@ export default function Checkout({ lang, user, profile }) {
     setPaying(true);
 
     const appleRequest = {
-      countryCode: 'SA', currencyCode: 'SAR',
+      countryCode: 'SA', currencyCode: checkoutCurrency,
       supportedNetworks: ['visa', 'masterCard', 'mada'],
       merchantCapabilities: ['supports3DS'],
       total: { label: 'مَعبر', amount: firstPayment.toString() },
@@ -308,9 +310,9 @@ export default function Checkout({ lang, user, profile }) {
       await sb.from('notifications').insert({
         user_id: offer.supplier_id,
         type: 'payment_received',
-        title_ar: `وصلت دفعتك الأولى — ${firstPayment} ريال. ابدأ التجهيز الآن`,
-        title_en: `First payment received — ${firstPayment} SAR. Start preparation now`,
-        title_zh: `首付已收到 — ${firstPayment} SAR. 立即开始备货`,
+        title_ar: `وصلت دفعتك الأولى — ${firstPayment} ${currencyLabel}. ابدأ التجهيز الآن`,
+        title_en: `First payment received — ${firstPayment} ${currencyLabel}. Start preparation now`,
+        title_zh: `首付已收到 — ${firstPayment} ${currencyLabel}. 立即开始备货`,
         ref_id: request.id,
         is_read: false,
       });
@@ -377,12 +379,12 @@ export default function Checkout({ lang, user, profile }) {
               {[
                 { label: t.product, val: isAr ? request.title_ar || request.title_en : request.title_en || request.title_ar },
                 { label: t.quantity, val: request.quantity || '—' },
-                { label: t.unitPrice, val: `${fmt(offer.price)} ${t.sar}` },
-                { label: t.productTotal, val: `${fmt(productTotal)} ${t.sar}` },
-                { label: t.shippingCost, val: hasOfferShippingCost(offer) ? `${fmt(shippingCost)} ${t.sar}` : t.shippingNotSpecified },
+                { label: t.unitPrice, val: `${fmt(offer.price)} ${currencyLabel}` },
+                { label: t.productTotal, val: `${fmt(productTotal)} ${currencyLabel}` },
+                { label: t.shippingCost, val: hasOfferShippingCost(offer) ? `${fmt(shippingCost)} ${currencyLabel}` : t.shippingNotSpecified },
                 ...(getOfferShippingMethod(offer) ? [{ label: t.shippingMethod, val: getOfferShippingMethod(offer) }] : []),
-                { label: t.subtotal, val: `${fmt(subtotal)} ${t.sar}` },
-                { label: t.maabarFee, val: `${fmt(maabarFee)} ${t.sar}` },
+                { label: t.subtotal, val: `${fmt(subtotal)} ${currencyLabel}` },
+                { label: t.maabarFee, val: `${fmt(maabarFee)} ${currencyLabel}` },
               ].map((item, i) => (
                 <div key={i} style={{ background: 'var(--bg-raised)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item.label}</span>
@@ -395,7 +397,7 @@ export default function Checkout({ lang, user, profile }) {
             <div style={{ background: 'var(--bg-overlay)', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-default)', marginBottom: 20 }}>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.total}</span>
               <span style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
-                {fmt(total)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{t.sar}</span>
+                {fmt(total)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{currencyLabel}</span>
               </span>
             </div>
 
@@ -404,11 +406,11 @@ export default function Checkout({ lang, user, profile }) {
               <div style={{ background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.15)', borderRadius: 'var(--radius-lg)', padding: '14px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.firstPayment}</span>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(139,120,255,0.85)' }}>{fmt(firstPayment)} {t.sar}</span>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(139,120,255,0.85)' }}>{fmt(firstPayment)} {currencyLabel}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.secondPayment}</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{fmt(secondPayment)} {t.sar}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{fmt(secondPayment)} {currencyLabel}</span>
                 </div>
               </div>
             )}
@@ -436,7 +438,7 @@ export default function Checkout({ lang, user, profile }) {
                           {opt.pct}% — {opt.label}
                         </span>
                         <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(139,120,255,0.85)' }}>
-                          {fmt(Math.round(total * opt.pct / 100))} {t.sar}
+                          {fmt(Math.round(total * opt.pct / 100))} {currencyLabel}
                         </span>
                       </div>
                       <p style={{ fontSize: 11, color: 'var(--text-disabled)', lineHeight: 1.5 }}>{opt.sub}</p>
@@ -452,7 +454,7 @@ export default function Checkout({ lang, user, profile }) {
                 {isSecondPayment ? (isAr ? 'المبلغ المستحق' : 'Amount Due') : (isAr ? 'تدفع الآن' : 'You Pay Now')}
               </p>
               <p style={{ fontSize: 32, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
-                {fmt(firstPayment)} <span style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{t.sar}</span>
+                {fmt(firstPayment)} <span style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{currencyLabel}</span>
               </p>
             </div>
 
@@ -567,7 +569,7 @@ export default function Checkout({ lang, user, profile }) {
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                 minHeight: 48,
               }}>
-                {paying ? t.paying : `${t.pay} — ${fmt(firstPayment)} ${t.sar}`}
+                {paying ? t.paying : `${t.pay} — ${fmt(firstPayment)} ${currencyLabel}`}
               </button>
             )}
             {payError && (

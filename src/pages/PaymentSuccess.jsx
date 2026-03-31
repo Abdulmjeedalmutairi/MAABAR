@@ -72,6 +72,8 @@ export default function PaymentSuccess({ lang }) {
   const isAr = lang === 'ar';
 
   const { payment, offer, request, total } = location.state || {};
+  const checkoutCurrency = String(offer?.currency || 'USD').toUpperCase();
+  const currencyLabel = checkoutCurrency === 'SAR' ? t.sar : checkoutCurrency;
 
   useEffect(() => {
     if (!payment) { nav('/dashboard'); return; }
@@ -133,7 +135,7 @@ export default function PaymentSuccess({ lang }) {
               <div style={{ background: '#2C2C2C', padding: '28px 24px' }}>
                 <p style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(247,245,242,0.4)', marginBottom: 12, textTransform: 'uppercase' }}>{t.amount}</p>
                 <p style={{ fontSize: 36, fontWeight: 300, color: '#F7F5F2', fontFamily: 'var(--font-en)' }}>
-                  {fmt(total)} <span style={{ fontSize: 13, opacity: 0.6 }}>{t.sar}</span>
+                  {fmt(total)} <span style={{ fontSize: 13, opacity: 0.6 }}>{currencyLabel}</span>
                 </p>
               </div>
               <div style={{ background: '#F7F5F2', padding: '28px 24px' }}>
