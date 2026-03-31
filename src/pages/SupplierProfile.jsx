@@ -49,7 +49,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
       setSupplier(s);
       if (s.speciality) {
         const { data: sim } = await sb.from('profiles')
-          .select('id,company_name,rating,city,avatar_url,status')
+          .select('id,company_name,rating,reviews_count,city,country,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,speciality')
           .eq('role', 'supplier')
           .in('status', getSupplierPublicVisibilityStatuses())
           .eq('speciality', s.speciality)
@@ -615,32 +615,87 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             <p className="section-label" style={{ marginBottom: 20 }}>
               {isAr ? 'موردون مشابهون' : lang === 'zh' ? '类似供应商' : 'Similar Suppliers'}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-              {similarSuppliers.map(s => (
-                <div key={s.id} onClick={() => nav(`/supplier/${s.id}`)} style={{
-                  padding: '16px', background: 'var(--bg-raised)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-lg)', cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-raised)'; }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                      {s.avatar_url
-                        ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0]}</span>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+              {similarSuppliers.map(s => {
+                const trustSignals = buildSupplierTrustSignals(s);
+                const isReviewed = isSupplierPubliclyVisible(s.status);
+                const similarSupplierId = getSupplierMaabarId(s);
+
+                return (
+                  <div key={s.id} onClick={() => nav(`/supplier/${s.id}`)} style={{
+                    padding: '16px', background: 'var(--bg-raised)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-lg)', cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-raised)'; }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        {s.avatar_url
+                          ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0]}</span>}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
+                          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{s.company_name}</p>
+                          {isReviewed && (
+                            <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 999, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                              ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
+                            </span>
+                          )}
+                        </div>
+                        {s.rating > 0 && (
+                          <p style={{ fontSize: 11, color: '#f5a623', margin: 0 }}>
+                            {Array.from({ length: 5 }, (_, j) => j < Math.round(s.rating) ? '★' : '☆').join('')}
+                            {s.reviews_count > 0 && <span style={{ color: 'var(--text-disabled)', marginInlineStart: 6 }}>{s.reviews_count}</span>}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{s.company_name}</p>
+
+                    {(similarSupplierId || s.city || s.country || s.years_experience) && (
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', lineHeight: 1.6, marginBottom: 10 }}>
+                        {similarSupplierId ? `${isAr ? 'المعرّف' : lang === 'zh' ? '编号' : 'ID'}: ${similarSupplierId}` : ''}
+                        {similarSupplierId && (s.city || s.country) ? ' · ' : ''}
+                        {[s.city, s.country].filter(Boolean).join(', ')}
+                        {(similarSupplierId || s.city || s.country) && s.years_experience ? ' · ' : ''}
+                        {s.years_experience ? (isAr ? `${s.years_experience} سنة خبرة` : lang === 'zh' ? `${s.years_experience} 年经验` : `${s.years_experience} years`) : ''}
+                      </p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                      {trustSignals.includes('trade_profile_available') && (
+                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                          {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
+                        </span>
+                      )}
+                      {trustSignals.includes('wechat_available') && (
+                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                          WeChat
+                        </span>
+                      )}
+                      {trustSignals.includes('factory_media_available') && (
+                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                          {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
+                        </span>
+                      )}
+                      {s.trust_score > 0 && (
+                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                          {isAr ? `ثقة ${s.trust_score}%` : lang === 'zh' ? `信任度 ${s.trust_score}%` : `Trust ${s.trust_score}%`}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
+                        {isReviewed ? (isAr ? 'تمت مراجعته من مَعبر' : lang === 'zh' ? '已通过 Maabar 审核' : 'Reviewed by Maabar') : (isAr ? 'بروفايل مشابه' : lang === 'zh' ? '相似供应商' : 'Similar supplier')}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-primary)' }}>{isAr ? 'عرض الملف →' : lang === 'zh' ? '查看主页 →' : 'View profile →'}</span>
+                    </div>
                   </div>
-                  {s.rating > 0 && (
-                    <p style={{ fontSize: 12, color: '#f5a623' }}>
-                      {Array.from({ length: 5 }, (_, j) => j < Math.round(s.rating) ? '★' : '☆').join('')}
-                    </p>
-                  )}
-                  {s.city && <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{s.city}</p>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

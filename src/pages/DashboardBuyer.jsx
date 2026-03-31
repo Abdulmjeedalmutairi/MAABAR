@@ -239,7 +239,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   const loadMySamples = async () => {
     const { data } = await sb.from('samples')
-      .select('*,products(name_ar,name_en,name_zh),profiles!samples_supplier_id_fkey(company_name,full_name)')
+      .select('*,products(name_ar,name_en,name_zh),profiles!samples_supplier_id_fkey(id,company_name,full_name,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,city,country,reviews_count,rating)')
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
     if (data) setSamples(data);
@@ -981,16 +981,20 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} className="btn-primary"
                                   style={{ padding: '8px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
-                                  {isAr ? 'قبول' : 'Accept'}
+                                  {isAr ? 'قبول' : lang === 'zh' ? '接受报价' : 'Accept'}
                                 </button>
                                 <button
                                   onClick={() => rejectOffer(o.id, o.supplier_id, r.id)}
                                   style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '7px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
-                                  {isAr ? 'رفض' : 'Reject'}
+                                  {isAr ? 'رفض' : lang === 'zh' ? '拒绝' : 'Reject'}
+                                </button>
+                                <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline"
+                                  style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
+                                  {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Supplier Profile'}
                                 </button>
                                 <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
                                   style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
-                                  {isAr ? 'تواصل' : 'Chat'}
+                                  {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
                                 </button>
                               </div>
                             )}
@@ -1058,14 +1062,22 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                 {r.status === 'delivered' && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                     <p style={{ fontSize: 10, letterSpacing: 1, color: '#5a9a72', textAlign: 'center' }}>
-                                      {isAr ? 'تم التسليم ✓' : 'Delivered ✓'}
+                                      {isAr ? 'تم التسليم ✓' : lang === 'zh' ? '已交付 ✓' : 'Delivered ✓'}
                                     </p>
                                     <button onClick={() => setReviewModal({ supplierId: o.supplier_id, requestId: r.id, supplierName: o.profiles?.company_name || '' })}
                                       className="btn-outline" style={{ padding: '6px', fontSize: 10, width: '100%', minHeight: 28 }}>
-                                      {isAr ? 'قيّم المورد' : 'Rate Supplier'}
+                                      {isAr ? 'قيّم المورد' : lang === 'zh' ? '评价供应商' : 'Rate Supplier'}
                                     </button>
                                   </div>
                                 )}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 2 }}>
+                                  <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline" style={{ padding: '7px', fontSize: 10, minHeight: 32 }}>
+                                    {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Profile'}
+                                  </button>
+                                  <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline" style={{ padding: '7px', fontSize: 10, minHeight: 32 }}>
+                                    {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
+                                  </button>
+                                </div>
                               </div>
                             )}
 
@@ -1111,20 +1123,70 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               ) : samples.map((s, idx) => {
                 const supplierName = s.profiles?.company_name || s.profiles?.full_name || 'Supplier';
                 const productName = s.products?.name_ar || s.products?.name_en || s.products?.name_zh || 'Product';
+                const supplierTrustSignals = buildSupplierTrustSignals(s.profiles || {});
+                const sampleSupplierMaabarId = getSupplierMaabarId(s.profiles || {});
+                const isReviewedSupplier = isSupplierPubliclyVisible(s.profiles?.status);
                 return (
                   <div key={s.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '18px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
                       <div>
                         <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 5, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName}</p>
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'المورد:' : 'Supplier:'} {supplierName}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'المورد:' : lang === 'zh' ? '供应商：' : 'Supplier:'} {supplierName}</p>
+                          {isReviewedSupplier && (
+                            <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                              ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
+                            </span>
+                          )}
+                        </div>
+                        {(sampleSupplierMaabarId || s.profiles?.city || s.profiles?.country || s.profiles?.years_experience) && (
+                          <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 6, lineHeight: 1.6, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {sampleSupplierMaabarId ? `${isAr ? 'معرّف المورد' : lang === 'zh' ? '供应商编号' : 'Supplier ID'}: ${sampleSupplierMaabarId}` : ''}
+                            {sampleSupplierMaabarId && (s.profiles?.city || s.profiles?.country) ? ' · ' : ''}
+                            {[s.profiles?.city, s.profiles?.country].filter(Boolean).join(', ')}
+                            {(sampleSupplierMaabarId || s.profiles?.city || s.profiles?.country) && s.profiles?.years_experience ? ' · ' : ''}
+                            {s.profiles?.years_experience ? (isAr ? `${s.profiles.years_experience} سنة خبرة` : lang === 'zh' ? `${s.profiles.years_experience} 年经验` : `${s.profiles.years_experience} years`) : ''}
+                          </p>
+                        )}
                       </div>
                       <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: s.status === 'approved' ? 'rgba(58,122,82,0.1)' : s.status === 'rejected' ? 'rgba(160,112,112,0.1)' : 'rgba(139,120,255,0.08)', color: s.status === 'approved' ? '#5a9a72' : s.status === 'rejected' ? '#a07070' : 'rgba(139,120,255,0.9)' }}>
-                        {s.status === 'approved' ? (isAr ? 'تمت الموافقة' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوضة' : 'Rejected') : (isAr ? 'قيد المراجعة' : 'Pending')}
+                        {s.status === 'approved' ? (isAr ? 'تمت الموافقة' : lang === 'zh' ? '已批准' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوضة' : lang === 'zh' ? '已拒绝' : 'Rejected') : (isAr ? 'قيد المراجعة' : lang === 'zh' ? '审核中' : 'Pending')}
                       </span>
                     </div>
+
+                    {(supplierTrustSignals.length > 0 || s.profiles?.trust_score > 0 || s.profiles?.rating > 0) && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                        {s.profiles?.rating > 0 && (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                            ★ {s.profiles.rating.toFixed(1)}{s.profiles?.reviews_count ? ` · ${s.profiles.reviews_count}` : ''}
+                          </span>
+                        )}
+                        {supplierTrustSignals.includes('trade_profile_available') && (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                            {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
+                          </span>
+                        )}
+                        {supplierTrustSignals.includes('wechat_available') && (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                            WeChat
+                          </span>
+                        )}
+                        {supplierTrustSignals.includes('factory_media_available') && (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                            {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
+                          </span>
+                        )}
+                        {s.profiles?.trust_score > 0 && (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                            {isAr ? `ثقة ${s.profiles.trust_score}%` : lang === 'zh' ? `信任度 ${s.profiles.trust_score}%` : `Trust ${s.profiles.trust_score}%`}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
-                      <span>{isAr ? 'الكمية:' : 'Qty:'} {s.quantity}</span>
-                      <span>{isAr ? 'الإجمالي:' : 'Total:'} {s.total_price} SAR</span>
+                      <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {s.quantity}</span>
+                      <span>{isAr ? 'الإجمالي:' : lang === 'zh' ? '总额：' : 'Total:'} {s.total_price} SAR</span>
                     </div>
                     {s.notes && (
                       <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>💬 {s.notes}</p>
@@ -1154,11 +1216,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                             },
                           }
                         })} style={{ minHeight: 34, fontSize: 11 }}>
-                          {isAr ? `ادفع ${s.total_price} SAR` : `Pay ${s.total_price} SAR`}
+                          {isAr ? `ادفع ${s.total_price} SAR` : lang === 'zh' ? `支付 ${s.total_price} SAR` : `Pay ${s.total_price} SAR`}
                         </button>
                       )}
+                      <button className="btn-outline" onClick={() => nav(`/supplier/${s.supplier_id}`)} style={{ minHeight: 34, fontSize: 11 }}>
+                        {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Supplier Profile'}
+                      </button>
                       <button className="btn-outline" onClick={() => nav(`/chat/${s.supplier_id}`)} style={{ minHeight: 34, fontSize: 11 }}>
-                        {isAr ? 'محادثة المورد' : 'Chat Supplier'}
+                        {isAr ? 'محادثة المورد' : lang === 'zh' ? '联系供应商' : 'Chat Supplier'}
                       </button>
                     </div>
                   </div>

@@ -305,6 +305,120 @@ const buildProductWritePayload = (rawProduct, supplierId) => {
   };
 };
 
+function getProductComposerValidationMessage(product, lang = 'en') {
+  if (!product?.name_zh || !product?.name_en || !product?.price_from || !product?.moq || !product?.desc_en) {
+    if (lang === 'ar') return 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، الاسم الإنجليزي، السعر، MOQ، والوصف الإنجليزي';
+    if (lang === 'zh') return '请先填写必填字段：中文名、英文名、价格、MOQ 和英文描述';
+    return 'Please fill required fields: Chinese name, English name, price, MOQ, and English description';
+  }
+
+  return '';
+}
+
+function getProductFormPlaceholders(lang = 'en') {
+  if (lang === 'ar') {
+    return {
+      name_zh: 'مثال: سماعة بلوتوث TWS',
+      name_en: 'Example: TWS Bluetooth Earbuds',
+      name_ar: 'مثال: سماعات بلوتوث لاسلكية',
+      moq: 'مثال: 500',
+      price_from: 'مثال: 8.50',
+      desc_en: 'Example: ABS charging case with Bluetooth 5.3, ENC mic, and OEM logo support.',
+      desc_ar: 'مثال: علبة ABS مع بلوتوث 5.3 ودعم شعار OEM.',
+      spec_material: 'ABS / فولاذ / قطن...',
+      spec_dimensions: '20×12×8 cm',
+      spec_unit_weight: '0.35 kg',
+      spec_color_options: 'أسود، أبيض، مخصص',
+      spec_packaging_details: 'كرتون داخلي + كرتون تصدير',
+      spec_customization: 'شعار OEM، تغليف خاص، لون خاص',
+      spec_lead_time_days: '15',
+      sample_price: 'مثال: 50',
+      sample_shipping: 'مثال: 25',
+      sample_max_qty: '3',
+      sample_note: 'مثال: العينة تُخصم من الطلب الكبير',
+    };
+  }
+
+  if (lang === 'zh') {
+    return {
+      name_zh: '例：TWS 蓝牙耳机',
+      name_en: 'Example: TWS Bluetooth Earbuds',
+      name_ar: 'مثال: سماعات بلوتوث لاسلكية',
+      moq: '例：500',
+      price_from: '例：8.50',
+      desc_en: 'Example: ABS charging case with Bluetooth 5.3, ENC mic, and OEM logo support.',
+      desc_ar: '可选：给阿语买家补充说明',
+      spec_material: '例：ABS / 铝合金 / 纯棉',
+      spec_dimensions: '例：20×12×8 cm',
+      spec_unit_weight: '例：0.35 kg',
+      spec_color_options: '例：黑 / 白 / 定制色',
+      spec_packaging_details: '例：彩盒 + 外箱',
+      spec_customization: '例：支持 OEM / Logo / 包装定制',
+      spec_lead_time_days: '例：15',
+      sample_price: '例：50',
+      sample_shipping: '例：25',
+      sample_max_qty: '3',
+      sample_note: '例：大货下单可返还样品费',
+    };
+  }
+
+  return {
+    name_zh: 'Example: TWS 蓝牙耳机',
+    name_en: 'Example: TWS Bluetooth Earbuds',
+    name_ar: 'Example: سماعات بلوتوث لاسلكية',
+    moq: 'Example: 500',
+    price_from: 'Example: 8.50',
+    desc_en: 'Example: ABS charging case with Bluetooth 5.3, ENC mic, and OEM logo support.',
+    desc_ar: 'Optional Arabic buyer-facing note',
+    spec_material: 'Example: ABS / Aluminum / Cotton',
+    spec_dimensions: 'Example: 20×12×8 cm',
+    spec_unit_weight: 'Example: 0.35 kg',
+    spec_color_options: 'Example: Black / White / Custom',
+    spec_packaging_details: 'Example: Retail box + export carton',
+    spec_customization: 'Example: OEM logo / custom packaging',
+    spec_lead_time_days: 'Example: 15',
+    sample_price: 'Example: 50',
+    sample_shipping: 'Example: 25',
+    sample_max_qty: '3',
+    sample_note: 'Example: sample cost can be deducted from bulk order',
+  };
+}
+
+function getProductCompletenessItems(product, lang = 'en') {
+  return [
+    {
+      key: 'name_zh',
+      label: lang === 'ar' ? 'اسم صيني واضح كما يستخدمه فريق المبيعات' : lang === 'zh' ? '销售团队常用的中文产品名' : 'Chinese sales-facing product name',
+      done: Boolean(product?.name_zh),
+    },
+    {
+      key: 'name_en',
+      label: lang === 'ar' ? 'اسم إنجليزي واضح للمشتري' : lang === 'zh' ? '给买家看的英文产品名' : 'Buyer-facing English product name',
+      done: Boolean(product?.name_en),
+    },
+    {
+      key: 'desc_en',
+      label: lang === 'ar' ? 'وصف إنجليزي يشرح المادة والاستخدام والجودة' : lang === 'zh' ? '英文描述包含材质、用途与质量点' : 'English description with material, use, and quality point',
+      done: Boolean(product?.desc_en),
+    },
+    {
+      key: 'pricing',
+      label: lang === 'ar' ? 'السعر + العملة + MOQ' : lang === 'zh' ? '价格 + 币种 + MOQ' : 'Price + currency + MOQ',
+      done: Boolean(product?.price_from) && Boolean(product?.currency) && Boolean(product?.moq),
+    },
+    {
+      key: 'media',
+      label: lang === 'ar' ? 'صورة رئيسية أو أكثر' : lang === 'zh' ? '至少 1 张主图' : 'At least one product image',
+      done: getProductGalleryImages(product).length > 0,
+    },
+    {
+      key: 'specs',
+      label: lang === 'ar' ? 'مواصفات أو تعبئة أو OEM أو مدة تجهيز' : lang === 'zh' ? '规格 / 包装 / OEM / 交期 至少一项' : 'At least one spec, packaging, OEM, or lead-time detail',
+      done: buildProductSpecs(product).length > 0,
+    },
+  ];
+}
+
 /* ─── Product Form (defined outside to prevent remount on parent render) ─ */
 function ProductForm({
   data,
@@ -332,6 +446,10 @@ function ProductForm({
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const productCategories = (categories || []).filter(c => c.val !== 'all');
   const galleryImages = getProductGalleryImages(data);
+  const placeholders = getProductFormPlaceholders(lang);
+  const completenessItems = getProductCompletenessItems(data, lang);
+  const completenessDone = completenessItems.filter(item => item.done).length;
+  const completenessPct = Math.round((completenessDone / completenessItems.length) * 100);
 
   return (
     <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 760, borderRadius: 'var(--radius-xl)' }}>
@@ -413,13 +531,40 @@ function ProductForm({
         </div>
       </div>
 
+      <div style={{ marginBottom: 22, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+          <div>
+            <p style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(139,120,255,0.9)', textTransform: 'uppercase', marginBottom: 6 }}>
+              {isAr ? 'جاهزية النشر التجارية' : lang === 'zh' ? '发布完整度' : 'Publishing readiness'}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, ...arFont }}>
+              {isAr ? 'كلما اكتملت هذه النقاط، ظهر المنتج بشكل أكثر موثوقية للمشتري.' : lang === 'zh' ? '这些信息越完整，买家看到的专业感和可信度就越强。' : 'The more of these details you complete, the more credible the listing feels to buyers.'}
+            </p>
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{completenessPct}%</span>
+        </div>
+        <div style={{ height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 14 }}>
+          <div style={{ width: `${completenessPct}%`, height: '100%', borderRadius: 999, background: 'rgba(139,120,255,0.75)' }} />
+        </div>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {completenessItems.map((item) => (
+            <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span style={{ fontSize: 12, color: item.done ? 'var(--text-primary)' : 'var(--text-secondary)', ...arFont }}>{item.label}</span>
+              <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, border: '1px solid', borderColor: item.done ? 'rgba(58,122,82,0.25)' : 'var(--border-subtle)', background: item.done ? 'rgba(58,122,82,0.08)' : 'rgba(255,255,255,0.03)', color: item.done ? '#5a9a72' : 'var(--text-disabled)', whiteSpace: 'nowrap' }}>
+                {item.done ? (isAr ? 'مكتمل' : lang === 'zh' ? '已完成' : 'Done') : (isAr ? 'ينقصه' : lang === 'zh' ? '待补充' : 'Missing')}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="form-grid">
         {[
           [t.nameZh, 'name_zh'], [t.nameEn, 'name_en'], [t.nameAr, 'name_ar'], [t.moq, 'moq'],
         ].map(([label, key, type]) => (
           <div key={key} className="form-group">
             <label className="form-label">{label}</label>
-            <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
+            <input className="form-input" type={type || 'text'} placeholder={placeholders[key] || ''} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
           </div>
         ))}
         <div className="form-group">
@@ -438,7 +583,7 @@ function ProductForm({
           <label className="form-label">{t.price}</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <input className="form-input" type="number" placeholder={data.currency || 'USD'} value={data.price_from || ''} onChange={e => setData(prev => ({ ...prev, price_from: e.target.value }))} style={{ paddingRight: 52 }} dir="ltr" />
+              <input className="form-input" type="number" placeholder={placeholders.price_from || (data.currency || 'USD')} value={data.price_from || ''} onChange={e => setData(prev => ({ ...prev, price_from: e.target.value }))} style={{ paddingRight: 52 }} dir="ltr" />
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>{data.currency || 'USD'}</span>
             </div>
             {data.price_from && data.currency === 'USD' && (
@@ -453,12 +598,12 @@ function ProductForm({
       <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '4px 0 12px', ...arFont }}>{t.descHint}</p>
       <div className="form-group">
         <label className={`form-label${isAr ? ' ar' : ''}`}>{t.descEnLabel}</label>
-        <textarea className="form-input" rows={3} style={{ resize: 'vertical' }} value={data.desc_en || ''} onChange={e => setData(prev => ({ ...prev, desc_en: e.target.value }))} />
+        <textarea className="form-input" rows={3} placeholder={placeholders.desc_en || ''} style={{ resize: 'vertical' }} value={data.desc_en || ''} onChange={e => setData(prev => ({ ...prev, desc_en: e.target.value }))} />
       </div>
 
       <div className="form-group">
         <label className={`form-label${isAr ? ' ar' : ''}`}>{t.descLabel}</label>
-        <textarea className="form-input" rows={2} style={{ resize: 'vertical', ...arFont }} value={data.desc_ar || ''} onChange={e => setData(prev => ({ ...prev, desc_ar: e.target.value }))} />
+        <textarea className="form-input" rows={2} placeholder={placeholders.desc_ar || ''} style={{ resize: 'vertical', ...arFont }} value={data.desc_ar || ''} onChange={e => setData(prev => ({ ...prev, desc_ar: e.target.value }))} />
       </div>
 
       <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
@@ -475,7 +620,7 @@ function ProductForm({
           ].map(([label, key, type]) => (
             <div key={key} className="form-group" style={{ marginBottom: 0 }}>
               <label className={`form-label${isAr ? ' ar' : ''}`}>{label}</label>
-              <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
+              <input className="form-input" type={type || 'text'} placeholder={placeholders[key] || ''} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
             </div>
           ))}
         </div>
@@ -491,7 +636,7 @@ function ProductForm({
             {[[t.samplePrice, 'sample_price', 'number'], [t.sampleShipping, 'sample_shipping', 'number'], [t.sampleMaxQty, 'sample_max_qty', 'number'], [t.sampleNote, 'sample_note']].map(([label, key, type]) => (
               <div key={key} className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">{label}</label>
-                <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
+                <input className="form-input" type={type || 'text'} placeholder={placeholders[key] || ''} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
               </div>
             ))}
           </div>
@@ -517,6 +662,13 @@ function ProductPreviewPanel({ product, onPublish, onBack, t, isAr, saving, lang
     ? product.name_ar || product.name_en || product.name_zh
     : product.name_en || product.name_ar || product.name_zh;
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+  const completenessItems = getProductCompletenessItems(product, lang);
+  const completenessDone = completenessItems.filter(item => item.done).length;
+  const providedNames = [
+    { key: 'zh', label: lang === 'ar' ? 'الاسم الصيني' : lang === 'zh' ? '中文名' : 'Chinese name', value: product.name_zh },
+    { key: 'en', label: lang === 'ar' ? 'الاسم الإنجليزي' : lang === 'zh' ? '英文名' : 'English name', value: product.name_en },
+    { key: 'ar', label: lang === 'ar' ? 'الاسم العربي' : lang === 'zh' ? '阿拉伯语名' : 'Arabic name', value: product.name_ar },
+  ].filter((item) => item.value);
 
   return (
     <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 760, borderRadius: 'var(--radius-xl)' }}>
@@ -529,6 +681,39 @@ function ProductPreviewPanel({ product, onPublish, onBack, t, isAr, saving, lang
       </div>
 
       <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 20, lineHeight: 1.7, ...arFont }}>{t.previewNote}</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+        <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'rgba(139,120,255,0.05)', border: '1px solid rgba(139,120,255,0.18)' }}>
+          <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 10 }}>
+            {isAr ? 'جاهزية العرض' : lang === 'zh' ? '发布摘要' : 'Listing readiness'}
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, ...arFont }}>
+            {isAr ? `${completenessDone}/${completenessItems.length} نقاط مكتملة قبل النشر` : lang === 'zh' ? `发布前已完成 ${completenessDone}/${completenessItems.length} 项` : `${completenessDone}/${completenessItems.length} credibility checks completed before publish`}
+          </p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+              {isAr ? `${galleryImages.length} صور` : lang === 'zh' ? `${galleryImages.length} 张图片` : `${galleryImages.length} images`}
+            </span>
+            {product.video_url && <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>Video</span>}
+            {product.sample_available && <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>{isAr ? 'عينة مفعلة' : lang === 'zh' ? '样品已开启' : 'Samples enabled'}</span>}
+            {specs.length > 0 && <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>{isAr ? `${specs.length} مواصفات` : lang === 'zh' ? `${specs.length} 项规格` : `${specs.length} specs`}</span>}
+          </div>
+        </div>
+
+        <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)' }}>
+          <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
+            {isAr ? 'الأسماء المعروضة' : lang === 'zh' ? '展示名称' : 'Displayed names'}
+          </p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {providedNames.map((item) => (
+              <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{item.label}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 18, marginBottom: 24 }}>
         <div>
@@ -655,6 +840,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [payoutSaved, setPayoutSaved] = useState(false);
   const [productSaveMsg, setProductSaveMsg] = useState('');
   const [productComposerStep, setProductComposerStep] = useState('edit');
+  const [editProductComposerStep, setEditProductComposerStep] = useState('edit');
   const [editOfferModal, setEditOfferModal]   = useState(null);
   const [editOfferForm, setEditOfferForm]     = useState({});
   const [savingEditOffer, setSavingEditOffer] = useState(false);
@@ -700,6 +886,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (activeTab === 'add-product')  {
       setEditingProduct(null);
       setProductComposerStep('edit');
+      setEditProductComposerStep('edit');
       const draft = sessionStorage.getItem('maabar_product_draft');
       if (draft) {
         try { setProduct(normalizeProductDraftMedia(JSON.parse(draft))); } catch { setProduct(emptyProduct); }
@@ -1099,8 +1286,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const openProductPreview = () => {
-    if (!product.name_zh || !product.name_en || !product.price_from || !product.moq || !product.desc_en) {
-      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، الاسم الإنجليزي، السعر، MOQ، والوصف الإنجليزي' : 'Please fill required fields: Chinese name, English name, price, MOQ, and English description');
+    const validationMessage = getProductComposerValidationMessage(product, lang);
+    if (validationMessage) {
+      setProductSaveMsg(validationMessage);
       return;
     }
     setProductSaveMsg('');
@@ -1108,9 +1296,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setProductComposerStep('preview');
   };
 
+  const openEditProductPreview = () => {
+    const validationMessage = getProductComposerValidationMessage(editingProduct, lang);
+    if (validationMessage) {
+      setProductSaveMsg(validationMessage);
+      return;
+    }
+    setProductSaveMsg('');
+    setEditingProduct(prev => normalizeProductDraftMedia(prev));
+    setEditProductComposerStep('preview');
+  };
+
   const addProduct = async () => {
-    if (!product.name_zh || !product.name_en || !product.price_from || !product.moq || !product.desc_en) {
-      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، الاسم الإنجليزي، السعر، MOQ، والوصف الإنجليزي' : 'Please fill required fields: Chinese name, English name, price, MOQ, and English description');
+    const validationMessage = getProductComposerValidationMessage(product, lang);
+    if (validationMessage) {
+      setProductSaveMsg(validationMessage);
       return;
     }
     setSaving(true);
@@ -1152,6 +1352,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       console.error('updateProduct error:', error);
       return;
     }
+    setEditProductComposerStep('edit');
     setEditingProduct(null); loadMyProducts(); loadStats();
   };
 
@@ -1832,7 +2033,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <div key={p.id}>
                   {editingProduct?.id === p.id ? (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: 'fadeIn 0.3s ease' }}>
-                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
+                      {editProductComposerStep === 'preview' ? (
+                        <ProductPreviewPanel product={normalizeProductDraftMedia(editingProduct)} onPublish={updateProduct} onBack={() => setEditProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
+                      ) : (
+                        <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} />
+                      )}
                     </div>
                   ) : (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 0', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
@@ -1852,7 +2057,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
                         <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
-                        <button onClick={() => setEditingProduct(normalizeProductDraftMedia(p))} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
+                        <button onClick={() => { setEditingProduct(normalizeProductDraftMedia(p)); setEditProductComposerStep('edit'); setProductSaveMsg(''); }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
                         <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
                       </div>
                     </div>
