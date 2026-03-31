@@ -476,11 +476,10 @@ const templates = {
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light only" />
 <title>${d.subject || 'مَعبر'}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet" />
 </head>
-<body style="margin:0;padding:0;background:#111114;font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;">
+<body style="margin:0;padding:0;background:#000000;font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;">
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111114;width:100%;border-collapse:collapse;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#000000;width:100%;border-collapse:collapse;">
 <tr>
 <td align="center" style="padding:0;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border-collapse:collapse;">
