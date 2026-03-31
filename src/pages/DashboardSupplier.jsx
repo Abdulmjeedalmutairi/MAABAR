@@ -725,6 +725,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
             supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
             price: o.price,
             deliveryDays: o.days,
+            lang,
           },
         }),
       });
@@ -757,6 +758,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
             name: 'Trader',
             trackingNumber: num,
             shippingCompany,
+            lang,
           },
         }),
       });

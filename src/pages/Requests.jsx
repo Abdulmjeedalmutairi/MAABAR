@@ -207,6 +207,7 @@ export default function Requests({ lang, user, profile }) {
             supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
             price: o.price,
             deliveryDays: o.days,
+            lang,
           },
         }),
       });

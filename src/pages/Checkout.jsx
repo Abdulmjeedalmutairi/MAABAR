@@ -279,7 +279,7 @@ export default function Checkout({ lang, user, profile }) {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
           body: JSON.stringify({
             type: 'payment_received_supplier',
-            data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPayment, name: 'Supplier' },
+            data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPayment, name: 'Supplier', lang },
           }),
         });
       } catch (e) { console.error('email error:', e); }
@@ -303,7 +303,7 @@ export default function Checkout({ lang, user, profile }) {
           body: JSON.stringify({
             type: 'payment_confirmation_buyer',
             to: user.email,
-            data: { requestTitle: reqTitle, amount: firstPayment, name: '' },
+            data: { requestTitle: reqTitle, amount: firstPayment, name: '', lang },
           }),
         });
       }

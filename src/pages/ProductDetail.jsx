@@ -136,6 +136,7 @@ export default function ProductDetail({ lang, user, profile }) {
             productName: product.name_ar || product.name_en || product.name_zh || 'Product',
             quantity: sampleQty,
             totalPrice: total,
+            lang,
           },
         }),
       });

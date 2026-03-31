@@ -320,7 +320,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
       const res = await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ type: 'offer_accepted', data: { recipientUserId: supplierId, name: 'Supplier', requestTitle: reqTitle } }),
+        body: JSON.stringify({ type: 'offer_accepted', data: { recipientUserId: supplierId, name: 'Supplier', requestTitle: reqTitle, lang } }),
       });
       if (!res.ok) {
         console.error('offer_accepted email failed:', await res.text());
@@ -341,7 +341,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
           await fetch(SEND_EMAILS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle } }),
+            body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle, lang } }),
           });
         } catch (e) { console.error('email error:', e); }
       }));
@@ -393,6 +393,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
             recipientUserId: supplierId,
             name: supplierName || 'Supplier',
             amount: paymentData?.amount || 0,
+            lang,
           },
         }),
       });

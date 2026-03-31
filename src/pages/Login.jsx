@@ -373,6 +373,7 @@ export default function Login({ setUser, setProfile, lang }) {
               whatsapp,
               wechat,
               payMethod,
+              lang,
             },
           }),
         });

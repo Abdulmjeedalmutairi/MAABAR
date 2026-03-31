@@ -94,6 +94,7 @@ export default function SupplierProfile({ lang, user }) {
             productName: p.name_ar || p.name_en || p.name_zh || 'Product',
             quantity: d.qty,
             totalPrice: total,
+            lang,
           },
         }),
       });

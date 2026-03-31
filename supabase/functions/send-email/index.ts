@@ -564,14 +564,43 @@ async function sendEmail(to, subject, html) {
   return result;
 }
 
-async function resolveRecipient(to, data) {
-  if (to) return to;
-  if (data?.recipientUserId && adminSb) {
-    const { data: profileRow, error } = await adminSb.from('profiles').select('email').eq('id', data.recipientUserId).single();
-    if (error) throw error;
-    return profileRow?.email || '';
-  }
+function normalizeLang(value) {
+  if (!value) return '';
+  const lang = String(value).toLowerCase();
+  if (lang.startsWith('ar')) return 'ar';
+  if (lang.startsWith('en')) return 'en';
+  if (lang.startsWith('zh') || lang.startsWith('cn')) return 'zh';
   return '';
+}
+
+async function resolveEmailContext(to, data = {}) {
+  const explicitLang = normalizeLang(data?.lang || data?.language || data?.locale || data?.preferredLanguage);
+  if (!adminSb) {
+    return { recipient: to || '', lang: explicitLang || 'ar' };
+  }
+
+  let profileRow = null;
+  if (data?.recipientUserId) {
+    const { data: row, error } = await adminSb.from('profiles').select('*').eq('id', data.recipientUserId).maybeSingle();
+    if (error) throw error;
+    profileRow = row || null;
+  } else if (to) {
+    const { data: row, error } = await adminSb.from('profiles').select('*').eq('email', to).maybeSingle();
+    if (error) throw error;
+    profileRow = row || null;
+  }
+
+  const recipient = to || profileRow?.email || '';
+  const inferredLang = normalizeLang(
+    explicitLang ||
+    profileRow?.lang ||
+    profileRow?.language ||
+    profileRow?.locale ||
+    profileRow?.preferred_language ||
+    profileRow?.preferredLanguage,
+  ) || 'ar';
+
+  return { recipient, lang: inferredLang };
 }
 
 serve(async (req) => {
@@ -605,8 +634,10 @@ serve(async (req) => {
 
     const factory = templates[type];
     if (!factory) return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
-    const tpl = factory(data || {});
-    const recipient = tpl.to || await resolveRecipient(to, data);
+    const emailContext = await resolveEmailContext(to, data || {});
+    const payload = { ...(data || {}), lang: normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar' };
+    const tpl = factory(payload);
+    const recipient = tpl.to || emailContext.recipient;
     if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const result = await sendEmail(recipient, tpl.subject, tpl.html);
     return new Response(JSON.stringify({ ok: true, result }), { headers: { ...cors, 'Content-Type': 'application/json' } });

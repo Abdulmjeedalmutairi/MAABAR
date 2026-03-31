@@ -88,7 +88,7 @@ function App() {
             await fetch(_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_ANON}` },
-              body: JSON.stringify({ type: 'trader_welcome', to: data.email, data: { name: data.full_name || '' } }),
+              body: JSON.stringify({ type: 'trader_welcome', to: data.email, data: { name: data.full_name || '', lang } }),
             });
             await sb.from('notifications').insert({
               user_id: id, type: 'trader_welcome_sent',

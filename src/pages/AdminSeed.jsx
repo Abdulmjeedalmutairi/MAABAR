@@ -173,7 +173,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
         const emailRes = await fetch(SEND_EMAILS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-          body: JSON.stringify({ type: 'supplier_approved', to: supplierEmail, data: { name: supplier.company_name || 'Supplier' } }),
+          body: JSON.stringify({ type: 'supplier_approved', to: supplierEmail, data: { name: supplier.company_name || 'Supplier', lang } }),
         });
         if (!emailRes.ok) {
           throw new Error(await emailRes.text());
@@ -227,7 +227,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
         const emailRes = await fetch(SEND_EMAILS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-          body: JSON.stringify({ type: 'supplier_rejected', to: supplierEmail, data: { name: supplier.company_name || 'Supplier' } }),
+          body: JSON.stringify({ type: 'supplier_rejected', to: supplierEmail, data: { name: supplier.company_name || 'Supplier', lang } }),
         });
         if (!emailRes.ok) {
           throw new Error(await emailRes.text());
