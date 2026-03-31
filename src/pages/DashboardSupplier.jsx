@@ -104,8 +104,8 @@ const T = {
     verificationTab: 'التحقق', verificationTitle: 'أكمل التحقق التجاري', verificationIntro: 'أرسل بيانات التحقق والمستندات من هنا بعد إنشاء الحساب. لن نطلبها في التسجيل الأولي.',
     verificationStatusIncomplete: 'التحقق غير مكتمل', verificationStatusComplete: 'تم إرسال التحقق للمراجعة', verificationStatusLocked: 'الحساب الآن تحت المراجعة',
     verificationCtaTitle: 'أكمل التحقق التجاري', verificationCtaBody: 'أرسل السجل التجاري وصورة المصنع وبيانات الخبرة حتى يدخل طلبك مرحلة المراجعة.', verificationCtaAction: 'أكمل التحقق ←',
-    regNumber: 'رقم تسجيل الشركة *', yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)', businessLicense: 'رخصة الأعمال أو هوية المنشأة *', factoryPhoto: 'صورة المصنع أو المستودع *', replaceFile: 'استبدال الملف', viewCurrentFile: 'عرض الملف الحالي', secureStorageNote: 'يتم حفظ هذه الملفات داخل تخزين خاص، ولا تُعرض بروابط عامة.', verificationSubmitted: 'تم إرسال التحقق بنجاح. الطلب الآن تحت المراجعة.', verificationMissing: 'يرجى تعبئة جميع حقول التحقق المطلوبة ورفع المستندات.',
-    payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف طريقة استلام الدفعات بعد قبول الحساب فقط.', payoutLocked: 'إعداد استلام الدفعات يفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل إعداد استلام الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بيانات استلام الأرباح غير مكتملة بعد.', payoutCtaAction: 'إعداد الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)', alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *', onboardingTitle: 'طلبك ما زال في مرحلة الانضمام', onboardingBody: 'هذه ليست لوحة تشغيل كاملة بعد. أكمل ملف الشركة والتحقق التجاري حتى ينتقل طلبك إلى المراجعة قبل الإطلاق.', onboardingProgress: 'تقدّم الطلب', onboardingLockedTitle: 'المزايا المقفلة حتى القبول', onboardingLockedBody: 'المنتجات والعروض والرسائل وتصفح الطلبات تفتح بعد مراجعة الطلب والموافقة عليه.', onboardingStepApply: '1) ابدأ الطلب', onboardingStepReview: '2) ادخل المراجعة قبل الإطلاق', onboardingStepVisibility: '3) احصل على ظهور مبكر بعد القبول', onboardingGoSettings: 'إكمال الملف', onboardingStatusDraft: 'طلب غير مكتمل', onboardingVerificationReady: 'بعد إرسال التحقق سينتقل طلبك مباشرة إلى المراجعة.', verificationSubmitAction: 'إرسال الطلب للمراجعة',
+    regNumber: 'رقم تسجيل الشركة *', yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)', businessLicense: 'رخصة الأعمال أو هوية المنشأة *', factoryPhoto: 'صورة المصنع أو المستودع *', replaceFile: 'استبدال الملف', viewCurrentFile: 'عرض الملف الحالي', secureStorageNote: 'يتم حفظ هذه الملفات داخل تخزين خاص، ولا تُعرض بروابط عامة.', verificationSubmitted: 'تم إرسال التحقق بنجاح. الحساب الآن في حالة verification_under_review.', verificationMissing: 'يرجى تعبئة جميع حقول التحقق المطلوبة ورفع المستندات.',
+    payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف طريقة استلام الدفعات بعد قبول الحساب فقط.', payoutLocked: 'إعداد استلام الدفعات يفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل إعداد استلام الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بيانات استلام الأرباح غير مكتملة بعد.', payoutCtaAction: 'إعداد الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)', alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *', onboardingTitle: 'طلبك ما زال في مرحلة الانضمام', onboardingBody: 'هذه لوحة المورد الأساسية، لكن الإجراءات الأساسية ما زالت مقفلة. أكمل ملف الشركة وأرسل التحقق حتى ينتقل الحساب إلى verification_under_review.', onboardingProgress: 'تقدّم الطلب', onboardingLockedTitle: 'المزايا المقفلة حتى التوثيق', onboardingLockedBody: 'الطلبات والعروض والمنتجات والرسائل وكل الإجراءات الأساسية تفتح فقط بعد اعتماد التحقق.', onboardingStepApply: '1) أكمل الملف الأساسي', onboardingStepReview: '2) أرسل التحقق للمراجعة', onboardingStepVisibility: '3) افتح التجربة الكاملة بعد التوثيق', onboardingGoSettings: 'إعدادات الملف', onboardingStatusDraft: 'verification_required', onboardingVerificationReady: 'بعد إرسال التحقق ينتقل الحساب مباشرة إلى verification_under_review.', verificationSubmitAction: 'إرسال التحقق',
   },
   en: {
     tag: 'Maabar · Supplier Dashboard', welcome: 'Welcome,', desc: 'Manage your offers, products and messages in one place', supplierStageLabel: 'Account status', supplierIdLabel: 'Maabar Supplier ID',
@@ -144,8 +144,8 @@ const T = {
     verificationTab: 'Verification', verificationTitle: 'Complete business verification', verificationIntro: 'Submit the full verification details and documents here after signup. They are no longer required during initial registration.',
     verificationStatusIncomplete: 'Verification incomplete', verificationStatusComplete: 'Verification submitted for review', verificationStatusLocked: 'Account is currently under review',
     verificationCtaTitle: 'Complete your business verification', verificationCtaBody: 'Submit your registration, factory evidence, and experience details so your application can enter review.', verificationCtaAction: 'Complete verification →',
-    regNumber: 'Company Registration Number *', yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)', businessLicense: 'Business License or Company ID *', factoryPhoto: 'Factory or Warehouse Photo *', replaceFile: 'Replace file', viewCurrentFile: 'View current file', secureStorageNote: 'These files are stored in private storage and are never exposed through public URLs.', verificationSubmitted: 'Verification submitted successfully. Your application is now under review.', verificationMissing: 'Please complete all required verification fields and upload the required documents.',
-    payoutTab: 'Payout', payoutTitle: 'Payout setup', payoutIntro: 'Add your payout details only after your account is approved.', payoutLocked: 'Payout setup unlocks after your account is approved.', payoutCtaTitle: 'Complete your payout setup', payoutCtaBody: 'Your account is approved, but payout details are still missing.', payoutCtaAction: 'Set up payout →', payoutSaved: 'Payout details saved', payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)', alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *', onboardingTitle: 'Your account is still in the supplier application stage', onboardingBody: 'This is not the full operating dashboard yet. Complete your company profile and business verification so your application can move into pre-launch review.', onboardingProgress: 'Application progress', onboardingLockedTitle: 'Locked until approval', onboardingLockedBody: 'Products, offers, messages, and request access unlock only after your supplier application is reviewed and approved.', onboardingStepApply: '1) Start your application', onboardingStepReview: '2) Move into review before launch', onboardingStepVisibility: '3) Gain early visibility after approval', onboardingGoSettings: 'Complete profile', onboardingStatusDraft: 'Application incomplete', onboardingVerificationReady: 'Once you submit verification, your application moves directly into review.', verificationSubmitAction: 'Submit application for review',
+    regNumber: 'Company Registration Number *', yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)', businessLicense: 'Business License or Company ID *', factoryPhoto: 'Factory or Warehouse Photo *', replaceFile: 'Replace file', viewCurrentFile: 'View current file', secureStorageNote: 'These files are stored in private storage and are never exposed through public URLs.', verificationSubmitted: 'Verification submitted successfully. Your account is now in verification_under_review.', verificationMissing: 'Please complete all required verification fields and upload the required documents.',
+    payoutTab: 'Payout', payoutTitle: 'Payout setup', payoutIntro: 'Add your payout details only after your account is approved.', payoutLocked: 'Payout setup unlocks after your account is approved.', payoutCtaTitle: 'Complete your payout setup', payoutCtaBody: 'Your account is approved, but payout details are still missing.', payoutCtaAction: 'Set up payout →', payoutSaved: 'Payout details saved', payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)', alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *', onboardingTitle: 'Your account is still in the supplier application stage', onboardingBody: 'This is the supplier dashboard, but core actions are still locked. Complete your company profile and submit verification so the account can move into verification_under_review.', onboardingProgress: 'Application progress', onboardingLockedTitle: 'Locked until verification is approved', onboardingLockedBody: 'Products, offers, messages, trader requests, and every core supplier action unlock only after verification is approved.', onboardingStepApply: '1) Complete the basic profile', onboardingStepReview: '2) Submit verification for review', onboardingStepVisibility: '3) Unlock the full supplier experience after verification', onboardingGoSettings: 'Profile settings', onboardingStatusDraft: 'verification_required', onboardingVerificationReady: 'Once you submit verification, the account moves directly into verification_under_review.', verificationSubmitAction: 'Submit verification',
   },
   zh: {
     tag: 'Maabar · 供应商控制台', welcome: '欢迎，', desc: '在一个地方管理您的报价、产品和消息', supplierStageLabel: '账户状态', supplierIdLabel: 'Maabar 供应商编号',
@@ -184,8 +184,8 @@ const T = {
     verificationTab: '认证', verificationTitle: '完成企业认证', verificationIntro: '注册后在这里补充完整认证资料和文件，初始注册不再要求一次填完。',
     verificationStatusIncomplete: '认证未完成', verificationStatusComplete: '认证资料已提交审核', verificationStatusLocked: '账户正在审核中',
     verificationCtaTitle: '请完成企业认证', verificationCtaBody: '请提交注册资料、工厂证明和经验信息，审核流程才会开始。', verificationCtaAction: '去完成认证 →',
-    regNumber: '公司注册号 *', yearsExp: '从业年限 *', employees: '员工人数（可选）', businessLicense: '营业执照或企业身份证明 *', factoryPhoto: '工厂或仓库照片 *', replaceFile: '更换文件', viewCurrentFile: '查看当前文件', secureStorageNote: '这些文件保存在私有存储中，不会通过公开链接暴露。', verificationSubmitted: '认证资料已提交，当前正在审核。', verificationMissing: '请填写所有必填认证信息并上传所需文件。',
-    payoutTab: '收款', payoutTitle: '收款设置', payoutIntro: '只有在账户通过审核后才需要补充收款信息。', payoutLocked: '账户审核通过后才可设置收款方式。', payoutCtaTitle: '请完成收款设置', payoutCtaBody: '您的账户已通过审核，但收款资料还未填写完整。', payoutCtaAction: '去设置收款 →', payoutSaved: '收款信息已保存', payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)', alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *', onboardingTitle: '您的账户仍处于供应商申请阶段', onboardingBody: '这里还不是完整运营后台。请先完善公司资料和企业认证，让申请进入上线前审核。', onboardingProgress: '申请进度', onboardingLockedTitle: '通过前暂未开放', onboardingLockedBody: '产品、报价、消息和需求访问仅在供应商申请审核通过后开放。', onboardingStepApply: '1) 开始申请', onboardingStepReview: '2) 上线前进入审核', onboardingStepVisibility: '3) 通过后获得早期曝光', onboardingGoSettings: '完善资料', onboardingStatusDraft: '申请未完成', onboardingVerificationReady: '提交认证后，您的申请会直接进入审核。', verificationSubmitAction: '提交申请进入审核',
+    regNumber: '公司注册号 *', yearsExp: '从业年限 *', employees: '员工人数（可选）', businessLicense: '营业执照或企业身份证明 *', factoryPhoto: '工厂或仓库照片 *', replaceFile: '更换文件', viewCurrentFile: '查看当前文件', secureStorageNote: '这些文件保存在私有存储中，不会通过公开链接暴露。', verificationSubmitted: '认证资料已提交，账户当前处于 verification_under_review。', verificationMissing: '请填写所有必填认证信息并上传所需文件。',
+    payoutTab: '收款', payoutTitle: '收款设置', payoutIntro: '只有在账户通过审核后才需要补充收款信息。', payoutLocked: '账户审核通过后才可设置收款方式。', payoutCtaTitle: '请完成收款设置', payoutCtaBody: '您的账户已通过审核，但收款资料还未填写完整。', payoutCtaAction: '去设置收款 →', payoutSaved: '收款信息已保存', payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)', alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *', onboardingTitle: '您的账户仍处于供应商申请阶段', onboardingBody: '这里已经是供应商控制台，但核心操作仍然锁定。请先完善公司资料并提交认证，让账户进入 verification_under_review。', onboardingProgress: '申请进度', onboardingLockedTitle: '认证通过前保持锁定', onboardingLockedBody: '产品、报价、消息、采购需求以及所有核心供应商操作，都要在认证通过后才会开放。', onboardingStepApply: '1) 完成基础资料', onboardingStepReview: '2) 提交认证进入审核', onboardingStepVisibility: '3) 认证通过后解锁完整供应商体验', onboardingGoSettings: '资料设置', onboardingStatusDraft: 'verification_required', onboardingVerificationReady: '提交认证后，账户会直接进入 verification_under_review。', verificationSubmitAction: '提交认证',
   },
 };
 
@@ -848,13 +848,28 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [uploadingFactory, setUploadingFactory] = useState(false);
   const [samples, setSamples] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
-  const supplierState = getSupplierOnboardingState({ ...(profile || {}), ...verification, ...payout });
+  const supplierState = getSupplierOnboardingState({ ...(profile || {}), ...verification, ...payout }, user);
   const needsVerification = !supplierState.isVerificationComplete;
   const needsPayoutSetup = supplierState.isApprovedStage && !supplierState.isPayoutComplete;
   const isOnboardingLimited = !supplierState.canAccessOperationalFeatures;
-  const supplierTabs = isOnboardingLimited
-    ? tabs.filter((tab) => supplierState.limitedTabs.includes(tab.id))
-    : tabs;
+  const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
+  const tabs = [
+    { id: 'overview',     label: t.overview },
+    { id: 'verification', label: t.verificationTab, badge: needsVerification ? '!' : null },
+    { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
+    { id: 'requests',     label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests' },
+    { id: 'my-products',  label: t.myProducts },
+    { id: 'offers',       label: t.offers },
+    { id: 'add-product',  label: t.addProduct },
+    { id: 'samples',      label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', badge: stats.pendingSamples > 0 ? stats.pendingSamples : null },
+    { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
+    { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
+    { id: 'settings',     label: t.settings },
+  ];
+  const lockedTabIds = isOnboardingLimited
+    ? tabs.filter((tab) => !supplierState.limitedTabs.includes(tab.id)).map((tab) => tab.id)
+    : [];
+  const isRestrictedSupplierTab = lockedTabIds.includes(activeTab);
 
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
@@ -866,14 +881,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   }, [user]);
 
   useEffect(() => {
-    const allowedTabs = supplierTabs.map((tab) => tab.id);
-    if (!allowedTabs.includes(activeTab)) {
+    const knownTabs = tabs.map((tab) => tab.id);
+    if (!knownTabs.includes(activeTab)) {
       setActiveTab(supplierState.isApplicationStage ? 'verification' : 'overview');
     }
-  }, [activeTab, supplierState.isApplicationStage, supplierTabs]);
+  }, [activeTab, supplierState.isApplicationStage, tabs]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isRestrictedSupplierTab) return;
     if (activeTab === 'offers')       loadMyOffers();
     if (activeTab === 'messages')     loadInbox();
     if (activeTab === 'my-products')  loadMyProducts();
@@ -894,7 +909,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         setProduct(emptyProduct);
       }
     }
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, isRestrictedSupplierTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
@@ -1080,7 +1095,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       license_photo: verification.license_photo,
       factory_photo: verification.factory_photo,
     };
-    const nextSupplierState = getSupplierOnboardingState(nextProfile);
+    const nextSupplierState = getSupplierOnboardingState(nextProfile, user);
 
     if (!nextSupplierState.isVerificationComplete) {
       setVerificationMsg(t.verificationMissing);
@@ -1095,6 +1110,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       num_employees: verification.num_employees ? parseInt(verification.num_employees, 10) : null,
       license_photo: verification.license_photo,
       factory_photo: verification.factory_photo,
+      status: supplierState.isApprovedStage ? profile?.status : 'verification_under_review',
     };
     const { error } = await sb.from('profiles').update(payload).eq('id', user.id);
     setSavingVerification(false);
@@ -1598,20 +1614,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const supplierMaabarId = getSupplierMaabarId(profile || {});
   const pendingCount = pendingTracking.length + rejectedOffers.length;
 
-  const tabs = [
-    { id: 'overview',     label: t.overview },
-    { id: 'verification', label: t.verificationTab, badge: needsVerification ? '!' : null },
-    { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
-    { id: 'requests',     label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests' },
-    { id: 'my-products',  label: t.myProducts },
-    { id: 'offers',       label: t.offers },
-    { id: 'add-product',  label: t.addProduct },
-    { id: 'samples',      label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', badge: stats.pendingSamples > 0 ? stats.pendingSamples : null },
-    { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
-    { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
-    { id: 'settings',     label: t.settings },
-  ];
-
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const section = { animation: 'fadeIn 0.35s ease' };
 
@@ -1642,22 +1644,29 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         </div>
 
         <div style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
-          {supplierTabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              padding: '10px 18px', background: 'none', border: 'none',
-              borderBottom: activeTab === tab.id ? '1px solid var(--text-primary)' : '1px solid transparent',
-              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-disabled)',
-              fontSize: 11, cursor: 'pointer', transition: 'all 0.2s', position: 'relative',
-              ...arFont, letterSpacing: lang === 'zh' ? 0 : 1.5,
-              textTransform: lang === 'zh' ? 'none' : 'uppercase',
-              whiteSpace: 'nowrap', minHeight: 44,
-            }}>
-              {tab.label}
-              {tab.badge && (
-                <span style={{ position: 'absolute', top: 6, right: 2, background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: 8, fontWeight: 700, borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.badge}</span>
-              )}
-            </button>
-          ))}
+          {tabs.map(tab => {
+            const tabLocked = lockedTabIds.includes(tab.id);
+            return (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                padding: '10px 18px', background: 'none', border: 'none',
+                borderBottom: activeTab === tab.id ? '1px solid var(--text-primary)' : '1px solid transparent',
+                color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-disabled)',
+                opacity: tabLocked ? 0.72 : 1,
+                fontSize: 11, cursor: 'pointer', transition: 'all 0.2s', position: 'relative',
+                ...arFont, letterSpacing: lang === 'zh' ? 0 : 1.5,
+                textTransform: lang === 'zh' ? 'none' : 'uppercase',
+                whiteSpace: 'nowrap', minHeight: 44,
+              }}>
+                {tab.label}
+                {tabLocked && !tab.badge && (
+                  <span style={{ marginInlineStart: 6, fontSize: 10, color: 'var(--text-tertiary)' }}>🔒</span>
+                )}
+                {tab.badge && (
+                  <span style={{ position: 'absolute', top: 6, right: 2, background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: 8, fontWeight: 700, borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.badge}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -1666,6 +1675,42 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       ══════════════════════════════════════ */}
       <div style={{ background: 'var(--bg-base)', minHeight: 'calc(100vh - 280px)' }}>
         <div className="dash-content">
+
+          {isRestrictedSupplierTab && (
+            <div style={{ ...section, maxWidth: 760 }}>
+              <div style={{
+                padding: '28px 28px 24px',
+                borderRadius: 'var(--radius-xl)',
+                border: '1px solid rgba(139,120,255,0.18)',
+                background: 'rgba(139,120,255,0.06)',
+              }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
+                  MAABAR SUPPLIER ACCESS
+                </p>
+                <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
+                  {verificationLockMessage}
+                </h2>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.9, marginBottom: 18, ...arFont }}>
+                  {isAr
+                    ? 'هذه الصفحة تبقى مقفلة إلى أن تكتمل عملية التحقق ويتم اعتماد الحساب. حالياً يمكنك استخدام لوحة المورد، إعدادات الملف، ومسار التحقق فقط.'
+                    : lang === 'zh'
+                      ? '该页面会保持锁定，直到认证完成并且账户通过审核。目前您只能使用供应商控制台、资料设置和认证流程。'
+                      : 'This page stays locked until verification is completed and the supplier account is approved. For now, you can use only the supplier dashboard, profile settings, and verification flow.'}
+                </p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button onClick={() => setActiveTab('verification')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
+                    {t.verificationCtaAction}
+                  </button>
+                  <button onClick={() => setActiveTab('settings')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>
+                    {t.onboardingGoSettings}
+                  </button>
+                  <button onClick={() => setActiveTab('overview')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>
+                    {isAr ? 'العودة للوحة المورد' : lang === 'zh' ? '返回控制台' : 'Back to dashboard'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
@@ -1851,7 +1896,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── REQUESTS ── */}
-          {activeTab === 'requests' && (
+          {!isRestrictedSupplierTab && activeTab === 'requests' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 24, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
@@ -2013,7 +2058,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── MY PRODUCTS ── */}
-          {activeTab === 'my-products' && (
+          {!isRestrictedSupplierTab && activeTab === 'my-products' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 32 }}>
@@ -2068,7 +2113,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── MY OFFERS ── */}
-          {activeTab === 'offers' && (
+          {!isRestrictedSupplierTab && activeTab === 'offers' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.myOffers}</h2>
@@ -2263,7 +2308,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── MESSAGES ── */}
-          {activeTab === 'messages' && (
+          {!isRestrictedSupplierTab && activeTab === 'messages' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.messagesTitle}</h2>
@@ -2291,7 +2336,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
           {/* ── ADD PRODUCT ── */}
           {/* ── SAMPLES ── */}
-          {activeTab === 'samples' && (
+          {!isRestrictedSupplierTab && activeTab === 'samples' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
@@ -2332,7 +2377,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── REVIEWS ── */}
-          {activeTab === 'reviews' && (
+          {!isRestrictedSupplierTab && activeTab === 'reviews' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
@@ -2372,7 +2417,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             </div>
           )}
 
-          {activeTab === 'add-product' && (
+          {!isRestrictedSupplierTab && activeTab === 'add-product' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.addProductTitle}</h2>
@@ -2461,7 +2506,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── PAYOUT ── */}
-          {activeTab === 'payout' && (
+          {!isRestrictedSupplierTab && activeTab === 'payout' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 14, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.payoutTitle}</h2>

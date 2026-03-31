@@ -6,7 +6,7 @@ import { sendMaabarEmail } from '../lib/maabarEmail';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
-  shouldPromoteSupplierToReview,
+  shouldPromoteSupplierAfterEmailConfirmation,
 } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 import { buildAuthCallbackUrl } from '../lib/authRedirects';
@@ -16,7 +16,7 @@ const L = {
     buyerTitle: 'أهلاً بك في مَعبر',
     buyerSub: 'تسوّق من موردين صينيين موثوقين',
     supplierTitle: 'طلب انضمام المورد',
-    supplierSub: 'هذه هي صفحة الدخول والتقديم الموحدة للموردين. إذا كان حسابك معتمداً بالفعل فسجّل الدخول مباشرة. وإذا كنت تتقدّم لأول مرة فأدخل بيانات الشركة الأساسية، أضف روابط صفحاتك التجارية، أكّد بريدك الإلكتروني، ثم سننقلك إلى صفحة حالة الطلب.',
+    supplierSub: 'هذه هي صفحة الدخول والتقديم الموحدة للموردين. إذا كان حسابك معتمداً بالفعل فسجّل الدخول مباشرة. وإذا كنت تتقدّم لأول مرة فأدخل بيانات الشركة الأساسية، أضف روابط صفحاتك التجارية، أكّد بريدك الإلكتروني، ثم سننقلك إلى لوحة المورد لإكمال التحقق.',
     email: 'البريد الإلكتروني',
     pass: 'كلمة المرور',
     firstName: 'الاسم الأول',
@@ -47,7 +47,7 @@ const L = {
     termsLabel: 'أوافق على ',
     termsLink: 'الشروط والأحكام',
     mustAgreeTerms: 'يجب الموافقة على الشروط والأحكام.',
-    pendingMsg: 'تم استلام طلب المورد. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وسنحوّلك مباشرة إلى صفحة حالة الطلب تحت المراجعة. تبدأ المراجعة بعد تأكيد البريد، وعادةً تصل المتابعة الأولى خلال 3–5 أيام عمل.',
+    pendingMsg: 'تم استلام طلب المورد. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وسنحوّلك مباشرة إلى لوحة المورد لإكمال التحقق. لن تُفتح الإجراءات الأساسية إلا بعد اكتمال التحقق ومراجعته.',
     googleLogin: 'دخول بـ Google',
     emailNotConfirmed: 'يرجى تأكيد بريدك الإلكتروني أولاً ثم متابعة طلب المورد.',
     wrongCredentials: 'إيميل أو كلمة مرور غير صحيحة.',
@@ -61,7 +61,7 @@ const L = {
     buyerTitle: 'Welcome to Maabar',
     buyerSub: 'Shop from verified Chinese suppliers',
     supplierTitle: 'Supplier application',
-    supplierSub: 'This is the shared supplier access page for both sign-in and first-time applications. If your supplier account is already approved, sign in directly. If you are applying for the first time, submit the basic company details, add your trade page links, confirm your email, and we will take you to the application-status page.',
+    supplierSub: 'This is the shared supplier access page for both sign-in and first-time applications. If your supplier account is already approved, sign in directly. If you are applying for the first time, submit the basic company details, add your trade page links, confirm your email, and we will take you into the supplier dashboard to complete verification.',
     email: 'Email',
     pass: 'Password',
     firstName: 'First Name',
@@ -92,7 +92,7 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions.',
-    pendingMsg: 'Your supplier application was received. We sent a confirmation email — after activation, sign in and we will take you straight into your pending-review status page. Review starts after email confirmation, and the first follow-up usually happens within 3–5 business days.',
+    pendingMsg: 'Your supplier application was received. We sent a confirmation email — after activation, sign in and we will take you straight into the supplier dashboard to complete verification. Core supplier actions unlock only after verification is submitted and approved.',
     googleLogin: 'Continue with Google',
     emailNotConfirmed: 'Please confirm your email first, then continue your supplier application.',
     wrongCredentials: 'Invalid email or password.',
@@ -106,7 +106,7 @@ const L = {
     buyerTitle: '欢迎来到 Maabar',
     buyerSub: '从认证中国供应商采购',
     supplierTitle: '供应商申请',
-    supplierSub: '这是供应商统一入口页，同时支持已批准账户登录和首次申请。若您的账户已经获批，请直接登录；若您是首次申请，请填写基础公司资料、补充贸易页面链接并完成邮箱确认，系统会带您进入申请状态页。',
+    supplierSub: '这是供应商统一入口页，同时支持已批准账户登录和首次申请。若您的账户已经获批，请直接登录；若您是首次申请，请填写基础公司资料、补充贸易页面链接并完成邮箱确认，系统会带您进入供应商控制台继续认证。',
     email: '电子邮件',
     pass: '密码',
     firstName: '名',
@@ -137,7 +137,7 @@ const L = {
     termsLabel: '我同意',
     termsLink: '条款与条件',
     mustAgreeTerms: '您必须同意条款与条件。',
-    pendingMsg: '我们已收到您的供应商申请。确认邮件已发送；激活后登录，系统会直接带您进入待审核状态页。邮箱确认后审核才会开始，首次跟进通常会在 3–5 个工作日内进行。',
+    pendingMsg: '我们已收到您的供应商申请。确认邮件已发送；激活后登录，系统会直接带您进入供应商控制台继续完成认证。只有在认证提交并审核通过后，核心供应商功能才会解锁。',
     googleLogin: '使用 Google 登录',
     emailNotConfirmed: '请先确认邮箱，然后继续供应商申请。',
     wrongCredentials: '邮箱或密码错误。',
@@ -152,9 +152,9 @@ const L = {
 const SUPPLIER_SIGNUP_CONTENT = {
   ar: {
     introTag: 'للموردين الصينيين',
-    introTitle: 'قدّم بيانات أساسية فقط — ثم انتظر داخل صفحة حالة واضحة',
-    introBody: 'هذا التسجيل الأول ليس تحققاً كاملاً. الفكرة هنا أن ترسل هوية الشركة الأساسية ورابطاً تجارياً موثوقاً، ثم نبدأ المراجعة بعد تأكيد البريد.',
-    steps: ['بيانات شركة أساسية', 'تأكيد البريد الإلكتروني', 'حالة تحت المراجعة ثم تواصل الفريق'],
+    introTitle: 'قدّم البيانات الأساسية الآن — ثم أكمل التحقق من لوحة المورد',
+    introBody: 'هذا التسجيل الأول ليس تحققاً كاملاً. الفكرة هنا أن ترسل هوية الشركة الأساسية ورابطاً تجارياً موثوقاً، وبعد تأكيد البريد تدخل مباشرة إلى لوحة المورد لإكمال التحقق.',
+    steps: ['بيانات شركة أساسية', 'تأكيد البريد الإلكتروني', 'الدخول إلى لوحة المورد ثم بدء التحقق'],
     checklist: [
       'استخدم اسم الشركة الرسمي أو الاسم الذي يعرفك به المشترون',
       'أضف رابط صفحة تجارية حقيقية أو موقعاً رسمياً يمكن للفريق مراجعته بسرعة',
@@ -173,9 +173,9 @@ const SUPPLIER_SIGNUP_CONTENT = {
   },
   en: {
     introTag: 'For Chinese suppliers',
-    introTitle: 'Submit only the basics now — then wait in a clear review-status page',
-    introBody: 'This first signup is intentionally lighter than full verification. The goal is to capture a credible company identity and trade page first, then start review only after real email confirmation.',
-    steps: ['Basic company profile', 'Email confirmation', 'Pending review then direct team follow-up'],
+    introTitle: 'Submit the basics now — then complete verification inside the supplier dashboard',
+    introBody: 'This first signup is intentionally lighter than full verification. The goal is to capture a credible company identity and trade page first, then move you into the supplier dashboard after real email confirmation so you can complete verification there.',
+    steps: ['Basic company profile', 'Email confirmation', 'Open the supplier dashboard and start verification'],
     checklist: [
       'Use the legal company name or the name buyers already know',
       'Add a real trade page or company website that can be reviewed quickly',
@@ -194,9 +194,9 @@ const SUPPLIER_SIGNUP_CONTENT = {
   },
   zh: {
     introTag: '面向中国供应商',
-    introTitle: '第一步只提交基础资料，然后进入清晰的待审核状态页',
-    introBody: '首次申请故意保持轻量，不是一次性做完整认证。先提交可信的公司身份和贸易资料链接，邮箱确认后再正式进入审核。',
-    steps: ['基础公司资料', '邮箱确认', '待审核状态页 + 团队跟进'],
+    introTitle: '先提交基础资料，然后在供应商控制台完成认证',
+    introBody: '首次申请故意保持轻量，不是一次性做完整认证。先提交可信的公司身份和贸易资料链接，完成邮箱确认后，系统会直接带您进入供应商控制台继续认证。',
+    steps: ['基础公司资料', '邮箱确认', '进入供应商控制台并开始认证'],
     checklist: [
       '请填写营业主体名称，或买家已经熟悉的公司/店铺名称',
       '请提供真实可访问的贸易页面或官网，方便快速审核',
@@ -442,10 +442,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     let nextProfile = profile;
 
-    if (nextProfile?.role === 'supplier' && shouldPromoteSupplierToReview(nextProfile, data.user)) {
+    if (nextProfile?.role === 'supplier' && shouldPromoteSupplierAfterEmailConfirmation(nextProfile, data.user)) {
       const { data: promotedProfile } = await sb
         .from('profiles')
-        .update({ status: 'pending' })
+        .update({ status: 'verification_required' })
         .eq('id', data.user.id)
         .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,trade_links,reg_number,years_experience,license_photo,factory_photo')
         .single();
@@ -512,7 +512,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     const metaData = {
       role,
-      status: isSupplier ? 'draft' : 'active',
+      status: isSupplier ? 'registered' : 'active',
       ...(!isSupplier && {
         full_name: `${trimValue(firstName)} ${trimValue(lastName)}`.trim(),
         phone: trimValue(phone),

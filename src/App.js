@@ -17,7 +17,7 @@ import {
   getSupplierPrimaryRoute,
   getSupplierTradeLinks,
   shouldNotifyAdminOfConfirmedSupplier,
-  shouldPromoteSupplierToReview,
+  shouldPromoteSupplierAfterEmailConfirmation,
 } from './lib/supplierOnboarding';
 
 // Pages
@@ -27,7 +27,6 @@ import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
-import PendingApproval from './pages/PendingApproval';
 import AuthCallback from './pages/AuthCallback';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -162,10 +161,10 @@ function App() {
 
     let profileRow = data;
 
-    if (profileRow && shouldPromoteSupplierToReview(profileRow, sessionUser)) {
+    if (profileRow && shouldPromoteSupplierAfterEmailConfirmation(profileRow, sessionUser)) {
       const { data: promotedProfile, error: promoteError } = await sb
         .from('profiles')
-        .update({ status: 'pending' })
+        .update({ status: 'verification_required' })
         .eq('id', id)
         .select('*')
         .single();
@@ -226,6 +225,93 @@ function App() {
     // نحفظ الـ channel عشان نلغيها لو الجلسة انتهت
     window._profileChannel = ch;
   };
+
+  const SupplierVerificationLocked = () => (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--bg-base)',
+      padding: 24,
+      color: 'var(--text-primary)',
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: 560,
+        borderRadius: 24,
+        border: '1px solid var(--border-subtle)',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+        padding: '36px 30px',
+        textAlign: lang === 'ar' ? 'right' : 'left',
+      }}>
+        <p style={{
+          fontSize: 11,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          color: 'var(--text-tertiary)',
+          margin: '0 0 12px',
+        }}>
+          MAABAR SUPPLIER ACCESS
+        </p>
+        <h1 style={{
+          margin: '0 0 12px',
+          fontSize: lang === 'ar' ? 30 : 32,
+          fontWeight: 300,
+          lineHeight: 1.15,
+          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
+        }}>
+          Complete verification to unlock the full supplier experience on Maabar
+        </h1>
+        <p style={{
+          margin: 0,
+          fontSize: 14,
+          lineHeight: 1.8,
+          color: 'var(--text-secondary)',
+          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
+        }}>
+          {lang === 'ar'
+            ? 'يمكنك استخدام لوحة المورد، إعدادات الملف، ومسار التحقق فقط إلى أن يتم توثيق الحساب.'
+            : lang === 'zh'
+              ? '在账户完成验证前，您只能使用供应商控制台、资料设置和认证流程。'
+              : 'Until your account is verified, only the supplier dashboard, profile settings, and verification flow stay open.'}
+        </p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 22 }}>
+          <button
+            onClick={() => window.location.assign('/dashboard')}
+            style={{
+              background: 'var(--text-primary)',
+              color: 'var(--bg-base)',
+              border: 'none',
+              borderRadius: 14,
+              minHeight: 44,
+              padding: '11px 18px',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {lang === 'ar' ? 'العودة إلى لوحة المورد' : lang === 'zh' ? '返回供应商控制台' : 'Back to supplier dashboard'}
+          </button>
+          <button
+            onClick={() => window.location.assign('/dashboard?tab=verification')}
+            style={{
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 14,
+              minHeight: 44,
+              padding: '11px 18px',
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            {lang === 'ar' ? 'افتح التحقق' : lang === 'zh' ? '打开认证流程' : 'Open verification'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const DashboardRouter = () => {
     if (loading || (user && !profile && !profileError)) return <div className="loading">...</div>;
@@ -309,10 +395,6 @@ function App() {
           </div>
         );
 
-      if (supplierState.isUnderReviewStage) {
-        return <PendingApproval {...sharedProps} />;
-      }
-
       return <DashboardSupplier {...sharedProps} />;
     }
     return <DashboardBuyer {...sharedProps} />;
@@ -376,9 +458,9 @@ function App() {
     const pageDir = isChromelessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
     const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
     const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
-    const withSupplierOperationalAccess = (element) => {
+    const withSupplierVerifiedAccess = (element) => {
       if (supplierState && !supplierState.canAccessOperationalFeatures) {
-        return <Navigate to={supplierPrimaryRoute} replace />;
+        return <SupplierVerificationLocked />;
       }
       return element;
     };
@@ -397,13 +479,13 @@ function App() {
           <Route path="/about"          element={<About           {...sharedProps} />} />
           <Route path="/contact"        element={<Contact         {...sharedProps} />} />
           <Route path="/support"        element={<Support         {...sharedProps} />} />
-          <Route path="/requests"       element={withSupplierOperationalAccess(<Requests        {...sharedProps} />)} />
+          <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
           <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
           <Route path="/supplier-access" element={<SupplierAccess {...sharedProps} />} />
           <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
           <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
-          <Route path="/chat/:partnerId"element={withSupplierOperationalAccess(<Chat            {...sharedProps} />)} />
-          <Route path="/inbox"          element={withSupplierOperationalAccess(<Inbox           {...sharedProps} />)} />
+          <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
+          <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
           <Route path="/terms"          element={<Terms           {...sharedProps} />} />
           <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
           <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />

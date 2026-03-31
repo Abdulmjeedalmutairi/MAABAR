@@ -207,25 +207,25 @@ ${supplierIdBlock}
         subject: 'تم استلام طلب انضمام المورد — مَعبر',
         eyebrow: 'Application Received',
         title: `أهلاً ${d.name || ''}،`,
-        body: 'استلمنا طلب انضمامك كمورد مع بيانات شركتك الأساسية. بعد تأكيد البريد الإلكتروني، سيبقى حسابك في حالة تحت المراجعة وسيتواصل معك فريق مَعبر قريباً.',
+        body: 'استلمنا طلب انضمامك كمورد مع بيانات شركتك الأساسية. بعد تأكيد البريد الإلكتروني، ستدخل مباشرة إلى لوحة المورد لإكمال التحقق، ثم يراجع فريق مَعبر الطلب بعد إرسال التحقق.',
       },
       en: {
         subject: 'Your supplier application was received — Maabar',
         eyebrow: 'Application Received',
         title: `Hello ${d.name || ''},`,
-        body: 'We received your supplier application and basic company details. After email confirmation, your account will stay in pending review and the Maabar team will contact you soon.',
+        body: 'We received your supplier application and basic company details. After email confirmation, you will enter the supplier dashboard to complete verification, and the Maabar team will review the account after verification is submitted.',
       },
       zh: {
         subject: '我们已收到您的供应商申请 — Maabar',
         eyebrow: 'Application Received',
         title: `${d.name || ''}，您好`,
-        body: '我们已收到您的供应商申请和基础公司资料。完成邮箱确认后，您的账户将进入待审核状态，Maabar 团队会尽快与您联系。',
+        body: '我们已收到您的供应商申请和基础公司资料。完成邮箱确认后，您会进入供应商控制台继续完成认证；提交认证后，Maabar 团队会开始审核该账户。',
       },
     }[lang] || {
       subject: 'تم استلام طلب انضمام المورد — مَعبر',
       eyebrow: 'Application Received',
       title: `أهلاً ${d.name || ''}،`,
-      body: 'استلمنا طلب انضمامك كمورد مع بيانات شركتك الأساسية. بعد تأكيد البريد الإلكتروني، سيبقى حسابك في حالة تحت المراجعة وسيتواصل معك فريق مَعبر قريباً.',
+      body: 'استلمنا طلب انضمامك كمورد مع بيانات شركتك الأساسية. بعد تأكيد البريد الإلكتروني، ستدخل مباشرة إلى لوحة المورد لإكمال التحقق، ثم يراجع فريق مَعبر الطلب بعد إرسال التحقق.',
     };
 
     return ({

@@ -77,7 +77,7 @@ export default function AdminSeed({ user, lang }) {
 
   const toggleUserStatus = async (userId, currentStatus) => {
     setTogglingUser(prev => ({ ...prev, [userId]: true }));
-    const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
+    const newStatus = currentStatus === 'verified' || currentStatus === 'active' ? 'disabled' : 'verified';
     await sb.from('profiles').update({ status: newStatus }).eq('id', userId);
     setOverviewUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
     setTogglingUser(prev => ({ ...prev, [userId]: false }));
@@ -181,7 +181,7 @@ WeChat: ${supplier.wechat || 'غير موجود'}
     setActionLoading(prev => ({ ...prev, [supplier.id]: 'approving' }));
     try {
       const { data: updatedSupplier, error: updateError } = await sb.from('profiles')
-        .update({ status: 'active' })
+        .update({ status: 'verified' })
         .eq('id', supplier.id)
         .in('status', getSupplierReviewQueueStatuses())
         .select('id,status,company_name')
@@ -402,9 +402,9 @@ WeChat: ${supplier.wechat || 'غير موجود'}
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: u.status === 'active' ? 'rgba(45,122,79,0.15)' : 'rgba(200,60,60,0.15)', color: u.status === 'active' ? '#4caf50' : '#ff6b6b' }}>{u.status}</span>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: (u.status === 'verified' || u.status === 'active') ? 'rgba(45,122,79,0.15)' : 'rgba(200,60,60,0.15)', color: (u.status === 'verified' || u.status === 'active') ? '#4caf50' : '#ff6b6b' }}>{u.status}</span>
                       <button onClick={() => toggleUserStatus(u.id, u.status)} disabled={!!togglingUser[u.id]} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 3 }}>
-                        {togglingUser[u.id] ? '...' : (u.status === 'active' ? 'تعطيل' : 'تفعيل')}
+                        {togglingUser[u.id] ? '...' : ((u.status === 'verified' || u.status === 'active') ? 'تعطيل' : 'تفعيل')}
                       </button>
                     </div>
                   </div>
