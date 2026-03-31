@@ -50,44 +50,69 @@ function localeMeta(lang = 'ar') {
 
 function wrap(content, options = {}) {
   const locale = localeMeta(options.lang || 'ar');
+  const subject = options.subject || 'مَعبر';
   return `<!DOCTYPE html>
 <html lang="${locale.lang}" dir="${locale.dir}">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="color-scheme" content="dark only">
-<meta name="supported-color-schemes" content="dark only">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light only" />
+<title>${subject}</title>
+<style>
+  body { margin:0; padding:0; background:#000000; font-family:${locale.font}; color:#ffffff; }
+  .bd { direction:${locale.dir}; text-align:${locale.align}; }
+  .gr { font-size:10px; letter-spacing:2px; color:#444; margin:0 0 14px; font-family:${locale.font}; }
+  .tg { font-size:24px; line-height:1.6; font-weight:700; color:#ffffff; margin:0 0 16px; font-family:${locale.font}; }
+  .ib { background:#1a1a1f; border-radius:8px; padding:20px; margin:0 0 28px; }
+  .il { font-size:10px; letter-spacing:2px; color:#444; margin:0 0 12px; font-family:${locale.font}; }
+  .ir { padding:6px 0; border-bottom:1px solid #222; font-family:${locale.font}; }
+  .ir:last-child { border-bottom:none; }
+  .ik { display:inline-block; min-width:120px; font-size:13px; color:#666; vertical-align:top; }
+  .iv { display:inline-block; font-size:13px; color:#aaa; vertical-align:top; }
+  .bw { margin-top:28px; text-align:${locale.align}; }
+  .bt { display:inline-block; background:#ffffff; border-radius:6px; padding:13px 32px; color:#111114 !important; text-decoration:none; font-size:14px; font-weight:700; font-family:${locale.font}; }
+  p { font-family:${locale.font}; }
+  a { color:inherit; }
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:#0a0a0b;background:#0a0a0b;font-family:${locale.font};color:#f5f5f2;direction:${locale.dir};text-align:${locale.align};">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0b" style="width:100%;background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
-    <tr>
-      <td align="center" bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:0;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
-          <tr>
-            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:0;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
-              <img src="${EMAIL_LOGO_URL}" alt="مَعبر | MAABAR" style="display:block;width:100%;max-width:620px;height:auto;border:0;" />
-              ${darkBlend(brandLockup('header'), '#0a0a0b')}
-            </td>
-          </tr>
-          <tr>
-            <td bgcolor="#101114" style="background:#101114;background-color:#101114;background-image:linear-gradient(#101114,#101114);padding:40px 32px;">
-              ${darkBlend(content, '#101114')}
-            </td>
-          </tr>
-          <tr>
-            <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:18px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
-              ${darkBlend(brandLockup('footer'), '#0a0a0b')}
-              <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px;line-height:1.8;">
-                <a href="https://maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">maabar.io</a>
-                &nbsp;·&nbsp;
-                <a href="mailto:hello@maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">hello@maabar.io</a>
-              </div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+<body style="margin:0;padding:0;background:#000000;font-family:${locale.font};color:#ffffff;direction:${locale.dir};text-align:${locale.align};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#000000;width:100%;border-collapse:collapse;">
+<tr>
+<td align="center" style="padding:0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border-collapse:collapse;">
+<tr>
+<td align="center" style="background:#111114;padding:28px 24px;border-bottom:1px solid #222226;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td align="center" style="font-size:19px;font-weight:700;color:#ffffff;font-family:'Cairo',Tahoma,Arial,sans-serif;letter-spacing:0.3px;">
+مَعبر &nbsp;<span style="color:#383838;">|</span>&nbsp; <span style="color:#aaaaaa;font-size:16px;font-weight:600;">MAABAR</span>
+</td>
+</tr>
+<tr>
+<td align="center" style="font-size:11px;color:#383838;padding-top:5px;letter-spacing:2px;font-family:Arial,sans-serif;">
+迈巴尔
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="background:#111114;padding:44px 32px 36px 32px;text-align:${locale.align};direction:${locale.dir};">
+${content}
+</td>
+</tr>
+<tr>
+<td align="center" style="background:#0d0d10;padding:20px 24px;border-top:1px solid #1a1a1f;">
+<div style="font-size:10px;letter-spacing:2px;color:#333;font-family:Arial,sans-serif;">
+MAABAR.IO &nbsp;·&nbsp; مَعبر &nbsp;·&nbsp; 迈巴尔
+</div>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
 </body>
 </html>`;
 }
