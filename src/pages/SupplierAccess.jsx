@@ -107,6 +107,7 @@ export default function SupplierAccess({ user, profile }) {
   const goToApply = () => nav(supplierPrimaryRoute);
   const goHome = () => nav('/');
   const jumpToScene = (index) => setActiveScene(index);
+  const goToPrevScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
   const goToNextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
   const isFinalScene = activeScene === totalScenes - 1;
   const finalApplyLabel = hasExistingSupplierAccount ? ctaCopy : 'Apply now';
@@ -254,6 +255,21 @@ export default function SupplierAccess({ user, profile }) {
                 />
               ))}
             </div>
+            {activeScene > 0 && (
+              <div className="supplier-journey-footer-controls">
+                <div className="supplier-mobile-journey-buttons">
+                  <button onClick={goToPrevScene} className="supplier-secondary-btn supplier-mobile-nav-btn">
+                    Back
+                  </button>
+                  <button
+                    onClick={isFinalScene ? goToApply : goToNextScene}
+                    className="supplier-primary-btn supplier-mobile-nav-btn supplier-mobile-nav-btn-primary"
+                  >
+                    {isFinalScene ? finalApplyLabel : 'Next'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
