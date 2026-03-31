@@ -44,9 +44,44 @@ export function getSupplierVerificationState(profile = {}) {
   return {
     missingKeys,
     missingCount: missingKeys.length,
+    requiredCount: SUPPLIER_VERIFICATION_REQUIRED_KEYS.length,
+    completedRequiredCount: SUPPLIER_VERIFICATION_REQUIRED_KEYS.length - missingKeys.length,
+    progressPercent: Math.round(((SUPPLIER_VERIFICATION_REQUIRED_KEYS.length - missingKeys.length) / SUPPLIER_VERIFICATION_REQUIRED_KEYS.length) * 100),
     hasContactMethod,
     isVerificationComplete: missingKeys.length === 0,
     payoutMethod,
     isPayoutComplete,
+  };
+}
+
+export function getSupplierOnboardingState(profile = {}) {
+  const verification = getSupplierVerificationState(profile);
+  const status = profile?.status || 'pending';
+
+  let stage = 'application';
+  if (status === 'active') stage = 'approved';
+  else if (status === 'rejected') stage = 'rejected';
+  else if (verification.isVerificationComplete) stage = 'under_review';
+
+  const canAccessOperationalFeatures = stage === 'approved';
+  const routeGuardRedirect = stage === 'application' ? '/dashboard?tab=verification' : '/dashboard';
+
+  return {
+    ...verification,
+    status,
+    stage,
+    isApplicationStage: stage === 'application',
+    isUnderReviewStage: stage === 'under_review',
+    isApprovedStage: stage === 'approved',
+    isRejectedStage: stage === 'rejected',
+    canAccessOperationalFeatures,
+    canAccessMessaging: canAccessOperationalFeatures,
+    canAccessRequests: canAccessOperationalFeatures,
+    canAccessProducts: canAccessOperationalFeatures,
+    canAccessOffers: canAccessOperationalFeatures,
+    canAccessPayoutSetup: canAccessOperationalFeatures,
+    routeGuardRedirect,
+    limitedTabs: ['overview', 'verification', 'settings'],
+    fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'reviews', 'messages', 'settings'],
   };
 }

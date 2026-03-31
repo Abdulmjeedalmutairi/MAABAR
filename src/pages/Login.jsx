@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
-import { getSupplierVerificationState } from '../lib/supplierOnboarding';
+import { getSupplierOnboardingState } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 
 const UNIFONIC_APP_SID   = '';
@@ -28,7 +28,7 @@ const SPECIALITIES = [
 const L = {
   ar: {
     buyerTitle: 'أهلاً بك في مَعبر', buyerSub: 'تسوّق من موردين صينيين موثوقين',
-    supplierTitle: 'انضم كمورد', supplierSub: 'ابدأ البيع للسوق السعودي',
+    supplierTitle: 'قدّم طلب الانضمام كمورد', supplierSub: 'ابدأ طلب انضمامك للوصول المبكر إلى المشترين السعوديين',
     email: 'البريد الإلكتروني', pass: 'كلمة المرور',
     firstName: 'الاسم الأول', lastName: 'الاسم الأخير',
     phone: 'رقم الجوال', city: 'المدينة',
@@ -38,7 +38,7 @@ const L = {
     country: 'الدولة *', supCity: 'المدينة *',
     speciality: 'التخصص *',
     contactHint: 'أدخل WeChat أو WhatsApp على الأقل',
-    verificationLater: 'بيانات التحقق والمستندات ستُطلب منك بعد تسجيل الدخول.',
+    verificationLater: 'هذا طلب مبدئي فقط. بعد تأكيد البريد وتسجيل الدخول ستكمل التحقق التجاري قبل المراجعة.',
     signin: 'تسجيل الدخول', signup: 'إنشاء حساب',
     toSignup: 'ما عندك حساب؟', toSignupLink: 'سجل الآن',
     toSignin: 'عندك حساب؟', toSigninLink: 'سجل دخولك',
@@ -47,7 +47,7 @@ const L = {
     termsLabel: 'أوافق على ',
     termsLink: 'الشروط والأحكام',
     mustAgreeTerms: 'يجب الموافقة على الشروط والأحكام',
-    pendingMsg: 'أرسلنا رسالة تأكيد إلى بريدك. بعد التفعيل سجّل دخولك وأكمل التحقق التجاري.',
+    pendingMsg: 'استلمنا طلبك المبدئي. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وأكمل التحقق التجاري لإرسال الطلب للمراجعة.',
     googleLogin: 'دخول بـ Google',
     otpTitle: 'تأكيد رقم الجوال',
     otpSub: 'أرسلنا رمز التحقق إلى رقمك',
@@ -57,13 +57,13 @@ const L = {
     otpResendIn: 'إعادة الإرسال بعد',
     otpWrong: 'الرمز غير صحيح، حاول مجدداً',
     otpSending: 'جاري الإرسال...',
-    emailNotConfirmed: 'يرجى تأكيد إيميلك أولاً',
+    emailNotConfirmed: 'يرجى تأكيد بريدك الإلكتروني أولاً ثم متابعة طلب المورد',
     wrongCredentials: 'إيميل أو كلمة مرور غير صحيحة',
     cities: ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام','الخبر','تبوك','أبها','القصيم','حائل','جازان','نجران'],
   },
   en: {
     buyerTitle: 'Welcome to Maabar', buyerSub: 'Shop from verified Chinese suppliers',
-    supplierTitle: 'Join as Supplier', supplierSub: 'Start selling to the Saudi market',
+    supplierTitle: 'Apply as a Supplier', supplierSub: 'Start your supplier application for early access to Saudi buyers',
     email: 'Email', pass: 'Password',
     firstName: 'First Name', lastName: 'Last Name',
     phone: 'Phone', city: 'City',
@@ -73,7 +73,7 @@ const L = {
     country: 'Country *', supCity: 'City *',
     speciality: 'Specialty *',
     contactHint: 'Add at least one contact method: WeChat or WhatsApp',
-    verificationLater: 'Business verification details and documents will be requested after sign-in.',
+    verificationLater: 'This is only the lightweight application start. After email confirmation and sign-in, you will complete business verification before review.',
     signin: 'Sign In', signup: 'Create Account',
     toSignup: "Don't have an account?", toSignupLink: 'Sign up',
     toSignin: 'Already have an account?', toSigninLink: 'Sign in',
@@ -82,7 +82,7 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions',
-    pendingMsg: 'We sent a confirmation email. After activation, sign in and complete your business verification.',
+    pendingMsg: 'We received your initial application. We sent a confirmation email — after activation, sign in and complete business verification to move your application into review.',
     googleLogin: 'Continue with Google',
     otpTitle: 'Verify your phone',
     otpSub: 'We sent a verification code to your number',
@@ -92,13 +92,13 @@ const L = {
     otpResendIn: 'Resend in',
     otpWrong: 'Incorrect code, please try again',
     otpSending: 'Sending...',
-    emailNotConfirmed: 'Please confirm your email first',
+    emailNotConfirmed: 'Please confirm your email first, then continue your supplier application',
     wrongCredentials: 'Invalid email or password',
     cities: ['Riyadh','Jeddah','Mecca','Medina','Dammam','Khobar','Tabuk','Abha','Qassim','Hail','Jazan','Najran'],
   },
   zh: {
     buyerTitle: '欢迎来到Maabar', buyerSub: '从认证中国供应商采购',
-    supplierTitle: '加入成为供应商', supplierSub: '开始向沙特市场销售',
+    supplierTitle: '申请成为供应商', supplierSub: '开启您的供应商申请，争取提前接触沙特买家',
     email: '电子邮件', pass: '密码',
     firstName: '名', lastName: '姓',
     phone: '电话', city: '城市',
@@ -108,7 +108,7 @@ const L = {
     country: '国家 *', supCity: '城市 *',
     speciality: '专业领域 *',
     contactHint: '至少填写一种联系方式：WeChat 或 WhatsApp',
-    verificationLater: '登录后再补充企业认证资料和文件。',
+    verificationLater: '这只是轻量申请开始。确认邮箱并登录后，还需要补充企业认证资料再进入审核。',
     signin: '登录', signup: '创建账户',
     toSignup: '没有账户？', toSignupLink: '立即注册',
     toSignin: '已有账户？', toSigninLink: '登录',
@@ -117,7 +117,7 @@ const L = {
     termsLabel: '我同意',
     termsLink: '条款与条件',
     mustAgreeTerms: '您必须同意条款与条件',
-    pendingMsg: '确认邮件已发送。激活后请登录并完成企业认证。',
+    pendingMsg: '我们已收到您的初步申请。确认邮件已发送，激活后请登录并完成企业认证，申请才会进入审核。',
     googleLogin: '使用Google登录',
     otpTitle: '验证手机号',
     otpSub: '我们已向您的号码发送验证码',
@@ -127,7 +127,7 @@ const L = {
     otpResendIn: '重新发送（',
     otpWrong: '验证码错误，请重试',
     otpSending: '发送中...',
-    emailNotConfirmed: '请先确认您的电子邮件',
+    emailNotConfirmed: '请先确认您的邮箱，然后继续供应商申请',
     wrongCredentials: '电子邮件或密码错误',
     cities: ['利雅得','吉达','麦加','麦地那','达曼','霍拜尔','塔布克','艾卜哈','盖西姆','哈伊勒','吉赞','纳季兰'],
   },
@@ -198,12 +198,21 @@ export default function Login({ setUser, setProfile, lang }) {
       setMsgType('error');
       return;
     }
+    if (isSupplier && !data.user?.email_confirmed_at) {
+      await sb.auth.signOut();
+      setMsg(l.emailNotConfirmed);
+      setMsgType('error');
+      return;
+    }
     setUser(data.user);
     const { data: profile } = await sb.from('profiles').select('id,role,status,full_name,company_name,phone,city,reg_number,years_experience,license_photo,factory_photo').eq('id', data.user.id).single();
     if (profile) setProfile(profile);
-    if (profile?.role === 'supplier' && profile?.status === 'pending' && !getSupplierVerificationState(profile).isVerificationComplete) {
-      nav('/dashboard?tab=verification');
-      return;
+    if (profile?.role === 'supplier') {
+      const supplierState = getSupplierOnboardingState(profile);
+      if (!supplierState.canAccessOperationalFeatures) {
+        nav(supplierState.routeGuardRedirect);
+        return;
+      }
     }
     if (hasPendingAiReview()) {
       nav(getIdeaFlowResumePath());
@@ -643,7 +652,9 @@ export default function Login({ setUser, setProfile, lang }) {
               minHeight: 48,
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
-              {loading ? '...' : mode === 'signin' ? l.signin : l.signup}
+              {loading ? '...' : mode === 'signin'
+                ? (isSupplier ? (isAr ? 'متابعة الطلب' : lang === 'zh' ? '继续申请' : 'Continue application') : l.signin)
+                : (isSupplier ? (isAr ? 'إرسال الطلب المبدئي' : lang === 'zh' ? '提交初步申请' : 'Submit initial application') : l.signup)}
             </button>
 
             {/* Google Login — buyer only */}
@@ -689,7 +700,11 @@ export default function Login({ setUser, setProfile, lang }) {
               fontSize: 13, color: 'var(--text-disabled)',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
-              {mode === 'signin' ? l.toSignup : l.toSignin}{' '}
+              {isSupplier
+                ? (mode === 'signin'
+                    ? (isAr ? 'ما عندك طلب بعد؟' : lang === 'zh' ? '还没有申请？' : "Don't have an application yet?")
+                    : (isAr ? 'عندك طلب قائم؟' : lang === 'zh' ? '已经提交过申请？' : 'Already started your application?'))
+                : (mode === 'signin' ? l.toSignup : l.toSignin)}{' '}
               <button onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setMsg(''); }} style={{
                 color: 'var(--text-secondary)',
                 fontWeight: 500,
@@ -703,7 +718,11 @@ export default function Login({ setUser, setProfile, lang }) {
               }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-                {mode === 'signin' ? l.toSignupLink : l.toSigninLink}
+                {isSupplier
+                  ? (mode === 'signin'
+                      ? (isAr ? 'ابدأ طلبك' : lang === 'zh' ? '开始申请' : 'Start application')
+                      : (isAr ? 'ادخل لمتابعة الطلب' : lang === 'zh' ? '登录继续申请' : 'Sign in to continue'))
+                  : (mode === 'signin' ? l.toSignupLink : l.toSigninLink)}
               </button>
             </p>
           </>

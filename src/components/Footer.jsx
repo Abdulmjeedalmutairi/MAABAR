@@ -21,7 +21,7 @@ const T = {
         { label: 'تصفح الموردين', path: '/suppliers' },
       ],
       suppliers: [
-        { label: 'انضم كمورد', path: '/login/supplier' },
+        { label: 'قدّم طلب الانضمام', path: '/supplier-access' },
         { label: 'بوابة الموردين', path: '/supplier' },
       ],
     },
@@ -45,7 +45,7 @@ const T = {
         { label: 'Browse Suppliers', path: '/suppliers' },
       ],
       suppliers: [
-        { label: 'Join as Supplier', path: '/login/supplier' },
+        { label: 'Apply as Supplier', path: '/supplier-access' },
         { label: 'Supplier Portal', path: '/supplier' },
       ],
     },
@@ -69,7 +69,7 @@ const T = {
         { label: '浏览供应商', path: '/suppliers' },
       ],
       suppliers: [
-        { label: '加入成为供应商', path: '/login/supplier' },
+        { label: '申请成为供应商', path: '/supplier-access' },
         { label: '供应商门户', path: '/supplier' },
       ],
     },

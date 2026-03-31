@@ -19,7 +19,7 @@ import {
   getOfferShippingMethod,
   hasOfferShippingCost,
 } from '../lib/offerPricing';
-import { getSupplierVerificationState, normalizeSupplierDocStoragePath } from '../lib/supplierOnboarding';
+import { getSupplierOnboardingState, normalizeSupplierDocStoragePath } from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -100,7 +100,7 @@ const T = {
     verificationStatusIncomplete: 'التحقق غير مكتمل', verificationStatusComplete: 'تم إرسال التحقق للمراجعة', verificationStatusLocked: 'الحساب الآن تحت المراجعة',
     verificationCtaTitle: 'أكمل التحقق التجاري', verificationCtaBody: 'أرسل السجل التجاري وصورة المصنع وبيانات الخبرة حتى يدخل طلبك مرحلة المراجعة.', verificationCtaAction: 'أكمل التحقق ←',
     regNumber: 'رقم تسجيل الشركة *', yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)', businessLicense: 'رخصة الأعمال أو هوية المنشأة *', factoryPhoto: 'صورة المصنع أو المستودع *', replaceFile: 'استبدال الملف', viewCurrentFile: 'عرض الملف الحالي', secureStorageNote: 'يتم حفظ هذه الملفات داخل تخزين خاص، ولا تُعرض بروابط عامة.', verificationSubmitted: 'تم إرسال التحقق بنجاح. الطلب الآن تحت المراجعة.', verificationMissing: 'يرجى تعبئة جميع حقول التحقق المطلوبة ورفع المستندات.',
-    payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف طريقة استلام الدفعات بعد قبول الحساب فقط.', payoutLocked: 'إعداد استلام الدفعات يفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل إعداد استلام الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بيانات استلام الأرباح غير مكتملة بعد.', payoutCtaAction: 'إعداد الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)', alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *',
+    payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف طريقة استلام الدفعات بعد قبول الحساب فقط.', payoutLocked: 'إعداد استلام الدفعات يفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل إعداد استلام الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بيانات استلام الأرباح غير مكتملة بعد.', payoutCtaAction: 'إعداد الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', payMethod: 'طريقة استلام المدفوعات *', alipay: 'Alipay', swift: 'تحويل بنكي (SWIFT)', alipayAccount: 'رقم حساب Alipay *', swiftCode: 'رمز SWIFT *', bankName: 'اسم البنك *', onboardingTitle: 'طلبك ما زال في مرحلة الانضمام', onboardingBody: 'هذه ليست لوحة تشغيل كاملة بعد. أكمل ملف الشركة والتحقق التجاري حتى ينتقل طلبك إلى المراجعة قبل الإطلاق.', onboardingProgress: 'تقدّم الطلب', onboardingLockedTitle: 'المزايا المقفلة حتى القبول', onboardingLockedBody: 'المنتجات والعروض والرسائل وتصفح الطلبات تفتح بعد مراجعة الطلب والموافقة عليه.', onboardingStepApply: '1) ابدأ الطلب', onboardingStepReview: '2) ادخل المراجعة قبل الإطلاق', onboardingStepVisibility: '3) احصل على ظهور مبكر بعد القبول', onboardingGoSettings: 'إكمال الملف', onboardingStatusDraft: 'طلب غير مكتمل', onboardingVerificationReady: 'بعد إرسال التحقق سينتقل طلبك مباشرة إلى المراجعة.', verificationSubmitAction: 'إرسال الطلب للمراجعة',
   },
   en: {
     tag: 'Maabar · Supplier Dashboard', welcome: 'Welcome,', desc: 'Manage your offers, products and messages in one place',
@@ -140,7 +140,7 @@ const T = {
     verificationStatusIncomplete: 'Verification incomplete', verificationStatusComplete: 'Verification submitted for review', verificationStatusLocked: 'Account is currently under review',
     verificationCtaTitle: 'Complete your business verification', verificationCtaBody: 'Submit your registration, factory evidence, and experience details so your application can enter review.', verificationCtaAction: 'Complete verification →',
     regNumber: 'Company Registration Number *', yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)', businessLicense: 'Business License or Company ID *', factoryPhoto: 'Factory or Warehouse Photo *', replaceFile: 'Replace file', viewCurrentFile: 'View current file', secureStorageNote: 'These files are stored in private storage and are never exposed through public URLs.', verificationSubmitted: 'Verification submitted successfully. Your application is now under review.', verificationMissing: 'Please complete all required verification fields and upload the required documents.',
-    payoutTab: 'Payout', payoutTitle: 'Payout setup', payoutIntro: 'Add your payout details only after your account is approved.', payoutLocked: 'Payout setup unlocks after your account is approved.', payoutCtaTitle: 'Complete your payout setup', payoutCtaBody: 'Your account is approved, but payout details are still missing.', payoutCtaAction: 'Set up payout →', payoutSaved: 'Payout details saved', payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)', alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *',
+    payoutTab: 'Payout', payoutTitle: 'Payout setup', payoutIntro: 'Add your payout details only after your account is approved.', payoutLocked: 'Payout setup unlocks after your account is approved.', payoutCtaTitle: 'Complete your payout setup', payoutCtaBody: 'Your account is approved, but payout details are still missing.', payoutCtaAction: 'Set up payout →', payoutSaved: 'Payout details saved', payMethod: 'Payment Method *', alipay: 'Alipay', swift: 'Bank Transfer (SWIFT)', alipayAccount: 'Alipay Account Number *', swiftCode: 'SWIFT Code *', bankName: 'Bank Name *', onboardingTitle: 'Your account is still in the supplier application stage', onboardingBody: 'This is not the full operating dashboard yet. Complete your company profile and business verification so your application can move into pre-launch review.', onboardingProgress: 'Application progress', onboardingLockedTitle: 'Locked until approval', onboardingLockedBody: 'Products, offers, messages, and request access unlock only after your supplier application is reviewed and approved.', onboardingStepApply: '1) Start your application', onboardingStepReview: '2) Move into review before launch', onboardingStepVisibility: '3) Gain early visibility after approval', onboardingGoSettings: 'Complete profile', onboardingStatusDraft: 'Application incomplete', onboardingVerificationReady: 'Once you submit verification, your application moves directly into review.', verificationSubmitAction: 'Submit application for review',
   },
   zh: {
     tag: 'Maabar · 供应商控制台', welcome: '欢迎，', desc: '在一个地方管理您的报价、产品和消息',
@@ -180,7 +180,7 @@ const T = {
     verificationStatusIncomplete: '认证未完成', verificationStatusComplete: '认证资料已提交审核', verificationStatusLocked: '账户正在审核中',
     verificationCtaTitle: '请完成企业认证', verificationCtaBody: '请提交注册资料、工厂证明和经验信息，审核流程才会开始。', verificationCtaAction: '去完成认证 →',
     regNumber: '公司注册号 *', yearsExp: '从业年限 *', employees: '员工人数（可选）', businessLicense: '营业执照或企业身份证明 *', factoryPhoto: '工厂或仓库照片 *', replaceFile: '更换文件', viewCurrentFile: '查看当前文件', secureStorageNote: '这些文件保存在私有存储中，不会通过公开链接暴露。', verificationSubmitted: '认证资料已提交，当前正在审核。', verificationMissing: '请填写所有必填认证信息并上传所需文件。',
-    payoutTab: '收款', payoutTitle: '收款设置', payoutIntro: '只有在账户通过审核后才需要补充收款信息。', payoutLocked: '账户审核通过后才可设置收款方式。', payoutCtaTitle: '请完成收款设置', payoutCtaBody: '您的账户已通过审核，但收款资料还未填写完整。', payoutCtaAction: '去设置收款 →', payoutSaved: '收款信息已保存', payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)', alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *',
+    payoutTab: '收款', payoutTitle: '收款设置', payoutIntro: '只有在账户通过审核后才需要补充收款信息。', payoutLocked: '账户审核通过后才可设置收款方式。', payoutCtaTitle: '请完成收款设置', payoutCtaBody: '您的账户已通过审核，但收款资料还未填写完整。', payoutCtaAction: '去设置收款 →', payoutSaved: '收款信息已保存', payMethod: '收款方式 *', alipay: 'Alipay', swift: '银行转账 (SWIFT)', alipayAccount: 'Alipay账号 *', swiftCode: 'SWIFT代码 *', bankName: '银行名称 *', onboardingTitle: '您的账户仍处于供应商申请阶段', onboardingBody: '这里还不是完整运营后台。请先完善公司资料和企业认证，让申请进入上线前审核。', onboardingProgress: '申请进度', onboardingLockedTitle: '通过前暂未开放', onboardingLockedBody: '产品、报价、消息和需求访问仅在供应商申请审核通过后开放。', onboardingStepApply: '1) 开始申请', onboardingStepReview: '2) 上线前进入审核', onboardingStepVisibility: '3) 通过后获得早期曝光', onboardingGoSettings: '完善资料', onboardingStatusDraft: '申请未完成', onboardingVerificationReady: '提交认证后，您的申请会直接进入审核。', verificationSubmitAction: '提交申请进入审核',
   },
 };
 
@@ -638,9 +638,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [uploadingFactory, setUploadingFactory] = useState(false);
   const [samples, setSamples] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
-  const verificationState = getSupplierVerificationState({ ...(profile || {}), ...verification, ...payout });
-  const needsVerification = !verificationState.isVerificationComplete;
-  const needsPayoutSetup = profile?.status === 'active' && !verificationState.isPayoutComplete;
+  const supplierState = getSupplierOnboardingState({ ...(profile || {}), ...verification, ...payout });
+  const needsVerification = !supplierState.isVerificationComplete;
+  const needsPayoutSetup = profile?.status === 'active' && !supplierState.isPayoutComplete;
+  const isOnboardingLimited = !supplierState.canAccessOperationalFeatures;
+  const supplierTabs = isOnboardingLimited
+    ? tabs.filter((tab) => supplierState.limitedTabs.includes(tab.id))
+    : tabs;
 
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
@@ -650,6 +654,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!user) { nav('/login/supplier'); return; }
     loadStats(); loadPendingTracking(); loadRejectedOffers();
   }, [user]);
+
+  useEffect(() => {
+    const allowedTabs = supplierTabs.map((tab) => tab.id);
+    if (!allowedTabs.includes(activeTab)) {
+      setActiveTab(supplierState.isApplicationStage ? 'verification' : 'overview');
+    }
+  }, [activeTab, supplierState.isApplicationStage, supplierTabs]);
 
   useEffect(() => {
     if (!user) return;
@@ -858,9 +869,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       license_photo: verification.license_photo,
       factory_photo: verification.factory_photo,
     };
-    const nextVerificationState = getSupplierVerificationState(nextProfile);
+    const nextSupplierState = getSupplierOnboardingState(nextProfile);
 
-    if (!nextVerificationState.isVerificationComplete) {
+    if (!nextSupplierState.isVerificationComplete) {
       setVerificationMsg(t.verificationMissing);
       return;
     }
@@ -886,7 +897,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
 
-    if (!getSupplierVerificationState(profile || {}).isVerificationComplete) {
+    if (!getSupplierOnboardingState(profile || {}).isVerificationComplete) {
       try {
         await fetch(SEND_EMAILS_URL, {
           method: 'POST',
@@ -1420,7 +1431,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginBottom: 36, lineHeight: 1.7, ...arFont, maxWidth: 420 }}>{t.desc}</p>
 
         <div style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
-          {tabs.map(tab => (
+          {supplierTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               padding: '10px 18px', background: 'none', border: 'none',
               borderBottom: activeTab === tab.id ? '1px solid var(--text-primary)' : '1px solid transparent',
@@ -1448,6 +1459,73 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
+              {isOnboardingLimited ? (
+                <>
+                  <div style={{ marginBottom: 24, padding: '24px 26px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.18)', borderRadius: 'var(--radius-xl)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      <div style={{ maxWidth: 720 }}>
+                        <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
+                          {t.onboardingStatusDraft}
+                        </p>
+                        <h2 style={{ fontSize: isAr ? 28 : 36, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.6 }}>
+                          {t.onboardingTitle}
+                        </h2>
+                        <p style={{ fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1.8, marginBottom: 16, ...arFont }}>
+                          {t.onboardingBody}
+                        </p>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button onClick={() => setActiveTab('verification')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>{t.verificationCtaAction}</button>
+                          <button onClick={() => setActiveTab('settings')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>{t.onboardingGoSettings}</button>
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 220, maxWidth: 280, flex: '1 1 220px' }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8, ...arFont }}>{t.onboardingProgress}</p>
+                        <p style={{ fontSize: 32, color: 'var(--text-primary)', marginBottom: 6 }}>{supplierState.completedRequiredCount}/{supplierState.requiredCount}</p>
+                        <div style={{ width: '100%', height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 10 }}>
+                          <div style={{ width: `${supplierState.progressPercent}%`, height: '100%', background: 'var(--text-primary)' }} />
+                        </div>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, ...arFont }}>
+                          {supplierState.progressPercent}% · {t.onboardingVerificationReady}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 24 }}>
+                    {[t.onboardingStepApply, t.onboardingStepReview, t.onboardingStepVisibility].map((step, index) => (
+                      <div key={step} style={{ padding: '18px 20px', borderRadius: 'var(--radius-lg)', background: index === 1 ? 'var(--bg-raised)' : 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>0{index + 1}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, ...arFont }}>{step}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ padding: '22px 24px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', marginBottom: 24 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>{t.onboardingLockedTitle}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.8, marginBottom: 14, ...arFont }}>{t.onboardingLockedBody}</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {[
+                        isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests',
+                        isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products',
+                        isAr ? 'العروض' : lang === 'zh' ? '报价' : 'Offers',
+                        isAr ? 'الرسائل' : lang === 'zh' ? '消息' : 'Messages',
+                        isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples',
+                      ].map((item) => (
+                        <span key={item} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.3 }}>
+                          🔒 {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--text-disabled)', fontSize: 11, cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase', padding: 0, transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
+                    {t.backHome}
+                  </button>
+                </>
+              ) : (
+                <>
               {/* ── Onboarding / verification ── */}
               {needsVerification && (
                 <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-lg)' }}>
@@ -1556,6 +1634,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
                 {t.backHome}
               </button>
+                </>
+              )}
             </div>
           )}
 
@@ -2103,7 +2183,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
               <div style={{ marginBottom: 24, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-muted)', background: 'var(--bg-subtle)', maxWidth: 720 }}>
                 <p style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8 }}>{needsVerification ? t.verificationStatusIncomplete : t.verificationStatusComplete}</p>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, ...arFont }}>{t.secureStorageNote}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 8, ...arFont }}>{t.secureStorageNote}</p>
+                {isOnboardingLimited && (
+                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.8, ...arFont }}>
+                    {t.onboardingVerificationReady}
+                  </p>
+                )}
               </div>
 
               <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)', maxWidth: 720 }}>
@@ -2149,7 +2234,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
 
                 <button onClick={saveVerification} disabled={savingVerification} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46, marginTop: 22 }}>
-                  {savingVerification ? t.saving : t.verificationTitle}
+                  {savingVerification ? t.saving : t.verificationSubmitAction}
                 </button>
                 {verificationMsg && (
                   <p style={{ color: verificationSaved ? '#5a9a72' : '#a07070', fontSize: 13, marginTop: 12, ...arFont }}>

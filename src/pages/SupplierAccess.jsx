@@ -89,7 +89,7 @@ export default function SupplierAccess() {
     };
   }, []);
 
-  const ctaCopy = useMemo(() => (timeLeft.expired ? 'Apply for Supplier Access' : 'Apply for Early Supplier Access'), [timeLeft.expired]);
+  const ctaCopy = useMemo(() => (timeLeft.expired ? 'Start supplier application' : 'Start early supplier application'), [timeLeft.expired]);
   const totalScenes = 5;
   const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
 
@@ -107,7 +107,7 @@ export default function SupplierAccess() {
 
           <div className="supplier-topbar-actions">
             <button onClick={() => jumpToScene(0)} className="supplier-topbar-link">Start Journey</button>
-            <button onClick={goToApply} className="supplier-topbar-cta">Apply now</button>
+            <button onClick={goToApply} className="supplier-topbar-cta">Start application</button>
           </div>
         </div>
       </div>
@@ -131,11 +131,11 @@ export default function SupplierAccess() {
                   <div className="supplier-scene-eyebrow">Founding supplier access</div>
                   <h1 className="supplier-scene-title supplier-scene-title-hero">Secure early access to Saudi buyers before public launch</h1>
                   <p className="supplier-scene-description supplier-scene-description-large">
-                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This is not a generic platform signup — it is a guided pre-launch opportunity for selected suppliers.
+                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This is not full account activation — it is a guided supplier application before launch.
                   </p>
                   <div className="supplier-scene-actions">
                     <button onClick={nextScene} className="supplier-primary-btn">Start Journey</button>
-                    <button onClick={goToApply} className="supplier-secondary-btn">Skip to apply</button>
+                    <button onClick={goToApply} className="supplier-secondary-btn">Start application</button>
                   </div>
                 </div>
                 <div className="supplier-scene-sidecard">
@@ -246,7 +246,7 @@ export default function SupplierAccess() {
               {activeScene < totalScenes - 1 ? (
                 <button onClick={nextScene} className="supplier-primary-btn">Next</button>
               ) : (
-                <button onClick={goToApply} className="supplier-primary-btn">Apply now</button>
+                <button onClick={goToApply} className="supplier-primary-btn">Start application</button>
               )}
             </div>
           </div>

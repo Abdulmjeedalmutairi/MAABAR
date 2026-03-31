@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
+import { getSupplierOnboardingState } from '../lib/supplierOnboarding';
 import BrandLogo from './BrandLogo';
 
 export default function Navbar({ user, profile, lang, setLang, setUser, setProfile }) {
@@ -15,6 +16,12 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
 
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
+  const supplierState = isSupplier ? getSupplierOnboardingState(profile) : null;
+  const supplierDashboardLabel = supplierState?.canAccessOperationalFeatures
+    ? (isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard')
+    : supplierState?.isUnderReviewStage
+      ? (isAr ? 'حالة الطلب' : lang === 'zh' ? '审核状态' : 'Application Status')
+      : (isAr ? 'طلب الانضمام' : lang === 'zh' ? '申请资料' : 'Application');
 
   /* ─── Scroll ──────────────────────────────── */
   useEffect(() => {
@@ -112,8 +119,10 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const links = isSupplier
     ? [
         { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
-        { label: isAr ? 'الطلبات'  : lang === 'zh' ? '需求'  : 'Requests',  path: '/dashboard?tab=requests' },
-        { label: isAr ? 'لوحتي'    : lang === 'zh' ? '控制台' : 'Dashboard', path: '/dashboard' },
+        ...(supplierState?.canAccessOperationalFeatures
+          ? [{ label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests', path: '/dashboard?tab=requests' }]
+          : []),
+        { label: supplierDashboardLabel, path: supplierState?.isApplicationStage ? '/dashboard?tab=verification' : '/dashboard' },
         { label: isAr ? 'عن مَعبر' : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
       ]
     : [
@@ -256,8 +265,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                 )}
               </div>
 
-              <button className="nav-cta" onClick={() => nav('/dashboard')}>
-                {isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard'}
+              <button className="nav-cta" onClick={() => nav(supplierState?.isApplicationStage ? '/dashboard?tab=verification' : '/dashboard')}>
+                {supplierDashboardLabel}
               </button>
               <button className="nav-logout" onClick={doSignOut}>
                 {isAr ? 'خروج' : lang === 'zh' ? '退出' : 'Logout'}
@@ -265,7 +274,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             </>
           ) : (
             <>
-              <button className="nav-supplier-btn" onClick={() => nav('/login/supplier')}>
+              <button className="nav-supplier-btn" onClick={() => nav('/supplier-access')}>
                 {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
               </button>
               <button className="nav-cta" onClick={() => nav('/login/buyer')}>
@@ -305,9 +314,9 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             {user ? (
               <>
                 <button className="btn-dark-sm"
-                  onClick={() => { nav('/dashboard'); setMenuOpen(false); }}
+                  onClick={() => { nav(supplierState?.isApplicationStage ? '/dashboard?tab=verification' : '/dashboard'); setMenuOpen(false); }}
                   style={{ flex: 1, textAlign: 'center' }}>
-                  {isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard'}
+                  {supplierDashboardLabel}
                 </button>
                 <button className="btn-outline"
                   onClick={() => { doSignOut(); setMenuOpen(false); }}
@@ -323,7 +332,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                   {isAr ? 'دخول / تسجيل' : lang === 'zh' ? '登录' : 'Login'}
                 </button>
                 <button className="btn-outline"
-                  onClick={() => { nav('/login/supplier'); setMenuOpen(false); }}
+                  onClick={() => { nav('/supplier-access'); setMenuOpen(false); }}
                   style={{ flex: 1, textAlign: 'center' }}>
                   {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
                 </button>
