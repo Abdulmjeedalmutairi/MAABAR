@@ -147,7 +147,7 @@ export default function SupplierAccess({ user, profile }) {
                   <div className="supplier-scene-eyebrow">Founding supplier access</div>
                   <h1 className="supplier-scene-title supplier-scene-title-hero">Secure early access to Saudi buyers before the wider launch</h1>
                   <p className="supplier-scene-description supplier-scene-description-large">
-                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This page stays a journey only — when you decide to apply, you move into the single shared supplier signup page.
+                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This page only explains the journey — when you apply, you move into the shared supplier signup.
                   </p>
                   <div className="supplier-scene-actions">
                     <button onClick={startJourney} className="supplier-primary-btn">Start Journey</button>
@@ -156,8 +156,8 @@ export default function SupplierAccess({ user, profile }) {
                 </div>
                 <div className="supplier-scene-sidecard supplier-lift-card">
                   <div className="supplier-sidecard-label">Currently open</div>
-                  <div className="supplier-sidecard-title">Founding supplier intake is intentionally limited</div>
-                  <div className="supplier-sidecard-text">We keep the first wave selective so approved suppliers enter with better positioning, cleaner presentation, and more focused review.</div>
+                  <div className="supplier-sidecard-title">Founding supplier intake stays intentionally limited</div>
+                  <div className="supplier-sidecard-text">The first wave stays selective so approved suppliers enter with better positioning and a cleaner review path.</div>
                 </div>
               </section>
             )}
@@ -767,6 +767,10 @@ export default function SupplierAccess({ user, profile }) {
         }
 
         @media (max-width: 959px) {
+          .supplier-scene-0 .supplier-journey-footer {
+            display: none;
+          }
+
           .supplier-access-shell {
             padding-left: 16px;
             padding-right: 16px;
@@ -847,6 +851,19 @@ export default function SupplierAccess({ user, profile }) {
             width: 100%;
           }
 
+          .supplier-scene-0 .supplier-scene-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 18px;
+          }
+
+          .supplier-scene-0 .supplier-scene-actions .supplier-primary-btn,
+          .supplier-scene-0 .supplier-scene-actions .supplier-secondary-btn {
+            flex: 1 1 auto;
+            width: 100%;
+          }
+
           .supplier-countdown-row {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -860,34 +877,68 @@ export default function SupplierAccess({ user, profile }) {
 
         @media (max-width: 640px) {
           .supplier-access-topbar-inner {
-            min-height: 66px;
+            min-height: 60px;
           }
 
           .supplier-access-main {
-            padding-top: 14px;
-            padding-bottom: 20px;
+            padding-top: 10px;
+            padding-bottom: 16px;
           }
 
           .supplier-journey-progress-wrap {
-            margin-bottom: 14px;
+            margin-bottom: 10px;
+          }
+
+          .supplier-journey-progress-bar {
+            margin-bottom: 10px;
+          }
+
+          .supplier-journey-progress-meta {
+            font-size: 10px;
           }
 
           .supplier-journey-stage {
-            border-radius: 24px;
+            border-radius: 22px;
           }
 
           .supplier-scene {
-            padding: 22px 16px;
-            gap: 18px;
+            padding: 18px 14px;
+            gap: 14px;
+          }
+
+          .supplier-scene-0 .supplier-scene {
+            padding: 16px 14px 14px;
+            gap: 12px;
+          }
+
+          .supplier-scene-0 .supplier-scene-hero {
+            min-height: calc(100svh - 138px);
+            align-content: start;
+            gap: 12px;
+          }
+
+          .supplier-scene-0 .supplier-scene-content {
+            max-width: none;
           }
 
           .supplier-scene-eyebrow {
             font-size: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
 
           .supplier-scene-title {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+          }
+
+          .supplier-scene-0 .supplier-scene-title-hero {
+            font-size: clamp(1.72rem, 8vw, 2.24rem);
+            max-width: 12ch;
+          }
+
+          .supplier-scene-0 .supplier-scene-description-large {
+            font-size: 14px;
+            line-height: 1.58;
+            max-width: 35ch;
           }
 
           .supplier-card-grid,
@@ -902,8 +953,35 @@ export default function SupplierAccess({ user, profile }) {
             border-radius: 20px;
           }
 
+          .supplier-scene-0 .supplier-scene-sidecard {
+            padding: 14px;
+            border-radius: 18px;
+            display: grid;
+            gap: 6px;
+          }
+
           .supplier-sidecard-title {
             font-size: 20px;
+          }
+
+          .supplier-scene-0 .supplier-sidecard-label {
+            margin-bottom: 4px;
+            font-size: 10px;
+          }
+
+          .supplier-scene-0 .supplier-sidecard-title {
+            margin-bottom: 0;
+            font-size: 16px;
+            line-height: 1.2;
+          }
+
+          .supplier-scene-0 .supplier-sidecard-text {
+            font-size: 12px;
+            line-height: 1.45;
+          }
+
+          .supplier-scene-0 .supplier-mobile-journey-controls {
+            display: none;
           }
 
           .supplier-countdown-row {
@@ -921,8 +999,8 @@ export default function SupplierAccess({ user, profile }) {
 
           .supplier-primary-btn,
           .supplier-secondary-btn {
-            min-height: 44px;
-            padding: 12px 16px;
+            min-height: 42px;
+            padding: 11px 14px;
             font-size: 13px;
           }
         }
