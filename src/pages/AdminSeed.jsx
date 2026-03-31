@@ -2,7 +2,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb, SUPABASE_URL as SUPABASE_PROJECT_URL } from '../supabase';
-import { getSupplierVerificationState } from '../lib/supplierOnboarding';
+import { getSupplierOnboardingState } from '../lib/supplierOnboarding';
 
 const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/Ai-proxy';
@@ -85,7 +85,7 @@ export default function AdminSeed({ user, lang }) {
       .eq('role', 'supplier')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
-    if (data) setPendingSuppliers(data.filter((supplier) => getSupplierVerificationState(supplier).isVerificationComplete));
+    if (data) setPendingSuppliers(data.filter((supplier) => getSupplierOnboardingState(supplier).isUnderReviewStage));
   };
 
   const openSupplierDoc = async (supplierId, docType) => {

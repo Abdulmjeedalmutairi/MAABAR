@@ -1,3 +1,12 @@
+export const SUPPLIER_APPLICATION_REQUIRED_KEYS = [
+  'company_name',
+  'country',
+  'city',
+  'speciality',
+  'reg_number',
+  'years_experience',
+];
+
 export const SUPPLIER_VERIFICATION_REQUIRED_KEYS = [
   'reg_number',
   'years_experience',
@@ -24,6 +33,29 @@ export function normalizeSupplierDocStoragePath(rawValue) {
   } catch {
     return '';
   }
+}
+
+export function getSupplierApplicationState(profile = {}) {
+  const missingCoreKeys = SUPPLIER_APPLICATION_REQUIRED_KEYS.filter((key) => {
+    const value = profile?.[key];
+    if (typeof value === 'number') return Number.isNaN(value);
+    return !value;
+  });
+
+  const hasContactMethod = Boolean(profile?.wechat || profile?.whatsapp);
+  const missingKeys = hasContactMethod ? missingCoreKeys : [...missingCoreKeys, 'contact_method'];
+  const requiredCount = SUPPLIER_APPLICATION_REQUIRED_KEYS.length + 1;
+  const completedRequiredCount = requiredCount - missingKeys.length;
+
+  return {
+    applicationMissingKeys: missingKeys,
+    applicationMissingCount: missingKeys.length,
+    applicationRequiredCount: requiredCount,
+    applicationCompletedRequiredCount: completedRequiredCount,
+    applicationProgressPercent: Math.round((completedRequiredCount / requiredCount) * 100),
+    hasContactMethod,
+    isApplicationComplete: missingCoreKeys.length === 0 && hasContactMethod,
+  };
 }
 
 export function getSupplierVerificationState(profile = {}) {
@@ -55,19 +87,28 @@ export function getSupplierVerificationState(profile = {}) {
 }
 
 export function getSupplierOnboardingState(profile = {}) {
+  const application = getSupplierApplicationState(profile);
   const verification = getSupplierVerificationState(profile);
   const status = profile?.status || 'pending';
+  const hasSubmittedApplication = application.isApplicationComplete || verification.isVerificationComplete;
 
   let stage = 'application';
   if (status === 'active') stage = 'approved';
   else if (status === 'rejected') stage = 'rejected';
-  else if (verification.isVerificationComplete) stage = 'under_review';
+  else if (hasSubmittedApplication) stage = 'under_review';
 
   const canAccessOperationalFeatures = stage === 'approved';
   const routeGuardRedirect = stage === 'application' ? '/dashboard?tab=verification' : '/dashboard';
 
   return {
     ...verification,
+    ...application,
+    missingKeys: application.applicationMissingKeys,
+    missingCount: application.applicationMissingCount,
+    requiredCount: application.applicationRequiredCount,
+    completedRequiredCount: application.applicationCompletedRequiredCount,
+    progressPercent: application.applicationProgressPercent,
+    isVerificationComplete: hasSubmittedApplication,
     status,
     stage,
     isApplicationStage: stage === 'application',
