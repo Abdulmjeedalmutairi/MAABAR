@@ -57,8 +57,8 @@ const T = {
     contactTrader: 'تواصل مع التاجر', tracking: 'رقم التتبع:',
     messagesTitle: 'الرسائل', noMessages: 'ما عندك رسائل بعد',
     addProductTitle: 'إضافة منتج جديد', myProductsTitle: 'منتجاتي', noProducts: 'ما أضفت منتجات بعد',
-    nameAr: 'اسم المنتج بالعربي', nameEn: 'اسم المنتج بالإنجليزي', nameZh: 'اسم المنتج بالصيني *',
-    price: 'السعر من (ريال) *', moq: 'MOQ *', descLabel: 'الوصف',
+    nameAr: 'اسم المنتج بالعربي', nameEn: 'اسم المنتج بالإنجليزي *', nameZh: 'اسم المنتج بالصيني *',
+    category: 'التصنيف *', currency: 'العملة *', price: 'السعر الابتدائي *', moq: 'MOQ *', descLabel: 'الوصف بالعربي', descEnLabel: 'الوصف بالإنجليزي *', descHint: 'العربي اختياري، والإنجليزي هو الأساس لعرض المنتج وترجمته لاحقًا.',
     save: 'حفظ', cancel: 'إلغاء', saving: '...',
     edit: 'تعديل', delete: 'حذف', confirmDelete: 'هل تبي تحذف هذا المنتج؟',
     active: 'نشط', inactive: 'موقوف', toggleActive: 'تفعيل/إيقاف',
@@ -90,8 +90,8 @@ const T = {
     contactTrader: 'Contact Trader', tracking: 'Tracking:',
     messagesTitle: 'Messages', noMessages: 'No messages yet',
     addProductTitle: 'Add New Product', myProductsTitle: 'My Products', noProducts: 'No products yet',
-    nameAr: 'Arabic Name', nameEn: 'English Name', nameZh: 'Chinese Name *',
-    price: 'Price From (SAR) *', moq: 'MOQ *', descLabel: 'Description',
+    nameAr: 'Arabic Name', nameEn: 'English Name *', nameZh: 'Chinese Name *',
+    category: 'Category *', currency: 'Currency *', price: 'Starting Price *', moq: 'MOQ *', descLabel: 'Arabic Description', descEnLabel: 'English Description *', descHint: 'Arabic is optional. English is the main source for listing quality and later translation.',
     save: 'Save', cancel: 'Cancel', saving: '...',
     edit: 'Edit', delete: 'Delete', confirmDelete: 'Delete this product?',
     active: 'Active', inactive: 'Paused', toggleActive: 'Toggle',
@@ -123,8 +123,8 @@ const T = {
     contactTrader: '联系采购商', tracking: '物流单号：',
     messagesTitle: '消息', noMessages: '暂无消息',
     addProductTitle: '添加新产品', myProductsTitle: '我的产品', noProducts: '暂无产品',
-    nameAr: '阿拉伯语名称', nameEn: '英语名称', nameZh: '中文名称 *',
-    price: '起始价格 (SAR) *', moq: '最小起订量 *', descLabel: '产品描述',
+    nameAr: '阿拉伯语名称', nameEn: '英文名称 *', nameZh: '中文名称 *',
+    category: '产品分类 *', currency: '货币 *', price: '起始价格 *', moq: '最小起订量 *', descLabel: '阿拉伯语描述', descEnLabel: '英文描述 *', descHint: '阿拉伯语可选，英文作为主描述，后续更方便做展示与翻译。',
     save: '保存', cancel: '取消', saving: '...',
     edit: '编辑', delete: '删除', confirmDelete: '确认删除此产品？',
     active: '上架', inactive: '下架', toggleActive: '切换状态',
@@ -208,11 +208,12 @@ function BackBtn({ onClick, label }) {
   );
 }
 
-const emptyProduct = { name_ar: '', name_en: '', name_zh: '', price_from: '', moq: '', desc_ar: '', sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '' };
+const emptyProduct = { name_ar: '', name_en: '', name_zh: '', price_from: '', currency: 'USD', category: 'other', moq: '', desc_en: '', desc_ar: '', sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '' };
 
 /* ─── Product Form (defined outside to prevent remount on parent render) ─ */
-function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange, uploadingImage, uploadingVideo, t, isAr, saving, usdRate }) {
+function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange, uploadingImage, uploadingVideo, t, isAr, saving, usdRate, categories }) {
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+  const productCategories = (categories || []).filter(c => c.val !== 'all');
   return (
     <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 680, borderRadius: 'var(--radius-xl)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
@@ -246,7 +247,19 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
             <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
           </div>
         ))}
-        {/* حقل السعر بالدولار + الريال */}
+        <div className="form-group">
+          <label className="form-label">{t.category}</label>
+          <select className="form-input" value={data.category || 'other'} onChange={e => setData(prev => ({ ...prev, category: e.target.value }))}>
+            {productCategories.map(cat => <option key={cat.val} value={cat.val}>{cat.label}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">{t.currency}</label>
+          <select className="form-input" value={data.currency || 'USD'} onChange={e => setData(prev => ({ ...prev, currency: e.target.value }))}>
+            <option value="USD">USD</option>
+            <option value="SAR">SAR</option>
+          </select>
+        </div>
         <div className="form-group">
           <label className="form-label">{t.price}</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -254,26 +267,32 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
               <input
                 className="form-input"
                 type="number"
-                placeholder="USD"
+                placeholder={data.currency || 'USD'}
                 value={data.price_from || ''}
                 onChange={e => setData(prev => ({ ...prev, price_from: e.target.value }))}
-                style={{ paddingRight: 40 }}
+                style={{ paddingRight: 52 }}
                 dir="ltr"
               />
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>{data.currency || 'USD'}</span>
             </div>
-            {data.price_from && (
+            {data.price_from && data.currency === 'USD' && (
               <div style={{
                 flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
                 border: '1px solid var(--border-subtle)', borderRadius: 3,
                 fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center',
                 direction: 'ltr',
               }}>
-                ≈ {(parseFloat(data.price_from || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                ≈ {(parseFloat(data.price_from || 0) * (usdRate || 3.75)).toFixed(2)} SAR
               </div>
             )}
           </div>
         </div>
+      </div>
+
+      <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '4px 0 12px', ...arFont }}>{t.descHint}</p>
+      <div className="form-group">
+        <label className={`form-label${isAr ? ' ar' : ''}`}>{t.descEnLabel}</label>
+        <textarea className="form-input" rows={3} style={{ resize: 'vertical' }} value={data.desc_en || ''} onChange={e => setData(prev => ({ ...prev, desc_en: e.target.value }))} />
       </div>
 
       <div className="form-group">
@@ -594,14 +613,14 @@ export default function DashboardSupplier({ user, profile, lang }) {
   };
 
   const addProduct = async () => {
-    if ((!product.name_zh && !product.name_ar && !product.name_en) || !product.price_from || !product.moq) {
-      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: اسم المنتج، السعر، MOQ' : 'Please fill required fields: product name, price, MOQ');
+    if (!product.name_zh || !product.name_en || !product.price_from || !product.moq || !product.desc_en) {
+      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، الاسم الإنجليزي، السعر، MOQ، والوصف الإنجليزي' : 'Please fill required fields: Chinese name, English name, price, MOQ, and English description');
       return;
     }
     setSaving(true);
     setProductSaveMsg('');
-    const productName = product.name_zh || product.name_ar || product.name_en || '';
-    const { error } = await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || productName, name_en: product.name_en || productName, name_zh: product.name_zh || productName, price_from: parseFloat(product.price_from), moq: product.moq, desc_ar: product.desc_ar, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
+    const fallbackName = product.name_en || product.name_zh || product.name_ar || '';
+    const { error } = await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || fallbackName, name_en: product.name_en || fallbackName, name_zh: product.name_zh || fallbackName, price_from: parseFloat(product.price_from), currency: product.currency || 'USD', category: product.category || 'other', moq: product.moq, desc_en: product.desc_en, desc_ar: product.desc_ar || product.desc_en, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
     setSaving(false);
     if (error) {
       console.error('addProduct error:', error);
@@ -618,7 +637,8 @@ export default function DashboardSupplier({ user, profile, lang }) {
   const updateProduct = async () => {
     if (!editingProduct) return;
     setSaving(true);
-    await sb.from('products').update({ name_ar: editingProduct.name_ar, name_en: editingProduct.name_en, name_zh: editingProduct.name_zh, price_from: parseFloat(editingProduct.price_from), moq: editingProduct.moq, desc_ar: editingProduct.desc_ar, image_url: editingProduct.image_url || null, video_url: editingProduct.video_url || null, sample_available: editingProduct.sample_available, sample_price: editingProduct.sample_available ? parseFloat(editingProduct.sample_price) : null, sample_shipping: editingProduct.sample_available ? parseFloat(editingProduct.sample_shipping || 0) : null, sample_max_qty: editingProduct.sample_available ? parseInt(editingProduct.sample_max_qty || 3) : null, sample_note: editingProduct.sample_note || null }).eq('id', editingProduct.id);
+    const fallbackName = editingProduct.name_en || editingProduct.name_zh || editingProduct.name_ar || '';
+    await sb.from('products').update({ name_ar: editingProduct.name_ar || fallbackName, name_en: editingProduct.name_en || fallbackName, name_zh: editingProduct.name_zh || fallbackName, price_from: parseFloat(editingProduct.price_from), currency: editingProduct.currency || 'USD', category: editingProduct.category || 'other', moq: editingProduct.moq, desc_en: editingProduct.desc_en || '', desc_ar: editingProduct.desc_ar || editingProduct.desc_en || '', image_url: editingProduct.image_url || null, video_url: editingProduct.video_url || null, sample_available: editingProduct.sample_available, sample_price: editingProduct.sample_available ? parseFloat(editingProduct.sample_price) : null, sample_shipping: editingProduct.sample_available ? parseFloat(editingProduct.sample_shipping || 0) : null, sample_max_qty: editingProduct.sample_available ? parseInt(editingProduct.sample_max_qty || 3) : null, sample_note: editingProduct.sample_note || null }).eq('id', editingProduct.id);
     setSaving(false); setEditingProduct(null); loadMyProducts(); loadStats();
   };
 
@@ -1057,7 +1077,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: 'fadeIn 0.3s ease' }}>
                       <input ref={editImageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, true)} />
                       <input ref={editVideoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, true)} />
-                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} />
+                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
                     </div>
                   ) : (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 0', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
@@ -1069,8 +1089,9 @@ export default function DashboardSupplier({ user, profile, lang }) {
                           <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', ...arFont }}>{lang === 'zh' ? p.name_zh || p.name_en : lang === 'ar' ? p.name_ar || p.name_en : p.name_en || p.name_ar}</p>
                           {p.video_url && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>VIDEO</span>}
                           {p.sample_available && <span style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', borderRadius: 10, color: '#5a9a72', letterSpacing: 0.5 }}>{isAr ? 'عينة' : 'SAMPLE'}</span>}
+                          {p.category && p.category !== 'other' && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{cats.find(c => c.val === p.category)?.label || p.category}</span>}
                         </div>
-                        <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{p.price_from} SAR · MOQ: {p.moq}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{p.price_from} {p.currency || 'USD'} · MOQ: {p.moq}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
@@ -1370,7 +1391,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.addProductTitle}</h2>
               <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, false)} />
               <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, false)} />
-              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} />
+              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
               {productSaveMsg && (
                 <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {productSaveMsg}

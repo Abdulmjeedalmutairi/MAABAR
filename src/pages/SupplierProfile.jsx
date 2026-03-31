@@ -300,7 +300,7 @@ export default function SupplierProfile({ lang, user }) {
                       </span>
                     )}
                   </div>
-                  <p className="product-price">{p.price_from ? `${p.price_from} SAR` : '—'}</p>
+                  <p className="product-price">{p.price_from ? `${p.price_from} ${p.currency || 'USD'}` : '—'}</p>
                   <p className="product-meta">MOQ: {p.moq || '—'}</p>
                 </div>
                 <div className="product-btns" onClick={e => e.stopPropagation()}>

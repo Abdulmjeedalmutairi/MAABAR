@@ -228,7 +228,7 @@ export default function Products({ lang, user, profile }) {
                   : p.name_en || p.name_ar}
               </h3>
               <p className="product-price">
-                {p.price_from ? `${p.price_from} SAR` : '—'}
+                {p.price_from ? `${p.price_from} ${p.currency || 'USD'}` : '—'}
               </p>
               <p className="product-meta">
                 MOQ: {p.moq || '—'} · {p.profiles?.company_name || ''}
