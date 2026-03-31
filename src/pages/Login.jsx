@@ -294,7 +294,7 @@ export default function Login({ setUser, setProfile, lang }) {
     setUser(data.user);
     const { data: profile } = await sb
       .from('profiles')
-      .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,reg_number,years_experience,license_photo,factory_photo')
+      .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,reg_number,years_experience,license_photo,factory_photo')
       .eq('id', data.user.id)
       .single();
 

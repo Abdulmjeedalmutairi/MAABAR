@@ -49,6 +49,14 @@ const whyMaabar = [
   'Selective supplier access instead of open-listing clutter',
 ];
 
+const sceneTitles = [
+  'Founding supplier access',
+  'Why join early',
+  'How it works',
+  'Why Maabar',
+  'Apply before launch',
+];
+
 function getTimeLeft() {
   const diff = new Date(ACCESS_DEADLINE).getTime() - Date.now();
   if (diff <= 0) {
@@ -91,6 +99,10 @@ export default function SupplierAccess() {
   const goHome = () => nav('/');
   const startJourney = () => setActiveScene(1);
   const jumpToScene = (index) => setActiveScene(index);
+  const goToNextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
+  const goToPreviousScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
+  const isFirstScene = activeScene === 0;
+  const isFinalScene = activeScene === totalScenes - 1;
 
   return (
     <div dir="ltr" lang="en" className={`supplier-access-page supplier-scene-${activeScene}`}>
@@ -236,6 +248,26 @@ export default function SupplierAccess() {
               ))}
             </div>
             <p className="supplier-journey-footer-note">Use the dots to explore the journey.</p>
+
+            <div className="supplier-mobile-journey-controls">
+              <div className="supplier-mobile-journey-summary">
+                <span className="supplier-mobile-journey-step">Step {activeScene + 1} of {totalScenes}</span>
+                <strong>{sceneTitles[activeScene]}</strong>
+              </div>
+              <div className="supplier-mobile-journey-buttons">
+                {!isFirstScene && (
+                  <button onClick={goToPreviousScene} className="supplier-secondary-btn supplier-mobile-nav-btn">
+                    Back
+                  </button>
+                )}
+                <button
+                  onClick={isFinalScene ? goToApply : (isFirstScene ? startJourney : goToNextScene)}
+                  className="supplier-primary-btn supplier-mobile-nav-btn supplier-mobile-nav-btn-primary"
+                >
+                  {isFinalScene ? ctaCopy : (isFirstScene ? 'Start journey' : 'Continue')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -687,6 +719,44 @@ export default function SupplierAccess() {
           text-transform: uppercase;
         }
 
+        .supplier-mobile-journey-controls {
+          display: none;
+        }
+
+        .supplier-mobile-journey-summary {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .supplier-mobile-journey-summary strong {
+          font-size: 14px;
+          color: var(--text-primary);
+          line-height: 1.35;
+        }
+
+        .supplier-mobile-journey-step {
+          color: var(--text-tertiary);
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .supplier-mobile-journey-buttons {
+          display: flex;
+          gap: 10px;
+          width: 100%;
+        }
+
+        .supplier-mobile-nav-btn {
+          min-height: 48px;
+        }
+
+        .supplier-mobile-nav-btn-primary {
+          flex: 1 1 auto;
+        }
+
         @media (max-width: 959px) {
           .supplier-access-shell {
             padding-left: 16px;
@@ -740,6 +810,26 @@ export default function SupplierAccess() {
 
           .supplier-topbar-actions {
             display: none;
+          }
+
+          .supplier-mobile-journey-controls {
+            position: sticky;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            margin-top: 8px;
+            padding: 14px;
+            border-radius: 22px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(10,10,11,0.92);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 34px rgba(0,0,0,0.22);
+          }
+
+          .supplier-mobile-nav-btn {
+            flex: 1 1 0;
           }
 
           .supplier-scene-actions .supplier-primary-btn,

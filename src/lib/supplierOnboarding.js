@@ -89,10 +89,11 @@ export function getSupplierOnboardingState(profile = {}) {
   const status = profile?.status || 'pending';
   const hasSubmittedApplication = application.isApplicationComplete || verification.isVerificationComplete;
 
-  let stage = 'application';
+  // Current supplier model: one shared signup only, then pending-review until approval.
+  let stage = 'under_review';
   if (status === 'active') stage = 'approved';
   else if (status === 'rejected') stage = 'rejected';
-  else if (hasSubmittedApplication) stage = 'under_review';
+  else if (status === 'draft' || status === 'incomplete') stage = 'application';
 
   const canAccessOperationalFeatures = stage === 'approved';
   const routeGuardRedirect = stage === 'application' ? '/dashboard?tab=verification' : '/dashboard';
