@@ -2,6 +2,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
+import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 
 const ACCESS_DEADLINE = '2026-04-14T23:59:59Z';
 
@@ -80,7 +81,7 @@ function CountUnit({ label, value }) {
   );
 }
 
-export default function SupplierAccess() {
+export default function SupplierAccess({ user, profile }) {
   usePageTitle('supplier-access', 'en');
   const nav = useNavigate();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
@@ -91,11 +92,19 @@ export default function SupplierAccess() {
     return () => clearInterval(timer);
   }, []);
 
-  const ctaCopy = useMemo(() => (timeLeft.expired ? 'Apply as a supplier' : 'Apply for early supplier access'), [timeLeft.expired]);
+  const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile) : null;
+  const supplierPrimaryRoute = supplierState ? getSupplierPrimaryRoute(profile) : '/login/supplier?mode=signup';
+  const hasExistingSupplierAccount = Boolean(user && profile?.role === 'supplier');
+  const ctaCopy = useMemo(() => {
+    if (supplierState?.isApprovedStage) return 'Open supplier dashboard';
+    if (supplierState?.isUnderReviewStage) return 'View application status';
+    if (supplierState?.isApplicationStage) return 'Continue supplier application';
+    return timeLeft.expired ? 'Apply as a supplier' : 'Apply for early supplier access';
+  }, [supplierState, timeLeft.expired]);
   const totalScenes = 5;
   const sceneProgress = ((activeScene + 1) / totalScenes) * 100;
 
-  const goToApply = () => nav('/login/supplier?mode=signup');
+  const goToApply = () => nav(supplierPrimaryRoute);
   const goHome = () => nav('/');
   const startJourney = () => setActiveScene(1);
   const jumpToScene = (index) => setActiveScene(index);
@@ -111,7 +120,7 @@ export default function SupplierAccess() {
           <BrandLogo as="button" size="sm" align="flex-start" onClick={goHome} />
 
           <div className="supplier-topbar-actions">
-            <button onClick={goToApply} className="supplier-topbar-cta">Apply now</button>
+            <button onClick={goToApply} className="supplier-topbar-cta">{hasExistingSupplierAccount ? ctaCopy : 'Apply now'}</button>
           </div>
         </div>
       </div>
@@ -142,7 +151,7 @@ export default function SupplierAccess() {
                   </p>
                   <div className="supplier-scene-actions">
                     <button onClick={startJourney} className="supplier-primary-btn">Start Journey</button>
-                    <button onClick={goToApply} className="supplier-secondary-btn">Apply now</button>
+                    <button onClick={goToApply} className="supplier-secondary-btn">{hasExistingSupplierAccount ? ctaCopy : 'Apply now'}</button>
                   </div>
                 </div>
                 <div className="supplier-scene-sidecard supplier-lift-card">

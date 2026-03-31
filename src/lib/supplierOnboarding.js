@@ -124,3 +124,7 @@ export function getSupplierOnboardingState(profile = {}) {
     fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'reviews', 'messages', 'settings'],
   };
 }
+
+export function getSupplierPrimaryRoute(profile = {}) {
+  return getSupplierOnboardingState(profile).routeGuardRedirect;
+}

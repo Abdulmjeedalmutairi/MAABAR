@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
-import { getSupplierOnboardingState } from '../lib/supplierOnboarding';
+import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -181,7 +181,7 @@ function buildFieldErrorMap({
   return errors;
 }
 
-export default function Login({ setUser, setProfile, lang }) {
+export default function Login({ user, profile, setUser, setProfile, lang }) {
   const nav = useNavigate();
   const { role: roleParam } = useParams();
   const [searchParams] = useSearchParams();
@@ -217,6 +217,11 @@ export default function Login({ setUser, setProfile, lang }) {
   useEffect(() => {
     setMode(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!user || !profile || !isSupplier || profile.role !== 'supplier') return;
+    nav(getSupplierPrimaryRoute(profile), { replace: true });
+  }, [user, profile, isSupplier, nav]);
 
   const hasPendingAiReview = () => {
     if (isSupplier) return false;
@@ -303,7 +308,7 @@ export default function Login({ setUser, setProfile, lang }) {
     if (profile?.role === 'supplier') {
       const supplierState = getSupplierOnboardingState(profile);
       if (!supplierState.canAccessOperationalFeatures) {
-        nav(supplierState.routeGuardRedirect);
+        nav(getSupplierPrimaryRoute(profile));
         return;
       }
     }

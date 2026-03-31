@@ -11,7 +11,7 @@ import {
   normalizeDisplayCurrency,
   persistDisplayCurrencyPreference,
 } from './lib/displayCurrency';
-import { getSupplierOnboardingState } from './lib/supplierOnboarding';
+import { getSupplierOnboardingState, getSupplierPrimaryRoute } from './lib/supplierOnboarding';
 
 // Pages
 import Home from './pages/Home';
@@ -274,9 +274,10 @@ function App() {
     const isSupplierAccessPage = location.pathname === '/supplier-access';
     const pageDir = isSupplierAccessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
     const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile) : null;
+    const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile) : '/dashboard';
     const withSupplierOperationalAccess = (element) => {
       if (supplierState && !supplierState.canAccessOperationalFeatures) {
-        return <Navigate to={supplierState.routeGuardRedirect} replace />;
+        return <Navigate to={supplierPrimaryRoute} replace />;
       }
       return element;
     };
@@ -296,7 +297,7 @@ function App() {
           <Route path="/support"        element={<Support         {...sharedProps} />} />
           <Route path="/requests"       element={withSupplierOperationalAccess(<Requests        {...sharedProps} />)} />
           <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
-          <Route path="/supplier-access" element={<SupplierAccess />} />
+          <Route path="/supplier-access" element={<SupplierAccess {...sharedProps} />} />
           <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
           <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
           <Route path="/chat/:partnerId"element={withSupplierOperationalAccess(<Chat            {...sharedProps} />)} />

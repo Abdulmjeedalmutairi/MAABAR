@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
-import { getSupplierOnboardingState } from '../lib/supplierOnboarding';
+import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 import BrandLogo from './BrandLogo';
 
 export default function Navbar({ user, profile, lang, setLang, setUser, setProfile }) {
@@ -17,11 +17,14 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const isAr       = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
   const supplierState = isSupplier ? getSupplierOnboardingState(profile) : null;
+  const supplierPrimaryRoute = isSupplier ? getSupplierPrimaryRoute(profile) : '/dashboard';
   const supplierDashboardLabel = supplierState?.canAccessOperationalFeatures
     ? (isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard')
     : supplierState?.isUnderReviewStage
       ? (isAr ? 'حالة الطلب' : lang === 'zh' ? '审核状态' : 'Application Status')
       : (isAr ? 'طلب الانضمام' : lang === 'zh' ? '申请资料' : 'Application');
+  const currentRoute = `${location.pathname}${location.search}`;
+  const isNavLinkActive = (path) => (path.includes('?') ? currentRoute === path : location.pathname === path);
 
   /* ─── Scroll ──────────────────────────────── */
   useEffect(() => {
@@ -122,7 +125,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
         ...(supplierState?.canAccessOperationalFeatures
           ? [{ label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests', path: '/dashboard?tab=requests' }]
           : []),
-        { label: supplierDashboardLabel, path: supplierState?.isApplicationStage ? '/dashboard?tab=verification' : '/dashboard' },
+        { label: supplierDashboardLabel, path: supplierPrimaryRoute },
         { label: isAr ? 'عن مَعبر' : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
       ]
     : [
@@ -157,7 +160,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             <li key={i}>
               <button
                 className="nav-link"
-                style={location.pathname === l.path
+                style={isNavLinkActive(l.path)
                   ? { color: 'var(--text-primary)' }
                   : {}}
                 onClick={() => nav(l.path)}
@@ -265,7 +268,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                 )}
               </div>
 
-              <button className="nav-cta" onClick={() => nav(supplierState?.isApplicationStage ? '/dashboard?tab=verification' : '/dashboard')}>
+              <button className="nav-cta" onClick={() => nav(supplierPrimaryRoute)}>
                 {supplierDashboardLabel}
               </button>
               <button className="nav-logout" onClick={doSignOut}>
@@ -303,7 +306,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             <button key={i} className="mobile-menu-item"
               style={{
                 ...(isAr ? { fontFamily: 'var(--font-ar)', textAlign: 'right' } : { textAlign: 'left' }),
-                ...(location.pathname === l.path ? { color: 'var(--text-primary)' } : {}),
+                ...(isNavLinkActive(l.path) ? { color: 'var(--text-primary)' } : {}),
               }}
               onClick={() => { nav(l.path); setMenuOpen(false); }}>
               {l.label}
@@ -314,7 +317,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             {user ? (
               <>
                 <button className="btn-dark-sm"
-                  onClick={() => { nav(supplierState?.isApplicationStage ? '/dashboard?tab=verification' : '/dashboard'); setMenuOpen(false); }}
+                  onClick={() => { nav(supplierPrimaryRoute); setMenuOpen(false); }}
                   style={{ flex: 1, textAlign: 'center' }}>
                   {supplierDashboardLabel}
                 </button>
