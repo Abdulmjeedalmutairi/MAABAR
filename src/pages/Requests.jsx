@@ -3,6 +3,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
+import {
+  getOfferEstimatedTotal,
+  getOfferProductSubtotal,
+  getOfferShippingCost,
+} from '../lib/offerPricing';
+import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -168,19 +174,34 @@ export default function Requests({ lang, user, profile }) {
 
   const toggleOfferForm = (id) => {
     setOfferForms(prev => ({ ...prev, [id]: !prev[id] }));
-    setOffers(prev => ({ ...prev, [id]: prev[id] || { price: '', moq: '', days: '', origin: 'China', note: '' } }));
+    setOffers(prev => ({
+      ...prev,
+      [id]: prev[id] || {
+        price: '',
+        shippingCost: '',
+        shippingMethod: '',
+        moq: '',
+        days: '',
+        origin: 'China',
+        note: '',
+      },
+    }));
   };
 
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId] || {};
     const price = parseFloat(o.price);
+    const shippingCost = parseFloat(o.shippingCost);
     const days = parseInt(o.days, 10);
     const moq = String(o.moq || '').trim();
     const origin = String(o.origin || 'China').trim();
+    const shippingMethod = String(o.shippingMethod || '').trim();
     const note = String(o.note || '').trim();
+    const requestItem = requests.find(r => r.id === requestId);
+    const estimatedTotal = getOfferEstimatedTotal({ price, shipping_cost: shippingCost }, requestItem);
 
-    if (!Number.isFinite(price) || price <= 0 || !moq || !Number.isFinite(days) || days <= 0) {
-      alert(isAr ? 'تأكد من السعر و MOQ ومدة التسليم قبل الإرسال' : lang === 'zh' ? '请先确认价格、起订量和交期是否 صحيحة' : 'Please check price, MOQ, and delivery days before sending');
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(shippingCost) || shippingCost < 0 || !moq || !Number.isFinite(days) || days <= 0) {
+      alert(isAr ? 'تأكد من سعر الوحدة وتكلفة الشحن و MOQ ومدة التسليم قبل الإرسال' : lang === 'zh' ? '请先确认单价、运费、起订量和交期是否正确' : 'Please check unit price, shipping cost, MOQ, and delivery days before sending');
       return;
     }
 
@@ -193,15 +214,22 @@ export default function Requests({ lang, user, profile }) {
         return;
       }
 
-      const { error } = await sb.from('offers').insert({
-        request_id: requestId,
-        supplier_id: user.id,
-        price,
-        moq,
-        delivery_days: days,
-        origin,
-        note: note || null,
-        status: 'pending',
+      const { error } = await runWithOptionalColumns({
+        table: 'offers',
+        payload: {
+          request_id: requestId,
+          supplier_id: user.id,
+          price,
+          shipping_cost: shippingCost,
+          shipping_method: shippingMethod || null,
+          moq,
+          delivery_days: days,
+          origin,
+          note: note || null,
+          status: 'pending',
+        },
+        optionalKeys: ['shipping_cost', 'shipping_method'],
+        execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
 
@@ -222,9 +250,12 @@ export default function Requests({ lang, user, profile }) {
             data: {
               recipientUserId: buyerId,
               name: 'Trader',
-              requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
+              requestTitle: requestItem?.title_ar || requestItem?.title_en || '',
               supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
               price,
+              shippingCost,
+              shippingMethod,
+              estimatedTotal,
               deliveryDays: days,
               lang,
             },
@@ -685,10 +716,9 @@ export default function Requests({ lang, user, profile }) {
                   borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
                 }}>
                   <div className="form-grid">
-                    {/* حقل السعر بالدولار + الريال */}
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'سعر الوحدة (USD) *' : 'Unit Price (USD) *'}
+                        {isAr ? 'سعر الوحدة / المنتج (USD) *' : lang === 'zh' ? '产品单价 (USD) *' : 'Product / Unit Price (USD) *'}
                       </label>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <div style={{ position: 'relative', flex: 1 }}>
@@ -711,6 +741,42 @@ export default function Requests({ lang, user, profile }) {
                           </div>
                         )}
                       </div>
+                    </div>
+                    <div className="form-group">
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>
+                        {isAr ? 'تكلفة الشحن (USD) *' : lang === 'zh' ? '运费 (USD) *' : 'Shipping Cost (USD) *'}
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <input className="form-input" type="number"
+                            placeholder="USD"
+                            value={offers[r.id]?.shippingCost || ''}
+                            onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
+                            style={{ paddingRight: 40 }}
+                            dir="ltr"
+                          />
+                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
+                        </div>
+                        {offers[r.id]?.shippingCost && (
+                          <div style={{
+                            flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border-subtle)', borderRadius: 3,
+                            fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
+                          }}>
+                            ≈ {(parseFloat(offers[r.id]?.shippingCost || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>
+                        {isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping Method'}
+                      </label>
+                      <input className="form-input"
+                        placeholder={isAr ? 'مثال: بحري / جوي / FOB' : lang === 'zh' ? '例如：海运 / 空运 / FOB' : 'e.g. Sea / Air / FOB'}
+                        value={offers[r.id]?.shippingMethod || ''}
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingMethod: e.target.value } }))}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label">MOQ *</label>
@@ -748,6 +814,33 @@ export default function Requests({ lang, user, profile }) {
                       onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))}
                     />
                   </div>
+                  {(offers[r.id]?.price || offers[r.id]?.shippingCost) && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: 8,
+                      marginBottom: 14,
+                    }}>
+                      <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
+                        <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                          {getOfferProductSubtotal({ price: offers[r.id]?.price }, r).toFixed(2)} USD
+                        </p>
+                      </div>
+                      <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
+                        <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                          {getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }).toFixed(2)} USD
+                        </p>
+                      </div>
+                      <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
+                        <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                          {getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r).toFixed(2)} USD
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)} disabled={submittingOfferId === r.id}
                       style={{ minHeight: 40, opacity: submittingOfferId === r.id ? 0.7 : 1 }}>

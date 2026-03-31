@@ -315,7 +315,10 @@ const templates = {
 <p class="il">تفاصيل العرض</p>
 <div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
 <div class="ir"><span class="ik">المورد</span><span class="iv">${d.supplierName || '-'}</span></div>
-<div class="ir"><span class="ik">السعر</span><span class="iv">${d.price || '-'} SAR</span></div>
+<div class="ir"><span class="ik">سعر المنتج / الوحدة</span><span class="iv">${d.price || '-'} USD</span></div>
+<div class="ir"><span class="ik">الشحن</span><span class="iv">${d.shippingCost === null || d.shippingCost === undefined || d.shippingCost === '' ? 'غير محدد بشكل منفصل' : `${d.shippingCost} USD`}</span></div>
+${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</span><span class="iv">${d.shippingMethod}</span></div>` : ''}
+<div class="ir"><span class="ik">الإجمالي التقديري</span><span class="iv">${d.estimatedTotal || d.price || '-'} USD</span></div>
 <div class="ir"><span class="ik">مدة التسليم</span><span class="iv">${d.deliveryDays || '-'} يوم</span></div>
 </div>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">مراجعة العروض ←</a></div>

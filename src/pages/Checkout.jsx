@@ -3,6 +3,13 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
+import {
+  getOfferEstimatedTotal,
+  getOfferProductSubtotal,
+  getOfferShippingCost,
+  getOfferShippingMethod,
+  hasOfferShippingCost,
+} from '../lib/offerPricing';
 
 const MOYASAR_PUBLISHABLE_KEY = 'pk_test_YOUR_KEY_HERE';
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -17,7 +24,11 @@ const T = {
     product: 'المنتج',
     quantity: 'الكمية',
     unitPrice: 'سعر الوحدة',
-    subtotal: 'المجموع',
+    productTotal: 'إجمالي المنتجات',
+    shippingCost: 'تكلفة الشحن',
+    shippingMethod: 'طريقة الشحن',
+    shippingNotSpecified: 'غير محدد بشكل منفصل',
+    subtotal: 'المجموع قبل الرسوم',
     maabarFee: 'رسوم مَعبر (2%)',
     total: 'الإجمالي',
     payMethod: 'طريقة الدفع',
@@ -53,7 +64,11 @@ const T = {
     product: 'Product',
     quantity: 'Quantity',
     unitPrice: 'Unit Price',
-    subtotal: 'Subtotal',
+    productTotal: 'Products Total',
+    shippingCost: 'Shipping Cost',
+    shippingMethod: 'Shipping Method',
+    shippingNotSpecified: 'Not specified separately',
+    subtotal: 'Subtotal before fees',
     maabarFee: 'Maabar Fee (2%)',
     total: 'Total',
     payMethod: 'Payment Method',
@@ -89,7 +104,11 @@ const T = {
     product: '产品',
     quantity: '数量',
     unitPrice: '单价',
-    subtotal: '小计',
+    productTotal: '产品合计',
+    shippingCost: '运费',
+    shippingMethod: '运输方式',
+    shippingNotSpecified: '未单独填写',
+    subtotal: '手续费前小计',
     maabarFee: 'Maabar手续费 (2%)',
     total: '总计',
     payMethod: '支付方式',
@@ -137,7 +156,9 @@ export default function Checkout({ lang, user, profile }) {
   const [applePayAvailable, setApplePayAvailable] = useState(false);
 
   // حساب المبالغ
-  const subtotal = offer ? parseFloat(offer.price) * parseFloat(request?.quantity || 1) : 0;
+  const productTotal = offer ? getOfferProductSubtotal(offer, request) : 0;
+  const shippingCost = offer ? getOfferShippingCost(offer) : 0;
+  const subtotal = offer ? getOfferEstimatedTotal(offer, request) : 0;
   const maabarFee = parseFloat((subtotal * 0.02).toFixed(2));
   const total = parseFloat((subtotal + maabarFee).toFixed(2));
   const supplierAmount = parseFloat((subtotal * 0.96).toFixed(2));
@@ -229,6 +250,8 @@ export default function Checkout({ lang, user, profile }) {
   };
 
   const processPayment = async (method, token) => {
+    const reqTitle = request?.title_ar || request?.title_en || '';
+
     if (isSecondPayment) {
       // دفع الدفعة الثانية
       await sb.from('payments').insert({
@@ -272,7 +295,6 @@ export default function Checkout({ lang, user, profile }) {
       }).eq('id', request.id);
 
       // إشعار للمورد
-      const reqTitle = request?.title_ar || request?.title_en || '';
       try {
         await fetch(SEND_EMAILS_URL, {
           method: 'POST',
@@ -356,6 +378,9 @@ export default function Checkout({ lang, user, profile }) {
                 { label: t.product, val: isAr ? request.title_ar || request.title_en : request.title_en || request.title_ar },
                 { label: t.quantity, val: request.quantity || '—' },
                 { label: t.unitPrice, val: `${fmt(offer.price)} ${t.sar}` },
+                { label: t.productTotal, val: `${fmt(productTotal)} ${t.sar}` },
+                { label: t.shippingCost, val: hasOfferShippingCost(offer) ? `${fmt(shippingCost)} ${t.sar}` : t.shippingNotSpecified },
+                ...(getOfferShippingMethod(offer) ? [{ label: t.shippingMethod, val: getOfferShippingMethod(offer) }] : []),
                 { label: t.subtotal, val: `${fmt(subtotal)} ${t.sar}` },
                 { label: t.maabarFee, val: `${fmt(maabarFee)} ${t.sar}` },
               ].map((item, i) => (

@@ -3,6 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
+import {
+  getOfferEstimatedTotal,
+  getOfferProductSubtotal,
+  getOfferShippingCost,
+  getOfferShippingMethod,
+  hasOfferShippingCost,
+} from '../lib/offerPricing';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -843,13 +850,17 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         borderRadius: 'var(--radius-lg)',
                         overflow: 'hidden',
                       }}>
-                        {r.offers.map(o => (
+                        {r.offers.map(o => {
+                          const offerEstimatedTotal = getOfferEstimatedTotal(o, r);
+                          const lowestOfferTotal = Math.min(...r.offers.map(x => getOfferEstimatedTotal(x, r)));
+
+                          return (
                           <div key={o.id} style={{
                             background: o.status === 'accepted' ? 'var(--bg-raised)' : 'var(--bg-subtle)',
                             padding: '18px 16px',
                             position: 'relative',
                           }}>
-                            {r.offers.length > 1 && o.price === Math.min(...r.offers.map(x => x.price)) && (
+                            {r.offers.length > 1 && offerEstimatedTotal === lowestOfferTotal && (
                               <span style={{
                                 position: 'absolute', top: 10,
                                 insetInlineEnd: 10,
@@ -858,7 +869,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                 border: '1px solid rgba(58,122,82,0.2)',
                                 color: '#5a9a72', borderRadius: 20,
                               }}>
-                                {isAr ? 'الأقل سعراً' : 'Lowest Price'}
+                                {isAr ? 'الأقل إجمالاً' : lang === 'zh' ? '总价最低' : 'Lowest Total'}
                               </span>
                             )}
                             <div style={{ marginBottom: 8 }}>
@@ -872,12 +883,31 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                 </div>
                               )}
                             </div>
-                            <p style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4 }}>
-                              {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
-                            </p>
-                            <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 14 }}>
-                              MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : 'Origin'}: ${o.origin}` : ''}
-                            </p>
+                            <div style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
+                              <p style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
+                                {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                              </p>
+                              <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                                {isAr ? 'سعر الوحدة' : lang === 'zh' ? '产品单价' : 'Unit price'}
+                              </p>
+                              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                {isAr ? 'تكلفة المنتجات' : lang === 'zh' ? '产品合计' : 'Products total'}: {getOfferProductSubtotal(o, r).toFixed(2)} USD
+                              </p>
+                              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                {isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}: {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} USD` : (isAr ? 'غير محدد بشكل منفصل' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
+                              </p>
+                              {getOfferShippingMethod(o) && (
+                                <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                  {isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping method'}: {getOfferShippingMethod(o)}
+                                </p>
+                              )}
+                              <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
+                                {isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated total'}: {offerEstimatedTotal.toFixed(2)} USD
+                              </p>
+                              <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                                MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}
+                              </p>
+                            </div>
 
                             {o.status === 'pending' && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -977,7 +1007,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                               </p>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

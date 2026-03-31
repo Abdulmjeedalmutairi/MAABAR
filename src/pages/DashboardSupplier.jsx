@@ -12,6 +12,13 @@ import {
   normalizeProductDraftMedia,
 } from '../lib/productMedia';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import {
+  getOfferEstimatedTotal,
+  getOfferProductSubtotal,
+  getOfferShippingCost,
+  getOfferShippingMethod,
+  hasOfferShippingCost,
+} from '../lib/offerPricing';
 import { getSupplierVerificationState, normalizeSupplierDocStoragePath } from '../lib/supplierOnboarding';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -1146,15 +1153,37 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const saveEditOffer = async () => {
     if (!editOfferModal) return;
+
+    const price = parseFloat(editOfferForm.price);
+    const shippingCost = parseFloat(editOfferForm.shippingCost);
+    const deliveryDays = parseInt(editOfferForm.days, 10);
+
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(shippingCost) || shippingCost < 0 || !Number.isFinite(deliveryDays) || deliveryDays <= 0 || !String(editOfferForm.moq || '').trim()) {
+      alert(isAr ? 'تأكد من سعر الوحدة وتكلفة الشحن و MOQ ومدة التسليم قبل الحفظ' : lang === 'zh' ? '请先确认单价、运费、起订量和交期是否正确' : 'Please check unit price, shipping cost, MOQ, and delivery days before saving');
+      return;
+    }
+
     setSavingEditOffer(true);
-    await sb.from('offers').update({
-      price: parseFloat(editOfferForm.price),
-      moq: editOfferForm.moq,
-      delivery_days: parseInt(editOfferForm.days),
-      origin: editOfferForm.origin || 'China',
-      note: editOfferForm.note,
-    }).eq('id', editOfferModal.id);
+    const { error } = await runWithOptionalColumns({
+      table: 'offers',
+      payload: {
+        price,
+        shipping_cost: shippingCost,
+        shipping_method: String(editOfferForm.shippingMethod || '').trim() || null,
+        moq: editOfferForm.moq,
+        delivery_days: deliveryDays,
+        origin: editOfferForm.origin || 'China',
+        note: editOfferForm.note,
+      },
+      optionalKeys: ['shipping_cost', 'shipping_method'],
+      execute: (nextPayload) => sb.from('offers').update(nextPayload).eq('id', editOfferModal.id),
+    });
     setSavingEditOffer(false);
+    if (error) {
+      console.error('saveEditOffer error:', error);
+      alert(isAr ? 'حدث خطأ أثناء حفظ العرض' : lang === 'zh' ? '保存报价时出错' : 'Error saving offer');
+      return;
+    }
     setEditOfferModal(null);
     loadMyOffers();
   };
@@ -1219,19 +1248,34 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const toggleOfferForm = (id) => {
     setOfferForms(prev => ({ ...prev, [id]: !prev[id] }));
-    setOffers(prev => ({ ...prev, [id]: prev[id] || { price: '', moq: '', days: '', origin: 'China', note: '' } }));
+    setOffers(prev => ({
+      ...prev,
+      [id]: prev[id] || {
+        price: '',
+        shippingCost: '',
+        shippingMethod: '',
+        moq: '',
+        days: '',
+        origin: 'China',
+        note: '',
+      },
+    }));
   };
 
   const submitOffer = async (requestId, buyerId) => {
     const o = offers[requestId] || {};
     const price = parseFloat(o.price);
+    const shippingCost = parseFloat(o.shippingCost);
     const days = parseInt(o.days, 10);
     const moq = String(o.moq || '').trim();
     const origin = String(o.origin || 'China').trim();
+    const shippingMethod = String(o.shippingMethod || '').trim();
     const note = String(o.note || '').trim();
+    const requestItem = requests.find(r => r.id === requestId);
+    const estimatedTotal = getOfferEstimatedTotal({ price, shipping_cost: shippingCost }, requestItem);
 
-    if (!Number.isFinite(price) || price <= 0 || !moq || !Number.isFinite(days) || days <= 0) {
-      alert(isAr ? 'تأكد من السعر و MOQ ومدة التسليم قبل الإرسال' : lang === 'zh' ? '请先确认价格、起订量和交期是否正确' : 'Please check price, MOQ, and delivery days before sending');
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(shippingCost) || shippingCost < 0 || !moq || !Number.isFinite(days) || days <= 0) {
+      alert(isAr ? 'تأكد من سعر الوحدة وتكلفة الشحن و MOQ ومدة التسليم قبل الإرسال' : lang === 'zh' ? '请先确认单价、运费、起订量和交期是否正确' : 'Please check unit price, shipping cost, MOQ, and delivery days before sending');
       return;
     }
 
@@ -1244,7 +1288,23 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         return;
       }
 
-      const { error } = await sb.from('offers').insert({ request_id: requestId, supplier_id: user.id, price, moq, delivery_days: days, origin, note: note || null, status: 'pending' });
+      const { error } = await runWithOptionalColumns({
+        table: 'offers',
+        payload: {
+          request_id: requestId,
+          supplier_id: user.id,
+          price,
+          shipping_cost: shippingCost,
+          shipping_method: shippingMethod || null,
+          moq,
+          delivery_days: days,
+          origin,
+          note: note || null,
+          status: 'pending',
+        },
+        optionalKeys: ['shipping_cost', 'shipping_method'],
+        execute: (nextPayload) => sb.from('offers').insert(nextPayload),
+      });
       if (error) throw error;
 
       await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
@@ -1258,9 +1318,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             data: {
               recipientUserId: buyerId,
               name: 'Trader',
-              requestTitle: requests.find(r=>r.id===requestId)?.title_ar || requests.find(r=>r.id===requestId)?.title_en || '',
+              requestTitle: requestItem?.title_ar || requestItem?.title_en || '',
               supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
               price,
+              shippingCost,
+              shippingMethod,
+              estimatedTotal,
               deliveryDays: days,
               lang,
             },
@@ -1545,9 +1608,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         </div>
                       )}
                       <div className="form-grid">
-                        {/* حقل السعر بالدولار + الريال */}
                         <div className="form-group">
-                          <label className="form-label">{isAr ? 'سعر الوحدة (USD) *' : 'Unit Price (USD) *'}</label>
+                          <label className="form-label">{isAr ? 'سعر الوحدة / المنتج (USD) *' : lang === 'zh' ? '产品单价 (USD) *' : 'Product / Unit Price (USD) *'}</label>
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <div style={{ position: 'relative', flex: 1 }}>
                               <input
@@ -1572,6 +1634,41 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             )}
                           </div>
                         </div>
+                        <div className="form-group">
+                          <label className="form-label">{isAr ? 'تكلفة الشحن (USD) *' : lang === 'zh' ? '运费 (USD) *' : 'Shipping Cost (USD) *'}</label>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                              <input
+                                className="form-input"
+                                type="number"
+                                placeholder="USD"
+                                value={offers[r.id]?.shippingCost || ''}
+                                onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
+                                style={{ paddingRight: 40 }}
+                                dir="ltr"
+                              />
+                              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
+                            </div>
+                            {offers[r.id]?.shippingCost && (
+                              <div style={{
+                                flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
+                                border: '1px solid var(--border-subtle)', borderRadius: 3,
+                                fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
+                              }}>
+                                ≈ {(parseFloat(offers[r.id]?.shippingCost || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">{isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping Method'}</label>
+                          <input
+                            className="form-input"
+                            placeholder={isAr ? 'مثال: بحري / جوي / FOB' : lang === 'zh' ? '例如：海运 / 空运 / FOB' : 'e.g. Sea / Air / FOB'}
+                            value={offers[r.id]?.shippingMethod || ''}
+                            onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingMethod: e.target.value } }))}
+                          />
+                        </div>
                         {[['MOQ *', 'moq'], [isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *', 'days', 'number'], [isAr ? 'بلد المنشأ' : 'Origin', 'origin']].map(([label, key, type]) => (
                           <div key={key} className="form-group">
                             <label className="form-label">{label}</label>
@@ -1583,6 +1680,33 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'ملاحظة' : 'Note'}</label>
                         <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={offers[r.id]?.note || ''} onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], note: e.target.value } }))} />
                       </div>
+                      {(offers[r.id]?.price || offers[r.id]?.shippingCost) && (
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: 8,
+                          marginBottom: 14,
+                        }}>
+                          <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
+                            <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                              {getOfferProductSubtotal({ price: offers[r.id]?.price }, r).toFixed(2)} USD
+                            </p>
+                          </div>
+                          <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
+                            <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                              {getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }).toFixed(2)} USD
+                            </p>
+                          </div>
+                          <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
+                            <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                              {getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r).toFixed(2)} USD
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <button className="btn-dark-sm" onClick={() => submitOffer(r.id, r.buyer_id)} disabled={submittingOfferId === r.id} style={{ minHeight: 40, opacity: submittingOfferId === r.id ? 0.7 : 1 }}>{submittingOfferId === r.id ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '发送中...' : 'Sending...') : (isAr ? 'إرسال العرض' : lang === 'zh' ? '发送报价' : 'Send Offer')}</button>
                         <button className="btn-outline" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 40 }}>{t.cancel}</button>
@@ -1673,7 +1797,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {o.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => { setEditOfferModal(o); setEditOfferForm({ price: String(o.price), moq: o.moq || '', days: String(o.delivery_days), origin: o.origin || 'China', note: o.note || '' }); }}
+                            onClick={() => {
+                              setEditOfferModal(o);
+                              setEditOfferForm({
+                                price: String(o.price ?? ''),
+                                shippingCost: o.shipping_cost === null || o.shipping_cost === undefined ? '' : String(o.shipping_cost),
+                                shippingMethod: o.shipping_method || '',
+                                moq: o.moq || '',
+                                days: String(o.delivery_days ?? ''),
+                                origin: o.origin || 'China',
+                                note: o.note || '',
+                              });
+                            }}
                             className="btn-outline"
                             style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
                             {t.edit}
@@ -1692,11 +1827,25 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 24, color: 'var(--text-secondary)', fontSize: 13, marginBottom: 14, flexWrap: 'wrap', alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 26, fontWeight: 300, color: 'var(--text-primary)' }}>{o.price} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>USD</span></span>
-                    <span>MOQ: {o.moq}</span>
-                    <span>{o.delivery_days} {t.days}</span>
-                    {o.origin && <span>{isAr ? `المنشأ: ${o.origin}` : lang === 'zh' ? `原产地：${o.origin}` : `Origin: ${o.origin}`}</span>}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8, marginBottom: 14 }}>
+                    <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'سعر الوحدة' : lang === 'zh' ? '单价' : 'Unit Price'}</p>
+                      <p style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{o.price} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>USD</span></p>
+                    </div>
+                    <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
+                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                        {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} USD` : (isAr ? 'غير محدد' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
+                      </p>
+                      {getOfferShippingMethod(o) && (
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{getOfferShippingMethod(o)}</p>
+                      )}
+                    </div>
+                    <div style={{ padding: '12px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
+                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
+                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>USD</span></p>
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{isAr ? `MOQ: ${o.moq} · ${o.delivery_days} يوم` : lang === 'zh' ? `MOQ: ${o.moq} · ${o.delivery_days} 天` : `MOQ: ${o.moq} · ${o.delivery_days} days`}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}</p>
+                    </div>
                   </div>
 
                   {/* Accepted offer: full order details */}
@@ -2206,9 +2355,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <div className="form-group">
-                <label className="form-label">{t.price}</label>
+                <label className="form-label">{isAr ? 'سعر الوحدة / المنتج' : lang === 'zh' ? '产品单价' : 'Product / Unit Price'}</label>
                 <input className="form-input" type="number" dir="ltr" value={editOfferForm.price}
                   onChange={e => setEditOfferForm(f => ({ ...f, price: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{isAr ? 'تكلفة الشحن' : lang === 'zh' ? '运费' : 'Shipping Cost'}</label>
+                <input className="form-input" type="number" dir="ltr" value={editOfferForm.shippingCost || ''}
+                  onChange={e => setEditOfferForm(f => ({ ...f, shippingCost: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping Method'}</label>
+                <input className="form-input" value={editOfferForm.shippingMethod || ''}
+                  onChange={e => setEditOfferForm(f => ({ ...f, shippingMethod: e.target.value }))} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t.moq}</label>
@@ -2229,6 +2388,25 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'ملاحظة' : lang === 'zh' ? '备注' : 'Note'}</label>
                 <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={editOfferForm.note}
                   onChange={e => setEditOfferForm(f => ({ ...f, note: e.target.value }))} />
+              </div>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 8,
+              marginBottom: 18,
+            }}>
+              <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
+                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>{getOfferProductSubtotal({ price: editOfferForm.price }, editOfferModal?.requests).toFixed(2)} USD</p>
+              </div>
+              <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
+                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>{getOfferShippingCost({ shipping_cost: editOfferForm.shippingCost }).toFixed(2)} USD</p>
+              </div>
+              <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
+                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>{getOfferEstimatedTotal({ price: editOfferForm.price, shipping_cost: editOfferForm.shippingCost }, editOfferModal?.requests).toFixed(2)} USD</p>
               </div>
             </div>
 
