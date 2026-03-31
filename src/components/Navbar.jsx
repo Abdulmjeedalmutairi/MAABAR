@@ -277,7 +277,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
             </>
           ) : (
             <>
-              <button className="nav-supplier-btn" onClick={() => nav('/supplier-access')}>
+              <button className="nav-supplier-btn" onClick={() => nav('/login/supplier?mode=signup')}>
                 {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
               </button>
               <button className="nav-cta" onClick={() => nav('/login/buyer')}>
@@ -335,7 +335,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                   {isAr ? 'دخول / تسجيل' : lang === 'zh' ? '登录' : 'Login'}
                 </button>
                 <button className="btn-outline"
-                  onClick={() => { nav('/supplier-access'); setMenuOpen(false); }}
+                  onClick={() => { nav('/login/supplier?mode=signup'); setMenuOpen(false); }}
                   style={{ flex: 1, textAlign: 'center' }}>
                   {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
                 </button>

@@ -22,7 +22,7 @@ const T = {
       ],
       suppliers: [
         { label: 'قدّم طلب الانضمام', path: '/supplier-access' },
-        { label: 'بوابة الموردين', path: '/supplier' },
+        { label: 'بوابة الموردين', path: '/login/supplier?mode=signup' },
       ],
     },
     copy: 'مَعبر © 2026 · جميع الحقوق محفوظة',
@@ -46,7 +46,7 @@ const T = {
       ],
       suppliers: [
         { label: 'Apply as Supplier', path: '/supplier-access' },
-        { label: 'Supplier Portal', path: '/supplier' },
+        { label: 'Supplier Portal', path: '/login/supplier?mode=signup' },
       ],
     },
     copy: 'Maabar © 2026 · All rights reserved',
@@ -70,7 +70,7 @@ const T = {
       ],
       suppliers: [
         { label: '申请成为供应商', path: '/supplier-access' },
-        { label: '供应商门户', path: '/supplier' },
+        { label: '供应商门户', path: '/login/supplier?mode=signup' },
       ],
     },
     copy: 'Maabar © 2026 · 保留所有权利',
