@@ -897,34 +897,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
 
-    if (!getSupplierOnboardingState(profile || {}).isVerificationComplete) {
-      try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'supplier_signup_bundle',
-            data: {
-              name: mergedProfile.company_name || '',
-              companyName: mergedProfile.company_name || '',
-              email: user.email,
-              whatsapp: mergedProfile.whatsapp || '',
-              wechat: mergedProfile.wechat || '',
-              tradeLink: mergedProfile.trade_link || '',
-              country: mergedProfile.country || '',
-              city: mergedProfile.city || '',
-              speciality: mergedProfile.speciality || '',
-              regNum: mergedProfile.reg_number || '',
-              yearsExp: mergedProfile.years_experience || '',
-              employees: mergedProfile.num_employees || '',
-              lang,
-            },
-          }),
-        });
-      } catch (emailError) {
-        console.error('supplier verification email error:', emailError);
-      }
-    }
   };
 
   const savePayout = async () => {

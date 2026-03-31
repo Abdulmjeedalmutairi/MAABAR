@@ -2,9 +2,7 @@ export const SUPPLIER_APPLICATION_REQUIRED_KEYS = [
   'company_name',
   'country',
   'city',
-  'speciality',
-  'reg_number',
-  'years_experience',
+  'trade_link',
 ];
 
 export const SUPPLIER_VERIFICATION_REQUIRED_KEYS = [
@@ -43,18 +41,17 @@ export function getSupplierApplicationState(profile = {}) {
   });
 
   const hasContactMethod = Boolean(profile?.wechat || profile?.whatsapp);
-  const missingKeys = hasContactMethod ? missingCoreKeys : [...missingCoreKeys, 'contact_method'];
-  const requiredCount = SUPPLIER_APPLICATION_REQUIRED_KEYS.length + 1;
-  const completedRequiredCount = requiredCount - missingKeys.length;
+  const requiredCount = SUPPLIER_APPLICATION_REQUIRED_KEYS.length;
+  const completedRequiredCount = requiredCount - missingCoreKeys.length;
 
   return {
-    applicationMissingKeys: missingKeys,
-    applicationMissingCount: missingKeys.length,
+    applicationMissingKeys: missingCoreKeys,
+    applicationMissingCount: missingCoreKeys.length,
     applicationRequiredCount: requiredCount,
     applicationCompletedRequiredCount: completedRequiredCount,
     applicationProgressPercent: Math.round((completedRequiredCount / requiredCount) * 100),
     hasContactMethod,
-    isApplicationComplete: missingCoreKeys.length === 0 && hasContactMethod,
+    isApplicationComplete: missingCoreKeys.length === 0,
   };
 }
 

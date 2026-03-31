@@ -8,30 +8,12 @@ import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlo
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3V0emFsbXN6ZnFmY29meXdmZXR2LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJ1dHphbG1zenFmcWNvZnl3ZmV0diIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzczNjYxODQwLCJleHAiOjIwODkyMzc4NDB9.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
-const SPECIALITIES = [
-  { val: 'electronics', ar: 'إلكترونيات', en: 'Electronics', zh: '电子产品' },
-  { val: 'appliances', ar: 'أجهزة منزلية', en: 'Home Appliances', zh: '家用电器' },
-  { val: 'furniture', ar: 'أثاث', en: 'Furniture', zh: '家具' },
-  { val: 'clothing', ar: 'ملابس وأزياء', en: 'Clothing & Fashion', zh: '服装与时尚' },
-  { val: 'building', ar: 'مواد بناء', en: 'Construction Materials', zh: '建材' },
-  { val: 'food', ar: 'مواد غذائية', en: 'Food & Beverages', zh: '食品饮料' },
-  { val: 'medical', ar: 'مستلزمات طبية', en: 'Medical Supplies', zh: '医疗用品' },
-  { val: 'cosmetics', ar: 'مستحضرات التجميل', en: 'Cosmetics & Beauty', zh: '美妆护肤' },
-  { val: 'toys', ar: 'ألعاب وأطفال', en: "Toys & Children's Products", zh: '玩具儿童用品' },
-  { val: 'automotive', ar: 'قطع غيار سيارات', en: 'Automotive Parts', zh: '汽车配件' },
-  { val: 'sports', ar: 'رياضة ولياقة', en: 'Sports & Fitness', zh: '运动健身' },
-  { val: 'lighting', ar: 'إضاءة', en: 'Lighting', zh: '照明' },
-  { val: 'tools', ar: 'أدوات صناعية', en: 'Industrial Tools', zh: '工业工具' },
-  { val: 'gifts', ar: 'هدايا وتذكارات', en: 'Gifts & Souvenirs', zh: '礼品纪念品' },
-  { val: 'other', ar: 'أخرى', en: 'Other', zh: '其他' },
-];
-
 const L = {
   ar: {
     buyerTitle: 'أهلاً بك في مَعبر',
     buyerSub: 'تسوّق من موردين صينيين موثوقين',
     supplierTitle: 'طلب انضمام المورد',
-    supplierSub: 'هذه هي صفحة التسجيل المشتركة لجميع الموردين — املأ بيانات الطلب مرة واحدة وسنراجع حسابك بعد تأكيد البريد.',
+    supplierSub: 'هذه هي صفحة التسجيل الموحدة للموردين. أدخل بيانات الشركة الأساسية مرة واحدة، أكّد بريدك الإلكتروني، ثم سننقلك إلى صفحة حالة الطلب تحت المراجعة.',
     email: 'البريد الإلكتروني',
     pass: 'كلمة المرور',
     firstName: 'الاسم الأول',
@@ -42,16 +24,13 @@ const L = {
     supCompany: 'اسم الشركة',
     whatsapp: 'واتساب',
     wechat: 'WeChat',
-    tradeLink: 'رابط متجر Alibaba أو الموقع (اختياري)',
+    tradeLink: 'رابط موقع الشركة أو متجر Alibaba',
     country: 'الدولة',
     supCity: 'المدينة',
-    speciality: 'التخصص',
-    regNumber: 'رقم تسجيل الشركة',
-    yearsExp: 'سنوات الخبرة',
-    employees: 'عدد الموظفين (اختياري)',
-    supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب.',
-    contactHint: 'أدخل وسيلة تواصل واحدة على الأقل: WeChat أو WhatsApp.',
-    verificationLater: 'لن نطلب بيانات استلام الأرباح الآن. إذا تم قبول الحساب، ستضيف إعدادات الدفعات لاحقاً من لوحة المورد.',
+    speciality: 'التخصص (اختياري)',
+    supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب الأساسي.',
+    contactHint: 'وسائل التواصل اختيارية الآن. إذا أضفت WeChat أو WhatsApp سيسهّل ذلك على الفريق التواصل معك.',
+    verificationLater: 'لن نطلب الآن السجل التجاري أو الرخصة أو صور المصنع أو بيانات استلام الأرباح. إذا احتجناها، ستكون في خطوة التحقق اللاحقة داخل حالة الحساب.',
     signin: 'تسجيل الدخول',
     signup: 'إنشاء حساب',
     toSignup: 'ما عندك حساب؟',
@@ -65,12 +44,12 @@ const L = {
     termsLabel: 'أوافق على ',
     termsLink: 'الشروط والأحكام',
     mustAgreeTerms: 'يجب الموافقة على الشروط والأحكام.',
-    pendingMsg: 'تم استلام طلب المورد. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وسنحوّلك مباشرة إلى لوحة حالة الطلب تحت المراجعة.',
+    pendingMsg: 'تم استلام طلب المورد. أرسلنا رسالة تأكيد إلى بريدك — بعد التفعيل سجّل دخولك وسنحوّلك مباشرة إلى صفحة حالة الطلب تحت المراجعة.',
     googleLogin: 'دخول بـ Google',
     emailNotConfirmed: 'يرجى تأكيد بريدك الإلكتروني أولاً ثم متابعة طلب المورد.',
     wrongCredentials: 'إيميل أو كلمة مرور غير صحيحة.',
     requiredField: 'هذا الحقل مطلوب.',
-    requiredContact: 'أدخل WeChat أو WhatsApp على الأقل.',
+    requiredContact: '',
     requiredTerms: 'يجب الموافقة على الشروط والأحكام.',
     formErrorSummary: 'فيه حقول مطلوبة ناقصة ومعلّمة باللون الأحمر.',
     cities: ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'تبوك', 'أبها', 'القصيم', 'حائل', 'جازان', 'نجران'],
@@ -79,7 +58,7 @@ const L = {
     buyerTitle: 'Welcome to Maabar',
     buyerSub: 'Shop from verified Chinese suppliers',
     supplierTitle: 'Supplier application',
-    supplierSub: 'This is the single shared supplier signup page. Submit your application once, confirm your email, and we will take you into your review dashboard.',
+    supplierSub: 'This is the single shared supplier signup page. Submit your basic company details once, confirm your email, and we will take you straight into your pending-review status page.',
     email: 'Email',
     pass: 'Password',
     firstName: 'First Name',
@@ -90,16 +69,13 @@ const L = {
     supCompany: 'Company Name',
     whatsapp: 'WhatsApp',
     wechat: 'WeChat',
-    tradeLink: 'Alibaba Store or Website URL (optional)',
+    tradeLink: 'Company Website or Alibaba Store URL',
     country: 'Country',
     supCity: 'City',
-    speciality: 'Specialty',
-    regNumber: 'Company Registration Number',
-    yearsExp: 'Years of Experience',
-    employees: 'Number of Employees (optional)',
-    supplierRequiredHint: 'Fields marked with a red asterisk are required to submit your application.',
-    contactHint: 'Add at least one contact method: WeChat or WhatsApp.',
-    verificationLater: 'Payout details are not part of signup. If your account is approved, you will add payout settings later inside the supplier dashboard.',
+    speciality: 'Specialty (optional)',
+    supplierRequiredHint: 'Fields marked with a red asterisk are required for the basic supplier signup.',
+    contactHint: 'Contact methods are optional at signup. Adding WeChat or WhatsApp simply helps the team reach you faster.',
+    verificationLater: 'Registration number, business license, factory photos, and payout details all stay out of initial signup. If needed, they will be requested later in verification.',
     signin: 'Sign In',
     signup: 'Create Account',
     toSignup: "Don't have an account?",
@@ -113,12 +89,12 @@ const L = {
     termsLabel: 'I agree to ',
     termsLink: 'Terms & Conditions',
     mustAgreeTerms: 'You must agree to the Terms & Conditions.',
-    pendingMsg: 'Your supplier application was received. We sent a confirmation email — after activation, sign in and we will take you straight into your pending-review dashboard.',
+    pendingMsg: 'Your supplier application was received. We sent a confirmation email — after activation, sign in and we will take you straight into your pending-review status page.',
     googleLogin: 'Continue with Google',
     emailNotConfirmed: 'Please confirm your email first, then continue your supplier application.',
     wrongCredentials: 'Invalid email or password.',
     requiredField: 'This field is required.',
-    requiredContact: 'Add WeChat or WhatsApp so the team can reach you.',
+    requiredContact: '',
     requiredTerms: 'You must agree to the Terms & Conditions.',
     formErrorSummary: 'Some required fields are missing and highlighted in red.',
     cities: ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Tabuk', 'Abha', 'Qassim', 'Hail', 'Jazan', 'Najran'],
@@ -127,7 +103,7 @@ const L = {
     buyerTitle: '欢迎来到 Maabar',
     buyerSub: '从认证中国供应商采购',
     supplierTitle: '供应商申请',
-    supplierSub: '这是统一的供应商注册申请页。提交一次资料、确认邮箱后，系统会带您进入审核中的控制台状态。',
+    supplierSub: '这是统一的供应商注册申请页。一次填写基础公司资料、确认邮箱后，系统会直接带您进入待审核状态页。',
     email: '电子邮件',
     pass: '密码',
     firstName: '名',
@@ -138,16 +114,13 @@ const L = {
     supCompany: '公司名称',
     whatsapp: 'WhatsApp',
     wechat: 'WeChat',
-    tradeLink: '阿里巴巴店铺或网站链接（可选）',
+    tradeLink: '公司官网或阿里巴巴店铺链接',
     country: '国家',
     supCity: '城市',
-    speciality: '专业领域',
-    regNumber: '公司注册号',
-    yearsExp: '从业年限',
-    employees: '员工人数（可选）',
-    supplierRequiredHint: '带红色星号的字段为提交申请所必填。',
-    contactHint: '请至少填写一种联系方式：WeChat 或 WhatsApp。',
-    verificationLater: '注册时不需要填写收款信息。若审核通过，您可稍后在供应商后台中补充。',
+    speciality: '专业领域（可选）',
+    supplierRequiredHint: '带红色星号的字段为基础供应商注册所必填。',
+    contactHint: '注册时联系方式为可选项。若填写 WeChat 或 WhatsApp，团队联系您会更快。',
+    verificationLater: '公司注册号、营业执照、工厂照片以及收款资料都不属于首次注册内容。如有需要，会在后续认证阶段再补充。',
     signin: '登录',
     signup: '创建账户',
     toSignup: '没有账户？',
@@ -166,7 +139,7 @@ const L = {
     emailNotConfirmed: '请先确认邮箱，然后继续供应商申请。',
     wrongCredentials: '邮箱或密码错误。',
     requiredField: '此项为必填。',
-    requiredContact: '请填写 WeChat 或 WhatsApp，方便团队联系您。',
+    requiredContact: '',
     requiredTerms: '您必须同意条款与条件。',
     formErrorSummary: '有必填项未完成，已用红色高亮显示。',
     cities: ['利雅得', '吉达', '麦加', '麦地那', '达曼', '霍拜尔', '塔布克', '艾卜哈', '盖西姆', '哈伊勒', '吉赞', '纳季兰'],
@@ -195,10 +168,7 @@ function buildFieldErrorMap({
     if (!trimValue(values.supCompany)) errors.supCompany = langPack.requiredField;
     if (!trimValue(values.country)) errors.country = langPack.requiredField;
     if (!trimValue(values.supCity)) errors.supCity = langPack.requiredField;
-    if (!trimValue(values.speciality)) errors.speciality = langPack.requiredField;
-    if (!trimValue(values.regNumber)) errors.regNumber = langPack.requiredField;
-    if (!trimValue(values.yearsExp)) errors.yearsExp = langPack.requiredField;
-    if (!trimValue(values.wechat) && !trimValue(values.whatsapp)) errors.contact = langPack.requiredContact;
+    if (!trimValue(values.tradeLink)) errors.tradeLink = langPack.requiredField;
   } else {
     if (!trimValue(values.firstName)) errors.firstName = langPack.requiredField;
     if (!trimValue(values.lastName)) errors.lastName = langPack.requiredField;
@@ -243,9 +213,6 @@ export default function Login({ setUser, setProfile, lang }) {
   const [country, setCountry] = useState('');
   const [supCity, setSupCity] = useState('');
   const [speciality, setSpeciality] = useState('');
-  const [regNumber, setRegNumber] = useState('');
-  const [yearsExp, setYearsExp] = useState('');
-  const [employees, setEmployees] = useState('');
 
   useEffect(() => {
     setMode(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
@@ -269,11 +236,7 @@ export default function Login({ setUser, setProfile, lang }) {
       supCompany,
       country,
       supCity,
-      speciality,
-      regNumber,
-      yearsExp,
-      wechat,
-      whatsapp,
+      tradeLink,
     },
     agreedTerms,
     langPack: l,
@@ -289,11 +252,7 @@ export default function Login({ setUser, setProfile, lang }) {
     supCompany,
     country,
     supCity,
-    speciality,
-    regNumber,
-    yearsExp,
-    wechat,
-    whatsapp,
+    tradeLink,
     agreedTerms,
     l,
   ]);
@@ -381,11 +340,7 @@ export default function Login({ setUser, setProfile, lang }) {
         supCompany,
         country,
         supCity,
-        speciality,
-        regNumber,
-        yearsExp,
-        wechat,
-        whatsapp,
+        tradeLink,
       },
       agreedTerms,
       langPack: l,
@@ -417,9 +372,6 @@ export default function Login({ setUser, setProfile, lang }) {
         speciality: trimValue(speciality),
         country: trimValue(country),
         city: trimValue(supCity),
-        reg_number: trimValue(regNumber),
-        years_experience: trimValue(yearsExp) ? parseInt(trimValue(yearsExp), 10) : null,
-        num_employees: trimValue(employees) ? parseInt(trimValue(employees), 10) : null,
       }),
     };
 
@@ -461,9 +413,6 @@ export default function Login({ setUser, setProfile, lang }) {
               country: trimValue(country),
               city: trimValue(supCity),
               speciality: trimValue(speciality),
-              regNum: trimValue(regNumber),
-              yearsExp: trimValue(yearsExp),
-              employees: trimValue(employees),
               lang,
             },
           }),
@@ -746,62 +695,36 @@ export default function Login({ setUser, setProfile, lang }) {
                   </div>
 
                   <div style={fieldStyle}>
-                    <label style={labelStyle}>{l.speciality}{requiredAsterisk}</label>
-                    <select style={{ ...getFieldInputStyle('speciality'), cursor: 'pointer' }} value={speciality} onChange={(e) => setSpeciality(e.target.value)}>
-                      <option value="">{isAr ? 'اختر تخصصك' : lang === 'zh' ? '选择专业领域' : 'Select specialty'}</option>
-                      {SPECIALITIES.map((s) => (
-                        <option key={s.val} value={s.val}>
-                          {lang === 'zh' ? s.zh : lang === 'en' ? s.en : s.ar}
-                        </option>
-                      ))}
-                    </select>
-                    {getErrorText('speciality')}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 14 }}>
-                    <div style={{ ...fieldStyle, flex: 1 }}>
-                      <label style={labelStyle}>{l.regNumber}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('regNumber')} value={regNumber} onChange={(e) => setRegNumber(e.target.value)} dir="ltr" />
-                      {getErrorText('regNumber')}
-                    </div>
-                    <div style={{ ...fieldStyle, flex: 1 }}>
-                      <label style={labelStyle}>{l.yearsExp}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('yearsExp')} type="number" min="0" value={yearsExp} onChange={(e) => setYearsExp(e.target.value)} dir="ltr" />
-                      {getErrorText('yearsExp')}
-                    </div>
+                    <label style={labelStyle}>{l.tradeLink}{requiredAsterisk}</label>
+                    <input style={getFieldInputStyle('tradeLink')} value={tradeLink} onChange={(e) => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
+                    {getErrorText('tradeLink')}
                   </div>
 
                   <div style={fieldStyle}>
-                    <label style={labelStyle}>{l.employees}</label>
-                    <input style={inputStyle} type="number" min="0" value={employees} onChange={(e) => setEmployees(e.target.value)} dir="ltr" />
+                    <label style={labelStyle}>{l.speciality}</label>
+                    <input style={inputStyle} value={speciality} onChange={(e) => setSpeciality(e.target.value)} placeholder={isAr ? 'مثال: إلكترونيات منزلية' : lang === 'zh' ? '例如：家居电子' : 'Optional — e.g. home electronics'} />
                   </div>
 
                   <div style={{
                     marginBottom: 18,
                     padding: '14px 16px',
                     borderRadius: 'var(--radius-md)',
-                    border: `1px solid ${showValidation && validationErrors.contact ? 'rgba(214,107,107,0.35)' : 'var(--border-subtle)'}`,
-                    background: showValidation && validationErrors.contact ? 'rgba(214,107,107,0.04)' : 'var(--bg-subtle)',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-subtle)',
                   }}>
                     <div style={{ display: 'flex', gap: 14 }}>
                       <div style={{ flex: 1 }}>
-                        <label style={labelStyle}>{l.wechat}{requiredAsterisk}</label>
-                        <input style={getFieldInputStyle('contact')} value={wechat} onChange={(e) => setWechat(e.target.value)} dir="ltr" placeholder="WeChat ID" />
+                        <label style={labelStyle}>{l.wechat}</label>
+                        <input style={inputStyle} value={wechat} onChange={(e) => setWechat(e.target.value)} dir="ltr" placeholder="WeChat ID" />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label style={labelStyle}>{l.whatsapp}{requiredAsterisk}</label>
-                        <input style={getFieldInputStyle('contact')} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
+                        <label style={labelStyle}>{l.whatsapp}</label>
+                        <input style={inputStyle} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
                       </div>
                     </div>
                     <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: 10, marginBottom: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {l.contactHint}
                     </p>
-                    {getErrorText('contact')}
-                  </div>
-
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>{l.tradeLink}</label>
-                    <input style={inputStyle} value={tradeLink} onChange={(e) => setTradeLink(e.target.value)} placeholder="https://..." dir="ltr" />
                   </div>
 
                   <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -4, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -870,7 +793,7 @@ export default function Login({ setUser, setProfile, lang }) {
                 }}
               >
                 {loading ? '...' : mode === 'signin'
-                  ? (isSupplier ? (isAr ? 'متابعة الطلب' : lang === 'zh' ? '继续申请' : 'Continue application') : l.signin)
+                  ? l.signin
                   : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
               </button>
 
@@ -932,7 +855,7 @@ export default function Login({ setUser, setProfile, lang }) {
                 {isSupplier
                   ? (mode === 'signin'
                     ? (isAr ? 'ما عندك طلب بعد؟' : lang === 'zh' ? '还没有申请？' : 'No application yet?')
-                    : (isAr ? 'عندك طلب قائم؟' : lang === 'zh' ? '已经提交过申请？' : 'Already started your application?'))
+                    : (isAr ? 'عندك طلب قائم؟' : lang === 'zh' ? '已经提交过申请？' : 'Already applied?'))
                   : (mode === 'signin' ? l.toSignup : l.toSignin)}{' '}
                 <button
                   onClick={() => {
@@ -958,7 +881,7 @@ export default function Login({ setUser, setProfile, lang }) {
                   {isSupplier
                     ? (mode === 'signin'
                       ? (isAr ? 'ابدأ الطلب' : lang === 'zh' ? '开始申请' : 'Start application')
-                      : (isAr ? 'ادخل لمتابعة الطلب' : lang === 'zh' ? '登录继续申请' : 'Sign in to continue'))
+                      : (isAr ? 'سجّل الدخول' : lang === 'zh' ? '登录查看状态' : 'Sign in'))
                     : (mode === 'signin' ? l.toSignupLink : l.toSigninLink)}
                 </button>
               </p>

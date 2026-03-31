@@ -27,18 +27,18 @@ const earlyBenefits = [
 const howItWorks = [
   {
     step: '01',
-    title: 'Start the supplier application',
-    description: 'Use the shared supplier signup page to submit your company and application details.',
+    title: 'Complete the shared supplier signup',
+    description: 'Use the single supplier signup page to submit your basic company details once.',
   },
   {
     step: '02',
-    title: 'Confirm email and enter review',
-    description: 'After confirmation, your account moves into a controlled pending-review state while the team evaluates it.',
+    title: 'Confirm your email',
+    description: 'After email confirmation, your account moves straight into the pending-review state.',
   },
   {
     step: '03',
-    title: 'Unlock early supplier access',
-    description: 'Approved suppliers unlock the full supplier dashboard and gain early positioning before public launch.',
+    title: 'Wait for Maabar review',
+    description: 'The team reviews your application and contacts you directly before unlocking full supplier access.',
   },
 ];
 
@@ -89,12 +89,11 @@ export default function SupplierAccess() {
 
   const goToApply = () => nav('/login/supplier?mode=signup');
   const goHome = () => nav('/');
-  const nextScene = () => setActiveScene((prev) => Math.min(prev + 1, totalScenes - 1));
-  const prevScene = () => setActiveScene((prev) => Math.max(prev - 1, 0));
+  const startJourney = () => setActiveScene(1);
   const jumpToScene = (index) => setActiveScene(index);
 
   return (
-    <div dir="ltr" lang="en" className="supplier-access-page">
+    <div dir="ltr" lang="en" className={`supplier-access-page supplier-scene-${activeScene}`}>
       <div className="supplier-access-topbar">
         <div className="supplier-access-shell supplier-access-topbar-inner">
           <BrandLogo as="button" size="sm" align="flex-start" onClick={goHome} />
@@ -118,20 +117,23 @@ export default function SupplierAccess() {
           </div>
 
           <div className="supplier-journey-stage">
+            <div className="supplier-stage-glow supplier-stage-glow-a" />
+            <div className="supplier-stage-glow supplier-stage-glow-b" />
+
             {activeScene === 0 && (
-              <section key="scene-0" className="supplier-scene supplier-scene-hero">
+              <section key="scene-0" className="supplier-scene supplier-scene-hero supplier-scene-enter">
                 <div className="supplier-scene-content">
                   <div className="supplier-scene-eyebrow">Founding supplier access</div>
                   <h1 className="supplier-scene-title supplier-scene-title-hero">Secure early access to Saudi buyers before the wider launch</h1>
                   <p className="supplier-scene-description supplier-scene-description-large">
-                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This page is the supplier journey only — when you click apply, you move to the single shared supplier signup page.
+                    Maabar is a Saudi B2B platform connecting selected Chinese suppliers with Saudi merchants. This page stays a journey only — when you decide to apply, you move into the single shared supplier signup page.
                   </p>
                   <div className="supplier-scene-actions">
-                    <button onClick={nextScene} className="supplier-primary-btn">Continue</button>
+                    <button onClick={startJourney} className="supplier-primary-btn">Start Journey</button>
                     <button onClick={goToApply} className="supplier-secondary-btn">Apply now</button>
                   </div>
                 </div>
-                <div className="supplier-scene-sidecard">
+                <div className="supplier-scene-sidecard supplier-lift-card">
                   <div className="supplier-sidecard-label">Currently open</div>
                   <div className="supplier-sidecard-title">Founding supplier intake is intentionally limited</div>
                   <div className="supplier-sidecard-text">We keep the first wave selective so approved suppliers enter with better positioning, cleaner presentation, and more focused review.</div>
@@ -140,7 +142,7 @@ export default function SupplierAccess() {
             )}
 
             {activeScene === 1 && (
-              <section key="scene-1" className="supplier-scene">
+              <section key="scene-1" className="supplier-scene supplier-scene-enter">
                 <div className="supplier-scene-content">
                   <div className="supplier-scene-eyebrow">Why join early</div>
                   <h2 className="supplier-scene-title">Position your company before broader supplier rollout begins</h2>
@@ -149,8 +151,8 @@ export default function SupplierAccess() {
                   </p>
                 </div>
                 <div className="supplier-card-grid">
-                  {earlyBenefits.map((item) => (
-                    <div key={item.title} className="supplier-feature-card">
+                  {earlyBenefits.map((item, index) => (
+                    <div key={item.title} className="supplier-feature-card supplier-lift-card" style={{ animationDelay: `${index * 70}ms` }}>
                       <h3>{item.title}</h3>
                       <p>{item.description}</p>
                     </div>
@@ -160,17 +162,17 @@ export default function SupplierAccess() {
             )}
 
             {activeScene === 2 && (
-              <section key="scene-2" className="supplier-scene">
+              <section key="scene-2" className="supplier-scene supplier-scene-enter">
                 <div className="supplier-scene-content">
                   <div className="supplier-scene-eyebrow">How it works</div>
-                  <h2 className="supplier-scene-title">A short, clear path from journey to review</h2>
+                  <h2 className="supplier-scene-title">A short, clear path from signup to review</h2>
                   <p className="supplier-scene-description">
-                    No extra detours: click apply, complete the shared supplier signup, confirm your email, then wait inside a controlled review state while the team checks your application.
+                    No second registration and no duplicate forms: complete the lightweight signup once, confirm your email, then wait inside a controlled pending-review state while the team checks your application.
                   </p>
                 </div>
                 <div className="supplier-steps-grid">
-                  {howItWorks.map((item) => (
-                    <div key={item.step} className="supplier-step-card">
+                  {howItWorks.map((item, index) => (
+                    <div key={item.step} className="supplier-step-card supplier-lift-card" style={{ animationDelay: `${index * 90}ms` }}>
                       <div className="supplier-step-number">{item.step}</div>
                       <h3>{item.title}</h3>
                       <p>{item.description}</p>
@@ -181,7 +183,7 @@ export default function SupplierAccess() {
             )}
 
             {activeScene === 3 && (
-              <section key="scene-3" className="supplier-scene">
+              <section key="scene-3" className="supplier-scene supplier-scene-enter">
                 <div className="supplier-scene-content">
                   <div className="supplier-scene-eyebrow">Why Maabar</div>
                   <h2 className="supplier-scene-title">Built for Saudi buyer access, not open-listing clutter</h2>
@@ -190,8 +192,8 @@ export default function SupplierAccess() {
                   </p>
                 </div>
                 <div className="supplier-bullets-wrap">
-                  {whyMaabar.map((item) => (
-                    <div key={item} className="supplier-bullet-row">
+                  {whyMaabar.map((item, index) => (
+                    <div key={item} className="supplier-bullet-row supplier-bullet-row-enter" style={{ animationDelay: `${index * 80}ms` }}>
                       <span className="supplier-bullet-dot" />
                       <span>{item}</span>
                     </div>
@@ -201,12 +203,12 @@ export default function SupplierAccess() {
             )}
 
             {activeScene === 4 && (
-              <section key="scene-4" className="supplier-scene supplier-scene-final">
+              <section key="scene-4" className="supplier-scene supplier-scene-final supplier-scene-enter">
                 <div className="supplier-scene-content">
                   <div className="supplier-scene-eyebrow">Limited access</div>
                   <h2 className="supplier-scene-title">Apply before the public launch window closes</h2>
                   <p className="supplier-scene-description">
-                    We are onboarding a limited number of Chinese suppliers before official launch. Strong applications move into review first, then approved accounts unlock early supplier access and dashboard functionality ahead of the broader rollout.
+                    We are onboarding a limited number of Chinese suppliers before official launch. Strong applications move into review first, then approved accounts unlock early supplier access and full dashboard functionality ahead of the broader rollout.
                   </p>
                 </div>
                 <div className="supplier-countdown-row">
@@ -223,7 +225,7 @@ export default function SupplierAccess() {
           </div>
 
           <div className="supplier-journey-footer">
-            <div className="supplier-scene-dots">
+            <div className="supplier-scene-dots" aria-label="Supplier journey steps">
               {Array.from({ length: totalScenes }).map((_, index) => (
                 <button
                   key={`scene-dot-${index}`}
@@ -233,15 +235,7 @@ export default function SupplierAccess() {
                 />
               ))}
             </div>
-
-            <div className="supplier-nav-actions">
-              <button onClick={prevScene} className="supplier-secondary-btn" disabled={activeScene === 0}>Back</button>
-              {activeScene < totalScenes - 1 ? (
-                <button onClick={nextScene} className="supplier-primary-btn">Next</button>
-              ) : (
-                <button onClick={goToApply} className="supplier-primary-btn">Apply now</button>
-              )}
-            </div>
+            <p className="supplier-journey-footer-note">Use the dots to explore the journey.</p>
           </div>
         </div>
       </main>
@@ -269,7 +263,7 @@ export default function SupplierAccess() {
           position: sticky;
           top: 0;
           z-index: 100;
-          background: rgba(10,10,11,0.86);
+          background: rgba(10,10,11,0.84);
           backdrop-filter: blur(18px);
           border-bottom: 1px solid var(--border-subtle);
         }
@@ -279,32 +273,7 @@ export default function SupplierAccess() {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          min-height: 74px;
-        }
-
-        .supplier-brand-button {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          border: none;
-          background: transparent;
-          color: var(--text-primary);
-          cursor: pointer;
-        }
-
-        .supplier-brand-word {
-          font-size: 13px;
-          letter-spacing: 0.18em;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-        }
-
-        .supplier-brand-separator {
-          color: var(--text-tertiary);
-        }
-
-        .supplier-brand-sub {
-          font-size: 16px;
+          min-height: 72px;
         }
 
         .supplier-topbar-actions {
@@ -313,27 +282,24 @@ export default function SupplierAccess() {
           align-items: center;
         }
 
-        .supplier-topbar-link,
         .supplier-topbar-cta,
         .supplier-primary-btn,
         .supplier-secondary-btn {
           border-radius: 14px;
-          padding: 14px 20px;
-          font-size: 15px;
+          padding: 13px 18px;
+          font-size: 14px;
           font-weight: 700;
           cursor: pointer;
-          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+          transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 260ms ease;
           -webkit-tap-highlight-color: transparent;
         }
 
-        .supplier-topbar-link:hover,
         .supplier-topbar-cta:hover,
         .supplier-primary-btn:hover,
         .supplier-secondary-btn:hover {
           transform: translateY(-1px);
         }
 
-        .supplier-topbar-link,
         .supplier-secondary-btn {
           background: transparent;
           color: var(--text-primary);
@@ -345,24 +311,18 @@ export default function SupplierAccess() {
           background: var(--text-primary);
           color: var(--bg-base);
           border: none;
-          box-shadow: 0 14px 30px rgba(255,255,255,0.08);
-        }
-
-        .supplier-secondary-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-          transform: none;
+          box-shadow: 0 16px 34px rgba(255,255,255,0.08);
         }
 
         .supplier-access-main {
           min-height: calc(100vh - 72px);
           display: flex;
           align-items: center;
-          padding: 36px 0 40px;
+          padding: 30px 0 34px;
         }
 
         .supplier-journey-progress-wrap {
-          margin-bottom: 22px;
+          margin-bottom: 18px;
         }
 
         .supplier-journey-progress-bar {
@@ -377,8 +337,8 @@ export default function SupplierAccess() {
         .supplier-journey-progress-fill {
           height: 100%;
           border-radius: 999px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.8), var(--text-primary));
-          transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+          background: linear-gradient(90deg, rgba(255,255,255,0.72), var(--text-primary));
+          transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1);
           box-shadow: 0 0 18px rgba(255,255,255,0.16);
         }
 
@@ -387,45 +347,46 @@ export default function SupplierAccess() {
           justify-content: space-between;
           gap: 12px;
           color: var(--text-secondary);
-          font-size: 12px;
+          font-size: 11px;
           text-transform: uppercase;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.14em;
         }
 
         .supplier-journey-stage {
           position: relative;
           overflow: hidden;
-          min-height: 68vh;
-          border-radius: 34px;
+          min-height: 64vh;
+          border-radius: 30px;
           border: 1px solid var(--border-subtle);
-          background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+          background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
           box-shadow: 0 34px 90px rgba(0,0,0,0.22);
+          isolation: isolate;
         }
 
-        .supplier-journey-stage::before,
-        .supplier-journey-stage::after {
-          content: '';
+        .supplier-stage-glow {
           position: absolute;
+          border-radius: 999px;
+          filter: blur(18px);
+          opacity: 0.55;
           pointer-events: none;
-          border-radius: 50%;
-          filter: blur(20px);
-          opacity: 0.6;
-        }
-
-        .supplier-journey-stage::before {
-          inset: auto auto -120px -80px;
-          width: 240px;
-          height: 240px;
-          background: radial-gradient(circle, rgba(255,255,255,0.09), transparent 68%);
+          z-index: 0;
           animation: supplierAmbientFloat 14s ease-in-out infinite;
         }
 
-        .supplier-journey-stage::after {
-          inset: -70px -50px auto auto;
+        .supplier-stage-glow-a {
+          inset: auto auto -110px -60px;
           width: 220px;
           height: 220px;
-          background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 66%);
-          animation: supplierAmbientFloat 18s ease-in-out infinite reverse;
+          background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%);
+        }
+
+        .supplier-stage-glow-b {
+          inset: -50px -45px auto auto;
+          width: 210px;
+          height: 210px;
+          background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 68%);
+          animation-direction: reverse;
+          animation-duration: 18s;
         }
 
         @keyframes supplierAmbientFloat {
@@ -433,14 +394,14 @@ export default function SupplierAccess() {
             transform: translate3d(0, 0, 0) scale(1);
           }
           50% {
-            transform: translate3d(12px, -10px, 0) scale(1.05);
+            transform: translate3d(12px, -12px, 0) scale(1.05);
           }
         }
 
         @keyframes supplierSceneEnter {
           from {
             opacity: 0;
-            transform: translateY(18px) scale(0.985);
+            transform: translateY(20px) scale(0.985);
           }
           to {
             opacity: 1;
@@ -448,108 +409,127 @@ export default function SupplierAccess() {
           }
         }
 
+        @keyframes supplierCardEnter {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         .supplier-scene {
           position: relative;
-          min-height: 68vh;
+          z-index: 1;
+          min-height: 64vh;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          gap: 30px;
-          padding: 56px;
-          animation: supplierSceneEnter 420ms cubic-bezier(0.22, 1, 0.36, 1);
+          gap: 24px;
+          padding: 46px;
+        }
+
+        .supplier-scene-enter {
+          animation: supplierSceneEnter 440ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .supplier-scene-hero {
           display: grid;
-          grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+          grid-template-columns: minmax(0, 1.14fr) minmax(260px, 0.86fr);
           align-items: center;
-          gap: 28px;
+          gap: 24px;
         }
 
         .supplier-scene-content {
-          max-width: 780px;
+          max-width: 760px;
         }
 
         .supplier-scene-eyebrow {
           color: var(--text-tertiary);
-          font-size: 12px;
+          font-size: 11px;
           text-transform: uppercase;
-          letter-spacing: 0.16em;
-          margin-bottom: 14px;
+          letter-spacing: 0.17em;
+          margin-bottom: 12px;
         }
 
         .supplier-scene-title {
-          font-size: clamp(2.2rem, 3.4vw, 3.45rem);
-          line-height: 0.98;
-          letter-spacing: -0.055em;
-          margin: 0 0 18px;
+          font-size: clamp(2rem, 3vw, 3.1rem);
+          line-height: 1.02;
+          letter-spacing: -0.05em;
+          margin: 0 0 14px;
         }
 
         .supplier-scene-title-hero {
-          max-width: 820px;
-          font-size: clamp(2.65rem, 4.6vw, 4.35rem);
+          max-width: 760px;
+          font-size: clamp(2.25rem, 4.1vw, 3.85rem);
         }
 
         .supplier-scene-description {
           color: var(--text-secondary);
-          font-size: 18px;
-          line-height: 1.82;
+          font-size: 16px;
+          line-height: 1.75;
           margin: 0;
-          max-width: 760px;
+          max-width: 720px;
         }
 
         .supplier-scene-description-large {
-          font-size: 18px;
+          font-size: 17px;
         }
 
         .supplier-scene-actions {
           display: flex;
           flex-wrap: wrap;
-          gap: 12px;
-          margin-top: 30px;
+          gap: 10px;
+          margin-top: 22px;
+        }
+
+        .supplier-lift-card {
+          animation: supplierCardEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .supplier-scene-sidecard {
-          padding: 28px;
-          border-radius: 26px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+          padding: 24px;
+          border-radius: 24px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.03));
           border: 1px solid var(--border-muted);
           color: var(--text-primary);
-          box-shadow: 0 18px 38px rgba(0,0,0,0.18);
-          animation: supplierAmbientFloat 12s ease-in-out infinite;
+          box-shadow: 0 20px 42px rgba(0,0,0,0.18);
+          animation: supplierAmbientFloat 12s ease-in-out infinite, supplierCardEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .supplier-sidecard-label {
           color: var(--text-tertiary);
-          font-size: 12px;
+          font-size: 11px;
           text-transform: uppercase;
-          letter-spacing: 0.12em;
-          margin-bottom: 12px;
+          letter-spacing: 0.14em;
+          margin-bottom: 10px;
         }
 
         .supplier-sidecard-title {
-          font-size: 26px;
-          line-height: 1.08;
+          font-size: 23px;
+          line-height: 1.1;
           margin-bottom: 12px;
         }
 
         .supplier-sidecard-text {
           color: var(--text-secondary);
-          line-height: 1.8;
-          font-size: 15px;
+          line-height: 1.75;
+          font-size: 14px;
         }
 
         .supplier-card-grid,
         .supplier-steps-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 14px;
         }
 
         .supplier-feature-card,
         .supplier-step-card {
-          padding: 24px;
-          border-radius: 24px;
+          padding: 22px;
+          border-radius: 22px;
           background: var(--bg-muted);
           border: 1px solid var(--border-subtle);
           transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease;
@@ -557,29 +537,29 @@ export default function SupplierAccess() {
 
         .supplier-feature-card:hover,
         .supplier-step-card:hover {
-          transform: translateY(-5px);
+          transform: translateY(-4px);
           border-color: var(--border-default);
           box-shadow: 0 16px 36px rgba(0,0,0,0.18);
         }
 
         .supplier-feature-card h3,
         .supplier-step-card h3 {
-          margin: 0 0 12px;
-          font-size: 21px;
-          line-height: 1.18;
+          margin: 0 0 10px;
+          font-size: 19px;
+          line-height: 1.22;
         }
 
         .supplier-feature-card p,
         .supplier-step-card p {
           margin: 0;
           color: var(--text-secondary);
-          line-height: 1.8;
-          font-size: 15px;
+          line-height: 1.72;
+          font-size: 14px;
         }
 
         .supplier-step-number {
           color: var(--text-tertiary);
-          font-size: 14px;
+          font-size: 13px;
           letter-spacing: 0.12em;
           font-weight: 700;
           margin-bottom: 10px;
@@ -587,29 +567,34 @@ export default function SupplierAccess() {
 
         .supplier-bullets-wrap {
           display: grid;
-          gap: 10px;
-          max-width: 820px;
+          gap: 8px;
+          max-width: 760px;
         }
 
         .supplier-bullet-row {
           display: flex;
-          gap: 14px;
+          gap: 12px;
           align-items: flex-start;
-          padding: 20px 0;
+          padding: 16px 0;
           border-bottom: 1px solid var(--border-subtle);
           color: var(--text-primary);
-          font-size: 19px;
-          line-height: 1.6;
+          font-size: 17px;
+          line-height: 1.58;
+        }
+
+        .supplier-bullet-row-enter {
+          animation: supplierCardEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .supplier-bullet-dot {
-          width: 10px;
-          height: 10px;
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
           background: var(--text-primary);
           opacity: 0.72;
-          margin-top: 10px;
+          margin-top: 9px;
           flex: 0 0 auto;
+          box-shadow: 0 0 14px rgba(255,255,255,0.14);
         }
 
         .supplier-scene-final {
@@ -618,20 +603,20 @@ export default function SupplierAccess() {
         }
 
         .supplier-scene-final .supplier-scene-content {
-          max-width: 780px;
+          max-width: 760px;
         }
 
         .supplier-countdown-row {
           display: flex;
           flex-wrap: wrap;
           justify-content: center;
-          gap: 14px;
+          gap: 12px;
         }
 
         .supplier-count-unit {
-          min-width: 104px;
-          padding: 20px 16px;
-          border-radius: 22px;
+          min-width: 98px;
+          padding: 18px 14px;
+          border-radius: 20px;
           background: var(--bg-muted);
           border: 1px solid var(--border-muted);
           text-align: center;
@@ -639,14 +624,14 @@ export default function SupplierAccess() {
         }
 
         .supplier-count-value {
-          font-size: 32px;
+          font-size: 30px;
           line-height: 1;
           font-weight: 700;
         }
 
         .supplier-count-label {
-          margin-top: 8px;
-          font-size: 12px;
+          margin-top: 7px;
+          font-size: 11px;
           color: var(--text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.08em;
@@ -659,16 +644,18 @@ export default function SupplierAccess() {
 
         .supplier-journey-footer {
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
           align-items: center;
-          gap: 18px;
-          padding: 18px 4px 0;
+          justify-content: center;
+          gap: 10px;
+          padding: 16px 4px 0;
         }
 
         .supplier-scene-dots {
           display: flex;
           gap: 8px;
           align-items: center;
+          justify-content: center;
         }
 
         .supplier-scene-dot {
@@ -692,10 +679,12 @@ export default function SupplierAccess() {
           box-shadow: 0 0 14px rgba(255,255,255,0.18);
         }
 
-        .supplier-nav-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
+        .supplier-journey-footer-note {
+          margin: 0;
+          color: var(--text-tertiary);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
         }
 
         @media (max-width: 959px) {
@@ -706,7 +695,7 @@ export default function SupplierAccess() {
 
           .supplier-access-main {
             padding-top: 18px;
-            padding-bottom: 28px;
+            padding-bottom: 24px;
             align-items: flex-start;
           }
 
@@ -717,54 +706,42 @@ export default function SupplierAccess() {
 
           .supplier-scene {
             padding: 30px 22px;
-            gap: 24px;
+            gap: 20px;
           }
 
           .supplier-scene-hero {
             grid-template-columns: 1fr;
-            gap: 18px;
+            gap: 16px;
           }
 
           .supplier-scene-title {
-            font-size: clamp(2rem, 7.6vw, 2.7rem);
+            font-size: clamp(1.85rem, 6.9vw, 2.45rem);
           }
 
           .supplier-scene-title-hero {
-            font-size: clamp(2.2rem, 9vw, 3.2rem);
+            font-size: clamp(2rem, 8.2vw, 2.95rem);
           }
 
           .supplier-scene-description,
           .supplier-scene-description-large {
-            font-size: 16px;
-            line-height: 1.75;
+            font-size: 15px;
+            line-height: 1.72;
           }
 
           .supplier-feature-card h3,
           .supplier-step-card h3 {
-            font-size: 19px;
+            font-size: 18px;
           }
 
           .supplier-bullet-row {
-            font-size: 16px;
-            padding: 16px 0;
+            font-size: 15px;
+            padding: 14px 0;
           }
 
           .supplier-topbar-actions {
             display: none;
           }
 
-          .supplier-journey-footer {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 14px;
-          }
-
-          .supplier-nav-actions {
-            width: 100%;
-          }
-
-          .supplier-nav-actions .supplier-primary-btn,
-          .supplier-nav-actions .supplier-secondary-btn,
           .supplier-scene-actions .supplier-primary-btn,
           .supplier-scene-actions .supplier-secondary-btn {
             flex: 1 1 100%;
@@ -784,15 +761,34 @@ export default function SupplierAccess() {
 
         @media (max-width: 640px) {
           .supplier-access-topbar-inner {
-            min-height: 68px;
+            min-height: 66px;
+          }
+
+          .supplier-access-main {
+            padding-top: 14px;
+            padding-bottom: 20px;
+          }
+
+          .supplier-journey-progress-wrap {
+            margin-bottom: 14px;
           }
 
           .supplier-journey-stage {
-            border-radius: 28px;
+            border-radius: 24px;
           }
 
           .supplier-scene {
-            padding: 26px 18px;
+            padding: 22px 16px;
+            gap: 18px;
+          }
+
+          .supplier-scene-eyebrow {
+            font-size: 10px;
+            margin-bottom: 10px;
+          }
+
+          .supplier-scene-title {
+            margin-bottom: 12px;
           }
 
           .supplier-card-grid,
@@ -800,13 +796,35 @@ export default function SupplierAccess() {
             grid-template-columns: 1fr;
           }
 
+          .supplier-feature-card,
+          .supplier-step-card,
+          .supplier-scene-sidecard {
+            padding: 18px;
+            border-radius: 20px;
+          }
+
+          .supplier-sidecard-title {
+            font-size: 20px;
+          }
+
           .supplier-countdown-row {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
+            gap: 8px;
+          }
+
+          .supplier-count-unit {
+            padding: 14px 10px;
+            border-radius: 16px;
           }
 
           .supplier-count-value {
-            font-size: 28px;
+            font-size: 24px;
+          }
+
+          .supplier-primary-btn,
+          .supplier-secondary-btn {
+            min-height: 44px;
+            padding: 12px 16px;
+            font-size: 13px;
           }
         }
       `}</style>
