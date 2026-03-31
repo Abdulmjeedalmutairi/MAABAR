@@ -13,15 +13,20 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function brandLockup() {
+function brandLockup(variant = 'header') {
+  const isHeader = variant === 'header';
+  const pad = isHeader ? '28px 22px 24px' : '0';
+  const titleSize = isHeader ? 24 : 18;
+  const titleSpacing = isHeader ? '2.4px' : '1.8px';
+  const zhSize = isHeader ? 14 : 12;
   return `
-  <div style="text-align:center">
-    <div style="font-size:18px;line-height:1.2;font-weight:700;color:#f5f5f2;letter-spacing:1.8px">
+  <div style="text-align:center;width:100%;padding:${pad};background:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
+    <div style="font-size:${titleSize}px;line-height:1.2;font-weight:700;color:#f5f5f2;letter-spacing:${titleSpacing}">
       <span dir="ltr" style="display:inline-block">MAABAR</span>
-      <span style="display:inline-block;color:rgba(255,255,255,.45);padding:0 8px">|</span>
+      <span style="display:inline-block;color:rgba(255,255,255,.45);padding:0 10px">|</span>
       <span dir="rtl" style="display:inline-block;letter-spacing:0">مَعبر</span>
     </div>
-    <div style="font-size:12px;line-height:1.2;color:rgba(255,255,255,.45);margin-top:8px;letter-spacing:.04em">迈巴尔</div>
+    <div style="font-size:${zhSize}px;line-height:1.2;color:rgba(255,255,255,.45);margin-top:10px;letter-spacing:.04em">迈巴尔</div>
   </div>`;
 }
 
@@ -59,7 +64,7 @@ function wrap(content, options = {}) {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
           <tr>
             <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:34px 24px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);">
-              ${darkBlend(brandLockup(), '#0a0a0b')}
+              ${darkBlend(brandLockup('header'), '#0a0a0b')}
             </td>
           </tr>
           <tr>
@@ -69,7 +74,7 @@ function wrap(content, options = {}) {
           </tr>
           <tr>
             <td bgcolor="#0a0a0b" style="background:#0a0a0b;background-color:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);padding:22px 24px 34px;text-align:center;border-top:1px solid rgba(255,255,255,.06);">
-              ${darkBlend(brandLockup(), '#0a0a0b')}
+              ${darkBlend(brandLockup('header'), '#0a0a0b')}
               <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px;line-height:1.8;">
                 <a href="https://maabar.io" style="color:rgba(255,255,255,.72);text-decoration:none;">maabar.io</a>
                 &nbsp;·&nbsp;
@@ -412,7 +417,7 @@ const templates = {
 <body style="margin:0;padding:0;background:#0a0a0b;font-family:${locale.font};color:#f3f3f3;direction:${locale.dir};text-align:${locale.align}">
   <div style="max-width:620px;margin:0 auto;background:#0a0a0b;overflow:hidden">
     <div style="padding:34px 24px 26px;background:#0a0a0b;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
-      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : darkBlend(brandLockup(), '#0a0a0b')}
+      ${d.headerImageUrl ? `<img src="${d.headerImageUrl}" alt="Maabar" style="max-width:300px;width:100%;height:auto;display:inline-block" />` : darkBlend(brandLockup('header'), '#0a0a0b')}
     </div>
     <div style="padding:0;background:#0a0a0b">
       <div style="padding:42px 32px;background:#101114;background-image:linear-gradient(#101114,#101114);direction:${locale.dir};text-align:${locale.align}">
@@ -436,7 +441,7 @@ const templates = {
       </div>
     </div>
     <div style="padding:22px 24px 34px;background:#0a0a0b;border-top:1px solid rgba(255,255,255,.06);text-align:center">
-      ${darkBlend(brandLockup(), '#0a0a0b')}
+      ${darkBlend(brandLockup('footer'), '#0a0a0b')}
       <div style="font-size:12px;color:rgba(255,255,255,.46);margin-top:12px">maabar.io &nbsp;·&nbsp; hello@maabar.io</div>
     </div>
   </div>
