@@ -1137,6 +1137,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                               id: s.id,
                               request_id: s.id,
                               supplier_id: s.supplier_id,
+                              profiles: s.profiles || null,
                               price: (parseFloat(s.sample_price || 0) + parseFloat(s.shipping_price || 0)),
                               currency: 'SAR',
                               delivery_days: 14,

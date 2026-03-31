@@ -99,6 +99,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           id: reqData.id,
           request_id: reqData.id,
           supplier_id: sup.id,
+          profiles: sup,
           price: product.price_from || 0,
           currency: product.currency || 'USD',
           delivery_days: product.spec_lead_time_days || 30,

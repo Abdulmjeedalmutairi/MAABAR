@@ -10,6 +10,11 @@ import {
   getOfferShippingMethod,
   hasOfferShippingCost,
 } from '../lib/offerPricing';
+import {
+  buildSupplierTrustSignals,
+  getSupplierMaabarId,
+  isSupplierPubliclyVisible,
+} from '../lib/supplierOnboarding';
 
 const MOYASAR_PUBLISHABLE_KEY = 'pk_test_YOUR_KEY_HERE';
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -55,6 +60,29 @@ const T = {
     payOption50sub: 'الباقي قبل الشحن · أولوية في التجهيز',
     payOption100sub: 'دفعة واحدة · المورد يشحن فوراً',
     secondPayNote: 'ادفع الدفعة الثانية',
+    secondPaymentTitle: 'الدفعة الثانية',
+    payNowLabel: 'تدفع الآن',
+    amountDue: 'المبلغ المستحق',
+    notSpecified: 'غير محدد',
+    rfqSummary: 'ملخص الطلب التجاري',
+    requestRef: 'مرجع الطلب',
+    supplierSnapshot: 'المورد والشروط التجارية',
+    supplierName: 'المورد',
+    supplierId: 'معرّف المورد',
+    verification: 'التحقق',
+    verifiedSupplier: 'مورد موثّق',
+    leadTime: 'مدة التجهيز',
+    origin: 'المنشأ',
+    supplierStarts: 'تجهيز المورد',
+    supplierStartsNote: 'بعد نجاح الدفع، يُخطر المورد فوراً ويبدأ تنفيذ الطلب حسب الخطة المختارة.',
+    protectionTitle: 'حماية الصفقة عبر مَعبر',
+    protectionBody: 'يؤكد هذا الدفع الطلب التجاري داخل مَعبر. بعد نجاح العملية لا يتوفر إلغاء يدوي، وأي مشكلة يجب رفعها عبر مَعبر قبل تحرير المبلغ للمورد.',
+    commercialTrust: 'إشارات ثقة أوضح للمورد',
+    reviewedByMaabar: 'تمت مراجعة الحساب من مَعبر',
+    tradeProfile: 'رابط تجاري متوفر',
+    wechatAvailable: 'WeChat متاح',
+    factoryPhotos: 'صور منشأة متاحة',
+    cancellationNote: 'بعد نجاح العملية لا يتوفر إلغاء يدوي. لأي مشكلة استخدم دعم مَعبر قبل تحرير المبلغ.',
   },
   en: {
     tag: 'Maabar · Checkout',
@@ -95,6 +123,29 @@ const T = {
     payOption50sub: 'Rest before shipping · Priority preparation',
     payOption100sub: 'One payment · Supplier ships immediately',
     secondPayNote: 'Pay second installment',
+    secondPaymentTitle: 'Second Payment',
+    payNowLabel: 'You Pay Now',
+    amountDue: 'Amount Due',
+    notSpecified: 'Not specified',
+    rfqSummary: 'RFQ & Payment Summary',
+    requestRef: 'Request Reference',
+    supplierSnapshot: 'Supplier & Commercial Terms',
+    supplierName: 'Supplier',
+    supplierId: 'Supplier ID',
+    verification: 'Verification',
+    verifiedSupplier: 'Verified supplier',
+    leadTime: 'Lead time',
+    origin: 'Origin',
+    supplierStarts: 'Supplier preparation',
+    supplierStartsNote: 'Once payment succeeds, the supplier is notified immediately and can start according to the selected payment plan.',
+    protectionTitle: 'Protected through Maabar',
+    protectionBody: 'This payment confirms the commercial order on Maabar. Manual cancellation is unavailable after a successful charge, and any issue should be raised with Maabar before funds are released to the supplier.',
+    commercialTrust: 'Clearer supplier trust signals',
+    reviewedByMaabar: 'Reviewed by Maabar',
+    tradeProfile: 'Trade profile on file',
+    wechatAvailable: 'WeChat available',
+    factoryPhotos: 'Factory photos available',
+    cancellationNote: 'Manual cancellation is unavailable after a successful charge. For any issue, contact Maabar support before funds are released.',
   },
   zh: {
     tag: 'Maabar · 结账',
@@ -135,6 +186,29 @@ const T = {
     payOption50sub: '余款发货前付 · 优先处理',
     payOption100sub: '一次付清 · 供应商立即发货',
     secondPayNote: '支付尾款',
+    secondPaymentTitle: '支付尾款',
+    payNowLabel: '当前支付',
+    amountDue: '应付金额',
+    notSpecified: '未说明',
+    rfqSummary: 'RFQ 与付款摘要',
+    requestRef: '需求编号',
+    supplierSnapshot: '供应商与商业条款',
+    supplierName: '供应商',
+    supplierId: '供应商编号',
+    verification: '审核状态',
+    verifiedSupplier: '认证供应商',
+    leadTime: '交期',
+    origin: '原产地',
+    supplierStarts: '供应商备货',
+    supplierStartsNote: '付款成功后，系统会立即通知供应商，并按您选择的付款方案开始处理订单。',
+    protectionTitle: '通过 Maabar 受保护',
+    protectionBody: '这笔付款会确认 Maabar 内的商业订单。成功扣款后不支持手动取消，如有问题，请在向供应商放款前先联系 Maabar。',
+    commercialTrust: '更清晰的供应商信任信号',
+    reviewedByMaabar: '已通过 Maabar 审核',
+    tradeProfile: '已提供店铺/官网链接',
+    wechatAvailable: '支持 WeChat',
+    factoryPhotos: '已提供工厂图片',
+    cancellationNote: '成功扣款后不支持手动取消。如有问题，请在放款前联系 Maabar 支持。',
   }
 };
 
@@ -156,6 +230,7 @@ export default function Checkout({ lang, user, profile }) {
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
   const [applePayAvailable, setApplePayAvailable] = useState(false);
+  const [supplierSnapshot, setSupplierSnapshot] = useState(offer?.profiles || null);
 
   // حساب المبالغ
   const productTotal = offer ? getOfferProductSubtotal(offer, request) : 0;
@@ -186,6 +261,21 @@ export default function Checkout({ lang, user, profile }) {
     },
   ];
 
+  const supplierTrustSignals = buildSupplierTrustSignals(supplierSnapshot || {});
+  const supplierMaabarId = getSupplierMaabarId(supplierSnapshot || {});
+  const isReviewedSupplier = isSupplierPubliclyVisible(supplierSnapshot?.status);
+  const shippingMethod = getOfferShippingMethod(offer);
+  const requestTitle = isAr
+    ? request?.title_ar || request?.title_en || request?.title_zh || '—'
+    : lang === 'zh'
+      ? request?.title_zh || request?.title_en || request?.title_ar || '—'
+      : request?.title_en || request?.title_ar || request?.title_zh || '—';
+  const supplierName = supplierSnapshot?.company_name || t.notSpecified;
+  const leadTimeLabel = offer?.delivery_days
+    ? (isAr ? `${offer.delivery_days} يوم` : lang === 'zh' ? `${offer.delivery_days} 天` : `${offer.delivery_days} days`)
+    : t.notSpecified;
+  const originLabel = offer?.origin || supplierSnapshot?.country || 'China';
+
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
     if (!offer || !request) { nav('/dashboard'); return; }
@@ -208,7 +298,29 @@ export default function Checkout({ lang, user, profile }) {
       if (document.body.contains(script)) document.body.removeChild(script);
       if (document.head.contains(link)) document.head.removeChild(link);
     };
-  }, []);
+  }, [nav, offer, request, user]);
+
+  useEffect(() => {
+    setSupplierSnapshot(offer?.profiles || null);
+  }, [offer]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSupplierSnapshot() {
+      if (offer?.profiles || !offer?.supplier_id) return;
+      const { data } = await sb
+        .from('profiles')
+        .select('id,company_name,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,city,country')
+        .eq('id', offer.supplier_id)
+        .single();
+
+      if (!cancelled && data) setSupplierSnapshot(data);
+    }
+
+    loadSupplierSnapshot();
+    return () => { cancelled = true; };
+  }, [offer]);
 
   const handleApplePay = async () => {
     if (!window.ApplePaySession) return;
@@ -238,7 +350,7 @@ export default function Checkout({ lang, user, profile }) {
 
   const handleCardPay = async () => {
     if (!card.number || !card.expiry || !card.cvv || !card.name) {
-      alert(isAr ? 'يرجى تعبئة كل الحقول' : 'Please fill all fields');
+      alert(isAr ? 'يرجى تعبئة كل الحقول' : lang === 'zh' ? '请填写所有字段' : 'Please fill all fields');
       return;
     }
     setPayError('');
@@ -247,7 +359,7 @@ export default function Checkout({ lang, user, profile }) {
       await processPayment('card', null);
     } catch (e) {
       setPaying(false);
-      setPayError(isAr ? 'فشلت عملية الدفع — تحقق من بيانات بطاقتك وحاول مجدداً' : 'Payment failed — please check your card details and try again');
+      setPayError(isAr ? 'فشلت عملية الدفع — تحقق من بيانات بطاقتك وحاول مجدداً' : lang === 'zh' ? '付款失败，请检查银行卡信息后重试' : 'Payment failed — please check your card details and try again');
     }
   };
 
@@ -340,6 +452,8 @@ export default function Checkout({ lang, user, profile }) {
         total: firstPayment,
         method,
         isSecondPayment,
+        secondPaymentDue: secondPayment,
+        supplier: supplierSnapshot || offer?.profiles || null,
         payment: { moyasar_id: `temp_${Date.now()}`, id: `temp_${Date.now()}` },
       }
     });
@@ -358,7 +472,7 @@ export default function Checkout({ lang, user, profile }) {
           {t.tag}
         </p>
         <h1 style={{ fontSize: isAr ? 36 : 42, fontWeight: 300, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : -1, marginBottom: 8 }}>
-          {isSecondPayment ? (isAr ? 'الدفعة الثانية' : 'Second Payment') : t.title}
+          {isSecondPayment ? t.secondPaymentTitle : t.title}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
           {t.sub}
@@ -367,17 +481,18 @@ export default function Checkout({ lang, user, profile }) {
 
       {/* CONTENT */}
       <div style={{ padding: '40px 60px', maxWidth: 900, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'start' }}>
+        <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'start' }}>
 
           {/* LEFT — ORDER SUMMARY */}
           <div>
             <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16, fontFamily: 'var(--font-sans)' }}>
-              {t.orderSummary}
+              {t.rfqSummary}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: 16 }}>
               {[
-                { label: t.product, val: isAr ? request.title_ar || request.title_en : request.title_en || request.title_ar },
+                { label: t.requestRef, val: request?.id ? String(request.id).slice(0, 8).toUpperCase() : '—' },
+                { label: t.product, val: requestTitle },
                 { label: t.quantity, val: request.quantity || '—' },
                 { label: t.unitPrice, val: `${fmt(offer.price)} ${currencyLabel}` },
                 { label: t.productTotal, val: `${fmt(productTotal)} ${currencyLabel}` },
@@ -403,7 +518,7 @@ export default function Checkout({ lang, user, profile }) {
 
             {/* PAYMENT SPLIT BREAKDOWN */}
             {!isSecondPayment && selectedPct < 100 && (
-              <div style={{ background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.15)', borderRadius: 'var(--radius-lg)', padding: '14px 16px' }}>
+              <div style={{ background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.15)', borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginBottom: 18 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.firstPayment}</span>
                   <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(139,120,255,0.85)' }}>{fmt(firstPayment)} {currencyLabel}</span>
@@ -414,6 +529,64 @@ export default function Checkout({ lang, user, profile }) {
                 </div>
               </div>
             )}
+
+            <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: 16 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, fontFamily: 'var(--font-sans)' }}>
+                {t.supplierSnapshot}
+              </p>
+              <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.supplierName}</span>
+                  <strong style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right' }}>{supplierName}</strong>
+                </div>
+                {supplierMaabarId && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.supplierId}</span>
+                    <strong style={{ fontSize: 13, color: 'var(--text-primary)' }}>{supplierMaabarId}</strong>
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                {isReviewedSupplier && (
+                  <span style={trustBadgeStyle('#5a9a72', 'rgba(58,122,82,0.1)', 'rgba(58,122,82,0.18)')}>
+                    ✓ {t.verifiedSupplier}
+                  </span>
+                )}
+                <span style={trustBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>
+                  {t.leadTime}: {leadTimeLabel}
+                </span>
+                <span style={trustBadgeStyle('var(--text-secondary)', 'rgba(255,255,255,0.04)', 'var(--border-subtle)')}>
+                  {t.origin}: {originLabel}
+                </span>
+                {shippingMethod && (
+                  <span style={trustBadgeStyle('var(--text-secondary)', 'rgba(255,255,255,0.04)', 'var(--border-subtle)')}>
+                    {t.shippingMethod}: {shippingMethod}
+                  </span>
+                )}
+              </div>
+              {(isReviewedSupplier || supplierTrustSignals.length > 0) && (
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {[
+                    isReviewedSupplier ? t.reviewedByMaabar : null,
+                    supplierTrustSignals.includes('trade_profile_available') ? t.tradeProfile : null,
+                    supplierTrustSignals.includes('wechat_available') ? t.wechatAvailable : null,
+                    supplierTrustSignals.includes('factory_media_available') ? t.factoryPhotos : null,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
+
+            <div style={{ background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.15)', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 10, fontFamily: 'var(--font-sans)' }}>
+                {t.protectionTitle}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.75, marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {t.protectionBody}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{t.supplierStarts}:</strong> {t.supplierStartsNote}
+              </p>
+            </div>
           </div>
 
           {/* RIGHT — PAYMENT */}
@@ -451,7 +624,7 @@ export default function Checkout({ lang, user, profile }) {
             {/* Pay Amount Display */}
             <div style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: 20, textAlign: 'center' }}>
               <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 6, letterSpacing: 1 }}>
-                {isSecondPayment ? (isAr ? 'المبلغ المستحق' : 'Amount Due') : (isAr ? 'تدفع الآن' : 'You Pay Now')}
+                {isSecondPayment ? t.amountDue : t.payNowLabel}
               </p>
               <p style={{ fontSize: 32, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
                 {fmt(firstPayment)} <span style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{currencyLabel}</span>
@@ -554,7 +727,7 @@ export default function Checkout({ lang, user, profile }) {
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                 lineHeight: 1.5,
               }}>
-                بعد إتمام الدفع لا يمكن الإلغاء أو استرداد المبلغ
+                {t.cancellationNote}
               </p>
             )}
 
@@ -621,3 +794,16 @@ const inputStyle = {
   borderRadius: 'var(--radius-md)', boxSizing: 'border-box',
   transition: 'border-color 0.2s',
 };
+
+const trustBadgeStyle = (color, background, borderColor) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '4px 10px',
+  borderRadius: 999,
+  fontSize: 10,
+  letterSpacing: 0.4,
+  color,
+  background,
+  border: `1px solid ${borderColor}`,
+});

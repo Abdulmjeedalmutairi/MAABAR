@@ -7,6 +7,7 @@ import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
 import {
   buildSupplierTrustSignals,
+  getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 
@@ -309,6 +310,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
         {!loading && filtered.map((p, idx) => {
           const supplierTrustSignals = buildSupplierTrustSignals(p.profiles || {});
           const isReviewedSupplier = isSupplierPubliclyVisible(p.profiles?.status);
+          const supplierMaabarId = getSupplierMaabarId(p.profiles || {});
           const secondaryName = getProductSecondaryName(p, lang);
 
           return (
@@ -384,6 +386,11 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                   {p.spec_customization && (
                     <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                       {isAr ? 'OEM / تخصيص' : lang === 'zh' ? '支持 OEM / 定制' : 'OEM / customization'}
+                    </span>
+                  )}
+                  {supplierMaabarId && isReviewedSupplier && (
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.9)' }}>
+                      {isAr ? `معرّف المورد ${supplierMaabarId}` : lang === 'zh' ? `供应商编号 ${supplierMaabarId}` : `Supplier ID ${supplierMaabarId}`}
                     </span>
                   )}
                   {supplierTrustSignals.includes('trade_profile_available') && (

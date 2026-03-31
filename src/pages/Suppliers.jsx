@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import {
   buildSupplierTrustSignals,
+  getSupplierMaabarId,
   getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
@@ -161,6 +162,7 @@ export default function Suppliers({ lang, user }) {
             {filtered.map((s, idx) => {
               const trustSignals = buildSupplierTrustSignals(s);
               const isReviewedSupplier = isSupplierPubliclyVisible(s.status);
+              const supplierMaabarId = getSupplierMaabarId(s);
 
               return (
               <div key={s.id}
@@ -233,6 +235,11 @@ export default function Suppliers({ lang, user }) {
                   {s.speciality && s.speciality !== 'other' && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
                       {cats.find(c => c.val === s.speciality)?.label || s.speciality}
+                    </span>
+                  )}
+                  {supplierMaabarId && isReviewedSupplier && (
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 20, color: 'rgba(139,120,255,0.88)', letterSpacing: 0.5 }}>
+                      {isAr ? `معرّف: ${supplierMaabarId}` : lang === 'zh' ? `编号：${supplierMaabarId}` : `ID: ${supplierMaabarId}`}
                     </span>
                   )}
                   {s.city && (
