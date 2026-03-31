@@ -2,11 +2,13 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
+import { buildDisplayPrice } from '../lib/displayCurrency';
+import { buildProductSpecs, getProductGalleryImages } from '../lib/productMedia';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
-export default function ProductDetail({ lang, user, profile }) {
+export default function ProductDetail({ lang, user, profile, displayCurrency, exchangeRates }) {
   const { id } = useParams();
   const nav = useNavigate();
   const [product, setProduct] = useState(null);
@@ -19,10 +21,16 @@ export default function ProductDetail({ lang, user, profile }) {
   const [sampleNote, setSampleNote] = useState('');
   const [sending, setSending] = useState(false);
   const [sendingSample, setSendingSample] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
 
   useEffect(() => { loadProduct(); }, [id]);
+
+  useEffect(() => {
+    const firstImage = getProductGalleryImages(product)[0] || null;
+    if (firstImage) setSelectedImage(firstImage);
+  }, [product]);
 
   const loadProduct = async () => {
     setLoading(true);
@@ -74,6 +82,7 @@ export default function ProductDetail({ lang, user, profile }) {
           request_id: reqData.id,
           supplier_id: sup.id,
           price: product.price_from || 0,
+          currency: product.currency || 'USD',
           delivery_days: 30,
           status: 'accepted',
           isDirect: true, // flag يخبر Checkout أن هذا شراء مباشر
@@ -203,6 +212,16 @@ export default function ProductDetail({ lang, user, profile }) {
   const sampleTotal = product.sample_available
     ? (parseFloat(product.sample_price || 0) + parseFloat(product.sample_shipping || 0)) * parseInt(sampleQty || 1)
     : 0;
+  const galleryImages = getProductGalleryImages(product);
+  const previewImage = selectedImage || galleryImages[0] || null;
+  const price = buildDisplayPrice({
+    amount: product.price_from,
+    sourceCurrency: product.currency || 'USD',
+    displayCurrency: displayCurrency || product.currency || 'USD',
+    rates: exchangeRates,
+    lang,
+  });
+  const productSpecs = buildProductSpecs(product);
 
   return (
     <div className="product-detail-wrap">
@@ -214,10 +233,21 @@ export default function ProductDetail({ lang, user, profile }) {
 
         {/* صورة + فيديو */}
         <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
-          <div className="product-detail-img" style={{ marginBottom: 0, flex: '1 1 280px' }}>
-            {product.image_url
-              ? <img src={product.image_url} alt={name} />
-              : <span>📦</span>}
+          <div style={{ flex: '1 1 420px' }}>
+            <div className="product-detail-img" style={{ marginBottom: 0 }}>
+              {previewImage
+                ? <img src={previewImage} alt={name} />
+                : <span>📦</span>}
+            </div>
+            {galleryImages.length > 1 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 10, marginTop: 12 }}>
+                {galleryImages.map((img, index) => (
+                  <button key={`${img}-${index}`} type="button" onClick={() => setSelectedImage(img)} style={{ border: selectedImage === img ? '1px solid var(--border-strong)' : '1px solid var(--border-subtle)', padding: 0, borderRadius: 10, overflow: 'hidden', background: 'var(--bg-muted)', cursor: 'pointer', height: 72 }}>
+                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {product.video_url && (
             <div style={{ flex: '1 1 280px', maxWidth: 480, height: 320, borderRadius: 12, overflow: 'hidden', background: '#1a1a1a' }}>
@@ -228,8 +258,13 @@ export default function ProductDetail({ lang, user, profile }) {
 
         <h1 className={`product-detail-name${isAr ? ' ar' : ''}`}>{name}</h1>
         <p className="product-detail-price">
-          {product.price_from ? `${product.price_from} ${product.currency || 'SAR'}` : '—'}
+          {product.price_from ? price.formattedDisplay : '—'}
         </p>
+        {price.isConverted && (
+          <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -12, marginBottom: 22 }}>
+            {isAr ? `السعر الأصلي: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Original price: ${price.formattedSource}`}
+          </p>
+        )}
 
         <div className="product-detail-meta">
           <div>
@@ -252,6 +287,17 @@ export default function ProductDetail({ lang, user, profile }) {
 
         {desc && (
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.8, marginBottom: 28 }}>{desc}</p>
+        )}
+
+        {productSpecs.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 28 }}>
+            {productSpecs.map(spec => (
+              <div key={spec.key} style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{spec.label}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6 }}>{spec.value}</p>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* SUPPLIER CARD */}

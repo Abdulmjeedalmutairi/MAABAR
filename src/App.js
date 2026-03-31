@@ -3,6 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFound from './pages/NotFound';
 import { sb } from './supabase';
+import {
+  DEFAULT_DISPLAY_CURRENCY,
+  fetchDisplayRates,
+  getCachedDisplayRates,
+  getStoredDisplayCurrency,
+  normalizeDisplayCurrency,
+  persistDisplayCurrencyPreference,
+} from './lib/displayCurrency';
 
 // Pages
 import Home from './pages/Home';
@@ -38,11 +46,15 @@ function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [lang, setLang] = useState('ar');
+  const [displayCurrency, setDisplayCurrency] = useState(() => getStoredDisplayCurrency());
+  const [exchangeRates, setExchangeRates] = useState(() => getCachedDisplayRates());
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
   const welcomeEmailSentRef = React.useRef(false);
 
   useEffect(() => {
+    fetchDisplayRates().then(setExchangeRates);
+
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
@@ -63,6 +75,25 @@ function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (profile?.preferred_display_currency) {
+      setDisplayCurrency(normalizeDisplayCurrency(profile.preferred_display_currency));
+    } else if (!user) {
+      setDisplayCurrency(getStoredDisplayCurrency());
+    }
+  }, [profile?.preferred_display_currency, user]);
+
+  const updateDisplayCurrency = async (nextCurrency) => {
+    const normalized = normalizeDisplayCurrency(nextCurrency || DEFAULT_DISPLAY_CURRENCY);
+    setDisplayCurrency(normalized);
+    await persistDisplayCurrencyPreference({
+      sb,
+      userId: user?.id,
+      currency: normalized,
+      setProfile,
+    });
+  };
 
   const loadProfile = async (id, attempt = 1) => {
     const { data, error } = await sb.from('profiles').select('*').eq('id', id).single();
@@ -181,7 +212,17 @@ function App() {
     return <DashboardBuyer {...sharedProps} />;
   };
 
-  const sharedProps = { user, profile, lang, setLang, setUser, setProfile };
+  const sharedProps = {
+    user,
+    profile,
+    lang,
+    setLang,
+    setUser,
+    setProfile,
+    displayCurrency,
+    setDisplayCurrency: updateDisplayCurrency,
+    exchangeRates,
+  };
 
   /* ─── Loading screen ─────────────────────────── */
   if (loading) return (

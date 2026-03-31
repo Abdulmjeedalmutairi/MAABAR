@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
+import { buildDisplayPrice } from '../lib/displayCurrency';
+import { getPrimaryProductImage } from '../lib/productMedia';
 
 const CATEGORIES = {
   ar: ['الكل', 'إلكترونيات', 'أثاث', 'ملابس', 'مواد بناء', 'غذاء', 'أخرى'],
@@ -27,7 +29,7 @@ const SkeletonItem = () => (
 );
 
 /* ─── Main ───────────────────────────────── */
-export default function Products({ lang, user, profile }) {
+export default function Products({ lang, user, profile, displayCurrency, exchangeRates }) {
   const nav = useNavigate();
   const [products, setProducts]         = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -57,11 +59,31 @@ export default function Products({ lang, user, profile }) {
       (p.name_ar || '').includes(search) ||
       (p.name_en || '').toLowerCase().includes(search.toLowerCase())
     )
-    .filter(p => !priceRange.min || (p.price_from >= parseFloat(priceRange.min)))
-    .filter(p => !priceRange.max || (p.price_from <= parseFloat(priceRange.max)))
+    .filter(p => {
+      const converted = buildDisplayPrice({
+        amount: p.price_from,
+        sourceCurrency: p.currency || 'USD',
+        displayCurrency: displayCurrency || p.currency || 'USD',
+        rates: exchangeRates,
+        lang,
+      }).displayAmount;
+      return !priceRange.min || converted >= parseFloat(priceRange.min);
+    })
+    .filter(p => {
+      const converted = buildDisplayPrice({
+        amount: p.price_from,
+        sourceCurrency: p.currency || 'USD',
+        displayCurrency: displayCurrency || p.currency || 'USD',
+        rates: exchangeRates,
+        lang,
+      }).displayAmount;
+      return !priceRange.max || converted <= parseFloat(priceRange.max);
+    })
     .sort((a, b) => {
-      if (sortBy === 'price_asc')  return (a.price_from || 0) - (b.price_from || 0);
-      if (sortBy === 'price_desc') return (b.price_from || 0) - (a.price_from || 0);
+      const aPrice = buildDisplayPrice({ amount: a.price_from, sourceCurrency: a.currency || 'USD', displayCurrency: displayCurrency || a.currency || 'USD', rates: exchangeRates, lang }).displayAmount;
+      const bPrice = buildDisplayPrice({ amount: b.price_from, sourceCurrency: b.currency || 'USD', displayCurrency: displayCurrency || b.currency || 'USD', rates: exchangeRates, lang }).displayAmount;
+      if (sortBy === 'price_asc')  return aPrice - bPrice;
+      if (sortBy === 'price_desc') return bPrice - aPrice;
       return new Date(b.created_at) - new Date(a.created_at);
     });
 
@@ -160,7 +182,7 @@ export default function Products({ lang, user, profile }) {
             value={priceRange.max}
             onChange={e => setPriceRange(p => ({ ...p, max: e.target.value }))}
           />
-          <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>SAR</span>
+          <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{displayCurrency || 'USD'}</span>
           {(priceRange.min || priceRange.max) && (
             <button
               className="btn-outline"
@@ -214,8 +236,8 @@ export default function Products({ lang, user, profile }) {
             onClick={() => nav(`/products/${p.id}`)}
           >
             <div className="product-img">
-              {p.image_url
-                ? <img src={p.image_url} alt="" />
+              {getPrimaryProductImage(p)
+                ? <img src={getPrimaryProductImage(p)} alt="" />
                 : <span style={{ fontSize: 22, opacity: 0.25 }}>◻</span>}
             </div>
 
@@ -227,9 +249,19 @@ export default function Products({ lang, user, profile }) {
                   ? p.name_zh || p.name_en
                   : p.name_en || p.name_ar}
               </h3>
-              <p className="product-price">
-                {p.price_from ? `${p.price_from} ${p.currency || 'USD'}` : '—'}
-              </p>
+              {(() => {
+                const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
+                return (
+                  <>
+                    <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>
+                    {price.isConverted && (
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>
+                        {isAr ? `الأصل: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Source: ${price.formattedSource}`}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
               <p className="product-meta">
                 MOQ: {p.moq || '—'} · {p.profiles?.company_name || ''}
               </p>

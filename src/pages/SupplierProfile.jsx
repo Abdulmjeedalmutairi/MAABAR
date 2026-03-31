@@ -2,11 +2,13 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
+import { buildDisplayPrice } from '../lib/displayCurrency';
+import { buildProductSpecs, getPrimaryProductImage, getProductGalleryImages } from '../lib/productMedia';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
-export default function SupplierProfile({ lang, user }) {
+export default function SupplierProfile({ lang, user, displayCurrency, exchangeRates }) {
   const { id } = useParams();
   const nav = useNavigate();
   const [supplier, setSupplier] = useState(null);
@@ -118,6 +120,7 @@ export default function SupplierProfile({ lang, user }) {
     setCalcResult({
       unitPrice: price,
       total: qty * price,
+      currency: calcProduct.currency || 'USD',
       meetsmoq: qty >= parseFloat(calcProduct.moq || 1),
       moq: calcProduct.moq,
     });
@@ -282,8 +285,8 @@ export default function SupplierProfile({ lang, user }) {
               {/* صف المنتج */}
               <div className="product-list-item" onClick={() => nav(`/products/${p.id}`)}>
                 <div className="product-img">
-                  {p.image_url
-                    ? <img src={p.image_url} alt="" />
+                  {getPrimaryProductImage(p)
+                    ? <img src={getPrimaryProductImage(p)} alt="" />
                     : <span style={{ fontSize: 32 }}>📦</span>}
                 </div>
                 <div className="product-info">
@@ -291,6 +294,9 @@ export default function SupplierProfile({ lang, user }) {
                     <h3 className={`product-name${isAr ? ' ar' : ''}`}>
                       {isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar}
                     </h3>
+                    {getProductGalleryImages(p).length > 1 && (
+                      <span style={{ fontSize: 9, padding: '2px 8px', background: '#EFECE7', borderRadius: 10, color: '#7a7a7a', letterSpacing: 1 }}>{getProductGalleryImages(p).length} IMG</span>
+                    )}
                     {p.video_url && (
                       <span style={{ fontSize: 9, padding: '2px 8px', background: '#EFECE7', borderRadius: 10, color: '#7a7a7a', letterSpacing: 1 }}>VIDEO</span>
                     )}
@@ -300,8 +306,21 @@ export default function SupplierProfile({ lang, user }) {
                       </span>
                     )}
                   </div>
-                  <p className="product-price">{p.price_from ? `${p.price_from} ${p.currency || 'USD'}` : '—'}</p>
+                  {(() => {
+                    const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
+                    return (
+                      <>
+                        <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>
+                        {price.isConverted && <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>{isAr ? `الأصل: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Source: ${price.formattedSource}`}</p>}
+                      </>
+                    );
+                  })()}
                   <p className="product-meta">MOQ: {p.moq || '—'}</p>
+                  {buildProductSpecs(p).slice(0, 2).length > 0 && (
+                    <p className="product-meta" style={{ marginTop: 4 }}>
+                      {buildProductSpecs(p).slice(0, 2).map(spec => `${spec.label}: ${spec.value}`).join(' · ')}
+                    </p>
+                  )}
                 </div>
                 <div className="product-btns" onClick={e => e.stopPropagation()}>
                   <button className="btn-dark-sm" onClick={() => nav(`/products/${p.id}`)}>
@@ -453,7 +472,7 @@ export default function SupplierProfile({ lang, user }) {
                   {isAr ? 'سعر الوحدة' : 'Unit Price'}
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-                  {calcResult.unitPrice} SAR
+                  {calcResult.unitPrice} {calcResult.currency}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: calcResult.meetsmoq ? 0 : 10 }}>
@@ -461,7 +480,7 @@ export default function SupplierProfile({ lang, user }) {
                   {isAr ? 'الإجمالي' : 'Total'}
                 </span>
                 <span style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)' }}>
-                  {calcResult.total.toLocaleString()} SAR
+                  {calcResult.total.toLocaleString()} {calcResult.currency}
                 </span>
               </div>
               {!calcResult.meetsmoq && (

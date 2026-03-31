@@ -3,6 +3,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
+import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
+import {
+  PRODUCT_GALLERY_LIMIT,
+  buildProductSpecs,
+  getProductGalleryImages,
+  getPrimaryProductImage,
+  normalizeProductDraftMedia,
+} from '../lib/productMedia';
+import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -67,6 +76,8 @@ const T = {
     uploadImage: 'رفع صورة', uploadVideo: 'رفع فيديو',
     uploadingImage: 'جاري رفع الصورة...', uploadingVideo: 'جاري رفع الفيديو...',
     imageUploaded: 'تم رفع الصورة', videoUploaded: 'تم رفع الفيديو', maxVideo: 'الحد الأقصى للفيديو 50MB',
+    galleryImages: 'صور المنتج', addMoreImages: 'إضافة صور أخرى', galleryHint: `حتى ${PRODUCT_GALLERY_LIMIT} صور — الصورة الأولى هي الرئيسية حالياً`, maxImagesReached: `وصلت للحد الأقصى (${PRODUCT_GALLERY_LIMIT} صور)`, maxImagesError: `يمكن رفع ${PRODUCT_GALLERY_LIMIT} صور كحد أقصى`, removeMedia: 'حذف', previewStep: 'معاينة قبل النشر', continueToPreview: 'متابعة للمعاينة', backToEdit: 'رجوع للتعديل', publishNow: 'نشر المنتج', previewNote: 'راجع الوسائط والمواصفات والسعر قبل النشر. العملة المعروضة هنا لا تغيّر عملة المنتج الأصلية.', previewBadge: 'معاينة', previewEmptyMedia: 'ما تمت إضافة صور بعد', primaryImage: 'الصورة الرئيسية', videoLimitHint: `فيديو واحد فقط لكل منتج`,
+    specsTitle: 'مواصفات المنتج', specMaterial: 'الخامة / المادة', specDimensions: 'الأبعاد / المقاس', specWeight: 'وزن القطعة', specColors: 'الألوان أو الخيارات', specPackaging: 'تفاصيل التغليف', specCustomization: 'التخصيص / OEM', specLeadTime: 'مدة التجهيز (أيام)', productSavedWithFallback: 'تم حفظ المنتج، لكن بعض الحقول الجديدة تحتاج تفعيل قاعدة البيانات حتى تُحفظ بالكامل.',
     sampleSettings: 'إعدادات العينة', sampleAvailable: 'متاح للعينة',
     samplePrice: 'سعر العينة (ريال) *', sampleShipping: 'تكلفة الشحن (ريال)',
     sampleMaxQty: 'الحد الأقصى للكمية', sampleNote: 'ملاحظة للعينة',
@@ -100,6 +111,8 @@ const T = {
     uploadImage: 'Upload Image', uploadVideo: 'Upload Video',
     uploadingImage: 'Uploading...', uploadingVideo: 'Uploading...',
     imageUploaded: 'Image uploaded', videoUploaded: 'Video uploaded', maxVideo: 'Max 50MB',
+    galleryImages: 'Product Images', addMoreImages: 'Add More Images', galleryHint: `Up to ${PRODUCT_GALLERY_LIMIT} images — the first image stays the primary cover`, maxImagesReached: `Maximum reached (${PRODUCT_GALLERY_LIMIT} images)`, maxImagesError: `You can upload up to ${PRODUCT_GALLERY_LIMIT} images`, removeMedia: 'Remove', previewStep: 'Preview Before Publish', continueToPreview: 'Continue to Preview', backToEdit: 'Back to Edit', publishNow: 'Publish Product', previewNote: 'Review media, specs, and pricing before publishing. Display currency never replaces the saved source product currency.', previewBadge: 'Preview', previewEmptyMedia: 'No product images yet', primaryImage: 'Primary image', videoLimitHint: 'One product video only',
+    specsTitle: 'Product Specifications', specMaterial: 'Material', specDimensions: 'Dimensions / Size', specWeight: 'Unit Weight', specColors: 'Colors / Variants', specPackaging: 'Packaging Details', specCustomization: 'Customization / OEM', specLeadTime: 'Lead Time (days)', productSavedWithFallback: 'Product saved, but some new fields still need the DB migration before they can persist fully.',
     sampleSettings: 'Sample Settings', sampleAvailable: 'Available for Sample',
     samplePrice: 'Sample Price (SAR) *', sampleShipping: 'Shipping Cost (SAR)',
     sampleMaxQty: 'Max Sample Qty', sampleNote: 'Sample Note',
@@ -133,6 +146,8 @@ const T = {
     uploadImage: '上传图片', uploadVideo: '上传视频',
     uploadingImage: '上传中...', uploadingVideo: '上传中...',
     imageUploaded: '图片已上传', videoUploaded: '视频已上传', maxVideo: '最大50MB',
+    galleryImages: '产品图片', addMoreImages: '继续添加图片', galleryHint: `最多 ${PRODUCT_GALLERY_LIMIT} 张图片 — 第一张将作为主图`, maxImagesReached: `已达到上限（${PRODUCT_GALLERY_LIMIT} 张）`, maxImagesError: `最多可上传 ${PRODUCT_GALLERY_LIMIT} 张图片`, removeMedia: '删除', previewStep: '发布前预览', continueToPreview: '继续预览', backToEdit: '返回编辑', publishNow: '发布产品', previewNote: '发布前请先确认媒体、规格和价格。这里的显示货币不会替代产品原始货币。', previewBadge: '预览', previewEmptyMedia: '暂未添加产品图片', primaryImage: '主图', videoLimitHint: '每个产品仅支持 1 个视频',
+    specsTitle: '产品规格', specMaterial: '材质', specDimensions: '尺寸 / 规格', specWeight: '单件重量', specColors: '颜色 / 款式', specPackaging: '包装信息', specCustomization: '定制 / OEM', specLeadTime: '交期（天）', productSavedWithFallback: '产品已保存，但部分新字段仍需要先执行数据库迁移后才能完整持久化。',
     sampleSettings: '样品设置', sampleAvailable: '可提供样品',
     samplePrice: '样品价格 (SAR) *', sampleShipping: '运费 (SAR)',
     sampleMaxQty: '最大样品数量', sampleNote: '样品备注',
@@ -208,39 +223,152 @@ function BackBtn({ onClick, label }) {
   );
 }
 
-const emptyProduct = { name_ar: '', name_en: '', name_zh: '', price_from: '', currency: 'USD', category: 'other', moq: '', desc_en: '', desc_ar: '', sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '' };
+const emptyProduct = {
+  name_ar: '', name_en: '', name_zh: '',
+  price_from: '', currency: 'USD', category: 'other', moq: '',
+  desc_en: '', desc_ar: '',
+  image_url: null, gallery_images: [], video_url: null,
+  spec_material: '', spec_dimensions: '', spec_unit_weight: '', spec_color_options: '', spec_packaging_details: '', spec_customization: '', spec_lead_time_days: '',
+  sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '',
+};
+
+const PRODUCT_OPTIONAL_DB_FIELDS = [
+  'gallery_images',
+  'spec_material',
+  'spec_dimensions',
+  'spec_unit_weight',
+  'spec_color_options',
+  'spec_packaging_details',
+  'spec_customization',
+  'spec_lead_time_days',
+];
+
+const buildProductWritePayload = (rawProduct, supplierId) => {
+  const product = normalizeProductDraftMedia(rawProduct);
+  const fallbackName = product.name_en || product.name_zh || product.name_ar || '';
+
+  return {
+    ...(supplierId ? { supplier_id: supplierId } : {}),
+    name_ar: product.name_ar || fallbackName,
+    name_en: product.name_en || fallbackName,
+    name_zh: product.name_zh || fallbackName,
+    price_from: parseFloat(product.price_from),
+    currency: product.currency || 'USD',
+    category: product.category || 'other',
+    moq: product.moq,
+    desc_en: product.desc_en,
+    desc_ar: product.desc_ar || product.desc_en,
+    image_url: product.image_url || null,
+    gallery_images: product.gallery_images || [],
+    video_url: product.video_url || null,
+    spec_material: product.spec_material || null,
+    spec_dimensions: product.spec_dimensions || null,
+    spec_unit_weight: product.spec_unit_weight || null,
+    spec_color_options: product.spec_color_options || null,
+    spec_packaging_details: product.spec_packaging_details || null,
+    spec_customization: product.spec_customization || null,
+    spec_lead_time_days: product.spec_lead_time_days ? parseInt(product.spec_lead_time_days, 10) : null,
+    sample_available: product.sample_available,
+    sample_price: product.sample_available ? parseFloat(product.sample_price) : null,
+    sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null,
+    sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3, 10) : null,
+    sample_note: product.sample_note || null,
+    is_active: true,
+  };
+};
 
 /* ─── Product Form (defined outside to prevent remount on parent render) ─ */
-function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgChange, onVidChange, uploadingImage, uploadingVideo, t, isAr, saving, usdRate, categories }) {
+function ProductForm({
+  data,
+  setData,
+  onSave,
+  onCancel,
+  onPreview,
+  showPreviewAction = false,
+  imgRef,
+  vidRef,
+  onImgChange,
+  onVidChange,
+  onRemoveImage,
+  onRemoveVideo,
+  uploadingImage,
+  uploadingVideo,
+  t,
+  isAr,
+  saving,
+  usdRate,
+  categories,
+  saveLabel,
+}) {
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const productCategories = (categories || []).filter(c => c.val !== 'all');
+  const galleryImages = getProductGalleryImages(data);
+
   return (
-    <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 680, borderRadius: 'var(--radius-xl)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        {[{ label: t.uploadImage, ref: imgRef, onChange: onImgChange, loading: uploadingImage, loadingLabel: t.uploadingImage, url: data.image_url, doneLabel: t.imageUploaded, isImg: true },
-          { label: t.uploadVideo, ref: vidRef, onChange: onVidChange, loading: uploadingVideo, loadingLabel: t.uploadingVideo, url: data.video_url, doneLabel: t.videoUploaded, isImg: false }
-        ].map((up, i) => (
-          <div key={i}>
-            <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 8, textTransform: 'uppercase' }}>{up.label}</p>
-            <input ref={up.ref} type="file" accept={up.isImg ? 'image/*' : 'video/*'} style={{ display: 'none' }} onChange={up.onChange} />
-            <div onClick={() => up.ref.current?.click()} style={{ width: '100%', height: 110, border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: 'var(--bg-muted)', transition: 'border-color 0.2s', flexDirection: 'column', gap: 4 }}
+    <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 760, borderRadius: 'var(--radius-xl)' }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+          <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase' }}>{t.galleryImages}</p>
+          <p style={{ fontSize: 11, color: 'var(--text-disabled)', ...arFont }}>{t.galleryHint}</p>
+        </div>
+        <input ref={imgRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={onImgChange} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
+          {galleryImages.map((url, index) => (
+            <div key={`${url}-${index}`} style={{ position: 'relative', height: 110, borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-muted)' }}>
+              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {index === 0 && (
+                <span style={{ position: 'absolute', left: 8, bottom: 8, fontSize: 9, padding: '3px 8px', borderRadius: 20, background: 'rgba(0,0,0,0.55)', color: '#fff', letterSpacing: 0.5 }}>
+                  {t.primaryImage}
+                </span>
+              )}
+              <button type="button" onClick={() => onRemoveImage?.(index)} style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.55)', color: '#fff', cursor: 'pointer', fontSize: 12 }}>
+                ×
+              </button>
+            </div>
+          ))}
+          {galleryImages.length < PRODUCT_GALLERY_LIMIT && (
+            <div onClick={() => imgRef.current?.click()} style={{ height: 110, border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--bg-muted)', transition: 'border-color 0.2s', flexDirection: 'column', gap: 4 }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}>
-              {up.loading
-                ? <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{up.loadingLabel}</p>
-                : up.url && up.isImg ? <img src={up.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : up.url && !up.isImg ? <video src={up.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-                : <><p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>+ {up.label}</p>{!up.isImg && <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.6 }}>{t.maxVideo}</p>}</>}
+              {uploadingImage
+                ? <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{t.uploadingImage}</p>
+                : <>
+                    <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>+ {galleryImages.length === 0 ? t.uploadImage : t.addMoreImages}</p>
+                    <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.75 }}>{galleryImages.length}/{PRODUCT_GALLERY_LIMIT}</p>
+                  </>}
             </div>
-            {up.url && <p style={{ fontSize: 10, color: '#5a9a72', marginTop: 5 }}>✓ {up.doneLabel}</p>}
+          )}
+        </div>
+        {galleryImages.length >= PRODUCT_GALLERY_LIMIT && <p style={{ fontSize: 10, color: '#a08850', marginTop: 8 }}>{t.maxImagesReached}</p>}
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 8, textTransform: 'uppercase' }}>{t.uploadVideo}</p>
+        <input ref={vidRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={onVidChange} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+          <div onClick={() => !data.video_url && vidRef.current?.click()} style={{ height: 140, border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: data.video_url ? 'default' : 'pointer', overflow: 'hidden', background: 'var(--bg-muted)', transition: 'border-color 0.2s', flexDirection: 'column', gap: 4, position: 'relative' }}
+            onMouseEnter={e => { if (!data.video_url) e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}>
+            {uploadingVideo
+              ? <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{t.uploadingVideo}</p>
+              : data.video_url
+              ? <>
+                  <video src={data.video_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
+                  <button type="button" onClick={onRemoveVideo} style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.55)', color: '#fff', cursor: 'pointer', fontSize: 12 }}>
+                    ×
+                  </button>
+                </>
+              : <>
+                  <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>+ {t.uploadVideo}</p>
+                  <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.6 }}>{t.videoLimitHint} · {t.maxVideo}</p>
+                </>}
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="form-grid">
         {[
-          [t.nameZh, 'name_zh'], [t.nameEn, 'name_en'], [t.nameAr, 'name_ar'],
-          [t.moq, 'moq'],
+          [t.nameZh, 'name_zh'], [t.nameEn, 'name_en'], [t.nameAr, 'name_ar'], [t.moq, 'moq'],
         ].map(([label, key, type]) => (
           <div key={key} className="form-group">
             <label className="form-label">{label}</label>
@@ -256,32 +384,18 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
         <div className="form-group">
           <label className="form-label">{t.currency}</label>
           <select className="form-input" value={data.currency || 'USD'} onChange={e => setData(prev => ({ ...prev, currency: e.target.value }))}>
-            <option value="USD">USD</option>
-            <option value="SAR">SAR</option>
+            {DISPLAY_CURRENCIES.map(currency => <option key={currency} value={currency}>{currency}</option>)}
           </select>
         </div>
         <div className="form-group">
           <label className="form-label">{t.price}</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <input
-                className="form-input"
-                type="number"
-                placeholder={data.currency || 'USD'}
-                value={data.price_from || ''}
-                onChange={e => setData(prev => ({ ...prev, price_from: e.target.value }))}
-                style={{ paddingRight: 52 }}
-                dir="ltr"
-              />
+              <input className="form-input" type="number" placeholder={data.currency || 'USD'} value={data.price_from || ''} onChange={e => setData(prev => ({ ...prev, price_from: e.target.value }))} style={{ paddingRight: 52 }} dir="ltr" />
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>{data.currency || 'USD'}</span>
             </div>
             {data.price_from && data.currency === 'USD' && (
-              <div style={{
-                flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
-                border: '1px solid var(--border-subtle)', borderRadius: 3,
-                fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center',
-                direction: 'ltr',
-              }}>
+              <div style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 3, fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr' }}>
                 ≈ {(parseFloat(data.price_from || 0) * (usdRate || 3.75)).toFixed(2)} SAR
               </div>
             )}
@@ -301,6 +415,26 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
       </div>
 
       <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+        <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 14, textTransform: 'uppercase' }}>{t.specsTitle}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[
+            [t.specMaterial, 'spec_material'],
+            [t.specDimensions, 'spec_dimensions'],
+            [t.specWeight, 'spec_unit_weight'],
+            [t.specColors, 'spec_color_options'],
+            [t.specPackaging, 'spec_packaging_details'],
+            [t.specCustomization, 'spec_customization'],
+            [t.specLeadTime, 'spec_lead_time_days', 'number'],
+          ].map(([label, key, type]) => (
+            <div key={key} className="form-group" style={{ marginBottom: 0 }}>
+              <label className={`form-label${isAr ? ' ar' : ''}`}>{label}</label>
+              <input className="form-input" type={type || 'text'} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: data.sample_available ? 18 : 0 }}>
           <input type="checkbox" id="sample_toggle" checked={data.sample_available || false} onChange={e => setData(prev => ({ ...prev, sample_available: e.target.checked }))} style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--text-secondary)' }} />
           <label htmlFor="sample_toggle" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer', ...arFont }}>{t.sampleAvailable}</label>
@@ -317,16 +451,104 @@ function ProductForm({ data, setData, onSave, onCancel, imgRef, vidRef, onImgCha
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-        <button onClick={onSave} disabled={saving} className="btn-primary" style={{ padding: '11px 28px', fontSize: 12, minHeight: 44 }}>{saving ? t.saving : t.save}</button>
+      <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
+        {showPreviewAction
+          ? <button onClick={onPreview} className="btn-primary" style={{ padding: '11px 28px', fontSize: 12, minHeight: 44 }}>{t.continueToPreview}</button>
+          : <button onClick={onSave} disabled={saving} className="btn-primary" style={{ padding: '11px 28px', fontSize: 12, minHeight: 44 }}>{saving ? t.saving : (saveLabel || t.save)}</button>}
         <button onClick={onCancel} className="btn-outline" style={{ padding: '11px 20px', fontSize: 12, minHeight: 44 }}>{t.cancel}</button>
       </div>
     </div>
   );
 }
 
+function ProductPreviewPanel({ product, onPublish, onBack, t, isAr, saving, lang }) {
+  const galleryImages = getProductGalleryImages(product);
+  const specs = buildProductSpecs(product);
+  const displayName = lang === 'zh'
+    ? product.name_zh || product.name_en || product.name_ar
+    : lang === 'ar'
+    ? product.name_ar || product.name_en || product.name_zh
+    : product.name_en || product.name_ar || product.name_zh;
+  const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+
+  return (
+    <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '28px 32px', maxWidth: 760, borderRadius: 'var(--radius-xl)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
+        <div>
+          <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase', marginBottom: 8 }}>{t.previewStep}</p>
+          <h3 style={{ fontSize: 24, fontWeight: 400, color: 'var(--text-primary)', ...arFont }}>{displayName || '—'}</h3>
+        </div>
+        <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)', letterSpacing: 1 }}>{t.previewBadge}</span>
+      </div>
+
+      <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 20, lineHeight: 1.7, ...arFont }}>{t.previewNote}</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 18, marginBottom: 24 }}>
+        <div>
+          {galleryImages.length > 0 ? (
+            <>
+              <div style={{ height: 300, borderRadius: 'var(--radius-xl)', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-muted)', marginBottom: 12 }}>
+                <img src={galleryImages[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              {galleryImages.length > 1 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 10 }}>
+                  {galleryImages.slice(1).map((url, index) => (
+                    <div key={`${url}-${index}`} style={{ height: 72, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ height: 220, borderRadius: 'var(--radius-xl)', border: '1px dashed var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-disabled)', background: 'var(--bg-muted)' }}>{t.previewEmptyMedia}</div>
+          )}
+        </div>
+
+        <div>
+          <div style={{ padding: '18px 20px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', marginBottom: 14 }}>
+            <p style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 8 }}>
+              {product.price_from || '—'} <span style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{product.currency || 'USD'}</span>
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>MOQ: {product.moq || '—'}</p>
+            {product.category && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>{t.category}: {product.category}</p>}
+          </div>
+
+          {product.video_url && (
+            <div style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#1a1a1a', marginBottom: 14 }}>
+              <video src={product.video_url} controls style={{ width: '100%', display: 'block', maxHeight: 220, objectFit: 'cover' }} />
+            </div>
+          )}
+
+          {specs.length > 0 && (
+            <div style={{ padding: '18px 20px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)' }}>
+              <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase', marginBottom: 12 }}>{t.specsTitle}</p>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {specs.map(spec => (
+                  <div key={spec.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-disabled)', textTransform: 'capitalize' }}>{spec.label}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right' }}>{spec.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {product.desc_en && <p style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: product.desc_ar ? 12 : 24 }}>{product.desc_en}</p>}
+      {product.desc_ar && <p style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 24, ...arFont }}>{product.desc_ar}</p>}
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button onClick={onPublish} disabled={saving} className="btn-primary" style={{ padding: '11px 28px', fontSize: 12, minHeight: 44 }}>{saving ? t.saving : t.publishNow}</button>
+        <button onClick={onBack} className="btn-outline" style={{ padding: '11px 20px', fontSize: 12, minHeight: 44 }}>{t.backToEdit}</button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main ───────────────────────────────── */
-export default function DashboardSupplier({ user, profile, lang }) {
+export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency }) {
   const nav      = useNavigate();
   const location = useLocation();
   const t        = T[lang] || T.zh;
@@ -369,11 +591,13 @@ export default function DashboardSupplier({ user, profile, lang }) {
     bio_ar: '', bio_en: '', bio_zh: '', company_name: '',
     whatsapp: '', wechat: '', city: '', country: '',
     trade_link: '', speciality: '', min_order_value: '',
+    preferred_display_currency: displayCurrency || 'USD',
     avatar_url: '', factory_images: [],
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [productSaveMsg, setProductSaveMsg] = useState('');
+  const [productComposerStep, setProductComposerStep] = useState('edit');
   const [editOfferModal, setEditOfferModal]   = useState(null);
   const [editOfferForm, setEditOfferForm]     = useState({});
   const [savingEditOffer, setSavingEditOffer] = useState(false);
@@ -403,19 +627,24 @@ export default function DashboardSupplier({ user, profile, lang }) {
     if (activeTab === 'reviews')      loadMyReviews();
     if (activeTab === 'add-product')  {
       setEditingProduct(null);
+      setProductComposerStep('edit');
       const draft = sessionStorage.getItem('maabar_product_draft');
       if (draft) {
-        try { setProduct(JSON.parse(draft)); } catch { setProduct(emptyProduct); }
+        try { setProduct(normalizeProductDraftMedia(JSON.parse(draft))); } catch { setProduct(emptyProduct); }
       } else {
         setProduct(emptyProduct);
       }
     }
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
+  }, [displayCurrency]);
+
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
     if (activeTab === 'add-product' && !editingProduct) {
-      sessionStorage.setItem('maabar_product_draft', JSON.stringify(product));
+      sessionStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
     }
   }, [product, activeTab, editingProduct]);
 
@@ -510,12 +739,13 @@ export default function DashboardSupplier({ user, profile, lang }) {
 
   const loadSettings = async () => {
     const { data } = await sb.from('profiles').select('bio_ar,bio_en,bio_zh,company_name,whatsapp,wechat,city,country,trade_link,speciality,min_order_value,avatar_url,factory_images').eq('id', user.id).single();
-    if (data) setSettings({ bio_ar: data.bio_ar || '', bio_en: data.bio_en || '', bio_zh: data.bio_zh || '', company_name: data.company_name || '', whatsapp: data.whatsapp || '', wechat: data.wechat || '', city: data.city || '', country: data.country || '', trade_link: data.trade_link || '', speciality: data.speciality || '', min_order_value: data.min_order_value || '', avatar_url: data.avatar_url || '', factory_images: data.factory_images || [] });
+    if (data) setSettings({ bio_ar: data.bio_ar || '', bio_en: data.bio_en || '', bio_zh: data.bio_zh || '', company_name: data.company_name || '', whatsapp: data.whatsapp || '', wechat: data.wechat || '', city: data.city || '', country: data.country || '', trade_link: data.trade_link || '', speciality: data.speciality || '', min_order_value: data.min_order_value || '', preferred_display_currency: displayCurrency || 'USD', avatar_url: data.avatar_url || '', factory_images: data.factory_images || [] });
   };
 
   const saveSettings = async () => {
     setSavingSettings(true);
     await sb.from('profiles').update({ bio_ar: settings.bio_ar, bio_en: settings.bio_en, bio_zh: settings.bio_zh, company_name: settings.company_name, whatsapp: settings.whatsapp, wechat: settings.wechat, city: settings.city, country: settings.country, trade_link: settings.trade_link, speciality: settings.speciality, min_order_value: settings.min_order_value ? parseFloat(settings.min_order_value) : null }).eq('id', user.id);
+    await setDisplayCurrency?.(settings.preferred_display_currency || 'USD');
     setSavingSettings(false);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 3000);
@@ -594,23 +824,73 @@ export default function DashboardSupplier({ user, profile, lang }) {
     const isVideo = type === 'video';
     if (isVideo && file.size > 50 * 1024 * 1024) { alert(t.maxVideo); return null; }
     isVideo ? setUploadingVideo(true) : setUploadingImage(true);
-    const path = `${user.id}/${type}_${Date.now()}.${file.name.split('.').pop()}`;
+    const path = `${user.id}/${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${file.name.split('.').pop()}`;
     const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
     isVideo ? setUploadingVideo(false) : setUploadingImage(false);
     if (error) { alert(isAr ? 'فشل الرفع' : 'Upload failed'); return null; }
     return STORAGE_URL + path;
   };
 
+  const applyProductMedia = (setter, mediaUpdater) => {
+    setter(prev => normalizeProductDraftMedia(mediaUpdater(prev || emptyProduct)));
+  };
+
   const handleImageUpload = async (e, isEdit = false) => {
-    const url = await uploadFile(e.target.files[0], 'image');
-    if (!url) return;
-    isEdit ? setEditingProduct(prev => ({ ...prev, image_url: url })) : setProduct(prev => ({ ...prev, image_url: url }));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const currentImages = getProductGalleryImages(isEdit ? editingProduct : product);
+    if (currentImages.length + files.length > PRODUCT_GALLERY_LIMIT) {
+      alert(t.maxImagesError);
+      e.target.value = '';
+      return;
+    }
+
+    const nextUrls = [];
+    for (const file of files) {
+      const url = await uploadFile(file, 'image');
+      if (url) nextUrls.push(url);
+    }
+
+    if (!nextUrls.length) return;
+    const setter = isEdit ? setEditingProduct : setProduct;
+    applyProductMedia(setter, prev => ({
+      ...prev,
+      gallery_images: [...getProductGalleryImages(prev), ...nextUrls].slice(0, PRODUCT_GALLERY_LIMIT),
+    }));
+    e.target.value = '';
+  };
+
+  const removeImageAt = (index, isEdit = false) => {
+    const setter = isEdit ? setEditingProduct : setProduct;
+    applyProductMedia(setter, prev => ({
+      ...prev,
+      gallery_images: getProductGalleryImages(prev).filter((_, imgIndex) => imgIndex !== index),
+    }));
   };
 
   const handleVideoUpload = async (e, isEdit = false) => {
-    const url = await uploadFile(e.target.files[0], 'video');
+    const file = e.target.files?.[0];
+    const url = await uploadFile(file, 'video');
     if (!url) return;
-    isEdit ? setEditingProduct(prev => ({ ...prev, video_url: url })) : setProduct(prev => ({ ...prev, video_url: url }));
+    const setter = isEdit ? setEditingProduct : setProduct;
+    applyProductMedia(setter, prev => ({ ...prev, video_url: url }));
+    e.target.value = '';
+  };
+
+  const removeVideo = (isEdit = false) => {
+    const setter = isEdit ? setEditingProduct : setProduct;
+    applyProductMedia(setter, prev => ({ ...prev, video_url: null }));
+  };
+
+  const openProductPreview = () => {
+    if (!product.name_zh || !product.name_en || !product.price_from || !product.moq || !product.desc_en) {
+      setProductSaveMsg(isAr ? 'يرجى تعبئة الحقول المطلوبة: الاسم الصيني، الاسم الإنجليزي، السعر، MOQ، والوصف الإنجليزي' : 'Please fill required fields: Chinese name, English name, price, MOQ, and English description');
+      return;
+    }
+    setProductSaveMsg('');
+    setProduct(normalizeProductDraftMedia(product));
+    setProductComposerStep('preview');
   };
 
   const addProduct = async () => {
@@ -620,8 +900,13 @@ export default function DashboardSupplier({ user, profile, lang }) {
     }
     setSaving(true);
     setProductSaveMsg('');
-    const fallbackName = product.name_en || product.name_zh || product.name_ar || '';
-    const { error } = await sb.from('products').insert({ supplier_id: user.id, name_ar: product.name_ar || fallbackName, name_en: product.name_en || fallbackName, name_zh: product.name_zh || fallbackName, price_from: parseFloat(product.price_from), currency: product.currency || 'USD', category: product.category || 'other', moq: product.moq, desc_en: product.desc_en, desc_ar: product.desc_ar || product.desc_en, image_url: product.image_url || null, video_url: product.video_url || null, sample_available: product.sample_available, sample_price: product.sample_available ? parseFloat(product.sample_price) : null, sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null, sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3) : null, sample_note: product.sample_note || null, is_active: true });
+    const payload = buildProductWritePayload(product, user.id);
+    const { error, strippedColumns } = await runWithOptionalColumns({
+      table: 'products',
+      payload,
+      optionalKeys: PRODUCT_OPTIONAL_DB_FIELDS,
+      execute: (nextPayload) => sb.from('products').insert(nextPayload),
+    });
     setSaving(false);
     if (error) {
       console.error('addProduct error:', error);
@@ -630,17 +915,29 @@ export default function DashboardSupplier({ user, profile, lang }) {
     }
     sessionStorage.removeItem('maabar_product_draft');
     setProduct(emptyProduct);
-    setProductSaveMsg(isAr ? 'تم إضافة المنتج بنجاح ✓' : 'Product added successfully ✓');
-    setTimeout(() => { setProductSaveMsg(''); setActiveTab('my-products'); }, 1500);
+    setProductComposerStep('edit');
+    setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح ✓' : 'Product added successfully ✓'));
+    setTimeout(() => { setProductSaveMsg(''); setActiveTab('my-products'); }, 1800);
     loadStats();
   };
 
   const updateProduct = async () => {
     if (!editingProduct) return;
     setSaving(true);
-    const fallbackName = editingProduct.name_en || editingProduct.name_zh || editingProduct.name_ar || '';
-    await sb.from('products').update({ name_ar: editingProduct.name_ar || fallbackName, name_en: editingProduct.name_en || fallbackName, name_zh: editingProduct.name_zh || fallbackName, price_from: parseFloat(editingProduct.price_from), currency: editingProduct.currency || 'USD', category: editingProduct.category || 'other', moq: editingProduct.moq, desc_en: editingProduct.desc_en || '', desc_ar: editingProduct.desc_ar || editingProduct.desc_en || '', image_url: editingProduct.image_url || null, video_url: editingProduct.video_url || null, sample_available: editingProduct.sample_available, sample_price: editingProduct.sample_available ? parseFloat(editingProduct.sample_price) : null, sample_shipping: editingProduct.sample_available ? parseFloat(editingProduct.sample_shipping || 0) : null, sample_max_qty: editingProduct.sample_available ? parseInt(editingProduct.sample_max_qty || 3) : null, sample_note: editingProduct.sample_note || null }).eq('id', editingProduct.id);
-    setSaving(false); setEditingProduct(null); loadMyProducts(); loadStats();
+    const payload = buildProductWritePayload(editingProduct);
+    delete payload.supplier_id;
+    const { error } = await runWithOptionalColumns({
+      table: 'products',
+      payload,
+      optionalKeys: PRODUCT_OPTIONAL_DB_FIELDS,
+      execute: (nextPayload) => sb.from('products').update(nextPayload).eq('id', editingProduct.id),
+    });
+    setSaving(false);
+    if (error) {
+      console.error('updateProduct error:', error);
+      return;
+    }
+    setEditingProduct(null); loadMyProducts(); loadStats();
   };
 
   const toggleProductActive = async (p) => { await sb.from('products').update({ is_active: !p.is_active }).eq('id', p.id); loadMyProducts(); loadStats(); };
@@ -1107,18 +1404,17 @@ export default function DashboardSupplier({ user, profile, lang }) {
                 <div key={p.id}>
                   {editingProduct?.id === p.id ? (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: 'fadeIn 0.3s ease' }}>
-                      <input ref={editImageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, true)} />
-                      <input ref={editVideoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, true)} />
-                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
+                      <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onCancel={() => setEditingProduct(null)} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
                     </div>
                   ) : (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 0', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
                       <div style={{ width: 60, height: 60, borderRadius: 'var(--radius-lg)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                        {p.image_url ? <img src={p.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 20, opacity: 0.25 }}>◻</span>}
+                        {getPrimaryProductImage(p) ? <img src={getPrimaryProductImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 20, opacity: 0.25 }}>◻</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 140 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                           <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', ...arFont }}>{lang === 'zh' ? p.name_zh || p.name_en : lang === 'ar' ? p.name_ar || p.name_en : p.name_en || p.name_ar}</p>
+                          {getProductGalleryImages(p).length > 1 && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{getProductGalleryImages(p).length} IMG</span>}
                           {p.video_url && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>VIDEO</span>}
                           {p.sample_available && <span style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', borderRadius: 10, color: '#5a9a72', letterSpacing: 0.5 }}>{isAr ? 'عينة' : 'SAMPLE'}</span>}
                           {p.category && p.category !== 'other' && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{cats.find(c => c.val === p.category)?.label || p.category}</span>}
@@ -1128,7 +1424,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
                         <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
-                        <button onClick={() => setEditingProduct(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
+                        <button onClick={() => setEditingProduct(normalizeProductDraftMedia(p))} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
                         <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
                       </div>
                     </div>
@@ -1422,11 +1718,13 @@ export default function DashboardSupplier({ user, profile, lang }) {
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.addProductTitle}</h2>
-              <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(e, false)} />
-              <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => handleVideoUpload(e, false)} />
-              <ProductForm data={product} setData={setProduct} onSave={addProduct} onCancel={() => setActiveTab('overview')} imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
+              {productComposerStep === 'preview' ? (
+                <ProductPreviewPanel product={normalizeProductDraftMedia(product)} onPublish={addProduct} onBack={() => setProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
+              ) : (
+                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} />
+              )}
               {productSaveMsg && (
-                <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <p style={{ marginTop: 12, fontSize: 13, color: productSaveMsg.includes('✓') ? '#5a9a72' : productSaveMsg === t.productSavedWithFallback ? '#a08850' : '#a07070', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {productSaveMsg}
                 </p>
               )}
@@ -1484,7 +1782,7 @@ export default function DashboardSupplier({ user, profile, lang }) {
                   <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'بيانات الشركة' : 'Company Info'}</p>
                   <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
                     <div className="form-grid">
-                      {[[t.companyName, 'company_name'], [t.speciality, 'speciality', 'select'], [t.city, 'city'], [t.country, 'country'], [t.whatsapp, 'whatsapp', 'tel'], [t.wechat, 'wechat'], [t.minOrder, 'min_order_value', 'number'], [t.tradeLink, 'trade_link', 'url']].map(([label, key, type]) => (
+                      {[[t.companyName, 'company_name'], [t.speciality, 'speciality', 'select'], [t.city, 'city'], [t.country, 'country'], [t.whatsapp, 'whatsapp', 'tel'], [t.wechat, 'wechat'], [t.minOrder, 'min_order_value', 'number'], [t.tradeLink, 'trade_link', 'url'], [isAr ? 'عملة العرض المفضلة' : lang === 'zh' ? '首选显示货币' : 'Preferred Display Currency', 'preferred_display_currency', 'display_currency']].map(([label, key, type]) => (
                         <div key={key} className="form-group">
                           <label className={`form-label${isAr ? ' ar' : ''}`}>{label}</label>
                           {type === 'select'
@@ -1492,10 +1790,18 @@ export default function DashboardSupplier({ user, profile, lang }) {
                                 <option value="">{isAr ? 'اختر' : 'Select'}</option>
                                 {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
                               </select>
+                            : type === 'display_currency'
+                            ? <select className="form-input" value={settings[key] || 'USD'} onChange={e => setSettings({ ...settings, [key]: e.target.value })}>
+                                {DISPLAY_CURRENCIES.map(currency => <option key={currency} value={currency}>{currency}</option>)}
+                              </select>
                             : <input className="form-input" type={type || 'text'} value={settings[key] || ''} onChange={e => setSettings({ ...settings, [key]: e.target.value })} dir={['whatsapp', 'wechat', 'trade_link'].includes(key) ? 'ltr' : undefined} />}
                         </div>
                       ))}
                     </div>
+
+                    <p style={{ fontSize: 12, color: 'var(--text-disabled)', margin: '6px 0 16px', lineHeight: 1.7, ...arFont }}>
+                      {isAr ? 'هذه العملة للعرض فقط أثناء التصفح. المدفوعات والمنتجات تبقى بعملتها الأصلية.' : lang === 'zh' ? '这只影响浏览时的显示货币。付款与产品原始货币保持不变。' : 'This affects browsing display only. Payments and saved product currencies remain in their original currency.'}
+                    </p>
 
                     {[[t.bioZh, 'bio_zh'], [t.bioEn, 'bio_en'], [t.bioAr, 'bio_ar', true]].map(([label, key, rtl]) => (
                       <div key={key} className="form-group">

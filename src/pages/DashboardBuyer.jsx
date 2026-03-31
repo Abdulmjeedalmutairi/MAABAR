@@ -2,6 +2,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
+import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -114,7 +115,7 @@ function BackBtn({ onClick, isAr }) {
 }
 
 /* ─── Main ───────────────────────────────── */
-export default function DashboardBuyer({ user, profile, lang }) {
+export default function DashboardBuyer({ user, profile, lang, displayCurrency, setDisplayCurrency }) {
   const nav      = useNavigate();
   const location = useLocation();
   const isAr     = lang === 'ar';
@@ -149,7 +150,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
   const [cancelConfirmReq, setCancelConfirmReq] = useState(null);
 
   // Settings
-  const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '' });
+  const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '', preferred_display_currency: displayCurrency || 'USD' });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -178,6 +179,10 @@ export default function DashboardBuyer({ user, profile, lang }) {
     if (activeTab === 'samples') loadMySamples();
     if (activeTab === 'settings') loadSettings();
   }, [activeTab]);
+
+  useEffect(() => {
+    setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
+  }, [displayCurrency]);
 
   const loadStats = async () => {
     const [requests, messages, offers] = await Promise.all([
@@ -242,7 +247,15 @@ export default function DashboardBuyer({ user, profile, lang }) {
 
   const loadSettings = async () => {
     const { data } = await sb.from('profiles').select('full_name,phone,city,company_name').eq('id', user.id).single();
-    if (data) setSettings({ full_name: data.full_name || '', phone: data.phone || '', city: data.city || '', company_name: data.company_name || '' });
+    if (data) {
+      setSettings({
+        full_name: data.full_name || '',
+        phone: data.phone || '',
+        city: data.city || '',
+        company_name: data.company_name || '',
+        preferred_display_currency: displayCurrency || 'USD',
+      });
+    }
   };
 
   const saveSettings = async () => {
@@ -251,6 +264,7 @@ export default function DashboardBuyer({ user, profile, lang }) {
       full_name: settings.full_name, phone: settings.phone,
       city: settings.city, company_name: settings.company_name,
     }).eq('id', user.id);
+    await setDisplayCurrency?.(settings.preferred_display_currency || 'USD');
     setSavingSettings(false);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 3000);
@@ -1129,7 +1143,21 @@ export default function DashboardBuyer({ user, profile, lang }) {
                     <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'اسم الشركة / النشاط' : 'Company / Business'}</label>
                     <input className="form-input" value={settings.company_name} onChange={e => setSettings({ ...settings, company_name: e.target.value })} placeholder={isAr ? 'اختياري' : 'Optional'} />
                   </div>
+                  <div className="form-group">
+                    <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'عملة العرض المفضلة' : lang === 'zh' ? '首选显示货币' : 'Preferred Display Currency'}</label>
+                    <select className="form-input" value={settings.preferred_display_currency || 'USD'} onChange={e => setSettings({ ...settings, preferred_display_currency: e.target.value })}>
+                      {DISPLAY_CURRENCIES.map(currency => <option key={currency} value={currency}>{currency}</option>)}
+                    </select>
+                  </div>
                 </div>
+
+                <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: 8, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {isAr
+                    ? 'هذه للعملة المعروضة فقط أثناء التصفح. الدفع والعقود تبقى بعملة المنتج أو الصفقة الأصلية.'
+                    : lang === 'zh'
+                    ? '这只影响浏览时的显示货币。实际产品/交易货币保持原样。'
+                    : 'This only changes browsing display prices. Product and transaction source currencies stay unchanged.'}
+                </p>
 
                 <button onClick={saveSettings} disabled={savingSettings} className="btn-primary"
                   style={{ padding: '11px 28px', fontSize: 13, marginTop: 8, minHeight: 44 }}>
