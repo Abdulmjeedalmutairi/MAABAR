@@ -196,15 +196,25 @@ export default function Requests({ lang, user, profile }) {
       const retranslate = async () => {
         const translations = {};
         for (const request of requests) {
-          const titleToTranslate = request.title_ar || request.title_en || '';
+          const titleToTranslate = request.title_ar || request.title_en || request.title_zh || '';
           const descToTranslate = request.description || '';
-          if (titleToTranslate) {
-            const translatedTitle = await translateRequestText(titleToTranslate, 'ar', effectiveLang);
+
+          const hasArabic = /[\u0600-\u06FF]/.test(titleToTranslate);
+          const hasChinese = /[\u4e00-\u9fff]/.test(titleToTranslate);
+          const sourceLang = hasArabic ? 'ar' : hasChinese ? 'zh' : 'en';
+
+          if (titleToTranslate && sourceLang !== effectiveLang) {
+            const translatedTitle = await translateRequestText(titleToTranslate, sourceLang, effectiveLang);
             translations[request.id] = { ...translations[request.id], title: translatedTitle };
           }
           if (descToTranslate) {
-            const translatedDesc = await translateRequestText(descToTranslate, 'ar', effectiveLang);
-            translations[request.id] = { ...translations[request.id], description: translatedDesc };
+            const descHasArabic = /[\u0600-\u06FF]/.test(descToTranslate);
+            const descHasChinese = /[\u4e00-\u9fff]/.test(descToTranslate);
+            const descSourceLang = descHasArabic ? 'ar' : descHasChinese ? 'zh' : 'en';
+            if (descSourceLang !== effectiveLang) {
+              const translatedDesc = await translateRequestText(descToTranslate, descSourceLang, effectiveLang);
+              translations[request.id] = { ...translations[request.id], description: translatedDesc };
+            }
           }
         }
         setTranslatedRequests(translations);
@@ -275,42 +285,33 @@ export default function Requests({ lang, user, profile }) {
       setRequests(data);
       
       // نترجم عناوين الطلبات إذا لغة المورد مو عربية
-      if (isSupplier && lang !== 'ar' && data.length > 0) {
-        console.log('Starting translation for', data.length, 'requests, lang:', lang);
+      if (isSupplier && effectiveLang !== 'ar' && data.length > 0) {
         const translations = {};
         for (const request of data) {
-          if (request.title_ar || request.description) {
-            const titleToTranslate = request.title_ar || request.title_en || '';
-            const descToTranslate = request.description || '';
-            
-            if (titleToTranslate) {
-              console.log('Translating title for request', request.id, ':', titleToTranslate.substring(0, 50));
-              const translatedTitle = await translateRequestText(
-                titleToTranslate,
-                'ar', // نفترض العناوين بالعربية
-                lang
-              );
-              console.log('Translated title:', translatedTitle.substring(0, 50));
-              translations[request.id] = {
-                ...translations[request.id],
-                title: translatedTitle
-              };
-            }
-            
-            if (descToTranslate) {
-              const translatedDesc = await translateRequestText(
-                descToTranslate,
-                'ar', // نفترض الوصف بالعربية
-                lang
-              );
-              translations[request.id] = {
-                ...translations[request.id],
-                description: translatedDesc
-              };
+          // نختار النص المناسب للترجمة (أي لغة موجودة)
+          const titleToTranslate = request.title_ar || request.title_en || request.title_zh || '';
+          const descToTranslate = request.description || '';
+          
+          // نكتشف لغة المصدر
+          const hasArabic = /[\u0600-\u06FF]/.test(titleToTranslate);
+          const hasChinese = /[\u4e00-\u9fff]/.test(titleToTranslate);
+          const sourceLang = hasArabic ? 'ar' : hasChinese ? 'zh' : 'en';
+
+          if (titleToTranslate && sourceLang !== effectiveLang) {
+            const translatedTitle = await translateRequestText(titleToTranslate, sourceLang, effectiveLang);
+            translations[request.id] = { ...translations[request.id], title: translatedTitle };
+          }
+          
+          if (descToTranslate) {
+            const descHasArabic = /[\u0600-\u06FF]/.test(descToTranslate);
+            const descHasChinese = /[\u4e00-\u9fff]/.test(descToTranslate);
+            const descSourceLang = descHasArabic ? 'ar' : descHasChinese ? 'zh' : 'en';
+            if (descSourceLang !== effectiveLang) {
+              const translatedDesc = await translateRequestText(descToTranslate, descSourceLang, effectiveLang);
+              translations[request.id] = { ...translations[request.id], description: translatedDesc };
             }
           }
         }
-        console.log('Translation complete, setting', Object.keys(translations).length, 'translations');
         setTranslatedRequests(translations);
       }
     }
@@ -1075,7 +1076,7 @@ export default function Requests({ lang, user, profile }) {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch', minWidth: 120 }}>
                   <button className="btn-quote" onClick={() => toggleOfferForm(r.id)}>
                     {offerForms[r.id]
                       ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close')
@@ -1086,7 +1087,6 @@ export default function Requests({ lang, user, profile }) {
                     className="btn-outline" 
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Button clicked for request:', r.id, 'title:', r.title_ar);
                       toggleDetails(r.id);
                     }}
                     style={{ 
@@ -1095,7 +1095,8 @@ export default function Requests({ lang, user, profile }) {
                       minHeight: 32,
                       width: '100%',
                       textAlign: 'center',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'block',
                     }}
                   >
                     {expandedDetails[r.id] 
