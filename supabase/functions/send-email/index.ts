@@ -51,71 +51,89 @@ function localeMeta(lang = 'ar') {
 function wrap(content, options = {}) {
   const locale = localeMeta(options.lang || 'ar');
   const subject = options.subject || 'مَعبر';
+  const grStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:1.5px;color:#777777;margin:0 0 10px;text-transform:uppercase;';
+  const tgStyle = 'font-family:Georgia,serif;font-size:22px;line-height:1.5;font-weight:bold;color:#1a1a1a;margin:0 0 16px;';
+  const ibStyle = 'background-color:#f7f5f2;padding:16px 18px;margin:0 0 20px;';
+  const ilStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:1.5px;color:#777777;margin:0 0 10px;text-transform:uppercase;';
+  const irStyle = 'padding:6px 0;border-bottom:1px solid #e8e6e3;font-family:Arial,sans-serif;';
+  const ikStyle = 'display:inline-block;min-width:120px;font-size:13px;color:#777777;vertical-align:top;';
+  const ivStyle = 'display:inline-block;font-size:13px;color:#333333;vertical-align:top;';
+  const bwStyle = `margin-top:24px;text-align:${locale.align};`;
+  const btStyle = 'display:inline-block;background-color:#2C2C2C;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;';
+
+  // Replace CSS classes with inline styles
+  const rendered = content
+    .replace(/<div class="bd">/g, `<div style="direction:${locale.dir};text-align:${locale.align};">`)
+    .replace(/<p class="gr">/g, `<p style="${grStyle}">`)
+    .replace(/<p class="tg">/g, `<p style="${tgStyle}">`)
+    .replace(/<div class="ib">/g, `<div style="${ibStyle}">`)
+    .replace(/<p class="il">/g, `<p style="${ilStyle}">`)
+    .replace(/<div class="ir">/g, `<div style="${irStyle}">`)
+    .replace(/<span class="ik">/g, `<span style="${ikStyle}">`)
+    .replace(/<span class="iv">/g, `<span style="${ivStyle}">`)
+    .replace(/<div class="bw">/g, `<div style="${bwStyle}">`)
+    .replace(/class="bt"/g, `style="${btStyle}"`);
+
   return `<!DOCTYPE html>
 <html lang="${locale.lang}" dir="${locale.dir}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<meta name="color-scheme" content="light only" />
-<meta name="supported-color-schemes" content="light only" />
 <title>${subject}</title>
-<style>
-  body { margin:0; padding:0; background:#000000; font-family:${locale.font}; color:#ffffff; }
-  .bd { direction:${locale.dir}; text-align:${locale.align}; }
-  .gr { font-size:10px; letter-spacing:2px; color:#444; margin:0 0 14px; font-family:${locale.font}; }
-  .tg { font-size:24px; line-height:1.6; font-weight:700; color:#ffffff; margin:0 0 16px; font-family:${locale.font}; }
-  .ib { background:#1a1a1f; border-radius:8px; padding:20px; margin:0 0 28px; }
-  .il { font-size:10px; letter-spacing:2px; color:#444; margin:0 0 12px; font-family:${locale.font}; }
-  .ir { padding:6px 0; border-bottom:1px solid #222; font-family:${locale.font}; }
-  .ir:last-child { border-bottom:none; }
-  .ik { display:inline-block; min-width:120px; font-size:13px; color:#666; vertical-align:top; }
-  .iv { display:inline-block; font-size:13px; color:#aaa; vertical-align:top; }
-  .bw { margin-top:28px; text-align:${locale.align}; }
-  .bt { display:inline-block; background:#ffffff; border-radius:6px; padding:13px 32px; color:#111114 !important; text-decoration:none; font-size:14px; font-weight:700; font-family:${locale.font}; }
-  p { font-family:${locale.font}; }
-  a { color:inherit; }
-</style>
 </head>
-<body style="margin:0;padding:0;background:#000000;font-family:${locale.font};color:#ffffff;direction:${locale.dir};text-align:${locale.align};">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#000000;width:100%;border-collapse:collapse;">
+<body style="margin:0;padding:0;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f7f5f2">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff">
+
+<!-- HEADER -->
 <tr>
-<td align="center" style="padding:0;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border-collapse:collapse;">
+<td bgcolor="#2C2C2C" style="padding:28px 40px;text-align:center;">
+<table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
 <tr>
-<td align="center" style="background:#111114;padding:28px 24px;border-bottom:1px solid #222226;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0">
-<tr>
-<td align="center" style="font-size:19px;font-weight:700;color:#ffffff;font-family:'Cairo',Tahoma,Arial,sans-serif;letter-spacing:0.3px;">
-مَعبر &nbsp;<span style="color:#383838;">|</span>&nbsp; <span style="color:#aaaaaa;font-size:16px;font-weight:600;">MAABAR</span>
-</td>
+<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">MAABAR</td>
+<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#cccccc;padding:0 10px;">|</td>
+<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">&#1605;&#1614;&#1593;&#1576;&#1585;</td>
 </tr>
 <tr>
-<td align="center" style="font-size:11px;color:#383838;padding-top:5px;letter-spacing:2px;font-family:Arial,sans-serif;">
-迈巴尔
-</td>
-</tr>
-</table>
-</td>
-</tr>
-<tr>
-<td style="background:#111114;padding:44px 32px 36px 32px;text-align:${locale.align};direction:${locale.dir};">
-${content}
-</td>
-</tr>
-<tr>
-<td align="center" style="background:#0d0d10;padding:20px 24px;border-top:1px solid #1a1a1f;">
-<div style="font-size:10px;letter-spacing:2px;color:#333;font-family:Arial,sans-serif;">
-MAABAR.IO &nbsp;·&nbsp; مَعبر &nbsp;·&nbsp; 迈巴尔
-</div>
-</td>
+<td colspan="3" style="font-family:Georgia,serif;font-size:15px;color:#cccccc;text-align:center;padding-top:5px;">&#36855;&#24052;&#23572;</td>
 </tr>
 </table>
 </td>
 </tr>
+
+<!-- DIVIDER -->
+<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e6e3" height="1"></td></tr></table></td></tr>
+
+<!-- CONTENT -->
+<tr>
+<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:15px;color:#555555;line-height:1.7;">
+${rendered}
+</td>
+</tr>
+
+<!-- DIVIDER -->
+<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e6e3" height="1"></td></tr></table></td></tr>
+
+<!-- FOOTER -->
+<tr>
+<td bgcolor="#f7f5f2" style="padding:24px 40px;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">
+<p style="margin:0 0 6px 0;">&#169; 2026 &#1605;&#1614;&#1593;&#1576;&#1585; &middot; Riyadh, Saudi Arabia</p>
+<p style="margin:0;font-size:11px;">
+<a href="https://maabar.io" style="color:#777777;text-decoration:none;">maabar.io</a> &nbsp;&middot;&nbsp;
+<a href="mailto:info@maabar.io" style="color:#777777;text-decoration:none;">info@maabar.io</a> &nbsp;&middot;&nbsp;
+<a href="https://maabar.io/unsubscribe" style="color:#aaaaaa;text-decoration:none;">&#1573;&#1604;&#1594;&#1575;&#1569; &#1575;&#1604;&#1575;&#1588;&#1578;&#1585;&#1575;&#1603;</a>
+</p>
+</td>
+</tr>
+
+</table>
+</td></tr>
 </table>
 </body>
 </html>`;
 }
+
 
 const templates = {
   admin_new_supplier: (d) => ({
