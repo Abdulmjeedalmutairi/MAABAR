@@ -22,7 +22,7 @@ function brandLockup(variant = 'header') {
   const zhSize = isHeader ? 14 : 12;
   return `
   <div style="text-align:center;width:100%;padding:${pad};background:#0a0a0b;background-image:linear-gradient(#0a0a0b,#0a0a0b);">
-    <div style="font-size:${titleSize}px;line-height:1.2;font-weight:700;color:#f5f5f2;letter-spacing:${titleSpacing}">
+    <div style="font-size:${titleSize}px;line-height:1.2;font-weight:700;color:#1a1a1a;letter-spacing:${titleSpacing}">
       <span dir="ltr" style="display:inline-block">MAABAR</span>
       <span style="display:inline-block;color:rgba(255,255,255,.45);padding:0 10px">|</span>
       <span dir="rtl" style="display:inline-block;letter-spacing:0">مَعبر</span>
@@ -158,7 +158,7 @@ function wrap(content, options = {}) {
     .replace(/<span class="iv">/g, `<span style="${ivStyle}">`)
     .replace(/<div class="bw">/g, `<div style="${bwStyle}">`)
     .replace(/class="bt"/g, `style="${btStyle}"`)
-    .replace(/<p style="font-size:15px;color:#ececef/g, `<p style="font-size:15px;color:#555555`);
+    .replace(/<p style="font-size:15px;color:#555555/g, `<p style="font-size:15px;color:#555555`);
 
   return buildHtml(rendered, options);
 }
@@ -230,7 +230,7 @@ const templates = {
     const supplierIdBlock = d.maabarSupplierId
       ? `<div style="margin-top:18px;padding:16px 18px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);">
 <p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);">${t.supplierIdLabel}</p>
-<p style="margin:0;font-size:20px;line-height:1.5;color:#f5f5f2;font-weight:800;letter-spacing:.06em;">${d.maabarSupplierId}</p>
+<p style="margin:0;font-size:20px;line-height:1.5;color:#1a1a1a;font-weight:800;letter-spacing:.06em;">${d.maabarSupplierId}</p>
 <p style="margin:8px 0 0;font-size:13px;line-height:1.9;color:#a8a8ad;">${t.supplierIdBody}</p>
 </div>`
       : '';
@@ -238,11 +238,11 @@ const templates = {
     return ({
       subject: t.subject,
       html: wrap(`
-<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#1a1a1a;margin:0 0 8px;">${t.title}</div>
 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
-<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
+<p style="margin:0;font-size:16px;line-height:2;color:#555555;">${t.body}</p>
 ${supplierIdBlock}
-<div style="text-align:center;margin-top:28px"><a href="https://maabar.io/login/supplier" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
+<div style="text-align:center;margin-top:28px"><a href="https://maabar.io/login/supplier" style="display:inline-block;background:#2C2C2C;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
 `, { lang }),
     });
   },
@@ -278,9 +278,9 @@ ${supplierIdBlock}
     return ({
       subject: t.subject,
       html: wrap(`
-<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#1a1a1a;margin:0 0 8px;">${t.title}</div>
 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
-<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
+<p style="margin:0;font-size:16px;line-height:2;color:#555555;">${t.body}</p>
 `, { lang }),
     });
   },
@@ -320,10 +320,10 @@ ${supplierIdBlock}
     return ({
       subject: t.subject,
       html: wrap(`
-<div style="font-size:24px;font-weight:800;line-height:1.5;color:#f5f5f2;margin:0 0 8px;">${t.title}</div>
+<div style="font-size:24px;font-weight:800;line-height:1.5;color:#1a1a1a;margin:0 0 8px;">${t.title}</div>
 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.42);margin:0 0 22px;">${t.eyebrow}</div>
-<p style="margin:0;font-size:16px;line-height:2;color:#ececef;">${t.body}</p>
-<div style="text-align:center;margin-top:28px"><a href="https://maabar.io/dashboard" style="display:inline-block;background:#f5f5f2;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
+<p style="margin:0;font-size:16px;line-height:2;color:#555555;">${t.body}</p>
+<div style="text-align:center;margin-top:28px"><a href="https://maabar.io/dashboard" style="display:inline-block;background:#2C2C2C;color:#0a0a0b;text-decoration:none;padding:16px 28px;border-radius:10px;font-size:16px;font-weight:800">${t.cta}</a></div>
 `, { lang }),
     });
   },
@@ -334,7 +334,7 @@ ${supplierIdBlock}
 <div class="bd">
 <p class="gr">أهلاً ${d.name || ''}،</p>
 <p class="tg">Offer Accepted</p>
-<p style="font-size:15px;color:#ececef">تم قبول عرضك على طلب <strong>${d.requestTitle || ''}</strong>. انتقل للوحة التحكم لمتابعة الطلب وانتظار الدفع.</p>
+<p style="font-size:15px;color:#555555">تم قبول عرضك على طلب <strong>${d.requestTitle || ''}</strong>. انتقل للوحة التحكم لمتابعة الطلب وانتظار الدفع.</p>
 <div class="bw"><a href="https://maabar.io/dashboard" class="bt">عرض الطلب ←</a></div>
 </div>`),
   }),
@@ -345,7 +345,7 @@ ${supplierIdBlock}
 <div class="bd">
 <p class="gr">أهلاً ${d.name || ''}،</p>
 <p class="tg">Offer Not Selected</p>
-<p style="font-size:15px;color:#ececef">نشكرك على مشاركتك. للأسف تم اختيار عرض آخر على طلب <strong>${d.requestTitle || ''}</strong>. استمر في تقديم عروضك على الطلبات الجديدة.</p>
+<p style="font-size:15px;color:#555555">نشكرك على مشاركتك. للأسف تم اختيار عرض آخر على طلب <strong>${d.requestTitle || ''}</strong>. استمر في تقديم عروضك على الطلبات الجديدة.</p>
 <div class="bw"><a href="https://maabar.io/dashboard" class="bt">تصفح الطلبات ←</a></div>
 </div>`),
   }),
@@ -361,7 +361,7 @@ ${supplierIdBlock}
 <div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
 <div class="ir"><span class="ik">المبلغ</span><span class="iv">${d.amount || '-'} SAR</span></div>
 </div>
-<p style="font-size:15px;color:#ececef;margin-top:16px">ابدأ التجهيز الآن وأضف رقم التتبع عند الشحن.</p>
+<p style="font-size:15px;color:#555555;margin-top:16px">ابدأ التجهيز الآن وأضف رقم التتبع عند الشحن.</p>
 <div class="bw"><a href="https://maabar.io/dashboard" class="bt">متابعة الطلب ←</a></div>
 </div>`),
   }),
@@ -392,7 +392,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="bd">
 <p class="gr">رسالة جديدة</p>
 <p class="tg">New Message</p>
-<p style="font-size:15px;color:#ececef">لديك رسالة جديدة من <strong>${d.senderName || '-'}</strong> على منصة مَعبر.</p>
+<p style="font-size:15px;color:#555555">لديك رسالة جديدة من <strong>${d.senderName || '-'}</strong> على منصة مَعبر.</p>
 <div class="ib">
 <div class="ir"><span class="ik">المرسل</span><span class="iv">${d.senderName || '-'}</span></div>
 <div class="ir"><span class="ik">المعاينة</span><span class="iv">${d.preview || '-'}</span></div>
@@ -412,7 +412,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="ir"><span class="ik">الكمية</span><span class="iv">${d.quantity || '-'}</span></div>
 <div class="ir"><span class="ik">الإجمالي التقريبي</span><span class="iv">${d.totalPrice || '-'} SAR</span></div>
 </div>
-<p style="font-size:15px;color:#ececef">قام تاجر بطلب عينة من منتجك. راجع الطلب من لوحة المورد.</p>
+<p style="font-size:15px;color:#555555">قام تاجر بطلب عينة من منتجك. راجع الطلب من لوحة المورد.</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">مراجعة الطلب ←</a></div>
 </div>`),
   }),
@@ -427,7 +427,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
 <div class="ir"><span class="ik">الإجمالي</span><span class="iv">${d.totalPrice || '-'} SAR</span></div>
 </div>
-<p style="font-size:15px;color:#ececef">وافق المورد على طلب العينة. يمكنك الآن متابعة التفاصيل مع المورد داخل المحادثة.</p>
+<p style="font-size:15px;color:#555555">وافق المورد على طلب العينة. يمكنك الآن متابعة التفاصيل مع المورد داخل المحادثة.</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">عرض طلبات العينات ←</a></div>
 </div>`),
   }),
@@ -441,7 +441,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="ib">
 <div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
 </div>
-<p style="font-size:15px;color:#ececef">قام المورد برفض طلب العينة. يمكنك التواصل معه داخل مَعبر لمعرفة البدائل.</p>
+<p style="font-size:15px;color:#555555">قام المورد برفض طلب العينة. يمكنك التواصل معه داخل مَعبر لمعرفة البدائل.</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">عرض طلبات العينات ←</a></div>
 </div>`),
   }),
@@ -457,7 +457,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
 <div class="ir"><span class="ik">المبلغ المدفوع</span><span class="iv">${d.amount || '-'} SAR</span></div>
 </div>
-<p style="font-size:15px;color:#ececef;margin-top:16px">تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.</p>
+<p style="font-size:15px;color:#555555;margin-top:16px">تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">متابعة الطلب ←</a></div>
 </div>`),
   }),
@@ -468,7 +468,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="bd">
 <p class="gr">أهلاً ${d.name || ''}،</p>
 <p class="tg">Application Status</p>
-<p style="font-size:15px;color:#ececef">نشكرك على اهتمامك بالانضمام لمنصة مَعبر. للأسف، لم نتمكن من قبول طلبك في الوقت الحالي. للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style="color:#555">hello@maabar.io</a></p>
+<p style="font-size:15px;color:#555555">نشكرك على اهتمامك بالانضمام لمنصة مَعبر. للأسف، لم نتمكن من قبول طلبك في الوقت الحالي. للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style="color:#555">hello@maabar.io</a></p>
 </div>`),
   }),
   shipment_tracking: (d) => ({
@@ -491,7 +491,7 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 <div class="bd">
 <p class="gr">أهلاً ${d.name || ''}،</p>
 <p class="tg">Payout Initiated</p>
-<p style="font-size:15px;color:#ececef">أكّد التاجر استلام الشحنة. سيتم تحويل مبلغك خلال <strong>24 ساعة</strong> عبر طريقة الدفع المسجلة.</p>
+<p style="font-size:15px;color:#555555">أكّد التاجر استلام الشحنة. سيتم تحويل مبلغك خلال <strong>24 ساعة</strong> عبر طريقة الدفع المسجلة.</p>
 <div class="ib">
 <div class="ir"><span class="ik">المبلغ</span><span class="iv">${d.amount || '-'} SAR</span></div>
 </div>
