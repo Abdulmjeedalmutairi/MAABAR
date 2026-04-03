@@ -107,7 +107,7 @@ function wrap(content, options = {}) {
 
 <!-- CONTENT -->
 <tr>
-<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:15px;color:#000000;line-height:1.7;">
+<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:15px;color:#ffffff;line-height:1.7;">
 ${rendered}
 </td>
 </tr>
