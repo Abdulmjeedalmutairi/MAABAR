@@ -59,6 +59,8 @@ function buildHtml(body, options = {}) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
 <title>${subject}</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f5f5f5;">
@@ -67,7 +69,6 @@ function buildHtml(body, options = {}) {
 <td align="center" style="padding:40px 20px;">
 <table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;">
 
-<!-- Header -->
 <tr>
 <td bgcolor="#2C2C2C" style="padding:32px 40px;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -87,24 +88,20 @@ function buildHtml(body, options = {}) {
 </td>
 </tr>
 
-<!-- Divider -->
 <tr>
 <td bgcolor="#e8e6e3" style="height:1px; font-size:1px; line-height:1px;">&nbsp;</td>
 </tr>
 
-<!-- Body -->
 <tr>
 <td bgcolor="#ffffff" style="padding:48px 40px; direction:${dir}; text-align:${align};">
 ${body}
 </td>
 </tr>
 
-<!-- Footer line -->
 <tr>
 <td bgcolor="#e8e6e3" style="height:1px; font-size:1px; line-height:1px;">&nbsp;</td>
 </tr>
 
-<!-- Footer -->
 <tr>
 <td bgcolor="#f7f5f2" style="padding:24px 40px;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -129,14 +126,12 @@ ${body}
 </html>`;
 }
 
-// wrap() = alias for backward compat with all templates
 function wrap(content, options = {}) {
   const lang = options.lang || 'ar';
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   const align = lang === 'ar' ? 'right' : 'left';
 
-  // Convert old CSS classes to inline styles
-  const grStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:2px;color:#999999;text-transform:uppercase;margin:0 0 20px;';
+  const grStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:3px;color:#999999;text-transform:uppercase;margin:0 0 20px;';
   const tgStyle = 'font-family:Georgia,serif;font-size:26px;font-weight:400;color:#1a1a1a;margin:0 0 20px;line-height:1.3;';
   const ibStyle = 'background-color:#f7f5f2;padding:24px 28px;margin:0 0 28px;';
   const ilStyle = 'font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;font-weight:700;margin:0 0 14px;';
@@ -145,7 +140,6 @@ function wrap(content, options = {}) {
   const ivStyle = 'display:inline-block;color:#333333;';
   const bwStyle = `margin-top:28px;text-align:${align};`;
   const btStyle = 'display:inline-block;background-color:#2C2C2C;padding:16px 36px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;';
-  const pStyle = 'margin:0 0 24px;font-family:Arial,sans-serif;font-size:15px;color:#555555;line-height:1.7;';
 
   const rendered = content
     .replace(/<div class="bd">/g, `<div style="direction:${dir};text-align:${align};">`)
@@ -158,7 +152,11 @@ function wrap(content, options = {}) {
     .replace(/<span class="iv">/g, `<span style="${ivStyle}">`)
     .replace(/<div class="bw">/g, `<div style="${bwStyle}">`)
     .replace(/class="bt"/g, `style="${btStyle}"`)
-    .replace(/<p style="font-size:15px;color:#555555/g, `<p style="font-size:15px;color:#555555`);
+    .replace(/color:#ececef/g, 'color:#555555')
+    .replace(/color:#f5f5f2;/g, 'color:#1a1a1a;')
+    .replace(/background:#f5f5f2/g, 'background:#2C2C2C')
+    .replace(/color:#0a0a0b/g, 'color:#ffffff')
+    .replace(/background-color:#F5F2FF/g, 'background-color:#2C2C2C');
 
   return buildHtml(rendered, options);
 }
