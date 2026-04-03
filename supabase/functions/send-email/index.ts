@@ -92,11 +92,11 @@ function wrap(content, options = {}) {
 <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
 <tr>
 <td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">MAABAR</td>
-<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#cccccc;padding:0 10px;">|</td>
-<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">مَعبر</td>
+<td style="font-family:Georgia,serif;font-size:22px;color:#888888;padding:0 14px;">|</td>
+<td style="font-family:Georgia,serif;font-size:22px;font-weight:400;color:#ffffff;white-space:nowrap;">مَعبر</td>
 </tr>
 <tr>
-<td colspan="3" style="font-family:Georgia,serif;font-size:15px;color:#cccccc;text-align:center;padding-top:5px;">迈巴尔</td>
+<td colspan="3" style="font-family:Georgia,serif;font-size:14px;color:#888888;text-align:center;padding-top:8px;letter-spacing:2px;">迈巴尔</td>
 </tr>
 </table>
 </td>
@@ -107,7 +107,7 @@ function wrap(content, options = {}) {
 
 <!-- CONTENT -->
 <tr>
-<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:15px;color:#ffffff;line-height:1.7;">
+<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:15px;color:#333333;line-height:1.7;">
 ${rendered}
 </td>
 </tr>
