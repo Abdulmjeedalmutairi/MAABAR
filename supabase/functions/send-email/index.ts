@@ -88,7 +88,7 @@ function wrap(content, options = {}) {
 
 <!-- HEADER -->
 <tr>
-<td bgcolor="#2C2C2C" style="padding:28px 40px;text-align:center;">
+<td bgcolor="#2C2C2C" style="padding:28px 40px;text-align:center;background-color:#2C2C2C !important;">
 <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
 <tr>
 <td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">MAABAR</td>
