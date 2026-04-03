@@ -48,30 +48,11 @@ function localeMeta(lang = 'ar') {
   return { lang: 'ar', dir: 'rtl', align: 'right', font: `Tahoma, Arial, sans-serif` };
 }
 
-function wrap(content, options = {}) {
-  const locale = localeMeta(options.lang || 'ar');
+function buildHtml(body, options = {}) {
+  const lang = options.lang || 'ar';
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const align = lang === 'ar' ? 'right' : 'left';
   const subject = options.subject || 'مَعبر';
-  const grStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:1.5px;color:#777777;margin:0 0 10px;text-transform:uppercase;';
-  const tgStyle = 'font-family:Georgia,serif;font-size:22px;line-height:1.5;font-weight:bold;color:#1a1a1a;margin:0 0 16px;';
-  const ibStyle = 'background-color:#f7f5f2;padding:16px 18px;margin:0 0 20px;';
-  const ilStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:1.5px;color:#777777;margin:0 0 10px;text-transform:uppercase;';
-  const irStyle = 'padding:6px 0;border-bottom:1px solid #e8e6e3;font-family:Arial,sans-serif;';
-  const ikStyle = 'display:inline-block;min-width:120px;font-size:13px;color:#777777;vertical-align:top;';
-  const ivStyle = 'display:inline-block;font-size:13px;color:#333333;vertical-align:top;';
-  const bwStyle = `margin-top:24px;text-align:${locale.align};`;
-  const btStyle = 'display:inline-block;background-color:#2C2C2C;padding:16px 36px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;';
-
-  const rendered = content
-    .replace(/<div class="bd">/g, `<div style="direction:${locale.dir};text-align:${locale.align};">`)
-    .replace(/<p class="gr">/g, `<p style="${grStyle}">`)
-    .replace(/<p class="tg">/g, `<p style="${tgStyle}">`)
-    .replace(/<div class="ib">/g, `<div style="${ibStyle}">`)
-    .replace(/<p class="il">/g, `<p style="${ilStyle}">`)
-    .replace(/<div class="ir">/g, `<div style="${irStyle}">`)
-    .replace(/<span class="ik">/g, `<span style="${ikStyle}">`)
-    .replace(/<span class="iv">/g, `<span style="${ivStyle}">`)
-    .replace(/<div class="bw">/g, `<div style="${bwStyle}">`)
-    .replace(/class="bt"/g, `style="${btStyle}"`);
 
   return `<!DOCTYPE html>
 <html>
@@ -94,12 +75,12 @@ function wrap(content, options = {}) {
 <td>
 <span style="color:#ffffff; font-family:Georgia, serif; font-size:20px; letter-spacing:4px; font-weight:400;">MAABAR</span>
 <span style="color:#888888; font-family:Georgia, serif; font-size:20px; letter-spacing:2px; margin:0 12px;">|</span>
-<span style="color:#ffffff; font-family:Georgia, serif; font-size:20px;">مَعبر</span>
+<span style="color:#ffffff; font-family:Georgia, serif; font-size:20px;">&#1605;&#1614;&#1593;&#1576;&#1585;</span>
 </td>
 </tr>
 <tr>
-<td style="padding-top:8px;">
-<span style="font-family:Georgia, serif; font-size:13px; color:#888888; letter-spacing:2px;">迈巴尔</span>
+<td style="padding-top:6px;">
+<span style="font-family:Georgia, serif; font-size:13px; color:#888888; letter-spacing:2px;">&#36855;&#24052;&#23572;</span>
 </td>
 </tr>
 </table>
@@ -113,8 +94,8 @@ function wrap(content, options = {}) {
 
 <!-- Body -->
 <tr>
-<td bgcolor="#ffffff" style="padding:48px 40px; direction:${locale.dir}; text-align:${locale.align};">
-${rendered}
+<td bgcolor="#ffffff" style="padding:48px 40px; direction:${dir}; text-align:${align};">
+${body}
 </td>
 </tr>
 
@@ -133,7 +114,7 @@ ${rendered}
 &nbsp;&nbsp;·&nbsp;&nbsp;
 <a href="mailto:info@maabar.io" style="color:#888888; text-decoration:none;">info@maabar.io</a>
 <br>
-© 2026 مَعبر · Riyadh, Saudi Arabia
+&#169; 2026 &#1605;&#1614;&#1593;&#1576;&#1585; &middot; Riyadh, Saudi Arabia
 </td>
 </tr>
 </table>
@@ -146,6 +127,40 @@ ${rendered}
 </table>
 </body>
 </html>`;
+}
+
+// wrap() = alias for backward compat with all templates
+function wrap(content, options = {}) {
+  const lang = options.lang || 'ar';
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const align = lang === 'ar' ? 'right' : 'left';
+
+  // Convert old CSS classes to inline styles
+  const grStyle = 'font-family:Arial,sans-serif;font-size:11px;letter-spacing:2px;color:#999999;text-transform:uppercase;margin:0 0 20px;';
+  const tgStyle = 'font-family:Georgia,serif;font-size:26px;font-weight:400;color:#1a1a1a;margin:0 0 20px;line-height:1.3;';
+  const ibStyle = 'background-color:#f7f5f2;padding:24px 28px;margin:0 0 28px;';
+  const ilStyle = 'font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;font-weight:700;margin:0 0 14px;';
+  const irStyle = 'padding:8px 0;font-family:Arial,sans-serif;font-size:13px;color:#444444;';
+  const ikStyle = 'display:inline-block;min-width:140px;color:#777777;';
+  const ivStyle = 'display:inline-block;color:#333333;';
+  const bwStyle = `margin-top:28px;text-align:${align};`;
+  const btStyle = 'display:inline-block;background-color:#2C2C2C;padding:16px 36px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;';
+  const pStyle = 'margin:0 0 24px;font-family:Arial,sans-serif;font-size:15px;color:#555555;line-height:1.7;';
+
+  const rendered = content
+    .replace(/<div class="bd">/g, `<div style="direction:${dir};text-align:${align};">`)
+    .replace(/<p class="gr">/g, `<p style="${grStyle}">`)
+    .replace(/<p class="tg">/g, `<p style="${tgStyle}">`)
+    .replace(/<div class="ib">/g, `<div style="${ibStyle}">`)
+    .replace(/<p class="il">/g, `<p style="${ilStyle}">`)
+    .replace(/<div class="ir">/g, `<div style="${irStyle}">`)
+    .replace(/<span class="ik">/g, `<span style="${ikStyle}">`)
+    .replace(/<span class="iv">/g, `<span style="${ivStyle}">`)
+    .replace(/<div class="bw">/g, `<div style="${bwStyle}">`)
+    .replace(/class="bt"/g, `style="${btStyle}"`)
+    .replace(/<p style="font-size:15px;color:#ececef/g, `<p style="font-size:15px;color:#555555`);
+
+  return buildHtml(rendered, options);
 }
 
 
