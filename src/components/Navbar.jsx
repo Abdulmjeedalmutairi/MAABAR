@@ -18,13 +18,15 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const isSupplier = profile?.role === 'supplier';
   const supplierState = isSupplier ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRoute = isSupplier ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
-  const supplierDashboardLabel = supplierState?.canAccessOperationalFeatures
+  const supplierDashboardLabel = !isSupplier
     ? (isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard')
-    : supplierState?.isUnderReviewStage
-      ? (isAr ? 'حالة الطلب' : lang === 'zh' ? '审核状态' : 'Application Status')
-      : supplierState?.isInactiveStage
-        ? (isAr ? 'الحساب' : lang === 'zh' ? '账户' : 'Account')
-        : (isAr ? 'طلب الانضمام' : lang === 'zh' ? '申请资料' : 'Application');
+    : supplierState?.canAccessOperationalFeatures
+      ? (isAr ? 'لوحتي' : lang === 'zh' ? '控制台' : 'Dashboard')
+      : supplierState?.isUnderReviewStage
+        ? (isAr ? 'حالة الطلب' : lang === 'zh' ? '审核状态' : 'Application Status')
+        : supplierState?.isInactiveStage
+          ? (isAr ? 'الحساب' : lang === 'zh' ? '账户' : 'Account')
+          : (isAr ? 'لوحة المورد' : lang === 'zh' ? '供应商控制台' : 'Supplier Dashboard');
   const currentRoute = `${location.pathname}${location.search}`;
   const isNavLinkActive = (path) => (path.includes('?') ? currentRoute === path : location.pathname === path);
 
@@ -100,9 +102,11 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const handleNotifClick = (n) => {
     setNotifOpen(false);
     if (n.type === 'new_message') nav(`/chat/${n.ref_id}`);
-    else if (n.type === 'account_approved' || n.type === 'account_rejected') nav('/dashboard');
-    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'payment_received', 'ready_to_ship', 'shipped', 'delivery_confirmed', 'request_deleted'].includes(n.type)) nav('/dashboard?tab=requests');
+    else if (['account_approved', 'account_rejected'].includes(n.type)) nav('/dashboard');
+    else if (['account_more_info_required', 'verification_submitted'].includes(n.type)) nav('/dashboard?tab=verification');
+    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'offer_cancelled', 'payment_received', 'ready_to_ship', 'shipped', 'delivery_confirmed', 'request_deleted'].includes(n.type)) nav('/dashboard?tab=requests');
     else if (['new_sample', 'sample_approved', 'sample_rejected'].includes(n.type)) nav('/dashboard?tab=samples');
+    else if (['product_inquiry', 'product_inquiry_reply'].includes(n.type)) nav('/dashboard?tab=product-inquiries');
     else nav('/dashboard');
   };
 
@@ -121,6 +125,9 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   };
 
   /* ─── Nav links ───────────────────────────── */
+  const isSupplierRegistrationPage = location.pathname.includes('/register/supplier') || 
+                                     location.pathname.includes('/login/supplier');
+  
   const links = isSupplier
     ? [
         { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
@@ -130,13 +137,19 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
         { label: supplierDashboardLabel, path: supplierPrimaryRoute },
         { label: isAr ? 'عن مَعبر' : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
       ]
-    : [
-        { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
-        { label: isAr ? 'المنتجات'  : lang === 'zh' ? '产品'  : 'Products',  path: '/products' },
-        { label: isAr ? 'الموردون'  : lang === 'zh' ? '供应商' : 'Suppliers', path: '/suppliers' },
-        { label: isAr ? 'عن مَعبر'  : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
-        { label: isAr ? 'تواصل'     : lang === 'zh' ? '联系'  : 'Contact',   path: '/contact' },
-      ];
+    : isSupplierRegistrationPage
+      ? [
+          { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
+          { label: isAr ? 'عن مَعبر'  : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
+          { label: isAr ? 'تواصل'     : lang === 'zh' ? '联系'  : 'Contact',   path: '/contact' },
+        ]
+      : [
+          { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
+          { label: isAr ? 'المنتجات'  : lang === 'zh' ? '产品'  : 'Products',  path: '/products' },
+          { label: isAr ? 'الموردون'  : lang === 'zh' ? '供应商' : 'Suppliers', path: '/suppliers' },
+          { label: isAr ? 'عن مَعبر'  : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
+          { label: isAr ? 'تواصل'     : lang === 'zh' ? '联系'  : 'Contact',   path: '/contact' },
+        ];
 
   /* ─── Bell SVG ────────────────────────────── */
   const BellIcon = () => (
@@ -145,6 +158,13 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
   );
+
+  const mobileQuickLinks = !isSupplier && !isSupplierRegistrationPage
+    ? [
+        { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', path: '/products' },
+        { label: isAr ? 'الموردون' : lang === 'zh' ? '供应商' : 'Suppliers', path: '/suppliers' },
+      ]
+    : [];
 
   return (
     <>
@@ -176,8 +196,22 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
         {/* Right side */}
         <div className="nav-right">
 
+          {!!mobileQuickLinks.length && (
+            <div className="mobile-quick-links">
+              {mobileQuickLinks.map((item) => (
+                <button
+                  key={item.path}
+                  className={`nav-mobile-link${isNavLinkActive(item.path) ? ' active' : ''}`}
+                  onClick={() => nav(item.path)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Lang switcher */}
-          <div className="lang-switcher">
+          <div className="lang-switcher nav-mobile-hide">
             {['ar', 'en', 'zh'].map(l => (
               <button
                 key={l}
@@ -270,19 +304,19 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                 )}
               </div>
 
-              <button className="nav-cta" onClick={() => nav(supplierPrimaryRoute)}>
+              <button className="nav-cta nav-mobile-hide" onClick={() => nav(supplierPrimaryRoute)}>
                 {supplierDashboardLabel}
               </button>
-              <button className="nav-logout" onClick={doSignOut}>
+              <button className="nav-logout nav-mobile-hide" onClick={doSignOut}>
                 {isAr ? 'خروج' : lang === 'zh' ? '退出' : 'Logout'}
               </button>
             </>
           ) : (
             <>
-              <button className="nav-supplier-btn" onClick={() => nav('/login/supplier?mode=signup')}>
+              <button className="nav-supplier-btn nav-mobile-hide" onClick={() => nav('/login/supplier')}>
                 {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
               </button>
-              <button className="nav-cta" onClick={() => nav('/login/buyer')}>
+              <button className="nav-cta nav-mobile-hide" onClick={() => nav('/login/buyer')}>
                 {isAr ? 'دخول / تسجيل' : lang === 'zh' ? '登录' : 'Login'}
               </button>
             </>
@@ -304,6 +338,18 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       ══════════════════════════════════════ */}
       {menuOpen && (
         <div className="mobile-menu open">
+          <div className="mobile-menu-lang">
+            {['ar', 'en', 'zh'].map((l) => (
+              <button
+                key={l}
+                className={`lang-btn${lang === l ? ' active' : ''}`}
+                onClick={() => setLang(l)}
+              >
+                {l === 'ar' ? 'AR' : l === 'en' ? 'EN' : '中'}
+              </button>
+            ))}
+          </div>
+
           {links.map((l, i) => (
             <button key={i} className="mobile-menu-item"
               style={{
@@ -337,7 +383,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
                   {isAr ? 'دخول / تسجيل' : lang === 'zh' ? '登录' : 'Login'}
                 </button>
                 <button className="btn-outline"
-                  onClick={() => { nav('/login/supplier?mode=signup'); setMenuOpen(false); }}
+                  onClick={() => { nav('/login/supplier'); setMenuOpen(false); }}
                   style={{ flex: 1, textAlign: 'center' }}>
                   {isAr ? 'بوابة الموردين' : lang === 'zh' ? '供应商入口' : 'Supplier Portal'}
                 </button>

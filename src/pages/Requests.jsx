@@ -1,17 +1,110 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
+import IdeaToProduct from '../components/IdeaToProduct';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
   getOfferShippingCost,
 } from '../lib/offerPricing';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import { buildManagedBriefRow, generateManagedBriefWithAI } from '../lib/managedSourcing';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co';
+
+// Function لتحويل العملة بناءً على اللغة
+const getCurrencyForLang = (lang) => {
+  switch (lang) {
+    case 'ar': return { code: 'SAR', symbol: '﷼', name: 'ريال سعودي' };
+    case 'zh': return { code: 'CNY', symbol: '¥', name: '人民币' };
+    default: return { code: 'USD', symbol: '$', name: 'US Dollar' };
+  }
+};
+
+// Function لعرض العملة المناسبة
+const formatCurrency = (amount, lang, includeSymbol = true) => {
+  const currency = getCurrencyForLang(lang);
+  if (lang === 'zh') {
+    // للمورد الصيني: نعرض CNY (人民币)
+    return includeSymbol ? `${amount.toFixed(2)} ${currency.symbol}` : `${amount.toFixed(2)} ${currency.code}`;
+  } else if (lang === 'ar') {
+    // للمورد العربي: نعرض SAR
+    return includeSymbol ? `${amount.toFixed(2)} ${currency.symbol}` : `${amount.toFixed(2)} ${currency.code}`;
+  } else {
+    // للباقي: USD
+    return includeSymbol ? `${currency.symbol}${amount.toFixed(2)}` : `${amount.toFixed(2)} ${currency.code}`;
+  }
+};
+
+// أسعار الصرف الثابتة (تتغير أسبوعياً يدوياً)
+const EXCHANGE_RATES = {
+  SAR_TO_USD: 0.27,    // 1 SAR = 0.27 USD
+  SAR_TO_CNY: 1.93,    // 1 SAR = 1.93 CNY
+  USD_TO_SAR: 3.70,    // 1 USD = 3.70 SAR (للتحويل العكسي)
+  CNY_TO_SAR: 0.52,    // 1 CNY = 0.52 SAR (للتحويل العكسي)
+};
+
+// تحويل العملة بناءً على اللغة
+const convertCurrency = (amountSAR, targetLang) => {
+  if (targetLang === 'ar') return amountSAR; // SAR → SAR
+  if (targetLang === 'zh') return amountSAR * EXCHANGE_RATES.SAR_TO_CNY; // SAR → CNY
+  return amountSAR * EXCHANGE_RATES.SAR_TO_USD; // SAR → USD
+};
+
+// عرض مزدوج مع التحويل
+const formatCurrencyWithConversion = (amountSAR, lang) => {
+  if (lang === 'ar') {
+    return `${amountSAR.toFixed(2)} SAR`;
+  }
+  
+  const converted = convertCurrency(amountSAR, lang);
+  const currency = getCurrencyForLang(lang);
+  
+  if (lang === 'zh') {
+    return `${converted.toFixed(2)} ${currency.code} (≈ ${amountSAR.toFixed(2)} SAR)`;
+  } else {
+    return `${currency.symbol}${converted.toFixed(2)} (≈ ${amountSAR.toFixed(2)} SAR)`;
+  }
+};
+
+// Function لترجمة عناوين الطلبات
+const translateRequestText = async (text, sourceLang, targetLang) => {
+  if (!text || sourceLang === targetLang) return text;
+  
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/maabar-ai`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        task: 'chat_translation',
+        payload: {
+          text,
+          sourceLanguage: sourceLang,
+          targetLanguage: targetLang,
+          conversationRole: 'product_request',
+        },
+      }),
+    });
+    
+    if (!response.ok) {
+      console.error('Request translation API error:', await response.text());
+      return text;
+    }
+    
+    const data = await response.json();
+    return data.translatedText || text;
+  } catch (error) {
+    console.error('Request translation error:', error);
+    return text;
+  }
+};
 
 // جلب سعر الصرف USD → SAR
 const getUsdToSar = async () => {
@@ -73,6 +166,7 @@ const SkeletonCard = () => (
 /* ─── Main ───────────────────────────────── */
 export default function Requests({ lang, user, profile }) {
   const nav = useNavigate();
+  const location = useLocation();
   const [requests, setRequests]   = useState([]);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState('');
@@ -82,13 +176,25 @@ export default function Requests({ lang, user, profile }) {
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
   const [usdRate, setUsdRate]     = useState(3.75);
   useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
-  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
+  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '', sourcing_mode: 'direct', response_deadline: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRef, setUploadingRef] = useState(false);
   const [showAllRequests, setShowAllRequests] = useState(true);
+  const [ideaOpen, setIdeaOpen] = useState(false);
+  const [expandedDetails, setExpandedDetails] = useState({}); // لتوسيع تفاصيل الطلب
+  const [translatedRequests, setTranslatedRequests] = useState({}); // ترجمة عناوين الطلبات
   const refImageRef = useRef(null);
-  const isAr       = lang === 'ar';
+  // تأكد من قيمة lang
+  const effectiveLang = lang || 'en';
+  const isAr       = effectiveLang === 'ar';
+  const isZh       = effectiveLang === 'zh';
   const isSupplier = profile?.role === 'supplier';
+  
+  // Debug: تحقق من اللغة
+  useEffect(() => {
+    console.log('Requests page - lang:', lang, 'isSupplier:', isSupplier, 'profile role:', profile?.role, 'isAr:', isAr, 'isZh:', isZh);
+  }, [lang, isSupplier, profile, isAr, isZh]);
+  const isManagedMode = String(newReq.sourcing_mode || 'direct').toLowerCase() === 'managed';
   const cats       = CATEGORIES[lang] || CATEGORIES.ar;
 
   // Load request draft from sessionStorage on mount (buyer)
@@ -100,6 +206,19 @@ export default function Requests({ lang, user, profile }) {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (isSupplier) return;
+    const params = new URLSearchParams(location.search);
+    const flow = params.get('flow');
+    const mode = String(params.get('mode') || '').toLowerCase();
+    if (['custom', 'private-label', 'idea'].includes(String(flow || '').toLowerCase())) {
+      setIdeaOpen(true);
+    }
+    if (mode === 'managed') {
+      setNewReq((prev) => ({ ...prev, sourcing_mode: 'managed' }));
+    }
+  }, [isSupplier, location.search]);
 
   // Save request form to sessionStorage on every change (buyer)
   useEffect(() => {
@@ -119,15 +238,64 @@ export default function Requests({ lang, user, profile }) {
     setLoading(true);
     let query = sb
       .from('requests')
-      .select('*,profiles(full_name,company_name)')
-      .eq('status', 'open')
+      .select('*')
+      .in('status', ['open', 'offers_received'])
+      .or('sourcing_mode.is.null,sourcing_mode.eq.direct')
       .order('created_at', { ascending: false });
     // Filter by supplier's speciality unless "show all" toggled
     if (!showAllRequests && profile?.speciality) {
       query = query.eq('category', profile.speciality);
     }
-    const { data } = await query;
-    if (data) setRequests(data);
+    const { data, error } = await query;
+    if (error) {
+      console.error('loadRequests error:', error);
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+    if (data) {
+      setRequests(data);
+      
+      // نترجم عناوين الطلبات إذا لغة المورد مو عربية
+      if (isSupplier && lang !== 'ar' && data.length > 0) {
+        console.log('Starting translation for', data.length, 'requests, lang:', lang);
+        const translations = {};
+        for (const request of data) {
+          if (request.title_ar || request.description) {
+            const titleToTranslate = request.title_ar || request.title_en || '';
+            const descToTranslate = request.description || '';
+            
+            if (titleToTranslate) {
+              console.log('Translating title for request', request.id, ':', titleToTranslate.substring(0, 50));
+              const translatedTitle = await translateRequestText(
+                titleToTranslate,
+                'ar', // نفترض العناوين بالعربية
+                lang
+              );
+              console.log('Translated title:', translatedTitle.substring(0, 50));
+              translations[request.id] = {
+                ...translations[request.id],
+                title: translatedTitle
+              };
+            }
+            
+            if (descToTranslate) {
+              const translatedDesc = await translateRequestText(
+                descToTranslate,
+                'ar', // نفترض الوصف بالعربية
+                lang
+              );
+              translations[request.id] = {
+                ...translations[request.id],
+                description: translatedDesc
+              };
+            }
+          }
+        }
+        console.log('Translation complete, setting', Object.keys(translations).length, 'translations');
+        setTranslatedRequests(translations);
+      }
+    }
     setLoading(false);
   };
 
@@ -144,32 +312,80 @@ export default function Requests({ lang, user, profile }) {
 
   const submitNewRequest = async () => {
     if (!user) { nav('/login/buyer'); return; }
-    if (!newReq.title_ar || !newReq.quantity || !newReq.payment_plan || !newReq.sample_requirement) {
-      alert(isAr ? 'يرجى تعبئة الحقول المطلوبة' : lang === 'zh' ? '请填写必填字段' : 'Fill required fields');
+
+    const titleAr = String(newReq.title_ar || '').trim();
+    const titleEn = String(newReq.title_en || '').trim();
+    const fallbackTitle = titleAr || titleEn;
+    const quantity = String(newReq.quantity || '').trim();
+    const isManagedMode = String(newReq.sourcing_mode || 'direct').toLowerCase() === 'managed';
+
+    if (!fallbackTitle || !quantity || !newReq.payment_plan || !newReq.sample_requirement) {
+      alert(isAr ? 'يرجى تعبئة اسم المنتج والكمية وخطة الدفع ومتطلبات العينة' : lang === 'zh' ? '请填写产品名称、数量、付款方案和样品要求' : 'Add product name, quantity, payment plan, and sample requirement');
       return;
     }
+
     setSubmitting(true);
-    console.log('Sending request:', JSON.stringify(newReq));
-    const { error } = await sb.from('requests').insert({
+    const payload = {
       buyer_id: user.id,
-      title_ar: newReq.title_ar,
-      title_en: newReq.title_en || newReq.title_ar,
-      title_zh: newReq.title_ar,
-      quantity: newReq.quantity,
-      description: newReq.description,
+      title_ar: titleAr || fallbackTitle,
+      title_en: titleEn || fallbackTitle,
+      title_zh: titleEn || titleAr || fallbackTitle,
+      quantity,
+      description: String(newReq.description || '').trim(),
       category: newReq.category || 'other',
       status: 'open',
       budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
-      payment_plan: newReq.payment_plan ? parseInt(newReq.payment_plan) : null,
+      payment_plan: newReq.payment_plan ? parseInt(newReq.payment_plan, 10) : null,
       sample_requirement: newReq.sample_requirement,
       reference_image: newReq.reference_image || newReq.image_url || null,
+      sourcing_mode: isManagedMode ? 'managed' : 'direct',
+      managed_status: isManagedMode ? 'submitted' : null,
+      managed_review_state: isManagedMode ? 'pending' : null,
+      response_deadline: newReq.response_deadline || null,
+    };
+
+    const { data: insertedRequest, error } = await runWithOptionalColumns({
+      table: 'requests',
+      payload,
+      optionalKeys: ['sourcing_mode', 'managed_status', 'managed_review_state', 'response_deadline'],
+      execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('*').single(),
     });
-    console.log('Supabase error:', JSON.stringify(error));
+
+    if (!error && isManagedMode && insertedRequest?.id) {
+      try {
+        const brief = await generateManagedBriefWithAI({ request: payload, lang });
+        await sb.from('managed_request_briefs').upsert(buildManagedBriefRow({ requestId: insertedRequest.id, buyerId: user.id, brief }), { onConflict: 'request_id' });
+        await runWithOptionalColumns({
+          table: 'requests',
+          payload: {
+            managed_status: 'admin_review',
+            managed_priority: brief.priority || 'normal',
+            managed_ai_ready_at: new Date().toISOString(),
+          },
+          optionalKeys: ['managed_status', 'managed_priority', 'managed_ai_ready_at'],
+          execute: (nextPayload) => sb.from('requests').update(nextPayload).eq('id', insertedRequest.id),
+        });
+      } catch (managedError) {
+        console.error('managed request setup error:', managedError);
+      }
+    }
+
     setSubmitting(false);
-    if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
-    alert(isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : 'Request posted! Suppliers will contact you soon');
+    if (error) {
+      alert(isAr ? 'حدث خطأ أثناء رفع الطلب' : lang === 'zh' ? '提交需求时出错' : 'Something went wrong while posting the request');
+      return;
+    }
+
+    alert(
+      isManagedMode
+        ? (isAr ? 'تم استلام طلبك المُدار. معبر سيجهّز الـ brief ويبدأ المراجعة ثم يعرض لك أفضل 3 خيارات داخل صفحة الطلب.' : lang === 'zh' ? '您的托管需求已收到。Maabar 会先整理 brief 并开始审核，然后在同一需求页展示最佳 3 个方案。' : 'Your managed request was received. Maabar will prepare the brief, start review, then show the top 3 options inside the same request page.')
+        : (isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : lang === 'zh' ? '需求已发布，供应商会尽快联系您' : 'Request posted! Suppliers will contact you soon')
+    );
     sessionStorage.removeItem('maabar_request_draft');
-    setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '' });
+    setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '', reference_image: '', sourcing_mode: 'direct', response_deadline: '' });
+    if (isManagedMode && insertedRequest?.id) {
+      nav('/dashboard?tab=requests&request=' + insertedRequest.id);
+    }
   };
 
   const toggleOfferForm = (id) => {
@@ -186,6 +402,11 @@ export default function Requests({ lang, user, profile }) {
         note: '',
       },
     }));
+  };
+
+  const toggleDetails = (id) => {
+    console.log('toggleDetails called for id:', id, 'current:', expandedDetails[id]);
+    setExpandedDetails(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const submitOffer = async (requestId, buyerId) => {
@@ -228,7 +449,7 @@ export default function Requests({ lang, user, profile }) {
           note: note || null,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
@@ -284,9 +505,9 @@ export default function Requests({ lang, user, profile }) {
   const fmtDate = (d) => {
     if (!d) return '';
     const diff = Math.floor((Date.now() - new Date(d)) / 1000);
-    if (diff < 3600)  return isAr ? Math.floor(diff / 60) + ' دقيقة'  : Math.floor(diff / 60) + 'm ago';
-    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' ساعة' : Math.floor(diff / 3600) + 'h ago';
-    return isAr ? Math.floor(diff / 86400) + ' يوم' : Math.floor(diff / 86400) + 'd ago';
+    if (diff < 3600)  return isAr ? Math.floor(diff / 60) + ' دقيقة'  : lang === 'zh' ? Math.floor(diff / 60) + ' 分钟前' : Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' ساعة' : lang === 'zh' ? Math.floor(diff / 3600) + ' 小时前' : Math.floor(diff / 3600) + 'h ago';
+    return isAr ? Math.floor(diff / 86400) + ' يوم' : lang === 'zh' ? Math.floor(diff / 86400) + ' 天前' : Math.floor(diff / 86400) + 'd ago';
   };
 
   return (
@@ -303,7 +524,7 @@ export default function Requests({ lang, user, profile }) {
           <p className={`page-sub${isAr ? ' ar' : ''}`}>
             {isSupplier
               ? (isAr ? 'قدّم عرضاً احترافياً وواضحاً على الطلبات المفتوحة' : lang === 'zh' ? '针对开放需求提交更专业、更清晰的报价' : 'Submit a cleaner, more professional quote on open requests')
-              : (isAr ? 'اكتب طلبك وموردون صينيون يتنافسون لك' : 'Post your request and suppliers compete for you')}
+              : (isAr ? 'اكتب طلبك وموردون صينيون يتنافسون لك' : lang === 'zh' ? '发布您的需求，让供应商为您报价竞争' : 'Post your request and suppliers compete for you')}
           </p>
         </div>
       </div>
@@ -312,7 +533,7 @@ export default function Requests({ lang, user, profile }) {
           واجهة التاجر / الزائر
       ════════════════════════════════════ */}
       {!isSupplier && (
-        <div style={{ padding: '40px 60px', maxWidth: 820 }}>
+        <div style={{ padding: 'clamp(24px, 5vw, 40px) clamp(16px, 6vw, 60px)', maxWidth: 820, width: '100%', boxSizing: 'border-box', margin: '0 auto' }}>
 
           {/* Draft restore banner */}
           {user && sessionStorage.getItem('maabar_request_draft') && (() => {
@@ -364,6 +585,58 @@ export default function Requests({ lang, user, profile }) {
             </div>
           )}
 
+          <div style={{
+            marginBottom: 18,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 12,
+          }}>
+            {[
+              {
+                key: 'managed',
+                featured: true,
+                title: isAr ? 'دع معبر يتولى الطلب' : lang === 'zh' ? '让 Maabar 代您处理需求' : 'Let Maabar handle the request',
+                eyebrow: isAr ? 'الأكثر شمولاً' : lang === 'zh' ? '最完整的路径' : 'Most guided path',
+                text: isAr ? 'معبر يجهز الـ brief، يراجع الطلب، يختار الموردين الأنسب فقط، ثم يعرض لك أفضل 3 عروض هنا داخل نفس الطلب.' : lang === 'zh' ? 'Maabar 会整理 brief、审核需求、只匹配合适供应商，然后在同一需求页里给您最佳 3 个方案。' : 'Maabar prepares the brief, reviews the request, matches only suitable suppliers, then returns the top 3 offers in the same request page.',
+                onClick: () => setNewReq(prev => ({ ...prev, sourcing_mode: 'managed' })),
+              },
+              {
+                key: 'direct',
+                title: isAr ? 'ارفع طلبك بنفسك' : lang === 'zh' ? '自己发布需求' : 'Post your request yourself',
+                eyebrow: isAr ? 'للطلبات الواضحة' : lang === 'zh' ? '适合明确需求' : 'For clear requests',
+                text: isAr ? 'إذا كان المنتج واضحاً عندك وتريد عروضاً مباشرة، استخدم نموذج الطلب القياسي.' : lang === 'zh' ? '如果产品已经明确并想直接收报价，请使用标准需求表单。' : 'If the product is already clear and you want direct quotes, use the standard request form.',
+                onClick: () => setNewReq(prev => ({ ...prev, sourcing_mode: 'direct' })),
+              },
+              {
+                key: 'idea',
+                title: isAr ? 'حوّل فكرتك إلى منتج' : lang === 'zh' ? '将您的想法变成产品' : 'Turn your idea into a product',
+                eyebrow: isAr ? 'للـ OEM / Private Label' : lang === 'zh' ? '适合 OEM / 自有品牌' : 'For OEM / private label',
+                text: isAr ? 'إذا كانت البداية مجرد فكرة أو علامة خاصة، افتح هذا المسار حتى يرتّب معبر brief أوضح قبل التوريد.' : lang === 'zh' ? '如果现在还是一个想法或自有品牌方向，请进入这个路径，让 Maabar 先整理更清晰的 brief。' : 'If you are starting from an idea or private-label concept, use this path so Maabar can structure a clearer brief first.',
+                action: () => setIdeaOpen(true),
+              },
+            ].map((option) => {
+              const active = option.key === 'idea' ? false : (option.key === 'managed' ? isManagedMode : !isManagedMode);
+              return (
+                <div key={option.key} style={{ background: option.featured ? 'rgba(139,120,255,0.08)' : 'var(--bg-subtle)', border: `1px solid ${active ? 'rgba(139,120,255,0.22)' : option.featured ? 'rgba(139,120,255,0.16)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-xl)', padding: '18px 20px' }}>
+                  <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'rgba(139,120,255,0.9)' : 'var(--text-disabled)', marginBottom: 8 }}>
+                    {option.eyebrow}
+                  </p>
+                  <h3 style={{ fontSize: 18, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{option.title}</h3>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {option.text}
+                  </p>
+                  <button type="button" className={option.key === 'idea' ? 'btn-outline' : active ? 'btn-primary' : 'btn-outline'} onClick={option.action || option.onClick} style={{ minHeight: 36, fontSize: 12 }}>
+                    {option.key === 'managed'
+                      ? (isAr ? 'اختيار الطلب المُدار' : lang === 'zh' ? '选择托管需求' : 'Choose managed sourcing')
+                      : option.key === 'direct'
+                        ? (isAr ? 'اختيار الطلب القياسي' : lang === 'zh' ? '选择标准需求' : 'Choose standard request')
+                        : (isAr ? 'ابدأ المسار' : lang === 'zh' ? '开始' : 'Start')}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
           {/* فورم الطلب */}
           <div style={{
             background: 'var(--bg-subtle)',
@@ -378,16 +651,18 @@ export default function Requests({ lang, user, profile }) {
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
               letterSpacing: isAr ? 0 : -0.3,
             }}>
-              {isAr ? 'طلب تسعيرة جديد' : 'New Sourcing Request'}
+              {isManagedMode
+                ? (isAr ? 'طلب مُدار جديد' : lang === 'zh' ? '新的托管需求' : 'New managed sourcing request')
+                : (isAr ? 'طلب تسعيرة جديد' : 'New Sourcing Request')}
             </h3>
             <p style={{
               color: 'var(--text-disabled)', fontSize: 13,
               marginBottom: 28, lineHeight: 1.7,
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
-              {isAr
-                ? 'أكتب تفاصيل المنتج اللي تبيه وسيتواصل معك الموردون بأفضل الأسعار'
-                : 'Describe what you need and suppliers will send you their best prices'}
+              {isManagedMode
+                ? (isAr ? 'معبر سيجهّز الـ brief، يراجع الوضوح، يطابق الموردين المناسبين فقط، ثم يعرض لك أفضل 3 عروض داخل صفحة الطلب نفسها.' : lang === 'zh' ? 'Maabar 会准备 brief、审核清晰度、只匹配合适供应商，然后在同一需求页里展示最佳 3 个方案。' : 'Maabar will prepare the brief, review clarity, match only suitable suppliers, then show the top 3 offers inside the same request page.')
+                : (isAr ? 'أكتب تفاصيل المنتج اللي تبيه وسيتواصل معك الموردون بأفضل الأسعار' : 'Describe what you need and suppliers will send you their best prices')}
             </p>
 
             {/* Category */}
@@ -473,6 +748,17 @@ export default function Requests({ lang, user, profile }) {
                   dir="ltr"
                 />
               </div>
+              {isManagedMode && (
+                <div className="form-group">
+                  <label className={`form-label${isAr ? ' ar' : ''}`}>
+                    {isAr ? 'الموعد المستهدف للعروض أو القرار' : lang === 'zh' ? '目标回复 / 决策日期' : 'Target decision / offer deadline'}
+                  </label>
+                  <input className="form-input" type="date"
+                    value={newReq.response_deadline || ''}
+                    onChange={e => setNewReq({ ...newReq, response_deadline: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -551,15 +837,26 @@ export default function Requests({ lang, user, profile }) {
               </p>
             )}
 
-            <button
-              className="btn-dark-sm"
-              onClick={submitNewRequest}
-              disabled={submitting}
-              style={{ padding: '12px 28px', fontSize: 14, minHeight: 46 }}>
-              {submitting ? '...' : isAr ? 'إرسال الطلب' : 'Submit Request'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+              <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isManagedMode
+                  ? (isAr ? 'في الطلب المُدار سيبقى القرار الأساسي داخل صفحة الطلب نفسها: ستتابع الحالة، ثم ترى العروض المختارة لك، ثم تختار أو تطلب تفاوضاً إضافياً من نفس المكان.' : lang === 'zh' ? '托管需求的主要决策都会留在同一需求页：先看状态，再看为您挑选的方案，然后在同一页做选择或要求继续谈判。' : 'For managed sourcing, the primary decision flow stays inside the same request page: track status, review the selected offers, then choose or request more negotiation there.')
+                  : (isAr ? 'يتم حفظ مسودة الطلب تلقائياً على هذا الجهاز حتى لا تفقد التفاصيل قبل الإرسال.' : lang === 'zh' ? '此设备会自动保存草稿，避免在提交前丢失内容。' : 'Your draft auto-saves on this device so you do not lose request details before submission.')}
+              </p>
+              <button
+                className="btn-dark-sm"
+                onClick={submitNewRequest}
+                disabled={submitting}
+                style={{ padding: '12px 28px', fontSize: 14, minHeight: 46 }}>
+                {submitting ? '...' : isManagedMode ? (isAr ? 'إرسال الطلب المُدار' : lang === 'zh' ? '提交托管需求' : 'Submit managed request') : (isAr ? 'إرسال الطلب' : lang === 'zh' ? '提交需求' : 'Submit Request')}
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {ideaOpen && !isSupplier && (
+        <IdeaToProduct lang={lang} user={user} onClose={() => setIdeaOpen(false)} />
       )}
 
       {/* ════════════════════════════════════
@@ -587,7 +884,7 @@ export default function Requests({ lang, user, profile }) {
 
           <div className="search-bar" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <input className="search-input"
-              placeholder={isAr ? 'ابحث...' : 'Search...'}
+              placeholder={isAr ? 'ابحث...' : lang === 'zh' ? '搜索需求...' : 'Search...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
               dir={isAr ? 'rtl' : 'ltr'}
@@ -599,8 +896,8 @@ export default function Requests({ lang, user, profile }) {
                 className="btn-outline"
                 style={{ fontSize: 11, padding: '7px 14px', minHeight: 36, whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {showAllRequests
-                  ? (isAr ? 'طلبات تخصصي فقط' : 'My Specialty Only')
-                  : (isAr ? 'عرض كل الطلبات' : 'Show All Requests')}
+                  ? (isAr ? 'طلبات تخصصي فقط' : lang === 'zh' ? '只看匹配我的品类' : 'My Specialty Only')
+                  : (isAr ? 'عرض كل الطلبات' : lang === 'zh' ? '显示全部需求' : 'Show All Requests')}
               </button>
             )}
           </div>
@@ -608,13 +905,13 @@ export default function Requests({ lang, user, profile }) {
           {/* ── Budget Filter ─────────────── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? 'الميزانية:' : 'Budget:'}
+              {isAr ? 'الميزانية:' : lang === 'zh' ? '预算：' : 'Budget:'}
             </span>
             <input
               className="search-input"
               style={{ width: 90 }}
               type="number"
-              placeholder={isAr ? 'من' : 'Min'}
+              placeholder={isAr ? 'من' : lang === 'zh' ? '最低' : 'Min'}
               value={budgetRange.min}
               onChange={e => setBudgetRange(p => ({ ...p, min: e.target.value }))}
             />
@@ -623,24 +920,26 @@ export default function Requests({ lang, user, profile }) {
               className="search-input"
               style={{ width: 90 }}
               type="number"
-              placeholder={isAr ? 'إلى' : 'Max'}
+              placeholder={isAr ? 'إلى' : lang === 'zh' ? '最高' : 'Max'}
               value={budgetRange.max}
               onChange={e => setBudgetRange(p => ({ ...p, max: e.target.value }))}
             />
-            <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>SAR</span>
+            <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>
+              {lang === 'zh' ? '人民币 (CNY)' : 'SAR'}
+            </span>
             {(budgetRange.min || budgetRange.max) && (
               <button
                 className="btn-outline"
                 style={{ padding: '6px 12px', fontSize: 11, minHeight: 32 }}
                 onClick={() => setBudgetRange({ min: '', max: '' })}>
-                {isAr ? 'مسح' : 'Clear'}
+                {isAr ? 'مسح' : lang === 'zh' ? '清除' : 'Clear'}
               </button>
             )}
           </div>
 
           {!loading && (
             <p style={{ color: 'var(--text-disabled)', fontSize: 12, marginBottom: 20, letterSpacing: 0.3 }}>
-              {filtered.length} {isAr ? 'طلبات مفتوحة' : 'open requests'}
+              {filtered.length} {isAr ? 'طلبات ظاهرة' : lang === 'zh' ? '可见需求' : 'visible requests'}
             </p>
           )}
 
@@ -666,8 +965,10 @@ export default function Requests({ lang, user, profile }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {/* badges */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                    <span className="status-badge status-open">
-                      {isAr ? 'مفتوح' : 'open'}
+                    <span className={`status-badge ${r.status === 'offers_received' ? 'status-pending' : 'status-open'}`}>
+                      {r.status === 'offers_received'
+                        ? (isAr ? 'وصلته عروض' : lang === 'zh' ? '已有报价' : 'Offers received')
+                        : (isAr ? 'مفتوح' : lang === 'zh' ? '开放中' : 'Open')}
                     </span>
                     {r.category && r.category !== 'other' && (
                       <span style={{
@@ -682,17 +983,17 @@ export default function Requests({ lang, user, profile }) {
                     )}
                     {r.sample_requirement === 'required' && (
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(200,60,60,0.12)', color: '#d96060', border: '1px solid rgba(200,60,60,0.25)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {isAr ? '🔴 عينة إلزامية' : '🔴 Sample Required'}
+                        {isAr ? '🔴 عينة إلزامية' : lang === 'zh' ? '🔴 必须提供样品' : '🔴 Sample Required'}
                       </span>
                     )}
                     {r.sample_requirement === 'preferred' && (
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {isAr ? '⚪ عينة مفضلة' : '⚪ Sample Preferred'}
+                        {isAr ? '⚪ عينة مفضلة' : lang === 'zh' ? '⚪ 建议提供样品' : '⚪ Sample Preferred'}
                       </span>
                     )}
                     {r.sample_requirement === 'none' && (
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', color: '#5a9a72', border: '1px solid rgba(58,122,82,0.2)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {isAr ? '🟢 بدون عينة' : '🟢 No Sample'}
+                        {isAr ? '🟢 بدون عينة' : lang === 'zh' ? '🟢 无需样品' : '🟢 No Sample'}
                       </span>
                     )}
                     <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
@@ -701,15 +1002,15 @@ export default function Requests({ lang, user, profile }) {
                   </div>
 
                   <h3 className={`req-name${isAr ? ' ar' : ''}`}>
-                    {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
+                    {translatedRequests[r.id]?.title || (isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar)}
                   </h3>
 
                   <div className="req-meta">
-                    <span>{r.profiles?.full_name || r.profiles?.company_name || ''}</span>
+                    <span>{isAr ? 'طلب مشتري عبر مَعبر' : lang === 'zh' ? 'Maabar 买家需求' : 'Maabar buyer request'}</span>
                     <span>{r.quantity || '—'}</span>
-                    {r.description && (
+                    {(translatedRequests[r.id]?.description || r.description) && (
                       <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
-                        {r.description.substring(0, 60)}…
+                        {(translatedRequests[r.id]?.description || r.description || '').substring(0, 60)}…
                       </span>
                     )}
                   </div>
@@ -721,7 +1022,11 @@ export default function Requests({ lang, user, profile }) {
                     </div>
                     <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
                       <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget'}</p>
-                      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>{r.budget_per_unit ? `${r.budget_per_unit} SAR` : (isAr ? 'غير محددة' : lang === 'zh' ? '未说明' : 'Not specified')}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>
+                        {r.budget_per_unit 
+                          ? formatCurrencyWithConversion(parseFloat(r.budget_per_unit), lang)
+                          : (isAr ? 'غير محددة' : lang === 'zh' ? '未说明' : 'Not specified')}
+                      </p>
                     </div>
                     <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
                       <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment plan'}</p>
@@ -752,12 +1057,103 @@ export default function Requests({ lang, user, profile }) {
                   )}
                 </div>
 
-                <button className="btn-quote" onClick={() => toggleOfferForm(r.id)}>
-                  {offerForms[r.id]
-                    ? (isAr ? 'إغلاق' : 'Close')
-                    : (isAr ? 'قدم عرضك' : 'Submit Quote')}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                  <button className="btn-quote" onClick={() => toggleOfferForm(r.id)}>
+                    {offerForms[r.id]
+                      ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close')
+                      : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
+                  </button>
+                  
+                  <button 
+                    className="btn-outline" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Button clicked for request:', r.id, 'title:', r.title_ar);
+                      toggleDetails(r.id);
+                    }}
+                    style={{ 
+                      padding: '8px 16px', 
+                      fontSize: 12,
+                      minHeight: 32,
+                      width: '100%',
+                      textAlign: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {expandedDetails[r.id] 
+                      ? (isAr ? 'إخفاء التفاصيل' : lang === 'zh' ? '隐藏详情' : 'Hide Details') 
+                      : (isAr ? 'تفاصيل الطلب' : lang === 'zh' ? '查看详情' : 'Request Details')}
+                  </button>
+                </div>
               </div>
+
+              {/* تفاصيل الطلب الموسعة */}
+              {expandedDetails[r.id] && (
+                <div style={{
+                  background: 'var(--bg-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  borderTop: '1px solid var(--border-subtle)',
+                  padding: '20px 24px',
+                  marginBottom: offerForms[r.id] ? 0 : 10,
+                  borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
+                  display: 'block',
+                  position: 'relative',
+                  zIndex: 1,
+                }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'تفاصيل الطلب الكاملة' : lang === 'zh' ? '需求详情' : 'Request Details'}
+                    </h4>
+                    
+                    {/* الوصف الكامل */}
+                    {r.description && (
+                      <div style={{ marginBottom: 16 }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 6 }}>{isAr ? 'الوصف' : lang === 'zh' ? '描述' : 'Description'}</p>
+                        <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {r.description}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* معلومات إضافية */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+                      <div>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'تاريخ الإنشاء' : lang === 'zh' ? '创建日期' : 'Created Date'}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{new Date(r.created_at).toLocaleDateString()}</p>
+                      </div>
+                      
+                      <div>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'آخر تحديث' : lang === 'zh' ? '最后更新' : 'Last Updated'}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{new Date(r.updated_at).toLocaleDateString()}</p>
+                      </div>
+                      
+                      {r.response_deadline && (
+                        <div>
+                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'موعد الرد' : lang === 'zh' ? '回复截止' : 'Response Deadline'}</p>
+                          <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{new Date(r.response_deadline).toLocaleDateString()}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* ملاحظات إضافية */}
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--bg-subtle)', 
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-subtle)'
+                    }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 6 }}>{isAr ? 'ملاحظة' : lang === 'zh' ? '提示' : 'Note'}</p>
+                      <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                        {isAr 
+                          ? 'بعد الاطلاع على التفاصيل، يمكنك تقديم عرض باستخدام الزر "قدم عرضك" أعلاه.'
+                          : lang === 'zh'
+                            ? '查看详情后，您可以使用上方的"提交报价"按钮提交报价。'
+                            : 'After reviewing the details, you can submit an offer using the "Submit Quote" button above.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Offer form */}
               {offerForms[r.id] && (
@@ -780,12 +1176,12 @@ export default function Requests({ lang, user, profile }) {
                   <div className="form-grid">
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'سعر الوحدة / المنتج (USD) *' : lang === 'zh' ? '产品单价 (USD) *' : 'Product / Unit Price (USD) *'}
+                        {isAr ? 'سعر الوحدة / المنتج (USD) *' : lang === 'zh' ? '产品单价 (CNY) *' : 'Product / Unit Price (USD) *'}
                       </label>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <div style={{ position: 'relative', flex: 1 }}>
                           <input className="form-input" type="number"
-                            placeholder="USD"
+                            placeholder={effectiveLang === "zh" ? "CNY" : effectiveLang === "ar" ? "SAR" : "USD"}
                             value={offers[r.id]?.price || ''}
                             onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
                             style={{ paddingRight: 40 }}
@@ -806,12 +1202,12 @@ export default function Requests({ lang, user, profile }) {
                     </div>
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'تكلفة الشحن (USD) *' : lang === 'zh' ? '运费 (USD) *' : 'Shipping Cost (USD) *'}
+                        {isAr ? 'تكلفة الشحن (USD) *' : lang === 'zh' ? `运费 (${getCurrencyForLang(lang).code}) *` : 'Shipping Cost (USD) *'}
                       </label>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <div style={{ position: 'relative', flex: 1 }}>
                           <input className="form-input" type="number"
-                            placeholder="USD"
+                            placeholder={effectiveLang === "zh" ? "CNY" : effectiveLang === "ar" ? "SAR" : "USD"}
                             value={offers[r.id]?.shippingCost || ''}
                             onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
                             style={{ paddingRight: 40 }}
@@ -849,7 +1245,7 @@ export default function Requests({ lang, user, profile }) {
                     </div>
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'مدة التسليم (أيام) *' : 'Delivery Days *'}
+                        {isAr ? 'مدة التسليم (أيام) *' : lang === 'zh' ? '交期（天）*' : 'Delivery Days *'}
                       </label>
                       <input className="form-input" type="number"
                         value={offers[r.id]?.days || ''}
@@ -858,7 +1254,7 @@ export default function Requests({ lang, user, profile }) {
                     </div>
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'بلد المنشأ' : 'Country of Origin'}
+                        {isAr ? 'بلد المنشأ' : lang === 'zh' ? '原产国' : 'Country of Origin'}
                       </label>
                       <input className="form-input"
                         value={offers[r.id]?.origin || 'China'}
@@ -887,19 +1283,19 @@ export default function Requests({ lang, user, profile }) {
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
                         <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {getOfferProductSubtotal({ price: offers[r.id]?.price }, r).toFixed(2)} USD
+                          {getOfferProductSubtotal({ price: offers[r.id]?.price }, r).toFixed(2)} {lang === 'zh' ? 'CNY' : lang === 'ar' ? 'SAR' : 'USD'}
                         </p>
                       </div>
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
                         <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }).toFixed(2)} USD
+                          {getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }).toFixed(2)} {lang === 'zh' ? 'CNY' : lang === 'ar' ? 'SAR' : 'USD'}
                         </p>
                       </div>
                       <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
                         <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r).toFixed(2)} USD
+                          {getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r).toFixed(2)} {lang === 'zh' ? 'CNY' : lang === 'ar' ? 'SAR' : 'USD'}
                         </p>
                       </div>
                     </div>
@@ -911,10 +1307,13 @@ export default function Requests({ lang, user, profile }) {
                     </button>
                     <button className="btn-outline" onClick={() => toggleOfferForm(r.id)}
                       style={{ minHeight: 40 }}>
-                      {isAr ? 'إلغاء' : 'Cancel'}
+                      {isAr ? 'إلغاء' : lang === 'zh' ? '取消' : 'Cancel'}
                     </button>
                     <span style={{ fontSize: 11, color: 'var(--text-disabled)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       🔒 {isAr ? 'يراه التاجر فقط — سعرك سري' : lang === 'zh' ? '仅买家可见' : 'Only the buyer sees this — your price is private'}
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--text-disabled)', fontStyle: 'italic' }}>
+                      {isAr ? 'ملاحظة: أسعار الصرف تقريبية للتقدير فقط' : lang === 'zh' ? '注：汇率仅供参考' : 'Note: Exchange rates are approximate for estimation only'}
                     </span>
                   </div>
                 </div>
@@ -925,7 +1324,7 @@ export default function Requests({ lang, user, profile }) {
           {!loading && filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
               <p style={{ color: 'var(--text-disabled)', fontSize: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                {isAr ? 'لا توجد طلبات بعد' : 'No requests yet'}
+                {isAr ? 'لا توجد طلبات بعد' : lang === 'zh' ? '暂时没有需求' : 'No requests yet'}
               </p>
             </div>
           )}

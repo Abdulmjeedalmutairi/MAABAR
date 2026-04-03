@@ -3,7 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const ADMIN_EMAIL = 'mjeedalmutairis@gmail.com';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +29,34 @@ function normalizeSupplierDocStoragePath(rawValue: string | null | undefined) {
   }
 }
 
+function normalizeMediaList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => normalizeSupplierDocStoragePath(typeof item === 'string' ? item : ''))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => normalizeSupplierDocStoragePath(typeof item === 'string' ? item : ''))
+          .filter(Boolean);
+      }
+    } catch {
+      return [normalizeSupplierDocStoragePath(trimmed)].filter(Boolean);
+    }
+
+    return [normalizeSupplierDocStoragePath(trimmed)].filter(Boolean);
+  }
+
+  return [];
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -54,15 +81,21 @@ serve(async (req) => {
       });
     }
 
-    if ((authData.user.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    const { data: adminProfile, error: adminProfileError } = await sb
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (adminProfileError || adminProfile?.role !== 'admin') {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { supplierId, docType } = await req.json();
-    if (!supplierId || !['license', 'factory'].includes(docType)) {
+    const { supplierId, docPath, docType } = await req.json();
+    if (!supplierId || (!docPath && !docType)) {
       return new Response(JSON.stringify({ error: 'Invalid request payload' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,17 +104,28 @@ serve(async (req) => {
 
     const { data: profile, error: profileError } = await sb
       .from('profiles')
-      .select('license_photo,factory_photo')
+      .select('license_photo,factory_photo,factory_images,factory_videos')
       .eq('id', supplierId)
       .maybeSingle();
 
-    if (profileError) {
-      throw profileError;
-    }
+    if (profileError) throw profileError;
 
-    const rawDocValue = docType === 'license' ? profile?.license_photo : profile?.factory_photo;
-    const objectPath = normalizeSupplierDocStoragePath(rawDocValue);
-    if (!objectPath) {
+    const allowedPaths = new Set<string>([
+      normalizeSupplierDocStoragePath(profile?.license_photo),
+      normalizeSupplierDocStoragePath(profile?.factory_photo),
+      ...normalizeMediaList(profile?.factory_images),
+      ...normalizeMediaList(profile?.factory_videos),
+    ].filter(Boolean));
+
+    const fallbackPath = docType === 'license'
+      ? normalizeSupplierDocStoragePath(profile?.license_photo)
+      : docType === 'factory'
+        ? normalizeSupplierDocStoragePath(profile?.factory_photo)
+        : '';
+
+    const objectPath = normalizeSupplierDocStoragePath(docPath) || fallbackPath;
+
+    if (!objectPath || !allowedPaths.has(objectPath)) {
       return new Response(JSON.stringify({ error: 'Document not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -96,7 +140,9 @@ serve(async (req) => {
       throw signedError || new Error('Failed to create signed URL');
     }
 
-    const signedUrl = signedData.signedUrl.startsWith('http') ? signedData.signedUrl : `${SUPABASE_URL}${signedData.signedUrl}`;
+    const signedUrl = signedData.signedUrl.startsWith('http')
+      ? signedData.signedUrl
+      : `${SUPABASE_URL}${signedData.signedUrl}`;
 
     return new Response(JSON.stringify({ ok: true, signedUrl, path: objectPath }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

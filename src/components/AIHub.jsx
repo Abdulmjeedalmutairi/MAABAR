@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import IdeaToProduct from './IdeaToProduct';
 import { hasIdeaFlowDraft, shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
-import { getSupplierPublicVisibilityStatuses } from '../lib/supplierOnboarding';
 
 /* ─────────────────────────────────────────
    Constants
@@ -76,7 +75,7 @@ const inp = {
   width: '100%', padding: '10px 12px',
   border: '1px solid var(--border-subtle)',
   background: 'var(--bg-muted)',
-  fontSize: 13, color: 'var(--text-primary)',
+  fontSize: 16, color: 'var(--text-primary)',
   outline: 'none', borderRadius: 'var(--radius-md)',
   boxSizing: 'border-box', transition: 'border-color 0.2s',
   fontFamily: 'var(--font-sans)',
@@ -402,7 +401,7 @@ function CalcTool({ lang, onClose }) {
             <Field label={lang === 'ar' ? 'المنتج' : lang === 'zh' ? '产品' : 'Product'}>
               <input style={inp} value={f1.product} onChange={e => setF1({ ...f1, product: e.target.value })} placeholder={isAr ? 'مثال: كراسي مكتب' : 'e.g. Office Chairs'} dir={isAr ? 'rtl' : 'ltr'} />
             </Field>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
               <Field label={isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity'}>
                 <input style={inp} type="number" value={f1.qty} onChange={e => setF1({ ...f1, qty: e.target.value })} placeholder="500" />
               </Field>
@@ -446,7 +445,7 @@ function CalcTool({ lang, onClose }) {
         {/* TAB 2 */}
         {tab === 1 && !r2 && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
               <Field label={isAr ? 'الوزن (كجم)' : 'Weight (kg)'}>
                 <input style={inp} type="number" value={f2.weight} onChange={e => setF2({ ...f2, weight: e.target.value })} placeholder="200" />
               </Field>
@@ -727,10 +726,8 @@ opportunity_score: من 0 إلى 100.`,
       }
       setDetectedCategory(cat);
       const { data: sups } = await sb
-        .from('profiles')
+        .from('supplier_public_profiles')
         .select('id, company_name, city, rating, speciality, avatar_url')
-        .eq('role', 'supplier')
-        .in('status', getSupplierPublicVisibilityStatuses())
         .eq('speciality', cat)
         .limit(3);
       if (sups) setMaabarSuppliers(sups);
@@ -975,28 +972,59 @@ export default function AIHub({ lang, user, profile }) {
   const openTool = (id) => { setActiveTool(id); setMenuOpen(false); };
   const closeTool = () => setActiveTool(null);
 
-  const panelStyle = {
-    position: 'fixed',
-    bottom: 80,
-    right: 24,
-    zIndex: 1500,
-    width: 380,
-    maxHeight: '82vh',
-    background: 'var(--bg-overlay)',
-    border: '1px solid var(--border-muted)',
-    borderRadius: 'var(--radius-xl)',
-    boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    animation: 'slideUp 0.25s ease',
-    direction: isAr ? 'rtl' : 'ltr',
-  };
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const safeBottom = parseInt(
+    typeof window !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom') || '0px'
+      : '0px',
+    10
+  ) || 0;
+  const fabBottom = 24 + safeBottom;
+  const panelBottom = fabBottom + 56;
+
+  const panelStyle = isMobile
+    ? {
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1500,
+        width: '100%',
+        maxHeight: 'calc(var(--app-dvh, 100dvh) - var(--page-top-offset, 56px))',
+        background: 'var(--bg-overlay)',
+        border: '1px solid var(--border-muted)',
+        borderTop: '1px solid var(--border-muted)',
+        borderRadius: '24px 24px 0 0',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.6)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        animation: 'slideUp 0.25s ease',
+        direction: isAr ? 'rtl' : 'ltr',
+        paddingBottom: `max(0px, var(--safe-bottom, 0px))`,
+      }
+    : {
+        position: 'fixed',
+        bottom: panelBottom,
+        right: 24,
+        zIndex: 1500,
+        width: 380,
+        maxHeight: '82vh',
+        background: 'var(--bg-overlay)',
+        border: '1px solid var(--border-muted)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        animation: 'slideUp 0.25s ease',
+        direction: isAr ? 'rtl' : 'ltr',
+      };
 
   return (
     <>
       {/* ── FAB Button ───────────────────────── */}
-      <div ref={menuRef} style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1600 }}>
+      <div ref={menuRef} style={{ position: 'fixed', bottom: `max(24px, calc(24px + var(--safe-bottom, 0px)))`, right: 24, zIndex: 1600 }}>
 
         {/* Menu */}
         {menuOpen && (
@@ -1086,14 +1114,10 @@ export default function AIHub({ lang, user, profile }) {
         </div>
       )}
 
-      {/* Pulse animation */}
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.6; transform: scale(1.2); }
-        }
-        @media (max-width: 768px) {
-          /* panel full width on mobile */
         }
       `}</style>
     </>

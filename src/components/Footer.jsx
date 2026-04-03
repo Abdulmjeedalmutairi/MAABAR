@@ -2,77 +2,38 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import BrandLogo from './BrandLogo';
 
+const CR_NUMBER = '7042243308';
+const CONTACT_EMAIL = 'info@maabar.io';
+
 const T = {
   ar: {
-    tagline: 'الجسر الآمن بين التاجر السعودي والمورد الصيني',
-    platform: 'المنصة',
-    forBuyers: 'للتجار',
-    forSuppliers: 'للموردين',
-    links: {
-      platform: [
-        { label: 'عن معبر', path: '/about' },
-        { label: 'الأسئلة الشائعة', path: '/faq' },
-        { label: 'الشروط والأحكام', path: '/terms' },
-        { label: 'تواصل معنا', path: '/contact' },
-      ],
-      buyers: [
-        { label: 'ارفع طلبك', path: '/requests' },
-        { label: 'تصفح المنتجات', path: '/products' },
-        { label: 'تصفح الموردين', path: '/suppliers' },
-      ],
-      suppliers: [
-        { label: 'قدّم طلب الانضمام', path: '/supplier-access' },
-        { label: 'بوابة الموردين', path: '/login/supplier?mode=signup' },
-      ],
-    },
-    copy: 'مَعبر © 2026 · جميع الحقوق محفوظة',
+    links: [
+      { label: 'عن معبر', path: '/about' },
+      { label: 'الأسئلة الشائعة', path: '/faq' },
+      { label: 'الشروط والأحكام', path: '/terms' },
+      { label: 'تواصل معنا', path: '/contact' },
+    ],
+    crLabel: 'السجل التجاري',
+    copy: 'معبر © 2026 · جميع الحقوق محفوظة',
   },
   en: {
-    tagline: 'The secure bridge between Saudi traders and Chinese suppliers',
-    platform: 'Platform',
-    forBuyers: 'For Buyers',
-    forSuppliers: 'For Suppliers',
-    links: {
-      platform: [
-        { label: 'About Maabar', path: '/about' },
-        { label: 'FAQ', path: '/faq' },
-        { label: 'Terms & Conditions', path: '/terms' },
-        { label: 'Contact Us', path: '/contact' },
-      ],
-      buyers: [
-        { label: 'Post a Request', path: '/requests' },
-        { label: 'Browse Products', path: '/products' },
-        { label: 'Browse Suppliers', path: '/suppliers' },
-      ],
-      suppliers: [
-        { label: 'Apply as Supplier', path: '/supplier-access' },
-        { label: 'Supplier Portal', path: '/login/supplier?mode=signup' },
-      ],
-    },
+    links: [
+      { label: 'About Maabar', path: '/about' },
+      { label: 'FAQ', path: '/faq' },
+      { label: 'Terms & Conditions', path: '/terms' },
+      { label: 'Contact Us', path: '/contact' },
+    ],
+    crLabel: 'CR No.',
     copy: 'Maabar © 2026 · All rights reserved',
   },
   zh: {
-    tagline: '连接沙特贸易商与中国供应商的安全桥梁',
-    platform: '平台',
-    forBuyers: '采购商',
-    forSuppliers: '供应商',
-    links: {
-      platform: [
-        { label: '关于Maabar', path: '/about' },
-        { label: '常见问题', path: '/faq' },
-        { label: '条款与条件', path: '/terms' },
-        { label: '联系我们', path: '/contact' },
-      ],
-      buyers: [
-        { label: '发布需求', path: '/requests' },
-        { label: '浏览产品', path: '/products' },
-        { label: '浏览供应商', path: '/suppliers' },
-      ],
-      suppliers: [
-        { label: '申请成为供应商', path: '/supplier-access' },
-        { label: '供应商门户', path: '/login/supplier?mode=signup' },
-      ],
-    },
+    links: [
+      { label: '关于 Maabar', path: '/about' },
+      { label: '常见问题', path: '/faq' },
+      { label: '条款与条件', path: '/terms' },
+      { label: '联系我们', path: '/contact' },
+    ],
+    crLabel: '商业登记号',
     copy: 'Maabar © 2026 · 保留所有权利',
   },
 };
@@ -82,127 +43,253 @@ export default function Footer({ lang }) {
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
 
-  const linkBtn = (l, i) => (
-    <button key={i} onClick={() => nav(l.path)} style={{
-      background: 'none', border: 'none',
-      color: 'var(--text-secondary)', fontSize: 13,
-      cursor: 'pointer', padding: 0,
-      textAlign: isAr ? 'right' : 'left',
-      fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-      transition: 'color 0.2s',
-    }}
-      onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-      {l.label}
+  const linkBtn = (link) => (
+    <button
+      key={link.path}
+      onClick={() => nav(link.path)}
+      style={{
+        background: 'none',
+        border: 'none',
+        color: 'var(--text-secondary)',
+        fontSize: 12,
+        lineHeight: 1.5,
+        cursor: 'pointer',
+        padding: 0,
+        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+        transition: 'color 0.2s',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+    >
+      {link.label}
     </button>
   );
 
   return (
-    <footer style={{
-      background: 'var(--bg-overlay)',
-      padding: '48px 40px 28px',
-    }}>
-
-      {/* DESKTOP GRID */}
-      <div className="footer-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
-        gap: 40,
-        marginBottom: 40,
-        direction: isAr ? 'rtl' : 'ltr',
-      }}>
-
-        {/* LOGO + TAGLINE */}
-        <div>
-          <div style={{ marginBottom: 12 }}>
+    <footer
+      className={`site-footer ${isAr ? 'is-ar' : 'is-ltr'}`}
+      style={{
+        background: 'var(--bg-overlay)',
+        borderTop: '1px solid var(--border-subtle)',
+        padding: '22px 20px 14px',
+        display: 'block',
+        width: '100%',
+      }}
+    >
+      <div
+        className="site-footer-shell"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          direction: isAr ? 'rtl' : 'ltr',
+          maxWidth: 1080,
+          width: '100%',
+          margin: '0 auto',
+        }}
+      >
+        <div
+          className="footer-top"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 20,
+            flexWrap: 'nowrap',
+          }}
+        >
+          <div className="footer-brand" style={{ display: 'flex', alignItems: 'center', minWidth: 120 }}>
             <BrandLogo size="sm" align={isAr ? 'flex-end' : 'flex-start'} />
           </div>
-          <p style={{
-            fontSize: 13, color: 'var(--text-tertiary)',
-            lineHeight: 1.8, maxWidth: 220,
-            fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-          }}>
-            {t.tagline}
-          </p>
-        </div>
 
-        {/* PLATFORM */}
-        <div>
-          <p style={{
-            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: 'var(--text-disabled)', marginBottom: 16,
-            fontFamily: 'var(--font-sans)',
-          }}>
-            {t.platform}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {t.links.platform.map(linkBtn)}
+          <div
+            className="footer-meta"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: isAr ? 'flex-end' : 'flex-start',
+              gap: 10,
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            <div
+              className="footer-links"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px 18px',
+                alignItems: 'center',
+                justifyContent: isAr ? 'flex-end' : 'flex-start',
+              }}
+            >
+              {t.links.map(linkBtn)}
+            </div>
+          </div>
+
+          <div
+            className="footer-contact-wrap"
+            style={{
+              display: 'flex',
+              alignItems: isAr ? 'flex-end' : 'flex-start',
+              justifyContent: isAr ? 'flex-start' : 'flex-end',
+              minWidth: 'fit-content',
+            }}
+          >
+            <a
+              className="footer-contact"
+              href={`mailto:${CONTACT_EMAIL}`}
+              style={{
+                color: 'var(--text-secondary)',
+                fontSize: 12,
+                textDecoration: 'none',
+                fontFamily: 'var(--font-sans)',
+                direction: 'ltr',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {CONTACT_EMAIL}
+            </a>
           </div>
         </div>
 
-        {/* FOR BUYERS */}
-        <div>
-          <p style={{
-            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: 'var(--text-disabled)', marginBottom: 16,
-            fontFamily: 'var(--font-sans)',
-          }}>
-            {t.forBuyers}
+        <div
+          className="footer-bottom"
+          style={{
+            borderTop: '1px solid var(--border-subtle)',
+            paddingTop: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 8,
+            direction: isAr ? 'rtl' : 'ltr',
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              color: 'var(--text-disabled)',
+              fontSize: 11,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+            }}
+          >
+            {t.copy}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {t.links.buyers.map(linkBtn)}
-          </div>
-        </div>
 
-        {/* FOR SUPPLIERS */}
-        <div>
-          <p style={{
-            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: 'var(--text-disabled)', marginBottom: 16,
-            fontFamily: 'var(--font-sans)',
-          }}>
-            {t.forSuppliers}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {t.links.suppliers.map(linkBtn)}
+          <div
+            style={{
+              padding: '5px 10px',
+              borderRadius: 999,
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-subtle)',
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                color: 'var(--text-secondary)',
+                fontSize: 11,
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              }}
+            >
+              {t.crLabel} {CR_NUMBER}
+            </p>
           </div>
-        </div>
-      </div>
-
-      {/* BOTTOM BAR */}
-      <div style={{
-        borderTop: '1px solid var(--border-subtle)',
-        paddingTop: 20,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 10,
-        direction: isAr ? 'rtl' : 'ltr',
-      }}>
-        <p style={{
-          color: 'var(--text-disabled)', fontSize: 12,
-          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-        }}>
-          {t.copy}
-        </p>
-        <div style={{ display: 'flex', gap: 14 }}>
-          {['AR', 'EN', '中文'].map((l, i) => (
-            <span key={i} style={{
-              fontSize: 10, color: 'var(--text-disabled)',
-              letterSpacing: 1,
-            }}>
-              {l}
-            </span>
-          ))}
         </div>
       </div>
 
       <style>{`
+        @media (min-width: 769px) {
+          .site-footer {
+            display: block !important;
+            padding: 24px 28px 16px !important;
+          }
+
+          .site-footer-shell {
+            width: 100%;
+            max-width: 1180px !important;
+          }
+
+          .footer-top {
+            display: grid !important;
+            grid-template-columns: minmax(160px, auto) minmax(0, 1fr) minmax(190px, auto);
+            align-items: center !important;
+            gap: 32px !important;
+          }
+
+          .footer-brand {
+            justify-content: flex-start;
+          }
+
+          .site-footer.is-ar .footer-brand {
+            justify-content: flex-end;
+          }
+
+          .site-footer.is-ar .footer-meta,
+          .site-footer.is-ar .footer-links {
+            justify-content: flex-end !important;
+            text-align: right;
+          }
+
+          .site-footer.is-ltr .footer-meta,
+          .site-footer.is-ltr .footer-links {
+            justify-content: flex-start !important;
+            text-align: left;
+          }
+
+          .footer-links {
+            width: 100%;
+          }
+
+          .footer-contact-wrap {
+            justify-content: flex-end !important;
+          }
+
+          .site-footer.is-ar .footer-contact-wrap {
+            justify-content: flex-start !important;
+          }
+
+          .footer-bottom {
+            gap: 16px !important;
+          }
+        }
+
         @media (max-width: 768px) {
-          .footer-grid {
-            grid-template-columns: 1fr !important;
-            gap: 28px !important;
+          .footer-top {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 14px !important;
+          }
+
+          .footer-meta {
+            width: 100%;
+            align-items: center !important;
+          }
+
+          .footer-contact-wrap {
+            width: 100%;
+            justify-content: center !important;
+          }
+
+          .footer-links {
+            width: 100%;
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 18px !important;
+            justify-items: center;
+          }
+
+          .footer-links > * {
+            text-align: center !important;
+          }
+
+          .footer-bottom {
+            justify-content: center !important;
+          }
+
+          .footer-contact {
+            align-self: center !important;
           }
         }
       `}</style>

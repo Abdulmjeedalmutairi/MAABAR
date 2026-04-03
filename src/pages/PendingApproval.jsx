@@ -268,7 +268,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '92px 24px 48px' }}>
         <div style={{
           position: 'relative',

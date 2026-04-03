@@ -40,7 +40,7 @@ export default function Contact({ lang }) {
   usePageTitle('contact', lang);
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', background: 'var(--bg-base)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
         <div style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-default)', padding: '64px 48px', width: '100%', maxWidth: 560, textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
           <h2 style={{ fontSize: 42, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>{t.title}</h2>

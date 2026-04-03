@@ -93,12 +93,21 @@ export function getSupplierVerificationState(profile = {}) {
   });
 
   const hasContactMethod = Boolean(profile?.wechat || profile?.whatsapp);
-  const payoutMethod = profile?.pay_method || '';
-  const isPayoutComplete = payoutMethod === 'alipay'
-    ? Boolean(profile?.alipay_account)
-    : payoutMethod === 'swift'
-      ? Boolean(profile?.swift_code && profile?.bank_name)
-      : false;
+  const hasAnyPayoutData = Boolean(
+    profile?.payout_beneficiary_name
+    || profile?.bank_name
+    || profile?.payout_account_number
+    || profile?.swift_code
+    || profile?.payout_branch_name
+    || profile?.payout_iban
+  );
+  const isPayoutComplete = Boolean(
+    profile?.payout_beneficiary_name
+    && profile?.bank_name
+    && profile?.payout_account_number
+    && profile?.swift_code
+  );
+  const payoutMethod = hasAnyPayoutData ? 'swift' : '';
 
   return {
     missingKeys,
@@ -279,7 +288,7 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
     canAccessPayoutSetup: canAccessOperationalFeatures,
     routeGuardRedirect,
     limitedTabs: ['overview', 'verification', 'settings'],
-    fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'reviews', 'messages', 'settings'],
+    fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'product-inquiries', 'reviews', 'messages', 'settings'],
   };
 }
 

@@ -7,9 +7,10 @@ import { buildProductSpecs, getPrimaryProductImage, getProductGalleryImages } fr
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
-  getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -32,20 +33,16 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const supplierTrustSignals = buildSupplierTrustSignals(supplier || {});
   const isReviewedSupplier = isSupplierPubliclyVisible(supplier?.status);
   const supplierMaabarId = getSupplierMaabarId(supplier || {});
+  const companyDescription = supplier?.company_description || supplier?.bio_en || supplier?.bio_ar || supplier?.bio_zh || '';
+  const supplierLanguages = Array.isArray(supplier?.languages) ? supplier.languages : [];
+  const exportMarkets = Array.isArray(supplier?.export_markets) ? supplier.export_markets : [];
 
   useEffect(() => { loadSupplier(); }, [id, user?.id]);
 
   const loadSupplier = async () => {
     setLoading(true);
 
-    const { data: publicSupplier } = await sb
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .in('status', getSupplierPublicVisibilityStatuses())
-      .maybeSingle();
-
-    let visibleSupplier = publicSupplier || null;
+    let visibleSupplier = await fetchSupplierPublicProfileById(sb, id);
 
     if (!visibleSupplier && user?.id === id) {
       const { data: ownSupplier } = await sb
@@ -69,14 +66,12 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
 
     const [{ data: p }, { data: r }] = await Promise.all([
       sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
-      sb.from('reviews').select('*,profiles!reviews_buyer_id_fkey(full_name)').eq('supplier_id', id).order('created_at', { ascending: false }),
+      sb.from('reviews').select('*').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
 
     if (visibleSupplier.speciality) {
-      const { data: sim } = await sb.from('profiles')
-        .select('id,company_name,rating,reviews_count,city,country,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,speciality')
-        .eq('role', 'supplier')
-        .in('status', getSupplierPublicVisibilityStatuses())
+      const { data: sim } = await sb.from('supplier_public_profiles')
+        .select('id,company_name,rating,reviews_count,city,country,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,maabar_supplier_id,speciality,product_count')
         .eq('speciality', visibleSupplier.speciality)
         .neq('id', id)
         .limit(3);
@@ -169,14 +164,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   // SKELETON
   if (loading) return (
     <div className="profile-wrap">
-      <div className="profile-hero">
-        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ width: 200, height: 24, background: 'rgba(255,255,255,0.15)', borderRadius: 3, marginBottom: 10, animation: 'pulse 1.5s ease infinite' }} />
-          <div style={{ width: 120, height: 14, background: 'rgba(255,255,255,0.1)', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
-        </div>
-      </div>
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+      <BrandedLoading lang={lang} tone="supplier" />
     </div>
   );
 
@@ -240,7 +228,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             )}
             {supplier.min_order_value && (
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {isAr ? `أقل طلب: ${supplier.min_order_value} ريال` : `Min order: ${supplier.min_order_value} SAR`}
+                {isAr ? `الحد الأدنى لقيمة الطلب: ${supplier.min_order_value} ريال` : lang === 'zh' ? `最低订单金额：${supplier.min_order_value} SAR` : `Minimum order value: ${supplier.min_order_value} SAR`}
               </span>
             )}
           </div>
@@ -317,23 +305,53 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         </div>
 
-        {supplier.trade_link && (
+        {(supplier.company_website || supplier.trade_link || supplier.wechat || supplier.whatsapp) && (
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
-            <a href={supplier.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-              {isAr ? 'عرض رابط الشركة / المتجر' : lang === 'zh' ? '查看官网 / 店铺链接' : 'View company / store link'}
-            </a>
+            {supplier.company_website && (
+              <a href={supplier.company_website} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                {isAr ? 'زيارة موقع الشركة' : lang === 'zh' ? '访问公司官网' : 'Visit company website'}
+              </a>
+            )}
+            {supplier.trade_link && (
+              <a href={supplier.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                {isAr ? 'عرض صفحة المتجر / الملف التجاري' : lang === 'zh' ? '查看店铺 / 贸易主页' : 'View trade profile / storefront'}
+              </a>
+            )}
             {supplier.wechat && (
               <span style={{ fontSize: 11, padding: '0 12px', minHeight: 38, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                 WeChat: {supplier.wechat}
               </span>
             )}
+            {supplier.whatsapp && (
+              <span style={{ fontSize: 11, padding: '0 12px', minHeight: 38, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                WhatsApp: {supplier.whatsapp}
+              </span>
+            )}
           </div>
         )}
 
-        {(supplier.bio_ar || supplier.bio_en || supplier.bio_zh) && (
+        {companyDescription && (
           <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-            {isAr ? supplier.bio_ar || supplier.bio_en : supplier.bio_en || supplier.bio_ar}
+            {companyDescription}
           </p>
+        )}
+
+        {(supplier.business_type || supplier.year_established || supplier.company_address || supplier.customization_support || supplierLanguages.length > 0 || exportMarkets.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 28 }}>
+            {[
+              supplier.business_type ? { label: isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type } : null,
+              supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Year established', value: supplier.year_established } : null,
+              supplier.customization_support ? { label: isAr ? 'دعم التخصيص' : lang === 'zh' ? '定制支持' : 'Customization support', value: supplier.customization_support } : null,
+              supplier.company_address ? { label: isAr ? 'عنوان الشركة' : lang === 'zh' ? '公司地址' : 'Company address', value: supplier.company_address } : null,
+              supplierLanguages.length > 0 ? { label: isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages', value: supplierLanguages.join(' · ') } : null,
+              exportMarkets.length > 0 ? { label: isAr ? 'الأسواق التصديرية' : lang === 'zh' ? '出口市场' : 'Export markets', value: exportMarkets.join(' · ') } : null,
+            ].filter(Boolean).map((item) => (
+              <div key={item.label} style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>{item.label}</p>
+                <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item.value}</p>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* COMPANY STATS */}
@@ -606,7 +624,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
-                      {rv.profiles?.full_name || (isAr ? 'تاجر' : 'Buyer')}
+                      {isAr ? 'مشتري موثّق عبر مَعبر' : lang === 'zh' ? '通过 Maabar 成交的买家' : 'Maabar buyer'}
                     </span>
                     <span style={{ color: '#f5a623', fontSize: 13 }}>
                       {Array.from({ length: 5 }, (_, j) => j < (rv.rating || 0) ? '★' : '☆').join('')}
@@ -699,11 +717,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                       {trustSignals.includes('factory_media_available') && (
                         <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                           {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
-                        </span>
-                      )}
-                      {s.trust_score > 0 && (
-                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                          {isAr ? `ثقة ${s.trust_score}%` : lang === 'zh' ? `信任度 ${s.trust_score}%` : `Trust ${s.trust_score}%`}
                         </span>
                       )}
                     </div>

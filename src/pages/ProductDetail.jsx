@@ -7,9 +7,14 @@ import { buildProductSpecs, getProductGalleryImages } from '../lib/productMedia'
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
-  getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import { attachSupplierProfiles, fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import {
+  getProductInquiryQuestion,
+  getProductInquiryTemplates,
+} from '../lib/productInquiry';
+import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -30,6 +35,122 @@ function getLocalizedText(product, lang, key) {
   return '';
 }
 
+function buildDefaultActionError(lang, fallbackAr, fallbackZh, fallbackEn) {
+  if (lang === 'ar') return fallbackAr;
+  if (lang === 'zh') return fallbackZh;
+  return fallbackEn;
+}
+
+function buildRequestCreationErrorMessage(lang, error) {
+  const rawMessage = String(
+    error?.message
+    || error?.details
+    || error?.hint
+    || error?.error_description
+    || ''
+  ).trim();
+  const normalized = rawMessage.toLowerCase();
+
+  if (!rawMessage) {
+    return buildDefaultActionError(
+      lang,
+      'تعذر إنشاء طلب الشراء الآن. حاول مرة أخرى بعد تحديث الصفحة.',
+      '现在无法创建采购订单，请刷新页面后重试。',
+      'Unable to create the purchase order right now. Please refresh the page and try again.'
+    );
+  }
+
+  if (normalized.includes('row-level security') || normalized.includes('permission denied')) {
+    return buildDefaultActionError(
+      lang,
+      'تعذر إنشاء الطلب من هذا الحساب حالياً. تأكد أنك داخل حساب التاجر الصحيح ثم حاول مرة أخرى.',
+      '当前账号无法创建此订单。请确认您登录的是正确的买家账号后再试。',
+      'This account cannot create the order right now. Make sure you are signed in with the correct buyer account and try again.'
+    );
+  }
+
+  if (normalized.includes('payment_plan') || normalized.includes('sample_requirement') || normalized.includes('null value')) {
+    return buildDefaultActionError(
+      lang,
+      'تعذر تجهيز الطلب بسبب بيانات شراء ناقصة. حدّث الصفحة ثم حاول مرة أخرى.',
+      '由于订单字段不完整，暂时无法继续购买。请刷新页面后重试。',
+      'The order could not be prepared because some required purchase fields are missing. Please refresh the page and try again.'
+    );
+  }
+
+  return buildDefaultActionError(
+    lang,
+    `تعذر إنشاء طلب الشراء الآن. ${rawMessage}`,
+    `现在无法创建采购订单。${rawMessage}`,
+    `Unable to create the purchase order right now. ${rawMessage}`
+  );
+}
+
+function buildSampleRequestErrorMessage(lang, error) {
+  const rawMessage = String(
+    error?.message
+    || error?.details
+    || error?.hint
+    || error?.error_description
+    || ''
+  ).trim();
+
+  if (!rawMessage) {
+    return buildDefaultActionError(
+      lang,
+      'تعذر إرسال طلب العينة الآن. حاول مرة أخرى بعد قليل.',
+      '现在无法发送样品申请，请稍后重试。',
+      'Unable to send the sample request right now. Please try again shortly.'
+    );
+  }
+
+  return buildDefaultActionError(
+    lang,
+    `تعذر إرسال طلب العينة الآن. ${rawMessage}`,
+    `现在无法发送样品申请。${rawMessage}`,
+    `Unable to send the sample request right now. ${rawMessage}`
+  );
+}
+
+function buildProductInquiryErrorMessage(lang, error) {
+  const rawMessage = String(
+    error?.message
+    || error?.details
+    || error?.hint
+    || error?.error_description
+    || ''
+  ).trim();
+
+  if (!rawMessage) {
+    return buildDefaultActionError(
+      lang,
+      'تعذر إرسال الاستفسار الآن. حاول مرة أخرى بعد قليل.',
+      '现在无法发送咨询，请稍后重试。',
+      'Unable to send the inquiry right now. Please try again shortly.'
+    );
+  }
+
+  return buildDefaultActionError(
+    lang,
+    `تعذر إرسال الاستفسار الآن. ${rawMessage}`,
+    `现在无法发送咨询。${rawMessage}`,
+    `Unable to send the inquiry right now. ${rawMessage}`
+  );
+}
+
+function createDirectRequestId() {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  const template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+  return template.replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === 'x' ? random : ((random & 0x3) | 0x8);
+    return value.toString(16);
+  });
+}
+
 export default function ProductDetail({ lang, user, profile, displayCurrency, exchangeRates }) {
   const { id } = useParams();
   const nav = useNavigate();
@@ -37,15 +158,19 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const [loading, setLoading] = useState(true);
   const [showBuyForm, setShowBuyForm] = useState(false);
   const [showSampleForm, setShowSampleForm] = useState(false);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [qty, setQty] = useState('');
   const [note, setNote] = useState('');
   const [sampleQty, setSampleQty] = useState('1');
   const [sampleNote, setSampleNote] = useState('');
+  const [selectedInquiryTemplate, setSelectedInquiryTemplate] = useState('');
   const [sending, setSending] = useState(false);
   const [sendingSample, setSendingSample] = useState(false);
+  const [sendingInquiry, setSendingInquiry] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
+  const inquiryTemplates = getProductInquiryTemplates();
 
   useEffect(() => { loadProduct(); }, [id, profile?.role, user?.id]);
 
@@ -57,28 +182,35 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const loadProduct = async () => {
     setLoading(true);
 
-    const { data: publicProduct } = await sb
+    const { data: baseProduct } = await sb
       .from('products')
-      .select('*,profiles!inner(id,company_name,city,country,rating,reviews_count,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,min_order_value)')
+      .select('*')
       .eq('id', id)
-      .in('profiles.status', getSupplierPublicVisibilityStatuses())
       .maybeSingle();
 
-    if (publicProduct) {
-      setProduct(publicProduct);
-      setLoading(false);
-      return;
+    if (baseProduct) {
+      const [productWithSupplier] = await attachSupplierProfiles(sb, [baseProduct], 'supplier_id', 'profiles');
+      if (productWithSupplier?.profiles) {
+        setProduct(productWithSupplier);
+        setLoading(false);
+        return;
+      }
     }
 
     if (profile?.role === 'supplier' && user?.id) {
       const { data: ownProduct } = await sb
         .from('products')
-        .select('*,profiles(id,company_name,city,country,rating,reviews_count,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,min_order_value)')
+        .select('*')
         .eq('id', id)
         .eq('supplier_id', user.id)
         .maybeSingle();
 
-      setProduct(ownProduct || null);
+      if (ownProduct) {
+        const ownSupplierProfile = await fetchSupplierPublicProfileById(sb, user.id);
+        setProduct({ ...ownProduct, profiles: ownSupplierProfile || null });
+      } else {
+        setProduct(null);
+      }
     } else {
       setProduct(null);
     }
@@ -88,39 +220,54 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
   const submitOrder = async () => {
     if (!user) { nav('/login/buyer'); return; }
-    if (!qty) { alert(isAr ? 'يرجى تحديد الكمية' : lang === 'zh' ? '请输入数量' : 'Please enter quantity'); return; }
+
+    const normalizedQty = String(qty || '').trim();
+    if (!normalizedQty || Number.parseInt(normalizedQty, 10) <= 0) {
+      alert(isAr ? 'يرجى تحديد كمية صحيحة' : lang === 'zh' ? '请输入有效数量' : 'Please enter a valid quantity');
+      return;
+    }
+
     if (!product) return;
 
     const sup = product.profiles || {};
-    if (!sup.id) { alert(isAr ? 'تعذّر تحديد المورد' : lang === 'zh' ? '未找到供应商' : 'Supplier not found'); return; }
+    const supplierId = sup.id || product.supplier_id;
+    if (!supplierId) { alert(isAr ? 'تعذّر تحديد المورد' : lang === 'zh' ? '未找到供应商' : 'Supplier not found'); return; }
 
-    setSending(true);
-
-    const { data: reqData, error: reqError } = await sb.from('requests').insert({
+    const requestId = createDirectRequestId();
+    const requestPayload = {
+      id: requestId,
       buyer_id: user.id,
       title_ar: 'شراء: ' + (product.name_ar || product.name_en || product.name_zh),
       title_en: 'Buy: ' + (product.name_en || product.name_zh || product.name_ar),
       title_zh: '采购: ' + (product.name_zh || product.name_en || product.name_ar),
-      quantity: qty,
-      description: note || '',
+      quantity: normalizedQty,
+      description: String(note || '').trim(),
       product_ref: id,
       category: product.category || 'other',
       status: 'closed',
-    }).select().single();
+      payment_plan: 100,
+      sample_requirement: 'none',
+      budget_per_unit: product.price_from ? Number(product.price_from) : null,
+    };
+
+    setSending(true);
+
+    const { error: reqError } = await sb.from('requests').insert(requestPayload);
 
     setSending(false);
 
-    if (reqError || !reqData) {
-      alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error');
+    if (reqError) {
+      console.error('direct product order creation failed:', reqError);
+      alert(buildRequestCreationErrorMessage(lang, reqError));
       return;
     }
 
     nav('/checkout', {
       state: {
         offer: {
-          id: reqData.id,
-          request_id: reqData.id,
-          supplier_id: sup.id,
+          id: requestId,
+          request_id: requestId,
+          supplier_id: supplierId,
           profiles: sup,
           price: product.price_from || 0,
           currency: product.currency || 'USD',
@@ -128,7 +275,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           status: 'accepted',
           isDirect: true,
         },
-        request: { ...reqData, quantity: qty },
+        request: requestPayload,
       }
     });
   };
@@ -137,7 +284,8 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     if (!user) { nav('/login/buyer'); return; }
     if (!product) return;
     const sup = product.profiles || {};
-    if (!sup.id) {
+    const supplierId = sup.id || product.supplier_id;
+    if (!supplierId) {
       setSendingSample(false);
       alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : lang === 'zh' ? '无法识别供应商，请稍后再试' : 'Supplier not found, try again');
       return;
@@ -154,7 +302,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
     const { error } = await sb.from('samples').insert({
       product_id: id,
-      supplier_id: sup.id,
+      supplier_id: supplierId,
       buyer_id: user.id,
       quantity: parseInt(sampleQty || 1, 10),
       sample_price: parseFloat(product.sample_price || 0),
@@ -165,10 +313,14 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     });
 
     setSendingSample(false);
-    if (error) { alert(isAr ? 'حدث خطأ' : lang === 'zh' ? '发生错误' : 'Error'); return; }
+    if (error) {
+      console.error('sample request creation failed:', error);
+      alert(buildSampleRequestErrorMessage(lang, error));
+      return;
+    }
 
     await sb.from('notifications').insert({
-      user_id: sup.id, type: 'new_sample',
+      user_id: supplierId, type: 'new_sample',
       title_ar: 'طلب عينة جديد على منتجك',
       title_en: 'New sample request on your product',
       title_zh: '您的产品收到了新样品请求',
@@ -182,7 +334,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         body: JSON.stringify({
           type: 'new_sample',
           data: {
-            recipientUserId: sup.id,
+            recipientUserId: supplierId,
             productName: product.name_ar || product.name_en || product.name_zh || 'Product',
             quantity: sampleQty,
             totalPrice: total,
@@ -198,15 +350,89 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     setSampleNote('');
   };
 
+  const submitInquiry = async () => {
+    if (!user) { nav('/login/buyer'); return; }
+    if (!product) return;
+
+    const sup = product.profiles || {};
+    const supplierId = sup.id || product.supplier_id;
+    if (!supplierId) {
+      alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : lang === 'zh' ? '无法识别供应商，请稍后再试' : 'Supplier not found, try again');
+      return;
+    }
+
+    const questionText = getProductInquiryQuestion(selectedInquiryTemplate);
+    if (!questionText) {
+      alert(isAr ? 'اختر قالب الاستفسار أولاً' : lang === 'zh' ? '请先选择咨询模板' : 'Please choose an inquiry template first');
+      return;
+    }
+
+    setSendingInquiry(true);
+
+    const { data: inquiry, error } = await sb
+      .from('product_inquiries')
+      .insert({
+        product_id: product.id,
+        buyer_id: user.id,
+        supplier_id: supplierId,
+        template_key: selectedInquiryTemplate,
+        question_text: questionText,
+      })
+      .select('id')
+      .single();
+
+    setSendingInquiry(false);
+
+    if (error) {
+      console.error('product inquiry creation failed:', error);
+      alert(buildProductInquiryErrorMessage(lang, error));
+      return;
+    }
+
+    await sb.from('notifications').insert({
+      user_id: supplierId,
+      type: 'product_inquiry',
+      title_ar: `استفسار جديد على المنتج: ${product.name_ar || product.name_en || product.name_zh || 'منتج'}`,
+      title_en: `New product inquiry: ${product.name_en || product.name_ar || product.name_zh || 'Product'}`,
+      title_zh: `新的产品咨询：${product.name_zh || product.name_en || product.name_ar || 'Product'}`,
+      ref_id: inquiry?.id || product.id,
+      is_read: false,
+    });
+
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'product_inquiry',
+          data: {
+            recipientUserId: supplierId,
+            inquiryId: inquiry?.id || '',
+            productName: product.name_ar || product.name_en || product.name_zh || 'Product',
+            buyerName: profile?.company_name || profile?.full_name || user.email?.split('@')[0] || 'Buyer',
+            question: questionText,
+          },
+        }),
+      });
+    } catch (emailError) {
+      console.error('product inquiry email error:', emailError);
+    }
+
+    alert(isAr ? '✅ تم إرسال الاستفسار للمورد' : lang === 'zh' ? '✅ 已将咨询发送给供应商' : '✅ Inquiry sent to the supplier');
+    setShowInquiryForm(false);
+    setSelectedInquiryTemplate('');
+  };
+
   const handleChat = () => {
     if (!user) { nav('/login/buyer'); return; }
     if (!product) return;
     const sup = product.profiles || {};
-    if (!sup.id) {
+    const supplierId = sup.id || product.supplier_id;
+    if (!supplierId) {
       alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : lang === 'zh' ? '无法识别供应商，请稍后再试' : 'Supplier not found, try again');
       return;
     }
-    nav(`/chat/${sup.id}`);
+    nav(`/chat/${supplierId}`);
   };
 
   const stars = (r) => {
@@ -219,14 +445,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
   if (loading) return (
     <div className="product-detail-wrap">
-      <div className="product-detail-inner">
-        <div style={{ marginBottom: 32, width: 60, height: 16, background: 'var(--bg-hover)', borderRadius: 3 }} />
-        <div style={{ width: '100%', maxWidth: 480, height: 320, background: 'var(--bg-hover)', borderRadius: 12, marginBottom: 32, animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ width: '60%', height: 40, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 16 }} />
-        <div style={{ width: '30%', height: 28, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 24 }} />
-        <div style={{ width: '100%', height: 80, background: 'var(--bg-hover)', borderRadius: 3 }} />
-        <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
-      </div>
+      <BrandedLoading lang={lang} tone="product" />
     </div>
   );
 
@@ -241,6 +460,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   );
 
   const sup = product.profiles || {};
+  const supplierId = sup.id || product.supplier_id || '';
   const name = getLocalizedText(product, lang, 'name');
   const desc = getLocalizedText(product, lang, 'desc');
   const secondaryName = lang === 'zh'
@@ -262,10 +482,10 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     rates: exchangeRates,
     lang,
   });
-  const productSpecs = buildProductSpecs(product);
+  const productSpecs = buildProductSpecs(product, lang);
   const sourcingHighlights = [
-    { label: isAr ? 'MOQ' : lang === 'zh' ? 'MOQ' : 'MOQ', value: product.moq || '—' },
-    { label: isAr ? 'بلد المنشأ' : lang === 'zh' ? '原产地' : 'Origin', value: product.origin || sup.country || 'China' },
+    { label: isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '起订量' : 'MOQ', value: product.moq || '—' },
+    { label: isAr ? 'بلد المنشأ' : lang === 'zh' ? '原产地' : 'Origin', value: isAr ? ((product.origin || sup.country || 'China') === 'China' ? 'الصين' : (product.origin || sup.country || '—')) : (product.origin || sup.country || 'China') },
     { label: isAr ? 'مدة التجهيز' : lang === 'zh' ? '备货周期' : 'Lead time', value: product.spec_lead_time_days ? (isAr ? `${product.spec_lead_time_days} يوم` : lang === 'zh' ? `${product.spec_lead_time_days} 天` : `${product.spec_lead_time_days} days`) : '—' },
     { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制能力' : 'Customization', value: product.spec_customization || (isAr ? 'غير موضح' : lang === 'zh' ? '未说明' : 'Not specified') },
     { label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', value: product.sample_available ? (isAr ? 'متاحة' : lang === 'zh' ? '可提供' : 'Available') : (isAr ? 'غير متاحة' : lang === 'zh' ? '暂无' : 'Not available') },
@@ -347,7 +567,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
         <div className="product-detail-meta">
           <div>
-            <p className="meta-label">{isAr ? 'الحد الأدنى' : lang === 'zh' ? '起订量' : 'Min. Order'}</p>
+            <p className="meta-label">{isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '起订量' : 'Min. Order'}</p>
             <p className="meta-val">{product.moq || '—'}</p>
           </div>
           <div>
@@ -356,7 +576,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           </div>
           <div>
             <p className="meta-label">{isAr ? 'بلد المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}</p>
-            <p className="meta-val">{product.origin || sup.country || 'China'}</p>
+            <p className="meta-val">{isAr ? ((product.origin || sup.country || 'China') === 'China' ? 'الصين' : (product.origin || sup.country || '—')) : (product.origin || sup.country || 'China')}</p>
           </div>
           {product.sample_available && (
             <div>
@@ -404,14 +624,14 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 28 }}>
             {productSpecs.map(spec => (
               <div key={spec.key} style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{spec.label}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: isAr ? 0 : 1.5, textTransform: isAr ? 'none' : 'uppercase', marginBottom: 6 }}>{spec.label}</p>
                 <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6 }}>{spec.value}</p>
               </div>
             ))}
           </div>
         )}
 
-        {sup.id && (
+        {supplierId && (
           <div style={{ marginBottom: 28 }}>
             <div style={{
               display: 'grid',
@@ -454,7 +674,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
               </div>
             </div>
 
-            <div className="supplier-card" onClick={() => nav(`/supplier/${sup.id}`)}>
+            <div className="supplier-card" onClick={() => nav(`/supplier/${supplierId}`)}>
               <div className="avatar" style={{ overflow: 'hidden' }}>
                 {sup.avatar_url
                   ? <img src={sup.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -529,15 +749,34 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
               <button
                 className="btn-primary"
                 style={{ background: '#1a1a1a', color: '#fff', letterSpacing: 0 }}
-                onClick={() => { setShowBuyForm(!showBuyForm); setShowSampleForm(false); }}>
+                onClick={() => {
+                  setShowBuyForm(!showBuyForm);
+                  setShowSampleForm(false);
+                  setShowInquiryForm(false);
+                }}>
                 {isAr ? 'اشترِ الآن' : lang === 'zh' ? '立即下单' : 'Buy Now'}
+              </button>
+
+              <button
+                className="btn-outline"
+                style={{ borderColor: 'var(--text-primary)', color: 'var(--text-primary)' }}
+                onClick={() => {
+                  setShowInquiryForm(!showInquiryForm);
+                  setShowBuyForm(false);
+                  setShowSampleForm(false);
+                }}>
+                {isAr ? 'استفسار' : lang === 'zh' ? '咨询' : 'Inquiry'}
               </button>
 
               {product.sample_available && (
                 <button
                   className="btn-outline"
                   style={{ borderColor: '#2d7a4f', color: '#2d7a4f' }}
-                  onClick={() => { setShowSampleForm(!showSampleForm); setShowBuyForm(false); }}>
+                  onClick={() => {
+                    setShowSampleForm(!showSampleForm);
+                    setShowBuyForm(false);
+                    setShowInquiryForm(false);
+                  }}>
                   {isAr ? `اطلب عينة — ${fmt(product.sample_price)} SAR` : lang === 'zh' ? `申请样品 — ${fmt(product.sample_price)} SAR` : `Request Sample — ${fmt(product.sample_price)} SAR`}
                 </button>
               )}
@@ -581,6 +820,68 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           </div>
         )}
 
+        {showInquiryForm && (
+          <div className="buy-form" style={{ borderColor: 'var(--border-muted)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 6, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                  {isAr ? 'استفسار سريع عن المنتج' : lang === 'zh' ? '产品快捷咨询' : 'Quick Product Inquiry'}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                  {isAr
+                    ? 'اختر أحد القوالب الجاهزة فقط، وسنرسل الاستفسار داخل مَعبر وعلى إيميل المورد.'
+                    : lang === 'zh'
+                      ? '请选择下方 3 个固定模板之一。咨询会同步发送到系统内和供应商邮箱。'
+                      : 'Choose one of the 3 fixed templates. The inquiry will be sent inside Maabar and to the supplier by email.'}
+                </p>
+              </div>
+              <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', letterSpacing: 1 }}>
+                {isAr ? '3 قوالب' : lang === 'zh' ? '3 个模板' : '3 templates'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+              {inquiryTemplates.map((template) => {
+                const isSelected = selectedInquiryTemplate === template.key;
+                return (
+                  <button
+                    key={template.key}
+                    type="button"
+                    onClick={() => setSelectedInquiryTemplate(template.key)}
+                    style={{
+                      textAlign: 'right',
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius-lg)',
+                      border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
+                      background: isSelected ? 'var(--bg-raised)' : 'var(--bg-subtle)',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontFamily: 'var(--font-ar)',
+                    }}>
+                    {template.question}
+                  </button>
+                );
+              })}
+            </div>
+
+            {!user && (
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                {isAr ? '* سيُطلب منك تسجيل الدخول عند الإرسال' : lang === 'zh' ? '* 发送前需要先登录' : '* You will be asked to sign in before sending'}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button className="btn-dark-sm" onClick={submitInquiry} disabled={sendingInquiry}>
+                {sendingInquiry ? '...' : isAr ? 'إرسال الاستفسار ←' : lang === 'zh' ? '发送咨询 →' : 'Send Inquiry →'}
+              </button>
+              <button className="btn-outline" onClick={() => setShowInquiryForm(false)}>
+                {isAr ? 'إلغاء' : lang === 'zh' ? '取消' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {showSampleForm && product.sample_available && (
           <div className="buy-form" style={{ borderColor: '#2d7a4f', borderWidth: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -601,7 +902,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">{isAr ? `الكمية (max ${product.sample_max_qty || 3})` : lang === 'zh' ? `数量（最多 ${product.sample_max_qty || 3}）` : `Quantity (max ${product.sample_max_qty || 3})`}</label>
                 <input className="form-input" type="number"

@@ -1,19 +1,36 @@
-import Footer from '../components/Footer';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
-import { getOfferShippingMethod } from '../lib/offerPricing';
+import { getOfferEstimatedTotal, getOfferShippingMethod } from '../lib/offerPricing';
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import {
+  buildMoyasarAmountMinorUnits,
+  clearPendingMoyasarCheckout,
+  loadPendingMoyasarCheckout,
+} from '../lib/moyasarCheckout';
+import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import BrandedLoading from '../components/BrandedLoading';
+
+const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
 const T = {
   ar: {
     tag: 'مَعبر · تأكيد الدفع',
     title: 'تم الدفع بنجاح',
     sub: 'ادفع بقدر ما تثق — وزّد ثقتك مع كل صفقة',
+    loadingTitle: 'نراجع حالة الدفع الآن',
+    loadingBody: 'لا يتم اعتماد الدفع داخل مَعبر إلا بعد التحقق من Moyasar وإغلاق خطوة الدفع بأمان.',
+    failedTitle: 'لم يتم تأكيد الدفع',
+    failedBody: 'لم يصلنا تأكيد دفع ناجح من Moyasar، لذلك لم نسجل الطلب كمدفوع داخل مَعبر.',
+    backToCheckout: 'العودة للدفع',
+    dashboard: 'متابعة الطلب',
+    home: 'العودة للرئيسية',
+    sar: 'ريال',
     what: 'ماذا يحدث الآن؟',
     steps: [
       { n: '01', t: 'تم استلام دفعتك', d: 'دفعتك وصلت — وبقدر ثقتك تكبر صفقتك القادمة.' },
@@ -44,16 +61,21 @@ const T = {
     nextCheckpointPaidBody: 'المورد أُشعر الآن، ويمكنه متابعة تجهيز الطلب حسب حالته داخل مَعبر.',
     buyerProtection: 'حماية الصفقة',
     buyerProtectionBody: 'احتفظ بكل التحديثات والدفع داخل مَعبر حتى تبقى المراجعة والمرجع التجاري واضحين للطرفين.',
-    dashboard: 'متابعة الطلب',
-    home: 'العودة للرئيسية',
-    sar: 'ريال',
     copy: 'مَعبر © 2026',
   },
   en: {
     tag: 'Maabar · Payment Confirmed',
     title: 'Payment Successful',
     sub: 'Pay what you\'re comfortable with — your money moves when you decide',
-    what: "What happens next?",
+    loadingTitle: 'We are verifying your payment',
+    loadingBody: 'Maabar records a payment only after Moyasar returns a verified successful status.',
+    failedTitle: 'Payment was not confirmed',
+    failedBody: 'Maabar did not receive a verified paid status from Moyasar, so the order was not marked as paid.',
+    backToCheckout: 'Back to Checkout',
+    dashboard: 'Track Order',
+    home: 'Back to Home',
+    sar: 'SAR',
+    what: 'What happens next?',
     steps: [
       { n: '01', t: 'Payment Received', d: 'Your payment is in — your trust grows with every successful deal.' },
       { n: '02', t: 'Supplier Preparing', d: 'The supplier has been notified and will begin preparing your order.' },
@@ -83,15 +105,20 @@ const T = {
     nextCheckpointPaidBody: 'The supplier has now been notified and can continue fulfillment according to the order stage on Maabar.',
     buyerProtection: 'Deal protection',
     buyerProtectionBody: 'Keep payment, updates, and any issue review inside Maabar so both sides keep one clear commercial record.',
-    dashboard: 'Track Order',
-    home: 'Back to Home',
-    sar: 'SAR',
     copy: 'Maabar © 2026',
   },
   zh: {
     tag: 'Maabar · 付款确认',
     title: '付款成功',
     sub: '按您的信任程度付款 — 每次交易都在积累信任',
+    loadingTitle: '正在核验付款状态',
+    loadingBody: '只有在 Moyasar 返回并验证为成功付款后，Maabar 才会把订单记录为已付款。',
+    failedTitle: '付款未确认',
+    failedBody: 'Maabar 没有收到 Moyasar 的已付款验证结果，因此订单尚未标记为已付款。',
+    backToCheckout: '返回付款页',
+    dashboard: '跟踪订单',
+    home: '返回首页',
+    sar: 'SAR',
     what: '接下来会发生什么？',
     steps: [
       { n: '01', t: '已收到付款', d: '您的付款已到位 — 每次成功交易都在增加您的信任度。' },
@@ -122,198 +149,380 @@ const T = {
     nextCheckpointPaidBody: '系统已通知供应商，后续可按 Maabar 内的订单阶段继续处理。',
     buyerProtection: '交易保护',
     buyerProtectionBody: '请尽量把付款、更新和任何问题处理都保留在 Maabar 内，这样双方都有清晰的商业记录。',
-    dashboard: '跟踪订单',
-    home: '返回首页',
-    sar: 'SAR',
     copy: 'Maabar © 2026',
   }
 };
 
-export default function PaymentSuccess({ lang }) {
+function buildFailureMessage(lang, fallback) {
+  if (fallback) return fallback;
+  if (lang === 'zh') return '付款未完成或未通过验证。';
+  if (lang === 'en') return 'Payment did not complete or could not be verified.';
+  return 'الدفع لم يكتمل أو لم يتم التحقق منه.';
+}
+
+export default function PaymentSuccess({ lang, user }) {
   const nav = useNavigate();
   const location = useLocation();
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
+  const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const paymentIdFromQuery = String(params.get('id') || '').trim();
+  const paymentStatusFromQuery = String(params.get('status') || '').trim().toLowerCase();
+  const paymentMessageFromQuery = String(params.get('message') || '').trim();
+  const stateKey = String(params.get('stateKey') || '').trim();
+  const pendingContext = loadPendingMoyasarCheckout(stateKey);
+  const initialState = location.state || pendingContext || {};
+  const processedRef = useRef(false);
 
-  const { payment, offer, request, total, supplier: supplierFromState, secondPaymentDue } = location.state || {};
-  const checkoutCurrency = String(offer?.currency || 'USD').toUpperCase();
+  const [payment, setPayment] = useState(location.state?.payment || null);
+  const [offer, setOffer] = useState(initialState.offer || null);
+  const [request, setRequest] = useState(initialState.request || null);
+  const [amountPaid, setAmountPaid] = useState(Number(initialState.total || initialState.firstPayment || 0));
+  const [secondPaymentDue, setSecondPaymentDue] = useState(Number(initialState.secondPaymentDue || initialState.secondPayment || 0));
+  const [supplierSnapshot, setSupplierSnapshot] = useState(initialState.supplier || initialState.supplierSnapshot || initialState.offer?.profiles || null);
+  const [processingState, setProcessingState] = useState(location.state?.payment ? 'success' : (paymentIdFromQuery ? 'verifying' : 'idle'));
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const checkoutCurrency = String(offer?.currency || initialState.checkoutCurrency || 'USD').toUpperCase();
   const currencyLabel = checkoutCurrency === 'SAR' ? t.sar : checkoutCurrency;
-  const [supplierSnapshot, setSupplierSnapshot] = useState(supplierFromState || offer?.profiles || null);
+  const supplierTrustSignals = buildSupplierTrustSignals(supplierSnapshot || {});
+  const supplierMaabarId = getSupplierMaabarId(supplierSnapshot || {});
+  const isReviewedSupplier = isSupplierPubliclyVisible(supplierSnapshot?.status);
+  const shippingMethod = getOfferShippingMethod(offer);
+  const requestTitle = isAr
+    ? request?.title_ar || request?.title_en || request?.title_zh || '—'
+    : lang === 'zh'
+      ? request?.title_zh || request?.title_en || request?.title_ar || '—'
+      : request?.title_en || request?.title_ar || request?.title_zh || '—';
+  const supplierName = supplierSnapshot?.company_name || t.supplier;
+  const leadTimeLabel = offer?.delivery_days
+    ? (isAr ? `${offer.delivery_days} يوم` : lang === 'zh' ? `${offer.delivery_days} 天` : `${offer.delivery_days} days`)
+    : '—';
+  const checkpointTitle = secondPaymentDue > 0 ? t.nextCheckpointSplit : t.nextCheckpointPaid;
+  const checkpointBody = secondPaymentDue > 0 ? t.nextCheckpointSplitBody : t.nextCheckpointPaidBody;
 
   useEffect(() => {
-    if (!payment) { nav('/dashboard'); return; }
-    window.history.replaceState(null, '', '/payment-success');
-  }, [nav, payment]);
-
-  useEffect(() => {
-    setSupplierSnapshot(supplierFromState || offer?.profiles || null);
-  }, [offer, supplierFromState]);
+    setOffer(initialState.offer || null);
+    setRequest(initialState.request || null);
+    setSecondPaymentDue(Number(initialState.secondPaymentDue || initialState.secondPayment || 0));
+    setAmountPaid(Number(initialState.total || initialState.firstPayment || 0));
+    setSupplierSnapshot(initialState.supplier || initialState.supplierSnapshot || initialState.offer?.profiles || null);
+  }, [location.state, stateKey]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadSupplierSnapshot() {
-      if (supplierFromState || offer?.profiles || !offer?.supplier_id) return;
-      const { data } = await sb
-        .from('profiles')
-        .select('id,company_name,status,trade_link,wechat,whatsapp,factory_images,trust_score,maabar_supplier_id,city,country')
-        .eq('id', offer.supplier_id)
-        .single();
+      if (supplierSnapshot || offer?.profiles || !offer?.supplier_id) return;
+      const data = await fetchSupplierPublicProfileById(sb, offer.supplier_id);
 
       if (!cancelled && data) setSupplierSnapshot(data);
     }
 
     loadSupplierSnapshot();
     return () => { cancelled = true; };
-  }, [offer, supplierFromState]);
+  }, [offer, supplierSnapshot]);
 
-  const fmt = (n) => Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  useEffect(() => {
+    if (payment && location.state?.payment) {
+      window.history.replaceState(null, '', '/payment-success');
+      return;
+    }
 
-  if (!payment) return null;
+    if (!paymentIdFromQuery) {
+      if (!payment) nav('/dashboard');
+      return;
+    }
 
-  const requestTitle = isAr
-    ? request?.title_ar || request?.title_en || request?.title_zh || '—'
-    : lang === 'zh'
-      ? request?.title_zh || request?.title_en || request?.title_ar || '—'
-      : request?.title_en || request?.title_ar || request?.title_zh || '—';
-  const shippingMethod = getOfferShippingMethod(offer);
-  const supplierTrustSignals = buildSupplierTrustSignals(supplierSnapshot || {});
-  const supplierMaabarId = getSupplierMaabarId(supplierSnapshot || {});
-  const isReviewedSupplier = isSupplierPubliclyVisible(supplierSnapshot?.status);
-  const leadTimeLabel = offer?.delivery_days
-    ? (isAr ? `${offer.delivery_days} يوم` : lang === 'zh' ? `${offer.delivery_days} 天` : `${offer.delivery_days} days`)
-    : '—';
-  const requestReference = request?.id ? String(request.id).slice(0, 8).toUpperCase() : '—';
-  const checkpointTitle = secondPaymentDue > 0 ? t.nextCheckpointSplit : t.nextCheckpointPaid;
-  const checkpointBody = secondPaymentDue > 0 ? t.nextCheckpointSplitBody : t.nextCheckpointPaidBody;
+    if (processedRef.current) return;
+    processedRef.current = true;
+
+    async function finalizePayment() {
+      if (!user) {
+        setProcessingState('failed');
+        setErrorMessage(buildFailureMessage(lang, lang === 'ar' ? 'يجب تسجيل الدخول بنفس الحساب لإكمال التحقق من الدفع.' : lang === 'zh' ? '请使用同一账号登录后再完成付款核验。' : 'Please sign in with the same account to complete payment verification.'));
+        return;
+      }
+
+      if (!offer || !request) {
+        setProcessingState('failed');
+        setErrorMessage(buildFailureMessage(lang, lang === 'ar' ? 'تعذر استرجاع تفاصيل الطلب بعد العودة من بوابة الدفع.' : lang === 'zh' ? '从支付网关返回后，无法恢复订单上下文。' : 'The checkout context could not be restored after returning from the payment gateway.'));
+        return;
+      }
+
+      if (paymentStatusFromQuery && paymentStatusFromQuery !== 'paid') {
+        setProcessingState('failed');
+        setErrorMessage(buildFailureMessage(lang, paymentMessageFromQuery));
+        return;
+      }
+
+      try {
+        const { data: verifyData, error: verifyError } = await sb.functions.invoke('verify-moyasar-payment', {
+          body: { paymentId: paymentIdFromQuery },
+        });
+
+        if (verifyError) throw verifyError;
+
+        const verifiedPayment = verifyData?.payment;
+        if (!verifiedPayment || String(verifiedPayment.status || '').toLowerCase() !== 'paid') {
+          throw new Error(buildFailureMessage(lang, paymentMessageFromQuery));
+        }
+
+        const expectedMinorUnits = buildMoyasarAmountMinorUnits(initialState.firstPayment || initialState.total || amountPaid);
+        if (expectedMinorUnits > 0 && Number(verifiedPayment.amount) !== expectedMinorUnits) {
+          throw new Error(lang === 'ar' ? 'قيمة الدفع لا تطابق المبلغ المتوقع لهذا الطلب.' : lang === 'zh' ? '付款金额与当前订单预期金额不一致。' : 'The payment amount does not match the expected order amount.');
+        }
+
+        const verifiedCurrency = String(verifiedPayment.currency || '').toUpperCase();
+        if (verifiedCurrency && verifiedCurrency !== checkoutCurrency) {
+          throw new Error(lang === 'ar' ? 'عملة الدفع لا تطابق عملة الطلب الحالية.' : lang === 'zh' ? '付款币种与当前订单币种不一致。' : 'The payment currency does not match the current checkout currency.');
+        }
+
+        const { data: existingPayment } = await sb
+          .from('payments')
+          .select('id,status,moyasar_id')
+          .eq('moyasar_id', verifiedPayment.id)
+          .limit(1)
+          .maybeSingle();
+
+        let persistedPayment = existingPayment;
+        const firstPaymentAmount = Number(initialState.firstPayment || amountPaid || 0);
+        const secondInstallmentAmount = Number(initialState.secondPayment || secondPaymentDue || 0);
+        const totalAmount = Number(initialState.total || amountPaid || 0);
+        const selectedPct = Number(initialState.selectedPct || request?.payment_pct || 0);
+        const subtotal = offer ? getOfferEstimatedTotal(offer, request) : 0;
+        const maabarFee = 0;
+        const supplierAmount = parseFloat((subtotal * 0.96).toFixed(2));
+        const reqTitle = request?.title_ar || request?.title_en || request?.title_zh || '';
+
+        if (!persistedPayment) {
+          if (initialState.isSecondPayment) {
+            const { data: insertedPayment, error: insertError } = await sb.from('payments').insert({
+              request_id: request.id,
+              buyer_id: user.id,
+              supplier_id: offer.supplier_id,
+              amount: firstPaymentAmount,
+              amount_first: 0,
+              amount_second: firstPaymentAmount,
+              payment_pct: request.payment_pct,
+              status: 'second_paid',
+              moyasar_id: verifiedPayment.id,
+            }).select('id,status,moyasar_id').single();
+
+            if (insertError) throw insertError;
+            persistedPayment = insertedPayment;
+
+            await sb.from('requests').update({
+              status: 'shipping',
+              shipping_status: 'shipping',
+            }).eq('id', request.id);
+          } else {
+            const { data: insertedPayment, error: insertError } = await sb.from('payments').insert({
+              request_id: request.id,
+              buyer_id: user.id,
+              supplier_id: offer.supplier_id,
+              amount: totalAmount,
+              amount_first: firstPaymentAmount,
+              amount_second: secondInstallmentAmount,
+              payment_pct: selectedPct,
+              maabar_fee: maabarFee,
+              supplier_amount: supplierAmount,
+              status: 'first_paid',
+              moyasar_id: verifiedPayment.id,
+            }).select('id,status,moyasar_id').single();
+
+            if (insertError) throw insertError;
+            persistedPayment = insertedPayment;
+
+            await sb.from('requests').update({
+              status: 'paid',
+              payment_id: insertedPayment.id,
+              payment_pct: selectedPct,
+              payment_second: secondInstallmentAmount,
+            }).eq('id', request.id);
+
+            try {
+              await fetch(SEND_EMAILS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+                body: JSON.stringify({
+                  type: 'payment_received_supplier',
+                  data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPaymentAmount, name: 'Supplier', lang },
+                }),
+              });
+            } catch (emailError) {
+              console.error('supplier payment email error:', emailError);
+            }
+
+            await sb.from('notifications').insert({
+              user_id: offer.supplier_id,
+              type: 'payment_received',
+              title_ar: `وصلت دفعتك الأولى — ${firstPaymentAmount} ${currencyLabel}. ابدأ التجهيز الآن`,
+              title_en: `First payment received — ${firstPaymentAmount} ${currencyLabel}. Start preparation now`,
+              title_zh: `首付已收到 — ${firstPaymentAmount} ${currencyLabel}. 立即开始备货`,
+              ref_id: request.id,
+              is_read: false,
+            });
+
+            try {
+              if (user?.email) {
+                await fetch(SEND_EMAILS_URL, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+                  body: JSON.stringify({
+                    type: 'payment_confirmation_buyer',
+                    to: user.email,
+                    data: { requestTitle: reqTitle, amount: firstPaymentAmount, name: '', lang },
+                  }),
+                });
+              }
+            } catch (buyerEmailError) {
+              console.error('buyer payment email error:', buyerEmailError);
+            }
+          }
+        }
+
+        clearPendingMoyasarCheckout(stateKey);
+        setPayment({ id: persistedPayment?.id || verifiedPayment.id, status: persistedPayment?.status || verifiedPayment.status, moyasar_id: verifiedPayment.id });
+        setAmountPaid(firstPaymentAmount || amountPaid);
+        setProcessingState('success');
+        window.history.replaceState(null, '', '/payment-success');
+      } catch (error) {
+        console.error('payment success finalize error:', error);
+        setProcessingState('failed');
+        setErrorMessage(buildFailureMessage(lang, error instanceof Error ? error.message : paymentMessageFromQuery));
+      }
+    }
+
+    finalizePayment();
+  }, [payment, paymentIdFromQuery, offer, request, user, paymentStatusFromQuery, paymentMessageFromQuery, lang, amountPaid, initialState, checkoutCurrency, currencyLabel, nav, secondPaymentDue, stateKey]);
+
+  const backToCheckout = () => {
+    if (offer && request) {
+      nav('/checkout', { state: { offer, request, isSecondPayment: Boolean(initialState.isSecondPayment) } });
+      return;
+    }
+    nav('/dashboard');
+  };
+
+  if (processingState === 'verifying') {
+    return (
+      <BrandedLoading
+        lang={lang}
+        tag={t.tag}
+        title={t.loadingTitle}
+        body={t.loadingBody}
+        tone="app"
+        fullscreen
+      />
+    );
+  }
+
+  if (processingState === 'failed') {
+    return (
+      <StatusShell
+        isAr={isAr}
+        tag={t.tag}
+        title={t.failedTitle}
+        body={errorMessage || t.failedBody}
+        primaryAction={{ label: t.backToCheckout, onClick: backToCheckout }}
+        secondaryAction={{ label: t.dashboard, onClick: () => nav('/dashboard') }}
+      />
+    );
+  }
+
+  if (!payment || !offer || !request) {
+    return null;
+  }
+
+  const fmt = (n) => Number(n || 0).toLocaleString(isAr ? 'ar-SA' : 'en-US', { maximumFractionDigits: 2 });
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'transparent' }}>
-
-      {/* HEADER */}
-      <div style={{
-        padding: '60px 60px 48px',
-        background: 'rgba(0,0,0,0.52)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 24, fontFamily: 'var(--font-body)' }}>
-          {t.tag}
-        </p>
-
-        {/* CHECK ICON */}
-        <div style={{
-          width: 48, height: 48, borderRadius: '50%',
-          background: 'rgba(45,122,79,0.2)',
-          border: '1px solid rgba(45,122,79,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 20, fontSize: 22,
-        }}>
-          ✓
+    <div style={{ minHeight: 'var(--app-dvh)', background: '#F7F5F2', paddingTop: 'var(--page-top-offset)' }}>
+      <div style={{ padding: '56px 60px 48px', borderBottom: '1px solid #E5E0D8', background: '#FCFBF9' }}>
+        <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+          <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
+            {t.tag}
+          </p>
+          <h1 style={{ fontSize: isAr ? 38 : 48, fontWeight: 300, color: '#2C2C2C', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)', letterSpacing: isAr ? 0 : -1.4 }}>
+            {t.title}
+          </h1>
+          <p style={{ fontSize: 14, color: '#7a7a7a', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+            {t.sub}
+          </p>
         </div>
-
-        <h1 style={{
-          fontSize: isAr ? 44 : 52, fontWeight: 300,
-          color: '#F7F5F2', letterSpacing: isAr ? 0 : -1,
-          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
-          marginBottom: 10, lineHeight: 1.1,
-        }}>
-          {t.title}
-        </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
-          {t.sub}
-        </p>
       </div>
 
-      {/* CONTENT */}
-      <div style={{ background: 'rgba(247,245,242,0.92)', backdropFilter: 'blur(8px)', minHeight: 'calc(100vh - 280px)' }}>
-        <div style={{ padding: '48px 60px', maxWidth: 860, margin: '0 auto' }}>
-
-          {/* PAYMENT DETAILS */}
-          <div style={{ marginBottom: 48 }}>
-            <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16, fontFamily: 'var(--font-body)' }}>
-              {t.amount}
-            </p>
-            <div className="success-details" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#E5E0D8' }}>
-              <div style={{ background: '#2C2C2C', padding: '28px 24px' }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(247,245,242,0.4)', marginBottom: 12, textTransform: 'uppercase' }}>{t.amount}</p>
-                <p style={{ fontSize: 36, fontWeight: 300, color: '#F7F5F2', fontFamily: 'var(--font-en)' }}>
-                  {fmt(total)} <span style={{ fontSize: 13, opacity: 0.6 }}>{currencyLabel}</span>
-                </p>
-              </div>
-              <div style={{ background: '#F7F5F2', padding: '28px 24px' }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: '#7a7a7a', marginBottom: 12, textTransform: 'uppercase' }}>{t.requestRef}</p>
-                <p style={{ fontSize: 13, color: '#2C2C2C', fontWeight: 500, marginBottom: 8 }}>{requestReference}</p>
-                <p style={{ fontSize: 11, color: '#7a7a7a', lineHeight: 1.65, margin: 0 }}>{requestTitle}</p>
-              </div>
-              <div style={{ background: '#F7F5F2', padding: '28px 24px' }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: '#7a7a7a', marginBottom: 12, textTransform: 'uppercase' }}>{t.supplier}</p>
-                <p style={{ fontSize: 13, color: '#2C2C2C', fontWeight: 500, marginBottom: 8 }}>{supplierSnapshot?.company_name || '—'}</p>
-                <p style={{ fontSize: 11, color: '#7a7a7a', lineHeight: 1.65, margin: 0 }}>
-                  {supplierMaabarId ? `${t.supplierId}: ${supplierMaabarId}` : leadTimeLabel !== '—' ? `${t.leadTime}: ${leadTimeLabel}` : '—'}
-                </p>
-              </div>
-              <div style={{ background: '#F7F5F2', padding: '28px 24px' }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: '#7a7a7a', marginBottom: 12, textTransform: 'uppercase' }}>{t.status}</p>
-                <p style={{ fontSize: 14, fontWeight: 500, color: '#2d7a4f', marginBottom: 8 }}>🔒 {t.held}</p>
-                <p style={{ fontSize: 11, color: '#7a7a7a', lineHeight: 1.65, margin: 0, wordBreak: 'break-word' }}>
-                  {t.paymentId}: {payment.moyasar_id || payment.id?.slice(0, 16)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="success-summary-grid" style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: 16, marginBottom: 48 }}>
-            <div style={{ border: '1px solid #E5E0D8', background: '#F7F5F2', padding: '24px 24px 22px' }}>
-              <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
+      <div style={{ padding: 'clamp(24px, 6vw, 48px) clamp(16px, 6vw, 60px) max(32px, calc(64px + var(--safe-bottom)))' }}>
+        <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+          <div className="success-details" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 28 }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E5E0D8', padding: '28px 28px 24px' }}>
+              <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 20, fontFamily: 'var(--font-body)' }}>
                 {t.requestSummary}
               </p>
-              <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                  <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.supplier}</span>
-                  <strong style={{ fontSize: 13, color: '#2C2C2C', textAlign: isAr ? 'left' : 'right' }}>{supplierSnapshot?.company_name || '—'}</strong>
-                </div>
-                {supplierMaabarId && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                    <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.supplierId}</span>
-                    <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{supplierMaabarId}</strong>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                  <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.leadTime}</span>
-                  <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{leadTimeLabel}</strong>
-                </div>
-                {shippingMethod && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                    <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.shippingMethod}</span>
-                    <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{shippingMethod}</strong>
-                  </div>
-                )}
+              <div className="success-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                <SummaryRow label={t.amount} value={`${fmt(amountPaid)} ${currencyLabel}`} />
+                <SummaryRow label={t.paymentId} value={payment.moyasar_id || payment.id} mono />
+                <SummaryRow label={t.status} value={t.held} />
+                <SummaryRow label={t.requestRef} value={String(request.id).slice(0, 8).toUpperCase()} mono />
+                <SummaryRow label={t.supplier} value={supplierName} />
+                <SummaryRow label={t.supplierId} value={supplierMaabarId || '—'} mono />
+                <SummaryRow label={t.leadTime} value={leadTimeLabel} />
+                <SummaryRow label={t.shippingMethod} value={shippingMethod || '—'} />
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {isReviewedSupplier && <span style={successBadgeStyle('#5a9a72', 'rgba(58,122,82,0.1)', 'rgba(58,122,82,0.2)')}>✓ {t.verifiedSupplier}</span>}
-                {supplierTrustSignals.includes('trade_profile_available') && <span style={successBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>{t.tradeProfile}</span>}
-                {supplierTrustSignals.includes('wechat_available') && <span style={successBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>{t.wechatAvailable}</span>}
-                {supplierTrustSignals.includes('factory_media_available') && <span style={successBadgeStyle('#7a7a7a', 'rgba(255,255,255,0.75)', '#E5E0D8')}>{t.factoryPhotos}</span>}
+              <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid #E5E0D8' }}>
+                <p style={{ fontSize: 16, color: '#2C2C2C', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                  {requestTitle}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {isReviewedSupplier && <span style={successBadgeStyle('#5a9a72', 'rgba(58,122,82,0.1)', 'rgba(58,122,82,0.2)')}>✓ {t.verifiedSupplier}</span>}
+                  {supplierTrustSignals.includes('trade_profile_available') && <span style={successBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>{t.tradeProfile}</span>}
+                  {supplierTrustSignals.includes('wechat_available') && <span style={successBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>{t.wechatAvailable}</span>}
+                  {supplierTrustSignals.includes('factory_media_available') && <span style={successBadgeStyle('#7a7a7a', 'rgba(255,255,255,0.75)', '#E5E0D8')}>{t.factoryPhotos}</span>}
+                </div>
               </div>
             </div>
 
-            <div style={{ border: '1px solid rgba(139,120,255,0.15)', background: 'rgba(139,120,255,0.06)', padding: '24px 24px 22px' }}>
-              <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
-                {t.nextCheckpoint}
-              </p>
-              <h3 style={{ fontSize: isAr ? 20 : 22, fontWeight: 400, color: '#2C2C2C', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
-                {checkpointTitle}
-              </h3>
-              <p style={{ fontSize: 12, color: '#5f5f63', lineHeight: 1.8, marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
-                {checkpointBody}
-              </p>
-              <p style={{ fontSize: 12, color: '#5f5f63', lineHeight: 1.75, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
-                <strong style={{ color: '#2C2C2C', fontWeight: 500 }}>{t.buyerProtection}:</strong> {t.buyerProtectionBody}
-              </p>
+            <div style={{ display: 'grid', gap: 16 }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E5E0D8', padding: '24px 24px 22px' }}>
+                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
+                  {t.verification}
+                </p>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                    <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.supplier}</span>
+                    <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{supplierName}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                    <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.leadTime}</span>
+                    <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{leadTimeLabel}</strong>
+                  </div>
+                  {shippingMethod && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                      <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.shippingMethod}</span>
+                      <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{shippingMethod}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ border: '1px solid rgba(139,120,255,0.15)', background: 'rgba(139,120,255,0.06)', padding: '24px 24px 22px' }}>
+                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
+                  {t.nextCheckpoint}
+                </p>
+                <h3 style={{ fontSize: isAr ? 20 : 22, fontWeight: 400, color: '#2C2C2C', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                  {checkpointTitle}
+                </h3>
+                <p style={{ fontSize: 12, color: '#5f5f63', lineHeight: 1.8, marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                  {checkpointBody}
+                </p>
+                <p style={{ fontSize: 12, color: '#5f5f63', lineHeight: 1.75, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                  <strong style={{ color: '#2C2C2C', fontWeight: 500 }}>{t.buyerProtection}:</strong> {t.buyerProtectionBody}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* NEXT STEPS */}
           <div style={{ marginBottom: 48 }}>
             <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 16, fontFamily: 'var(--font-body)' }}>
               {t.what}
@@ -335,7 +544,6 @@ export default function PaymentSuccess({ lang }) {
             </div>
           </div>
 
-          {/* ACTIONS */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button onClick={() => nav('/dashboard')} style={{
               background: '#2C2C2C', color: '#F7F5F2', border: 'none',
@@ -371,6 +579,33 @@ export default function PaymentSuccess({ lang }) {
           .success-steps { grid-template-columns: 1fr 1fr !important; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function StatusShell({ isAr, tag, title, body, primaryAction, secondaryAction }) {
+  return (
+    <div style={{ minHeight: 'var(--app-dvh)', background: '#F7F5F2', paddingTop: 'var(--page-top-offset)', display: 'flex', alignItems: 'center' }}>
+      <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '0 clamp(16px, 5vw, 24px)' }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E5E0D8', padding: '34px 30px' }}>
+          <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 14, fontFamily: 'var(--font-body)' }}>{tag}</p>
+          <h1 style={{ fontSize: isAr ? 30 : 36, fontWeight: 300, color: '#2C2C2C', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{title}</h1>
+          <p style={{ fontSize: 14, color: '#6A6A6F', lineHeight: 1.8, marginBottom: 22, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{body}</p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button onClick={primaryAction.onClick} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '12px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{primaryAction.label}</button>
+            <button onClick={secondaryAction.onClick} style={{ background: 'none', color: '#7a7a7a', border: '1px solid #E5E0D8', padding: '12px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{secondaryAction.label}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value, mono = false }) {
+  return (
+    <div style={{ padding: '14px 16px', border: '1px solid #E5E0D8', background: '#FBFAF8' }}>
+      <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 8 }}>{label}</p>
+      <p style={{ fontSize: 13, color: '#2C2C2C', margin: 0, fontFamily: mono ? 'var(--font-en)' : 'inherit', wordBreak: 'break-word' }}>{value}</p>
     </div>
   );
 }

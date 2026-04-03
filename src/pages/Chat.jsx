@@ -8,6 +8,8 @@ import {
   TRANSLATION_DIRECTIONS,
 } from '../lib/maabarAi/config';
 import { translateChatMessage } from '../lib/maabarAi/client';
+import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
+import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
@@ -96,6 +98,7 @@ export default function Chat({ lang, user, profile }) {
   const bodyRef = useRef(null);
   const channelRef = useRef(null);
   const fileRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const isAr = lang === 'ar';
   const templates = MSG_TEMPLATES[lang] || MSG_TEMPLATES.ar;
   const t = COPY[lang] || COPY.ar;
@@ -116,6 +119,40 @@ export default function Chat({ lang, user, profile }) {
     const timer = setInterval(update, 30000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return undefined;
+
+    const scrollY = window.scrollY;
+    const htmlStyle = document.documentElement.style;
+    const bodyStyle = document.body.style;
+    const prevHtmlOverflow = htmlStyle.overflow;
+    const prevBodyOverflow = bodyStyle.overflow;
+    const prevBodyPosition = bodyStyle.position;
+    const prevBodyTop = bodyStyle.top;
+    const prevBodyWidth = bodyStyle.width;
+
+    htmlStyle.overflow = 'hidden';
+    bodyStyle.overflow = 'hidden';
+    bodyStyle.position = 'fixed';
+    bodyStyle.top = `-${scrollY}px`;
+    bodyStyle.width = '100%';
+
+    return () => {
+      htmlStyle.overflow = prevHtmlOverflow;
+      bodyStyle.overflow = prevBodyOverflow;
+      bodyStyle.position = prevBodyPosition;
+      bodyStyle.top = prevBodyTop;
+      bodyStyle.width = prevBodyWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isMobile]);
 
   useEffect(() => {
     if (!user) { nav('/login'); return; }
@@ -176,11 +213,7 @@ export default function Chat({ lang, user, profile }) {
   }, [messages, selectedDirection.source, selectedDirection.target, translationDirection, translations, translatingIds, user]);
 
   const loadPartner = async () => {
-    const { data } = await sb
-      .from('profiles')
-      .select('company_name,full_name,avatar_url,role')
-      .eq('id', partnerId)
-      .single();
+    const [data] = await fetchProfileDirectoryByIds(sb, [partnerId]);
     if (data) setPartner(data);
   };
 
@@ -344,14 +377,7 @@ export default function Chat({ lang, user, profile }) {
 
   if (loading) return (
     <div className="chat-wrap">
-      <div className="chat-header">
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-hover)', animation: 'pulse 1.5s ease infinite' }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ width: 120, height: 14, background: 'var(--bg-hover)', borderRadius: 3, marginBottom: 6, animation: 'pulse 1.5s ease infinite' }} />
-          <div style={{ width: 60, height: 10, background: 'var(--bg-hover)', borderRadius: 3, animation: 'pulse 1.5s ease infinite' }} />
-        </div>
-      </div>
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+      <BrandedLoading lang={lang} tone="chat" />
     </div>
   );
 
@@ -385,7 +411,7 @@ export default function Chat({ lang, user, profile }) {
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 10,
                   padding: '6px 10px',
-                  fontSize: 11,
+                  fontSize: 16,
                   outline: 'none',
                   fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                 }}
@@ -556,6 +582,9 @@ export default function Chat({ lang, user, profile }) {
           placeholder={t.inputPlaceholder}
           value={input}
           onChange={event => setInput(event.target.value)}
+          onFocus={() => setTimeout(() => {
+            if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+          }, 250)}
           onKeyDown={event => event.key === 'Enter' && !sending && sendMessage()}
           dir={isAr ? 'rtl' : 'ltr'}
         />

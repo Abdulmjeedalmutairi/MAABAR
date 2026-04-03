@@ -8,7 +8,7 @@ export default class ErrorBoundary extends React.Component {
     if (!this.state.hasError) return this.props.children;
     const isAr = this.props.lang === 'ar';
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: 40, textAlign: 'center' }}>
+      <div style={{ minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: 40, textAlign: 'center' }}>
         <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20 }}>ERROR</p>
         <h1 style={{ fontSize: 32, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
           {isAr ? 'حدث خطأ غير متوقع' : 'Something went wrong'}

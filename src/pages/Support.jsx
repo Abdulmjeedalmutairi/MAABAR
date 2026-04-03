@@ -27,7 +27,7 @@ export default function Support({ lang, user, profile }) {
   usePageTitle('support', lang);
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', background: 'var(--bg-base)' }}>
       <section style={{ padding: '54px 24px 24px' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
           <p style={{

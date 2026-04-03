@@ -280,7 +280,7 @@ function FieldInput({ isAr, as = 'input', ...props }) {
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 12,
         padding: '12px 14px',
-        fontSize: 13,
+        fontSize: 16,
         lineHeight: 1.8,
         outline: 'none',
         resize: as === 'textarea' ? 'vertical' : 'none',
@@ -339,6 +339,34 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isMobile) return undefined;
+
+    const scrollY = window.scrollY;
+    const htmlStyle = document.documentElement.style;
+    const bodyStyle = document.body.style;
+    const prevHtmlOverflow = htmlStyle.overflow;
+    const prevBodyOverflow = bodyStyle.overflow;
+    const prevBodyPosition = bodyStyle.position;
+    const prevBodyTop = bodyStyle.top;
+    const prevBodyWidth = bodyStyle.width;
+
+    htmlStyle.overflow = 'hidden';
+    bodyStyle.overflow = 'hidden';
+    bodyStyle.position = 'fixed';
+    bodyStyle.top = `-${scrollY}px`;
+    bodyStyle.width = '100%';
+
+    return () => {
+      htmlStyle.overflow = prevHtmlOverflow;
+      bodyStyle.overflow = prevBodyOverflow;
+      bodyStyle.position = prevBodyPosition;
+      bodyStyle.top = prevBodyTop;
+      bodyStyle.width = prevBodyWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isMobile]);
 
   useEffect(() => {
     if (!bodyRef.current) return;
@@ -537,9 +565,9 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 18 }}>
+    <div style={{ position: 'fixed', top: isMobile ? 'var(--vv-top)' : 0, left: 0, right: 0, height: isMobile ? 'var(--app-dvh)' : '100dvh', background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 18, overflow: 'hidden' }}>
       <style>{`@keyframes maabarTyping { 0%, 80%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-3px); opacity: 1; } }`}</style>
-      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : 760, height: isMobile ? '100dvh' : 'min(88vh, 860px)', background: '#141519', border: '1px solid rgba(255,255,255,0.07)', borderRadius: isMobile ? 0 : 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: isMobile ? 'none' : '0 30px 80px rgba(0,0,0,0.5)' }}>
+      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : 760, height: isMobile ? '100%' : 'min(88vh, 860px)', background: '#141519', border: '1px solid rgba(255,255,255,0.07)', borderRadius: isMobile ? 0 : 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: isMobile ? 'none' : '0 30px 80px rgba(0,0,0,0.5)' }}>
         <div style={{ padding: '20px 24px', background: '#191A1F', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
           <div>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#F4F1EB', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.title}</p>
@@ -700,6 +728,9 @@ export default function IdeaToProduct({ lang, user, onClose }) {
                     handleSend();
                   }
                 }}
+                onFocus={() => setTimeout(() => {
+                  if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+                }, 250)}
                 rows={2}
                 placeholder={t.placeholder}
                 style={{
@@ -711,7 +742,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
                   borderRadius: 14,
                   padding: '14px 16px',
                   outline: 'none',
-                  fontSize: 14,
+                  fontSize: 16,
                   lineHeight: 1.8,
                   fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                   direction: isAr ? 'rtl' : 'ltr',

@@ -15,10 +15,22 @@ import {
   getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import { shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
+import {
+  attachDirectoryProfiles,
+  attachSupplierProfiles,
+} from '../lib/profileVisibility';
+import {
+  fetchProductInquiryThreads,
+  getProductInquiryProductName,
+  getProductInquiryStatusLabel,
+} from '../lib/productInquiry';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
+import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
+import { isManagedRequest } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
   const urls = {
@@ -132,20 +144,27 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const location = useLocation();
   const isAr     = lang === 'ar';
 
-  // Handle ?tab=requests from notification click
+  // Handle dashboard query params (tab focus / custom manufacturing resume)
   useEffect(() => {
+    if (shouldResumeIdeaFlow(location.search)) {
+      nav('/requests?flow=custom');
+      return;
+    }
+
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tab) setActiveTab(tab);
-  }, [location.search]);
+  }, [location.search, nav]);
 
-  const [stats, setStats]                 = useState({ requests: 0, messages: 0, offers: 0 });
+  const [stats, setStats]                 = useState({ requests: 0, messages: 0, offers: 0, productInquiries: 0 });
   const [myRequests, setMyRequests]       = useState([]);
   const [inbox, setInbox]                 = useState([]);
+  const [productInquiries, setProductInquiries] = useState([]);
   const [activeTab, setActiveTab]         = useState('overview');
   const [pendingActions, setPendingActions] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [samples, setSamples] = useState([]);
+  const focusedRequestId = new URLSearchParams(location.search).get('request');
 
   // Review modal
   const [reviewModal, setReviewModal]       = useState(null);
@@ -188,23 +207,34 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   useEffect(() => {
     if (activeTab === 'requests') loadMyRequests();
     if (activeTab === 'messages') loadInbox();
+    if (activeTab === 'product-inquiries') loadProductInquiries();
     if (activeTab === 'samples') loadMySamples();
     if (activeTab === 'settings') loadSettings();
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'requests' || !focusedRequestId || loadingRequests) return;
+    const timer = window.setTimeout(() => {
+      const el = document.querySelector(`[data-request-id="${String(focusedRequestId)}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, focusedRequestId, loadingRequests, myRequests.length]);
 
   useEffect(() => {
     setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
   }, [displayCurrency]);
 
   const loadStats = async () => {
-    const [requests, messages, offers] = await Promise.all([
+    const [requests, messages, offers, productInquiries] = await Promise.all([
       sb.from('requests').select('id', { count: 'exact' }).eq('buyer_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
       sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending').in('request_id',
         (await sb.from('requests').select('id').eq('buyer_id', user.id)).data?.map(r=>r.id) || []
       ),
+      sb.from('product_inquiries').select('id', { count: 'exact' }).eq('buyer_id', user.id),
     ]);
-    setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0 });
+    setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0, productInquiries: productInquiries.count || 0 });
   };
 
   const loadPendingActions = async () => {
@@ -213,7 +243,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     if (reqs) {
       reqs.forEach(r => {
         const pending = r.offers?.filter(o => o.status === 'pending') || [];
-        if (pending.length > 0) actions.push({ type: 'offers', request: r, count: pending.length });
+        if (String(r.sourcing_mode || 'direct') === 'managed' && String(r.managed_status || '') === 'shortlist_ready') {
+          actions.push({ type: 'managed_shortlist', request: r });
+        } else if (pending.length > 0) {
+          actions.push({ type: 'offers', request: r, count: pending.length });
+        }
         if (r.status === 'paid')          actions.push({ type: 'payment_sent', request: r });
         if (r.status === 'ready_to_ship') actions.push({ type: 'ready_to_ship', request: r });
         if (r.status === 'shipping')      actions.push({ type: 'delivery', request: r });
@@ -228,9 +262,42 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     setLoadingRequests(true);
     const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
     if (data) {
-      const withOffers = await Promise.all(data.map(async r => {
-        const { data: offers } = await sb.from('offers').select('*,profiles(company_name,rating,reviews_count,id,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,city,country)').eq('request_id', r.id);
-        return { ...r, offers: offers || [] };
+      const requestIds = data.map((request) => request.id);
+      const managedRequestIds = data.filter((request) => isManagedRequest(request)).map((request) => request.id);
+
+      const [briefsResult, shortlistResult, feedbackResult] = await Promise.all([
+        managedRequestIds.length > 0
+          ? sb.from('managed_request_briefs').select('*').in('request_id', managedRequestIds)
+          : Promise.resolve({ data: [] }),
+        managedRequestIds.length > 0
+          ? sb.from('managed_shortlisted_offers').select('*').in('request_id', managedRequestIds).order('rank', { ascending: true })
+          : Promise.resolve({ data: [] }),
+        managedRequestIds.length > 0
+          ? sb.from('managed_shortlist_feedback').select('*').in('request_id', managedRequestIds).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      const shortlistWithProfiles = await attachSupplierProfiles(sb, shortlistResult.data || [], 'supplier_id', 'profiles');
+      const shortlistByRequest = (shortlistWithProfiles || []).reduce((acc, offer) => {
+        acc[offer.request_id] = [...(acc[offer.request_id] || []), offer];
+        return acc;
+      }, {});
+      const briefByRequest = (briefsResult.data || []).reduce((acc, brief) => ({ ...acc, [brief.request_id]: brief }), {});
+      const feedbackByRequest = (feedbackResult.data || []).reduce((acc, entry) => {
+        acc[entry.request_id] = [...(acc[entry.request_id] || []), entry];
+        return acc;
+      }, {});
+
+      const withOffers = await Promise.all(data.map(async (request) => {
+        const { data: offers } = await sb.from('offers').select('*').eq('request_id', request.id);
+        const offersWithProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
+        return {
+          ...request,
+          offers: offersWithProfiles || [],
+          brief: briefByRequest[request.id] || null,
+          managedShortlist: shortlistByRequest[request.id] || [],
+          managedFeedback: feedbackByRequest[request.id] || [],
+        };
       }));
       setMyRequests(withOffers);
     }
@@ -239,21 +306,32 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   const loadMySamples = async () => {
     const { data } = await sb.from('samples')
-      .select('*,products(name_ar,name_en,name_zh),profiles!samples_supplier_id_fkey(id,company_name,full_name,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,city,country,reviews_count,rating)')
+      .select('*,products(name_ar,name_en,name_zh)')
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
-    if (data) setSamples(data);
+    if (data) setSamples(await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles'));
   };
 
   const loadInbox = async () => {
     const { data } = await sb.from('messages')
-      .select('*, profiles!messages_sender_id_fkey(full_name, company_name)')
+      .select('*')
       .eq('receiver_id', user.id).order('created_at', { ascending: false });
     if (data) {
+      const withProfiles = await attachDirectoryProfiles(sb, data, 'sender_id', 'profiles');
       const seen = new Set();
-      setInbox(data.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; }));
+      setInbox(withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; }));
       await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('is_read', false);
       setStats(s => ({ ...s, messages: 0 }));
+    }
+  };
+
+  const loadProductInquiries = async () => {
+    try {
+      const data = await fetchProductInquiryThreads(sb, { buyerId: user.id });
+      setProductInquiries(await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles'));
+    } catch (error) {
+      console.error('load buyer product inquiries error:', error);
+      setProductInquiries([]);
     }
   };
 
@@ -374,6 +452,46 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     }
 
     loadMyRequests(); loadPendingActions();
+  };
+
+  const recordManagedShortlistAction = async ({ request, shortlistOffer = null, action, reason = null }) => {
+    await sb.from('managed_shortlist_feedback').insert({
+      request_id: request.id,
+      buyer_id: user.id,
+      shortlist_offer_id: shortlistOffer?.id || null,
+      action,
+      reason,
+    });
+  };
+
+  const chooseManagedOffer = async (request, shortlistOffer) => {
+    await recordManagedShortlistAction({ request, shortlistOffer, action: 'choose_offer' });
+    await sb.from('managed_shortlisted_offers').update({ selected_by_buyer: true, buyer_selected_at: new Date().toISOString(), status: 'selected_by_buyer' }).eq('id', shortlistOffer.id);
+    await sb.from('managed_shortlisted_offers').update({ selected_by_buyer: false }).eq('request_id', request.id).neq('id', shortlistOffer.id);
+    await sb.from('requests').update({ managed_status: 'buyer_selected', managed_last_buyer_action: 'choose_offer' }).eq('id', request.id);
+    await loadMyRequests();
+    await loadPendingActions();
+  };
+
+  const requestManagedNegotiation = async (request, shortlistOffer, reason) => {
+    await recordManagedShortlistAction({ request, shortlistOffer, action: 'request_negotiation', reason });
+    await sb.from('requests').update({ managed_status: 'sourcing', managed_last_buyer_action: 'request_negotiation' }).eq('id', request.id);
+    await loadMyRequests();
+    await loadPendingActions();
+  };
+
+  const rejectManagedOffer = async (request, shortlistOffer) => {
+    await recordManagedShortlistAction({ request, shortlistOffer, action: 'not_suitable' });
+    await sb.from('managed_shortlisted_offers').update({ status: 'dismissed' }).eq('id', shortlistOffer.id);
+    await sb.from('requests').update({ managed_last_buyer_action: 'not_suitable' }).eq('id', request.id);
+    await loadMyRequests();
+  };
+
+  const restartManagedSearch = async (request) => {
+    await recordManagedShortlistAction({ request, action: 'restart_search' });
+    await sb.from('requests').update({ managed_status: 'sourcing', managed_last_buyer_action: 'restart_search', managed_research_requested_count: (request.managed_research_requested_count || 0) + 1 }).eq('id', request.id);
+    await loadMyRequests();
+    await loadPendingActions();
   };
 
   const confirmDelivery = async (requestId, supplierId, supplierName) => {
@@ -532,6 +650,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     { id: 'overview',  label: isAr ? 'نظرة عامة' : 'Overview' },
     { id: 'requests',  label: isAr ? 'طلباتي'    : 'My Requests' },
     { id: 'samples',   label: isAr ? 'العينات'   : 'Samples' },
+    { id: 'product-inquiries', label: isAr ? 'استفسارات المنتجات' : lang === 'zh' ? '产品咨询' : 'Product Inquiries', badge: stats.productInquiries > 0 ? stats.productInquiries : null },
     { id: 'messages',  label: isAr ? 'الرسائل'   : 'Messages', badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',  label: isAr ? 'الإعدادات' : 'Settings' },
   ];
@@ -614,7 +733,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       {/* ══════════════════════════════════════
           CONTENT
       ══════════════════════════════════════ */}
-      <div style={{ background: 'var(--bg-base)', minHeight: 'calc(100vh - 280px)' }}>
+      <div style={{ background: 'var(--bg-base)', minHeight: 'calc(var(--app-dvh) - 280px)' }}>
         <div className="dash-content">
 
           {/* ── OVERVIEW ── */}
@@ -642,6 +761,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                             {action.type === 'offers'       && (isAr ? `${action.count} عرض ينتظر مراجعتك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`)}
+                            {action.type === 'managed_shortlist' && (isAr ? `العروض المختارة لك جاهزة — ${action.request?.title_ar || action.request?.title_en}` : `Selected offers are ready — ${action.request?.title_en || action.request?.title_ar}`)}
                             {action.type === 'payment_sent'   && (isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation')}
                             {action.type === 'ready_to_ship'  && (isAr ? `شحنتك جاهزة — ادفع الدفعة الثانية` : `Shipment ready — Pay second installment`)}
                             {action.type === 'delivery'     && (isAr ? `تأكيد استلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`)}
@@ -649,6 +769,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           </p>
                           <p style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>
                             {action.type === 'offers'       && (isAr ? 'قارن العروض واختر الأفضل' : 'Compare and choose the best')}
+                            {action.type === 'managed_shortlist' && (isAr ? 'راجع العروض المختارة لك من نفس الطلب' : 'Review the selected offers inside the same request')}
                             {action.type === 'payment_sent'   && (isAr ? 'المورد يجهز شحنتك' : 'Supplier is preparing your order')}
                             {action.type === 'ready_to_ship'  && (isAr ? 'اضغط للدفع وإتمام الشحن' : 'Tap to pay and complete shipping')}
                             {action.type === 'delivery'     && (isAr ? 'الطلب وصل — أكد الاستلام' : 'Order arrived — confirm receipt')}
@@ -667,7 +788,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
                   {isAr ? 'الإحصائيات' : 'Overview'}
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
                   <StatCard label={isAr ? 'طلبات مرفوعة' : 'Requests Posted'}  value={stats.requests} onClick={() => setActiveTab('requests')} />
                   <StatCard label={isAr ? 'عروض مستلمة'  : 'Offers Received'}  value={stats.offers}   onClick={() => setActiveTab('requests')} highlight={stats.offers > 0} />
                   <StatCard label={isAr ? 'رسائل جديدة'  : 'New Messages'}     value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
@@ -679,10 +800,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
                   {isAr ? 'الإجراءات السريعة' : 'Quick Actions'}
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
                   <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary isAr={isAr} />
-                  <QuickAction title={isAr ? 'رفع طلب جديد'  : 'Post New Request'} sub={isAr ? 'اطلب منتجاً وانتظر عروض الموردين' : 'Request a product and get offers'}   onClick={() => nav('/requests')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'}      sub={isAr ? 'تابع طلباتك الحالية'               : 'Track your current orders'}           onClick={() => setActiveTab('requests')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/requests')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/requests?flow=custom')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'} sub={isAr ? 'تابع الطلبات، العروض، والدفع' : 'Track requests, offers, and payment steps'} onClick={() => setActiveTab('requests')} isAr={isAr} />
                 </div>
               </div>
 
@@ -739,11 +861,79 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               )}
 
               {/* Requests list */}
-              {!loadingRequests && myRequests.map((r, idx) => (
-                <div key={r.id} style={{
+              {!loadingRequests && myRequests.map((r, idx) => {
+                const managed = isManagedRequest(r);
+                const pendingOffers = r.offers.filter(o => o.status === 'pending');
+                const acceptedOffer = r.offers.find(o => o.status === 'accepted');
+                const offerTotals = r.offers.map(o => getOfferEstimatedTotal(o, r)).filter(Number.isFinite);
+                const lowestOfferTotal = offerTotals.length > 0 ? Math.min(...offerTotals) : null;
+                const fastestOffer = r.offers.reduce((best, current) => {
+                  if (!best) return current;
+                  if ((parseInt(current.delivery_days, 10) || Infinity) < (parseInt(best.delivery_days, 10) || Infinity)) return current;
+                  return best;
+                }, null);
+                const isFocusedRequest = String(focusedRequestId || '') === String(r.id);
+                const nextStepCopy = (() => {
+                  if (managed) {
+                    if ((r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready') {
+                      return {
+                        title: isAr ? 'الخطوة التالية: راجع العروض المختارة لك' : 'Next step: review your selected offers',
+                        body: isAr ? 'كل قرار في هذا الطلب المُدار يتم من نفس الصفحة: اختر العرض المناسب، اطلب تفاوضاً إضافياً، أو اطلب من معبر أن يعيد البحث.' : 'Every decision for this managed request stays in the same page: choose the right offer, ask for more negotiation, or ask Maabar to search again.',
+                      };
+                    }
+                    return {
+                      title: isAr ? 'الطلب الآن داخل المسار المُدار' : 'This request is now inside the managed flow',
+                      body: isAr ? 'معبر يجهّز الـ brief، يراجع الوضوح، ويطابق الموردين المناسبين فقط قبل إظهار أفضل 3 عروض لك هنا.' : 'Maabar is preparing the brief, reviewing clarity, and matching only suitable suppliers before showing your top 3 here.',
+                    };
+                  }
+                  if (acceptedOffer && !['paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'].includes(r.status)) {
+                    return {
+                      title: isAr ? 'الخطوة التالية: راجع العرض المقبول وادفع بأمان داخل مَعبر' : 'Next step: review the accepted offer and pay securely on Maabar',
+                      body: isAr ? 'تم حسم قرار التوريد. الآن أكمل الدفع من نفس الطلب حتى يبقى السجل التجاري واضحاً للطرفين.' : 'Supplier selection is done. Complete checkout from this request so payment and execution stay on one clear record.',
+                    };
+                  }
+                  if (r.status === 'ready_to_ship' && r.payment_second > 0) {
+                    return {
+                      title: isAr ? 'الخطوة التالية: ادفع الدفعة الثانية قبل إصدار الشحنة' : 'Next step: pay the second installment before shipment release',
+                      body: isAr ? 'المورد أكد جاهزية الشحنة. أكمل الدفعة المتبقية من هذا الطلب حتى يبدأ الشحن.' : 'The supplier confirmed shipment readiness. Complete the remaining balance here to release shipping.',
+                    };
+                  }
+                  if (r.status === 'shipping') {
+                    return {
+                      title: isAr ? 'الخطوة التالية: تابع التتبع ثم أكد وصول الشحنة للسعودية' : 'Next step: follow tracking, then confirm arrival in KSA',
+                      body: isAr ? 'بمجرد وصول الشحنة يمكنك تحديث الحالة ثم تأكيد الاستلام لاحقاً.' : 'Once the shipment arrives, update the status here and confirm final delivery afterwards.',
+                    };
+                  }
+                  if (r.status === 'arrived') {
+                    return {
+                      title: isAr ? 'الخطوة التالية: أكد الاستلام لإغلاق الصفقة' : 'Next step: confirm delivery to close the deal',
+                      body: isAr ? 'إذا استلمت البضاعة كما هو متفق عليه، أكد الاستلام من هذا الطلب.' : 'If the goods arrived as agreed, confirm delivery from this request.',
+                    };
+                  }
+                  if (pendingOffers.length > 0) {
+                    return {
+                      title: isAr ? `الخطوة التالية: قارن ${pendingOffers.length} عرض${pendingOffers.length > 1 ? 'اً' : ''} واختر الأنسب` : `Next step: compare ${pendingOffers.length} offer${pendingOffers.length > 1 ? 's' : ''} and pick the best fit`,
+                      body: isAr ? 'راجع الإجمالي، مدة التجهيز، وطريقة الشحن قبل قبول العرض.' : 'Review total cost, lead time, and shipping method before accepting an offer.',
+                    };
+                  }
+                  if (r.offers.length > 0) {
+                    return {
+                      title: isAr ? 'العروض موجودة داخل هذا الطلب' : 'Offers are already attached to this request',
+                      body: isAr ? 'كل قرار لاحق — قبول، دفع، متابعة، أو استلام — يتم من نفس البطاقة.' : 'Every next decision — accept, pay, track, or confirm receipt — stays inside this same card.',
+                    };
+                  }
+                  return null;
+                })();
+
+                return (
+                <div key={r.id} data-request-id={r.id} style={{
                   borderTop: '1px solid var(--border-subtle)',
                   padding: '28px 0',
                   animation: `fadeIn 0.35s ease ${idx * 0.04}s both`,
+                  scrollMarginTop: 110,
+                  background: isFocusedRequest ? 'rgba(139,120,255,0.04)' : 'transparent',
+                  boxShadow: isFocusedRequest ? 'inset 0 0 0 1px rgba(139,120,255,0.14)' : 'none',
+                  borderRadius: isFocusedRequest ? 'var(--radius-lg)' : 0,
                 }}>
                   {/* Title + status */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
@@ -756,7 +946,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     </h3>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
-                        {isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status}
+                        {managed ? (isAr ? 'طلب مُدار' : 'Managed request') : (isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status)}
                       </span>
                       {r.status === 'open' && (
                         <>
@@ -800,14 +990,66 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     </div>
                   </div>
 
-                  <StatusBar status={r.shipping_status || r.status} isAr={isAr} />
+                  {!managed && <StatusBar status={r.shipping_status || r.status} isAr={isAr} />}
 
-                  <p style={{ color: 'var(--text-disabled)', fontSize: 12, marginBottom: 16, letterSpacing: 0.3 }}>
-                    {isAr ? 'الكمية:' : 'Qty:'} {r.quantity || '—'}
-                  </p>
+                  {nextStepCopy && (
+                    <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(139,120,255,0.16)', background: 'rgba(139,120,255,0.05)' }}>
+                      <p style={{ fontSize: 11, color: 'rgba(139,120,255,0.92)', marginBottom: 6, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {nextStepCopy.title}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {nextStepCopy.body}
+                      </p>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                    <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                      {isAr ? 'الكمية' : 'Qty'}: {r.quantity || '—'}
+                    </span>
+                    <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: managed ? 'rgba(139,120,255,0.08)' : 'var(--bg-subtle)', border: `1px solid ${managed ? 'rgba(139,120,255,0.18)' : 'var(--border-subtle)'}`, color: managed ? 'rgba(139,120,255,0.92)' : 'var(--text-secondary)' }}>
+                      {managed ? (isAr ? 'طلب مُدار' : 'Managed request') : `${isAr ? 'العروض' : 'Offers'}: ${r.offers.length}`}
+                    </span>
+                    {managed && (
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                        {isAr ? 'العروض المختارة لك' : 'Selected offers for you'}: {(r.managedShortlist || []).length}
+                      </span>
+                    )}
+                    {!managed && lowestOfferTotal !== null && (
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                        {isAr ? 'أفضل إجمالي' : 'Best total'}: {lowestOfferTotal.toFixed(2)} USD
+                      </span>
+                    )}
+                    {!managed && fastestOffer?.delivery_days && (
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.18)', color: 'rgba(139,120,255,0.92)' }}>
+                        {isAr ? 'أسرع تجهيز' : 'Fastest lead time'}: {fastestOffer.delivery_days}{isAr ? ' يوم' : lang === 'zh' ? ' 天' : 'd'}
+                      </span>
+                    )}
+                    {!managed && acceptedOffer?.profiles?.company_name && (
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                        {isAr ? 'المورد المختار' : 'Selected supplier'}: {acceptedOffer.profiles.company_name}
+                      </span>
+                    )}
+                    {isFocusedRequest && (
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(139,120,255,0.12)', border: '1px solid rgba(139,120,255,0.22)', color: 'rgba(139,120,255,0.95)' }}>
+                        {isAr ? 'آخر طلب تم إنشاؤه' : 'Recently created request'}
+                      </span>
+                    )}
+                  </div>
+
+                  {managed && (
+                    <ManagedBuyerRequestPanel
+                      request={r}
+                      lang={lang}
+                      onChooseOffer={chooseManagedOffer}
+                      onRequestNegotiation={requestManagedNegotiation}
+                      onRejectOffer={rejectManagedOffer}
+                      onRestartSearch={restartManagedSearch}
+                    />
+                  )}
 
                   {/* Tracking */}
-                  {r.tracking_number && (
+                  {!managed && r.tracking_number && (
                     <div style={{
                       marginBottom: 16, padding: '10px 16px',
                       background: 'var(--bg-raised)',
@@ -840,7 +1082,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   )}
 
                   {/* Offers grid */}
-                  {r.offers.length > 0 && (
+                  {!managed && r.offers.length > 0 && (
                     <div>
                       {r.offers.length > 1 && (
                         <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
@@ -912,7 +1154,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                     )}
                                   </div>
 
-                                  {(supplierTrustSignals.length > 0 || o.profiles?.trust_score > 0) && (
+                                  {supplierTrustSignals.length > 0 && (
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                                       {supplierTrustSignals.includes('trade_profile_available') && (
                                         <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
@@ -927,11 +1169,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                       {supplierTrustSignals.includes('factory_media_available') && (
                                         <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                                           {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
-                                        </span>
-                                      )}
-                                      {o.profiles?.trust_score > 0 && (
-                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                                          {isAr ? `ثقة ${o.profiles.trust_score}%` : lang === 'zh' ? `信任度 ${o.profiles.trust_score}%` : `Trust ${o.profiles.trust_score}%`}
                                         </span>
                                       )}
                                     </div>
@@ -1070,7 +1307,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                     </button>
                                   </div>
                                 )}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 2 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 2 }}>
                                   <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline" style={{ padding: '7px', fontSize: 10, minHeight: 32 }}>
                                     {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Profile'}
                                   </button>
@@ -1093,13 +1330,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     </div>
                   )}
 
-                  {r.offers.length === 0 && (
+                  {!managed && r.offers.length === 0 && (
                     <p style={{ color: 'var(--text-disabled)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {isAr ? 'لا توجد عروض بعد' : 'No offers yet'}
                     </p>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
 
@@ -1154,7 +1392,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       </span>
                     </div>
 
-                    {(supplierTrustSignals.length > 0 || s.profiles?.trust_score > 0 || s.profiles?.rating > 0) && (
+                    {(supplierTrustSignals.length > 0 || s.profiles?.rating > 0) && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                         {s.profiles?.rating > 0 && (
                           <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
@@ -1174,11 +1412,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         {supplierTrustSignals.includes('factory_media_available') && (
                           <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                             {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
-                          </span>
-                        )}
-                        {s.profiles?.trust_score > 0 && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                            {isAr ? `ثقة ${s.profiles.trust_score}%` : lang === 'zh' ? `信任度 ${s.profiles.trust_score}%` : `Trust ${s.profiles.trust_score}%`}
                           </span>
                         )}
                       </div>
@@ -1225,6 +1458,85 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       <button className="btn-outline" onClick={() => nav(`/chat/${s.supplier_id}`)} style={{ minHeight: 34, fontSize: 11 }}>
                         {isAr ? 'محادثة المورد' : lang === 'zh' ? '联系供应商' : 'Chat Supplier'}
                       </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── PRODUCT INQUIRIES ── */}
+          {activeTab === 'product-inquiries' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
+                {isAr ? 'استفسارات المنتجات' : lang === 'zh' ? '产品咨询' : 'Product Inquiries'}
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', maxWidth: 760 }}>
+                {isAr
+                  ? 'كل استفسار ترسله من صفحة المنتج يظهر هنا، وعندما يرد المورد ستشاهد الرد داخل النظام بالإضافة إلى وصوله على بريدك.'
+                  : lang === 'zh'
+                    ? '您从产品页发送的咨询都会显示在这里。供应商回复后，您可以在系统内看到完整记录，邮件也会同步送达。'
+                    : 'Every inquiry you send from a product page appears here. When the supplier replies, you will see it inside the system and also receive it by email.'}
+              </p>
+
+              {productInquiries.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 13, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'لا توجد استفسارات منتجات بعد' : lang === 'zh' ? '暂时没有产品咨询' : 'No product inquiries yet'}
+                  </p>
+                </div>
+              ) : productInquiries.map((inquiry, idx) => {
+                const supplierName = inquiry.profiles?.company_name || inquiry.profiles?.full_name || (isAr ? 'مورد' : lang === 'zh' ? '供应商' : 'Supplier');
+                const productName = getProductInquiryProductName(inquiry.products, lang);
+                const statusLabel = getProductInquiryStatusLabel(inquiry.status, lang, 'buyer');
+                const replies = inquiry.product_inquiry_replies || [];
+                return (
+                  <div key={inquiry.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '22px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 12 }}>
+                      <div>
+                        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 4 }}>{supplierName}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.8, margin: 0, fontFamily: 'var(--font-ar)' }}>{inquiry.question_text}</p>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 6 }}>
+                        <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? '#5a9a72' : 'var(--text-secondary)' }}>
+                          {statusLabel}
+                        </span>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
+                      </div>
+                    </div>
+
+                    {replies.length === 0 ? (
+                      <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'بانتظار رد المورد.' : lang === 'zh' ? '等待供应商回复。' : 'Waiting for the supplier reply.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        {replies.map((reply) => (
+                          <div key={reply.id} style={{ padding: '12px 14px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
+                              {isAr ? 'رد المورد' : lang === 'zh' ? '供应商回复' : 'Supplier reply'}
+                            </p>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{reply.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+                      {inquiry.product_id && (
+                        <button className="btn-outline" onClick={() => nav(`/products/${inquiry.product_id}`)}>
+                          {isAr ? 'فتح المنتج' : lang === 'zh' ? '打开产品' : 'Open Product'}
+                        </button>
+                      )}
+                      {inquiry.supplier_id && (
+                        <button className="btn-outline" onClick={() => nav(`/chat/${inquiry.supplier_id}`)}>
+                          {isAr ? 'محادثة المورد' : lang === 'zh' ? '联系供应商' : 'Chat Supplier'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

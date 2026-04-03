@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { sanitizeNextPath } from '../lib/authRedirects';
 import { getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
+import BrandedLoading from '../components/BrandedLoading';
 
 const COPY = {
   ar: {
@@ -57,6 +58,7 @@ export default function AuthCallback({ user, profile, lang }) {
   const hashParams = useMemo(() => getHashParams(location.hash), [location.hash]);
   const nextPath = useMemo(() => sanitizeNextPath(searchParams.get('next') || hashParams.get('next') || '/dashboard'), [searchParams, hashParams]);
   const requestedRole = searchParams.get('role') || hashParams.get('role') || '';
+  const authType = searchParams.get('type') || hashParams.get('type') || '';
 
   useEffect(() => {
     let active = true;
@@ -72,8 +74,21 @@ export default function AuthCallback({ user, profile, lang }) {
 
       try {
         const code = searchParams.get('code');
+        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+
         if (code) {
           const { error } = await sb.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (tokenHash && authType) {
+          const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: authType });
+          if (error) throw error;
+        } else if (accessToken && refreshToken) {
+          const { error } = await sb.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
           if (error) throw error;
         } else {
           await new Promise((resolve) => setTimeout(resolve, 350));
@@ -95,7 +110,7 @@ export default function AuthCallback({ user, profile, lang }) {
 
     finalizeAuth();
     return () => { active = false; };
-  }, [searchParams, hashParams]);
+  }, [searchParams, hashParams, authType]);
 
   useEffect(() => {
     if (status !== 'ready' || !user) return;
@@ -112,9 +127,22 @@ export default function AuthCallback({ user, profile, lang }) {
 
   const loginTarget = requestedRole === 'supplier' ? '/login/supplier' : '/login';
 
+  if (status !== 'error') {
+    return (
+      <BrandedLoading
+        lang={lang}
+        tag="MAABAR AUTH"
+        title={t.loadingTitle}
+        body={t.loadingBody}
+        tone="app"
+        fullscreen
+      />
+    );
+  }
+
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: 'var(--app-dvh)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

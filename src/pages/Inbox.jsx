@@ -2,6 +2,7 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
+import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
 
 export default function Inbox({ lang, user }) {
   const nav = useNavigate();
@@ -40,7 +41,7 @@ export default function Inbox({ lang, user }) {
     if (!list.length) { setConvs([]); return; }
 
     const ids = list.map(c => c.partner_id);
-    const { data: profiles } = await sb.from('profiles').select('id,full_name,company_name,avatar_url').in('id', ids);
+    const profiles = await fetchProfileDirectoryByIds(sb, ids);
     const pm = {};
     if (profiles) profiles.forEach(p => pm[p.id] = p);
 
@@ -65,11 +66,11 @@ export default function Inbox({ lang, user }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', background: 'var(--bg-base)' }}>
 
       {/* HEADER */}
       <div style={{
-        padding: '60px 60px 32px',
+        padding: 'clamp(28px, 8vw, 60px) clamp(16px, 6vw, 60px) clamp(20px, 5vw, 32px)',
         background: 'var(--bg-overlay)',
         borderBottom: '1px solid var(--border-subtle)',
       }}>
@@ -86,14 +87,14 @@ export default function Inbox({ lang, user }) {
         <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 16, fontFamily: 'var(--font-body)' }}>
           {isAr ? 'مَعبر · الرسائل' : 'Maabar · Messages'}
         </p>
-        <h1 style={{ fontSize: 64, fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1 }}>
+        <h1 style={{ fontSize: 'clamp(34px, 10vw, 64px)', fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1 }}>
           {isAr ? 'الرسائل' : 'Messages'}
         </h1>
       </div>
 
       {/* LIST */}
-      <div style={{ background: 'var(--bg-subtle)', minHeight: 'calc(100vh - 280px)' }}>
-        <div style={{ padding: '40px 60px', maxWidth: 760, margin: '0 auto' }}>
+      <div style={{ background: 'var(--bg-subtle)', minHeight: 'calc(var(--app-dvh) - 280px)' }}>
+        <div style={{ padding: 'clamp(24px, 5vw, 40px) clamp(16px, 6vw, 60px)', maxWidth: 760, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
           {convs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: 13, letterSpacing: 1 }}>

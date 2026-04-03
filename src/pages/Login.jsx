@@ -6,7 +6,6 @@ import { sendMaabarEmail } from '../lib/maabarEmail';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
-  shouldPromoteSupplierAfterEmailConfirmation,
 } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 import { buildAuthCallbackUrl } from '../lib/authRedirects';
@@ -273,13 +272,16 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const nav = useNavigate();
   const { role: roleParam } = useParams();
   const [searchParams] = useSearchParams();
+  const urlLang = searchParams.get('lang');
+  const effectiveLang = (urlLang === 'en' || urlLang === 'zh') ? urlLang : lang;
   const role = roleParam === 'supplier' ? 'supplier' : 'buyer';
   const isSupplier = role === 'supplier';
-  const isAr = lang === 'ar';
-  const l = L[lang] || L.ar;
-  const supplierSignupContent = SUPPLIER_SIGNUP_CONTENT[lang] || SUPPLIER_SIGNUP_CONTENT.en;
+  const isAr = effectiveLang === 'ar';
+  const l = L[effectiveLang] || L.ar;
+  const supplierSignupContent = SUPPLIER_SIGNUP_CONTENT[effectiveLang] || SUPPLIER_SIGNUP_CONTENT.en;
 
-  const [mode, setMode] = useState(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
+  const getInitialMode = () => (isSupplier ? 'signin' : (searchParams.get('mode') === 'signup' ? 'signup' : 'signin'));
+  const [mode, setMode] = useState(getInitialMode);
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [msg, setMsg] = useState('');
@@ -308,8 +310,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [speciality, setSpeciality] = useState('');
 
   useEffect(() => {
-    setMode(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
-  }, [searchParams]);
+    setMode(getInitialMode());
+  }, [isSupplier, searchParams]);
 
   useEffect(() => {
     if (!user || !profile || !isSupplier || profile.role !== 'supplier') return;
@@ -440,18 +442,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       .eq('id', data.user.id)
       .single();
 
-    let nextProfile = profile;
-
-    if (nextProfile?.role === 'supplier' && shouldPromoteSupplierAfterEmailConfirmation(nextProfile, data.user)) {
-      const { data: promotedProfile } = await sb
-        .from('profiles')
-        .update({ status: 'verification_required' })
-        .eq('id', data.user.id)
-        .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,trade_links,reg_number,years_experience,license_photo,factory_photo')
-        .single();
-
-      if (promotedProfile) nextProfile = promotedProfile;
-    }
+    const nextProfile = profile;
 
     if (nextProfile) setProfile(nextProfile);
 
@@ -653,21 +644,47 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
   };
 
-  const TERMS_AR = [
-    { title: '١. تعريف المنصة', body: 'مَعبر هي منصة وساطة تجارية إلكترونية تربط التجار السعوديين بالموردين الصينيين. تعمل مَعبر بوصفها وسيطاً تجارياً فقط، وليست طرفاً في أي صفقة.' },
-    { title: '٢. شروط التسجيل', body: 'للتاجر: يجب أن يكون مقيماً أو يمارس نشاطاً تجارياً في المملكة العربية السعودية.\nللمورد: يجب أن يكون لديه سجل تجاري ساري، ويخضع لمراجعة وموافقة مَعبر قبل التفعيل.' },
-    { title: '٣. آلية إبرام العقود', body: 'تُبرم الصفقات عبر آلية العرض والقبول: يرفع التاجر طلبًا، يُقدّم الموردون عروضهم، يختار التاجر العرض الأنسب ويؤكده. يُعدّ هذا التأكيد عقدًا ملزمًا.' },
-    { title: '٤. نظام الدفع المرحلي', body: 'تتيح مَعبر ثلاثة خيارات: ٣٠٪ مقدماً، أو ٥٠٪، أو ١٠٠٪. الدفعة الأولى تُمثّل التزام التاجر. الدفعة الثانية تُسدَّد بعد إشعار "الشحنة جاهزة".' },
-    { title: '٥. العمولة', body: 'تأخذ مَعبر عمولة ٦٪ من كل صفقة مكتملة: ٤٪ من المورد، و٢٪ من التاجر.' },
-    { title: '٦. سياسة المشاكل والإرجاع', body: 'إذا وصلت البضاعة تالفة أو مختلفة عن الوصف، يُفتح نزاع خلال ٤٨ ساعة. مَعبر تبتّ خلال ٧ أيام عمل.' },
-    { title: '٧. الخصوصية وحماية البيانات', body: 'تلتزم مَعبر بنظام حماية البيانات الشخصية السعودي (PDPL). لا نبيع بيانات المستخدمين لأي طرف ثالث.' },
-    { title: '٨. الاختصاص القضائي', body: 'تخضع هذه الشروط لأنظمة المملكة العربية السعودية.' },
-  ];
+  const TERMS = {
+    ar: [
+      { title: '١. تعريف المنصة', body: 'مَعبر هي منصة وساطة تجارية إلكترونية تربط التجار السعوديين بالموردين الصينيين. تعمل مَعبر بوصفها وسيطاً تجارياً فقط، وليست طرفاً في أي صفقة.' },
+      { title: '٢. شروط التسجيل', body: 'للتاجر: يجب أن يكون مقيماً أو يمارس نشاطاً تجارياً في المملكة العربية السعودية.\nللمورد: يجب أن يكون لديه سجل تجاري ساري، ويخضع لمراجعة وموافقة مَعبر قبل التفعيل.' },
+      { title: '٣. آلية إبرام العقود', body: 'تُبرم الصفقات عبر آلية العرض والقبول: يرفع التاجر طلبًا، يُقدّم الموردون عروضهم، يختار التاجر العرض الأنسب ويؤكده. يُعدّ هذا التأكيد عقدًا ملزمًا.' },
+      { title: '٤. نظام الدفع المرحلي', body: 'تتيح مَعبر ثلاثة خيارات: ٣٠٪ مقدماً، أو ٥٠٪، أو ١٠٠٪. الدفعة الأولى تُمثّل التزام التاجر. الدفعة الثانية تُسدَّد بعد إشعار "الشحنة جاهزة".' },
+      { title: '٥. العمولة', body: 'تأخذ مَعبر 0% عمولة على الصفقة.' },
+      { title: '٦. سياسة المشاكل والإرجاع', body: 'إذا وصلت البضاعة تالفة أو مختلفة عن الوصف، يُفتح نزاع خلال ٤٨ ساعة. مَعبر تبتّ خلال ٧ أيام عمل.' },
+      { title: '٧. الخصوصية وحماية البيانات', body: 'تلتزم مَعبر بنظام حماية البيانات الشخصية السعودي (PDPL). لا نبيع بيانات المستخدمين لأي طرف ثالث.' },
+      { title: '٨. الاختصاص القضائي', body: 'تخضع هذه الشروط لأنظمة المملكة العربية السعودية.' },
+    ],
+    en: [
+      { title: '1. Platform Definition', body: 'Maabar is an electronic trade intermediary platform connecting Saudi traders with Chinese suppliers. Maabar acts only as an intermediary and is not a party to any transaction between users.' },
+      { title: '2. Registration Terms', body: 'For traders: the user must be resident in, or operating a business in, Saudi Arabia.\nFor suppliers: the user must hold a valid commercial registration or business license and is subject to Maabar review before activation.' },
+      { title: '3. Contract Formation', body: 'Transactions are formed through an offer-and-acceptance model: the trader posts a request, suppliers submit offers, and the trader confirms the selected offer. That confirmation becomes binding.' },
+      { title: '4. Staged Payment System', body: 'Maabar supports three payment options: 30% upfront, 50% upfront, or 100% upfront. The first installment represents commitment, and the second installment is paid after the supplier marks the shipment as ready.' },
+      { title: '5. Commission', body: 'Maabar charges 0% commission on the transaction.' },
+      { title: '6. Issues and Returns', body: 'If goods arrive damaged or materially different from the description, a dispute may be opened within 48 hours. Maabar reviews the case within 7 business days.' },
+      { title: '7. Privacy and Data Protection', body: 'Maabar complies with Saudi PDPL requirements and does not sell user data to any third party.' },
+      { title: '8. Governing Law', body: 'These terms are governed by the laws of the Kingdom of Saudi Arabia.' },
+    ],
+    zh: [
+      { title: '1. 平台定义', body: 'Maabar 是连接沙特贸易商与中国供应商的电子贸易中介平台。Maabar 仅作为中介存在，并非用户之间交易的合同方。' },
+      { title: '2. 注册条款', body: '贸易商：用户须在沙特阿拉伯居住或经营业务。\n供应商：用户须持有有效商业登记或营业执照，并在账户激活前接受 Maabar 审核。' },
+      { title: '3. 合同成立方式', body: '交易通过“报价—接受”的方式成立：贸易商发布需求，供应商提交报价，贸易商确认所选报价后，该确认即构成具有约束力的协议。' },
+      { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出“货物已准备好”通知后支付。' },
+      { title: '5. 平台佣金', body: 'Maabar 对交易收取 0% 佣金。' },
+      { title: '6. 问题与退货', body: '如货物损坏或与描述存在重大差异，可在 48 小时内发起争议。Maabar 会在 7 个工作日内完成审查。' },
+      { title: '7. 隐私与数据保护', body: 'Maabar 遵守沙特 PDPL 要求，不会向任何第三方出售用户数据。' },
+      { title: '8. 适用法律', body: '本条款受沙特阿拉伯王国法律管辖。' },
+    ],
+  };
+
+  const termsSections = TERMS[lang] || TERMS.ar;
+  const termsDir = isAr ? 'rtl' : 'ltr';
+  const termsFont = isAr ? 'var(--font-ar)' : 'var(--font-sans)';
 
   return (
     <>
       <div style={{
-        minHeight: '100vh',
+        minHeight: 'var(--app-dvh)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -898,12 +915,12 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   <div style={{ display: 'flex', gap: 14 }}>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.firstName}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('firstName')} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={isAr ? 'محمد' : 'John'} />
+                      <input style={getFieldInputStyle('firstName')} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={isAr ? 'محمد' : lang === 'zh' ? '伟' : 'John'} />
                       {getErrorText('firstName')}
                     </div>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.lastName}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('lastName')} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={isAr ? 'العمري' : 'Smith'} />
+                      <input style={getFieldInputStyle('lastName')} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={isAr ? 'العمري' : lang === 'zh' ? '张' : 'Smith'} />
                       {getErrorText('lastName')}
                     </div>
                   </div>
@@ -931,40 +948,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
               {isSupplier && mode === 'signup' && (
                 <>
-                  <div style={{
-                    marginBottom: 20,
-                    padding: '16px 18px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--border-subtle)',
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-                  }}>
-                    <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
-                      {supplierSignupContent.introTag}
-                    </div>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.35, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {supplierSignupContent.introTitle}
-                    </h3>
-                    <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {supplierSignupContent.introBody}
-                    </p>
-                    <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
-                      {supplierSignupContent.steps.map((item, index) => (
-                        <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          <span style={{ minWidth: 24, height: 24, borderRadius: 999, border: '1px solid var(--border-default)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 11 }}>{index + 1}</span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {supplierSignupContent.checklist.map((item) => (
-                        <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-primary)', opacity: 0.75, marginTop: 7, flex: '0 0 auto' }} />
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, marginTop: 8, fontWeight: 500 }}>
                     {l.supInfo}
                   </div>
@@ -1037,33 +1020,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                         <input style={inputStyle} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
                       </div>
                     </div>
-                    <p style={{ ...helperTextStyle, marginTop: 10 }}>{supplierSignupContent.contactBody}</p>
                     <p style={{ ...helperTextStyle, marginTop: 8 }}>{l.contactHint}</p>
                   </div>
-
-                  <div style={{
-                    marginBottom: 16,
-                    padding: '14px 16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    background: 'rgba(255,255,255,0.02)',
-                  }}>
-                    <p style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {supplierSignupContent.laterTitle}
-                    </p>
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {supplierSignupContent.laterItems.map((item) => (
-                        <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-primary)', opacity: 0.55, marginTop: 7, flex: '0 0 auto' }} />
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -4, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                    {l.verificationLater}
-                  </p>
                 </>
               )}
 
@@ -1136,7 +1094,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
                     <span style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 1 }}>
-                      {isAr ? 'أو' : 'OR'}
+                      {isAr ? 'أو' : lang === 'zh' ? '或' : 'OR'}
                     </span>
                     <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
                   </div>
@@ -1238,25 +1196,25 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
           }}>
             <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: 1, color: '#fff', fontFamily: 'var(--font-ar)', margin: 0 }}>
-                {isAr ? 'الشروط والأحكام' : 'Terms & Conditions'}
+              <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: lang === 'zh' ? 0 : 1, color: '#fff', fontFamily: termsFont, margin: 0 }}>
+                {isAr ? 'الشروط والأحكام' : lang === 'zh' ? '条款与条件' : 'Terms & Conditions'}
               </p>
               <button onClick={() => setShowTerms(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '24px 28px' }} dir="rtl">
-              {TERMS_AR.map((section, index) => (
+            <div style={{ overflowY: 'auto', padding: '24px 28px' }} dir={termsDir}>
+              {termsSections.map((section, index) => (
                 <div key={index} style={{ marginBottom: 24 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-ar)', marginBottom: 8 }}>{section.title}</p>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-ar)', lineHeight: 1.9, whiteSpace: 'pre-line', margin: 0 }}>{section.body}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: termsFont, marginBottom: 8 }}>{section.title}</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: termsFont, lineHeight: 1.9, whiteSpace: 'pre-line', margin: 0 }}>{section.body}</p>
                 </div>
               ))}
             </div>
             <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button onClick={() => setShowTerms(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
-                {isAr ? 'إغلاق' : 'Close'}
+              <button onClick={() => setShowTerms(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: termsFont }}>
+                {isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
               </button>
-              <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#fff', border: 'none', color: '#0f0f11', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-ar)' }}>
-                {isAr ? 'أوافق' : 'I Agree'}
+              <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#fff', border: 'none', color: '#0f0f11', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: termsFont }}>
+                {isAr ? 'أوافق' : lang === 'zh' ? '我同意' : 'I Agree'}
               </button>
             </div>
           </div>

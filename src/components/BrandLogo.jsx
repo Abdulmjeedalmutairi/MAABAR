@@ -35,6 +35,15 @@ export default function BrandLogo({
       chineseMargin: 10,
       tracking: '0.18em',
     },
+    xl: {
+      en: 22,
+      ar: 24,
+      sep: 18,
+      zh: 14,
+      gap: 14,
+      chineseMargin: 12,
+      tracking: '0.22em',
+    },
   };
 
   const s = sizes[size] || sizes.md;

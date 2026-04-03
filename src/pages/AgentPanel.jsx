@@ -51,7 +51,7 @@ export default function AgentPanel() {
   };
 
   if (!auth) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{
         background: 'rgba(247,245,242,0.95)', border: '1px solid #E5E0D8',
         borderRadius: 4, padding: '48px 40px', width: 340,
@@ -83,7 +83,7 @@ export default function AgentPanel() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, direction: 'rtl' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', direction: 'rtl' }}>
 
       {/* HEADER */}
       <div style={{

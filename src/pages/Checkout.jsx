@@ -15,10 +15,17 @@ import {
   getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import {
+  getMoyasarPublishableKey,
+  isMoyasarConfigured,
+} from '../lib/paymentGateway';
+import {
+  buildMoyasarAmountMinorUnits,
+  buildMoyasarCallbackUrl,
+  savePendingMoyasarCheckout,
+} from '../lib/moyasarCheckout';
+import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 
-const MOYASAR_PUBLISHABLE_KEY = 'pk_test_YOUR_KEY_HERE';
-const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
 const T = {
   ar: {
@@ -34,7 +41,7 @@ const T = {
     shippingMethod: 'طريقة الشحن',
     shippingNotSpecified: 'غير محدد بشكل منفصل',
     subtotal: 'المجموع قبل الرسوم',
-    maabarFee: 'رسوم مَعبر (2%)',
+    maabarFee: 'عمولة معبر (0%)',
     total: 'الإجمالي',
     payMethod: 'طريقة الدفع',
     choosePayment: 'اختر طريقة دفعك',
@@ -83,6 +90,8 @@ const T = {
     wechatAvailable: 'WeChat متاح',
     factoryPhotos: 'صور منشأة متاحة',
     cancellationNote: 'بعد نجاح العملية لا يتوفر إلغاء يدوي. لأي مشكلة استخدم دعم مَعبر قبل تحرير المبلغ.',
+    paymentUnavailableTitle: 'الدفع غير متاح حالياً',
+    paymentUnavailableBody: 'بوابة الدفع لم تُفعَّل بعد بشكل صحيح. أوقفنا إتمام الدفع حتى لا تُسجَّل العملية داخل مَعبر بدون خصم حقيقي من البطاقة.',
   },
   en: {
     tag: 'Maabar · Checkout',
@@ -97,7 +106,7 @@ const T = {
     shippingMethod: 'Shipping Method',
     shippingNotSpecified: 'Not specified separately',
     subtotal: 'Subtotal before fees',
-    maabarFee: 'Maabar Fee (2%)',
+    maabarFee: 'Maabar Commission (0%)',
     total: 'Total',
     payMethod: 'Payment Method',
     choosePayment: 'Choose your payment plan',
@@ -146,6 +155,8 @@ const T = {
     wechatAvailable: 'WeChat available',
     factoryPhotos: 'Factory photos available',
     cancellationNote: 'Manual cancellation is unavailable after a successful charge. For any issue, contact Maabar support before funds are released.',
+    paymentUnavailableTitle: 'Payments are temporarily unavailable',
+    paymentUnavailableBody: 'The payment gateway is not configured correctly yet. Checkout is blocked so Maabar does not record a paid order without a real card charge.',
   },
   zh: {
     tag: 'Maabar · 结账',
@@ -160,7 +171,7 @@ const T = {
     shippingMethod: '运输方式',
     shippingNotSpecified: '未单独填写',
     subtotal: '手续费前小计',
-    maabarFee: 'Maabar手续费 (2%)',
+    maabarFee: 'Maabar 零佣金 (0%)',
     total: '总计',
     payMethod: '支付方式',
     choosePayment: '选择付款计划',
@@ -209,6 +220,8 @@ const T = {
     wechatAvailable: '支持 WeChat',
     factoryPhotos: '已提供工厂图片',
     cancellationNote: '成功扣款后不支持手动取消。如有问题，请在放款前联系 Maabar 支持。',
+    paymentUnavailableTitle: '付款暂不可用',
+    paymentUnavailableBody: '支付网关尚未正确配置。当前已阻止结账，避免 Maabar 在没有真实扣款的情况下把订单记录为已付款。',
   }
 };
 
@@ -223,21 +236,23 @@ export default function Checkout({ lang, user, profile }) {
   const isDirectBuy = offer?.isDirect === true; // شراء مباشر أو عينة — دفعة واحدة دائماً
   const checkoutCurrency = String(offer?.currency || 'USD').toUpperCase();
   const currencyLabel = checkoutCurrency === 'SAR' ? t.sar : checkoutCurrency;
+  const moyasarPublishableKey = getMoyasarPublishableKey();
+  const paymentGatewayReady = isMoyasarConfigured(moyasarPublishableKey);
 
   const [payMethod, setPayMethod] = useState('card');
   const [selectedPct, setSelectedPct] = useState(isDirectBuy ? 100 : 30);
-  const [card, setCard] = useState({ number: '', expiry: '', cvv: '', name: '' });
-  const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
   const [applePayAvailable, setApplePayAvailable] = useState(false);
+  const [moyasarFormReady, setMoyasarFormReady] = useState(false);
+  const [checkoutStateKey, setCheckoutStateKey] = useState('');
   const [supplierSnapshot, setSupplierSnapshot] = useState(offer?.profiles || null);
 
   // حساب المبالغ
   const productTotal = offer ? getOfferProductSubtotal(offer, request) : 0;
   const shippingCost = offer ? getOfferShippingCost(offer) : 0;
   const subtotal = offer ? getOfferEstimatedTotal(offer, request) : 0;
-  const maabarFee = parseFloat((subtotal * 0.02).toFixed(2));
-  const total = parseFloat((subtotal + maabarFee).toFixed(2));
+  const maabarFee = 0;
+  const total = parseFloat(subtotal.toFixed(2));
   const supplierAmount = parseFloat((subtotal * 0.96).toFixed(2));
 
   const firstPayment  = isSecondPayment ? parseFloat(request?.payment_second || 0) : Math.round(total * (selectedPct / 100));
@@ -279,26 +294,38 @@ export default function Checkout({ lang, user, profile }) {
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
     if (!offer || !request) { nav('/dashboard'); return; }
+    if (!paymentGatewayReady) {
+      setApplePayAvailable(false);
+      setMoyasarFormReady(false);
+      return;
+    }
 
     if (window.ApplePaySession && ApplePaySession.canMakePayments()) {
       setApplePayAvailable(true);
     }
 
+    if (window.Moyasar?.init) {
+      setMoyasarFormReady(true);
+      return;
+    }
+
     const script = document.createElement('script');
-    script.src = 'https://cdn.moyasar.com/mpf/1.14.0/moyasar.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.7/dist/moyasar.umd.min.js';
     script.async = true;
+    script.onload = () => setMoyasarFormReady(true);
+    script.onerror = () => setPayError(isAr ? 'تعذر تحميل نموذج الدفع حالياً' : lang === 'zh' ? '当前无法加载付款表单' : 'Unable to load the payment form right now');
     document.body.appendChild(script);
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://cdn.moyasar.com/mpf/1.14.0/moyasar.css';
+    link.href = 'https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.7/dist/moyasar.css';
     document.head.appendChild(link);
 
     return () => {
       if (document.body.contains(script)) document.body.removeChild(script);
       if (document.head.contains(link)) document.head.removeChild(link);
     };
-  }, [nav, offer, request, user]);
+  }, [nav, offer, request, user, paymentGatewayReady, isAr, lang]);
 
   useEffect(() => {
     setSupplierSnapshot(offer?.profiles || null);
@@ -309,11 +336,7 @@ export default function Checkout({ lang, user, profile }) {
 
     async function loadSupplierSnapshot() {
       if (offer?.profiles || !offer?.supplier_id) return;
-      const { data } = await sb
-        .from('profiles')
-        .select('id,company_name,status,trade_link,wechat,whatsapp,factory_images,years_experience,trust_score,maabar_supplier_id,city,country')
-        .eq('id', offer.supplier_id)
-        .single();
+      const data = await fetchSupplierPublicProfileById(sb, offer.supplier_id);
 
       if (!cancelled && data) setSupplierSnapshot(data);
     }
@@ -322,149 +345,64 @@ export default function Checkout({ lang, user, profile }) {
     return () => { cancelled = true; };
   }, [offer]);
 
-  const handleApplePay = async () => {
-    if (!window.ApplePaySession) return;
-    setPaying(true);
+  useEffect(() => {
+    if (!offer || !request) return;
 
-    const appleRequest = {
-      countryCode: 'SA', currencyCode: checkoutCurrency,
-      supportedNetworks: ['visa', 'masterCard', 'mada'],
-      merchantCapabilities: ['supports3DS'],
-      total: { label: 'مَعبر', amount: firstPayment.toString() },
-    };
-
-    const session = new ApplePaySession(3, appleRequest);
-    session.onvalidatemerchant = async () => {};
-    session.onpaymentauthorized = async (event) => {
-      try {
-        await processPayment('apple_pay', event.payment.token);
-        session.completePayment(ApplePaySession.STATUS_SUCCESS);
-      } catch {
-        session.completePayment(ApplePaySession.STATUS_FAILURE);
-        setPaying(false);
-      }
-    };
-    session.oncancel = () => setPaying(false);
-    session.begin();
-  };
-
-  const handleCardPay = async () => {
-    if (!card.number || !card.expiry || !card.cvv || !card.name) {
-      alert(isAr ? 'يرجى تعبئة كل الحقول' : lang === 'zh' ? '请填写所有字段' : 'Please fill all fields');
-      return;
-    }
-    setPayError('');
-    setPaying(true);
-    try {
-      await processPayment('card', null);
-    } catch (e) {
-      setPaying(false);
-      setPayError(isAr ? 'فشلت عملية الدفع — تحقق من بيانات بطاقتك وحاول مجدداً' : lang === 'zh' ? '付款失败，请检查银行卡信息后重试' : 'Payment failed — please check your card details and try again');
-    }
-  };
-
-  const processPayment = async (method, token) => {
-    const reqTitle = request?.title_ar || request?.title_en || '';
-
-    if (isSecondPayment) {
-      // دفع الدفعة الثانية
-      await sb.from('payments').insert({
-        request_id: request.id,
-        buyer_id: user.id,
-        supplier_id: offer.supplier_id,
-        amount: firstPayment,
-        amount_first: 0,
-        amount_second: firstPayment,
-        payment_pct: request.payment_pct,
-        status: 'second_paid',
-        moyasar_id: `temp_${Date.now()}`,
-      });
-      await sb.from('requests').update({
-        status: 'shipping',
-        shipping_status: 'shipping',
-      }).eq('id', request.id);
-    } else {
-      // دفع الدفعة الأولى (أو الكاملة)
-      const { data: payment, error } = await sb.from('payments').insert({
-        request_id: request.id,
-        buyer_id: user.id,
-        supplier_id: offer.supplier_id,
-        amount: total,
-        amount_first: firstPayment,
-        amount_second: secondPayment,
-        payment_pct: selectedPct,
-        maabar_fee: maabarFee + (subtotal * 0.04),
-        supplier_amount: supplierAmount,
-        status: 'first_paid',
-        moyasar_id: `temp_${Date.now()}`,
-      }).select().single();
-
-      if (error) throw error;
-
-      await sb.from('requests').update({
-        status: 'paid',
-        payment_id: payment.id,
-        payment_pct: selectedPct,
-        payment_second: secondPayment,
-      }).eq('id', request.id);
-
-      // إشعار للمورد
-      try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'payment_received_supplier',
-            data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPayment, name: 'Supplier', lang },
-          }),
-        });
-      } catch (e) { console.error('email error:', e); }
-      await sb.from('notifications').insert({
-        user_id: offer.supplier_id,
-        type: 'payment_received',
-        title_ar: `وصلت دفعتك الأولى — ${firstPayment} ${currencyLabel}. ابدأ التجهيز الآن`,
-        title_en: `First payment received — ${firstPayment} ${currencyLabel}. Start preparation now`,
-        title_zh: `首付已收到 — ${firstPayment} ${currencyLabel}. 立即开始备货`,
-        ref_id: request.id,
-        is_read: false,
-      });
-    }
-
-    // إيميل تأكيد للتاجر
-    try {
-      if (user?.email) {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'payment_confirmation_buyer',
-            to: user.email,
-            data: { requestTitle: reqTitle, amount: firstPayment, name: '', lang },
-          }),
-        });
-      }
-    } catch (e) { console.error('buyer email error:', e); }
-
-    nav('/payment-success', {
-      state: {
-        offer,
-        request,
-        total: firstPayment,
-        method,
-        isSecondPayment,
-        secondPaymentDue: secondPayment,
-        supplier: supplierSnapshot || offer?.profiles || null,
-        payment: { moyasar_id: `temp_${Date.now()}`, id: `temp_${Date.now()}` },
-      }
+    const nextKey = savePendingMoyasarCheckout({
+      offer,
+      request,
+      isSecondPayment: Boolean(isSecondPayment),
+      selectedPct,
+      firstPayment,
+      secondPayment,
+      checkoutCurrency,
+      supplierSnapshot: supplierSnapshot || offer?.profiles || null,
+      payMethod,
+      total,
     });
-  };
+
+    setCheckoutStateKey(nextKey);
+  }, [offer, request, isSecondPayment, selectedPct, firstPayment, secondPayment, checkoutCurrency, supplierSnapshot, payMethod, total]);
+
+  useEffect(() => {
+    if (!paymentGatewayReady || !moyasarFormReady || !offer || !request || !checkoutStateKey) return;
+    if (!window.Moyasar?.init) return;
+
+    const mountNode = document.getElementById('maabar-moyasar-form');
+    if (!mountNode) return;
+
+    mountNode.innerHTML = '';
+    setPayError('');
+
+    try {
+      window.Moyasar.init({
+        element: '#maabar-moyasar-form',
+        amount: buildMoyasarAmountMinorUnits(firstPayment),
+        currency: checkoutCurrency,
+        description: `${requestTitle} · ${isSecondPayment ? 'second payment' : `${selectedPct}%`} · ${String(request.id).slice(0, 8).toUpperCase()}`,
+        publishable_api_key: moyasarPublishableKey,
+        callback_url: buildMoyasarCallbackUrl(checkoutStateKey),
+        methods: [payMethod === 'apple_pay' ? 'applepay' : 'creditcard'],
+        supported_networks: payMethod === 'mada' ? ['mada'] : ['visa', 'mastercard', 'mada'],
+        apple_pay: {
+          country: 'SA',
+          label: 'MAABAR',
+          validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
+        },
+      });
+    } catch (error) {
+      console.error('moyasar init error:', error);
+      setPayError(isAr ? 'تعذر تهيئة نموذج الدفع الآن' : lang === 'zh' ? '暂时无法初始化付款表单' : 'Unable to initialize the payment form right now');
+    }
+  }, [paymentGatewayReady, moyasarFormReady, offer, request, checkoutStateKey, firstPayment, checkoutCurrency, requestTitle, selectedPct, isSecondPayment, payMethod, moyasarPublishableKey, isAr, lang]);
+
 
   if (!offer || !request) return null;
 
   const fmt = (n) => Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', background: 'var(--bg-base)' }}>
 
       {/* HEADER */}
       <div style={{ padding: '40px 60px 32px', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -480,8 +418,8 @@ export default function Checkout({ lang, user, profile }) {
       </div>
 
       {/* CONTENT */}
-      <div style={{ padding: '40px 60px', maxWidth: 900, margin: '0 auto' }}>
-        <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'start' }}>
+      <div style={{ padding: 'clamp(24px, 5vw, 40px) clamp(16px, 6vw, 60px)', maxWidth: 900, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+        <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, alignItems: 'start' }}>
 
           {/* LEFT — ORDER SUMMARY */}
           <div>
@@ -591,6 +529,23 @@ export default function Checkout({ lang, user, profile }) {
 
           {/* RIGHT — PAYMENT */}
           <div>
+            {!paymentGatewayReady && (
+              <div style={{
+                background: 'rgba(217,96,96,0.08)',
+                border: '1px solid rgba(217,96,96,0.22)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '16px',
+                marginBottom: 20,
+              }}>
+                <p style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#d96060', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>
+                  {t.paymentUnavailableTitle}
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {t.paymentUnavailableBody}
+                </p>
+              </div>
+            )}
+
             {/* Payment Percentage Options — not for second payment or direct buy/sample */}
             {!isSecondPayment && !isDirectBuy && (
               <div style={{ marginBottom: 24 }}>
@@ -599,8 +554,8 @@ export default function Checkout({ lang, user, profile }) {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {paymentOptions.map(opt => (
-                    <button key={opt.pct} onClick={() => setSelectedPct(opt.pct)} style={{
-                      padding: '14px 16px', cursor: 'pointer', textAlign: isAr ? 'right' : 'left',
+                    <button key={opt.pct} onClick={() => setSelectedPct(opt.pct)} disabled={!paymentGatewayReady} style={{
+                      padding: '14px 16px', cursor: paymentGatewayReady ? 'pointer' : 'not-allowed', textAlign: isAr ? 'right' : 'left',
                       background: selectedPct === opt.pct ? 'var(--bg-raised)' : 'var(--bg-subtle)',
                       border: `1px solid ${selectedPct === opt.pct ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
                       borderRadius: 'var(--radius-lg)', transition: 'all 0.15s',
@@ -641,8 +596,8 @@ export default function Checkout({ lang, user, profile }) {
                 { id: 'mada', label: t.mada },
                 { id: 'card', label: t.card },
               ].map(m => (
-                <button key={m.id} onClick={() => setPayMethod(m.id)} style={{
-                  flex: 1, padding: '9px 8px', fontSize: 11, cursor: 'pointer',
+                <button key={m.id} onClick={() => setPayMethod(m.id)} disabled={!paymentGatewayReady} style={{
+                  flex: 1, padding: '9px 8px', fontSize: 11, cursor: paymentGatewayReady ? 'pointer' : 'not-allowed',
                   background: payMethod === m.id ? 'var(--bg-raised)' : 'var(--bg-subtle)',
                   color: payMethod === m.id ? 'var(--text-primary)' : 'var(--text-disabled)',
                   border: `1px solid ${payMethod === m.id ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
@@ -654,104 +609,46 @@ export default function Checkout({ lang, user, profile }) {
               ))}
             </div>
 
-            {/* APPLE PAY */}
-            {payMethod === 'apple_pay' && (
-              <button onClick={handleApplePay} disabled={paying} style={{
-                width: '100%', background: '#000', color: '#fff', border: 'none',
-                borderRadius: 8, padding: '14px', fontSize: 15,
-                cursor: paying ? 'not-allowed' : 'pointer',
-                opacity: paying ? 0.5 : 1, marginBottom: 12,
-              }}>
-                {paying ? t.paying : 'Apple Pay'}
-              </button>
-            )}
+            <p style={{
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+              textAlign: isAr ? 'right' : 'left',
+              marginBottom: 12,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              lineHeight: 1.7,
+            }}>
+              {isAr
+                ? 'سيظهر نموذج Moyasar الآمن هنا. لا يسجَّل الطلب كمدفوع داخل مَعبر إلا بعد عودة Moyasar بحالة دفع ناجحة ومتحقق منها.'
+                : lang === 'zh'
+                  ? '安全的 Moyasar 付款表单会显示在这里。只有在 Moyasar 返回并验证为付款成功后，Maabar 才会把订单记录为已付款。'
+                  : 'The secure Moyasar form appears here. Maabar records the order as paid only after Moyasar returns a verified paid status.'}
+            </p>
 
-            {/* CARD / MADA */}
-            {(payMethod === 'card' || payMethod === 'mada') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 12 }}>
-                <div>
-                  <label style={labelStyle(isAr)}>{t.cardNum}</label>
-                  <input style={inputStyle} type="text" maxLength={19}
-                    placeholder="1234 5678 9012 3456"
-                    value={card.number}
-                    onChange={e => {
-                      const v = e.target.value.replace(/\D/g, '').slice(0, 16);
-                      setCard({ ...card, number: v.replace(/(.{4})/g, '$1 ').trim() });
-                    }}
-                    dir="ltr"
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div>
-                    <label style={labelStyle(isAr)}>{t.expiry}</label>
-                    <input style={inputStyle} type="text" maxLength={5}
-                      placeholder="MM/YY"
-                      value={card.expiry}
-                      onChange={e => {
-                        let v = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2);
-                        setCard({ ...card, expiry: v });
-                      }}
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle(isAr)}>{t.cvv}</label>
-                    <input style={inputStyle} type="password" maxLength={4}
-                      placeholder="•••"
-                      value={card.cvv}
-                      onChange={e => setCard({ ...card, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      dir="ltr"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label style={labelStyle(isAr)}>{t.cardName}</label>
-                  <input style={inputStyle} type="text"
-                    placeholder="MOHAMMED AL-MUTAIRI"
-                    value={card.name}
-                    onChange={e => setCard({ ...card, name: e.target.value.toUpperCase() })}
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-            )}
+            <p style={{
+              fontSize: 12,
+              color: 'rgba(220,100,80,0.85)',
+              textAlign: isAr ? 'right' : 'left',
+              marginBottom: 12,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              lineHeight: 1.5,
+            }}>
+              {t.cancellationNote}
+            </p>
 
-            {/* CANCELLATION POLICY */}
-            {payMethod !== 'apple_pay' && (
-              <p style={{
-                fontSize: 12,
-                color: 'rgba(220,100,80,0.85)',
-                textAlign: 'center',
-                marginBottom: 12,
-                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                lineHeight: 1.5,
-              }}>
-                {t.cancellationNote}
-              </p>
-            )}
+            <div id="maabar-moyasar-form" style={{
+              minHeight: paymentGatewayReady ? 280 : 0,
+              padding: paymentGatewayReady ? '14px 12px' : 0,
+              borderRadius: 'var(--radius-lg)',
+              border: paymentGatewayReady ? '1px solid var(--border-default)' : 'none',
+              background: paymentGatewayReady ? 'var(--bg-subtle)' : 'transparent',
+            }} />
 
-            {/* PAY BUTTON */}
-            {payMethod !== 'apple_pay' && (
-              <button onClick={handleCardPay} disabled={paying} style={{
-                width: '100%', background: paying ? 'var(--bg-raised)' : 'rgba(255,255,255,0.88)',
-                color: paying ? 'var(--text-disabled)' : '#0a0a0b',
-                border: 'none', padding: '14px',
-                fontSize: 14, fontWeight: 500, cursor: paying ? 'not-allowed' : 'pointer',
-                borderRadius: 'var(--radius-md)', transition: 'all 0.2s',
-                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                minHeight: 48,
-              }}>
-                {paying ? t.paying : `${t.pay} — ${fmt(firstPayment)} ${currencyLabel}`}
-              </button>
-            )}
             {payError && (
               <p style={{ fontSize: 13, color: '#d96060', textAlign: 'center', marginTop: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {payError}
               </p>
             )}
 
-            {/* SECURE */}
             <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-disabled)', marginTop: 12, letterSpacing: 0.5 }}>
               {t.secure} · Moyasar
             </p>
@@ -779,21 +676,6 @@ export default function Checkout({ lang, user, profile }) {
     </div>
   );
 }
-
-const labelStyle = (isAr) => ({
-  display: 'block', fontSize: 10, letterSpacing: 1.5,
-  textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6,
-  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-});
-
-const inputStyle = {
-  width: '100%', padding: '10px 12px',
-  border: '1px solid var(--border-default)',
-  background: 'var(--bg-raised)',
-  fontSize: 13, color: 'var(--text-primary)', outline: 'none',
-  borderRadius: 'var(--radius-md)', boxSizing: 'border-box',
-  transition: 'border-color 0.2s',
-};
 
 const trustBadgeStyle = (color, background, borderColor) => ({
   display: 'inline-flex',

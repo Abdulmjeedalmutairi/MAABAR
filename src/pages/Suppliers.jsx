@@ -6,7 +6,6 @@ import { sb } from '../supabase';
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
-  getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 
@@ -67,12 +66,9 @@ export default function Suppliers({ lang, user }) {
 
   const loadSuppliers = async () => {
     setLoading(true);
-    let query = sb.from('profiles')
-      .select('*, products(id), reviews(id)')
-      .eq('role', 'supplier')
+    let query = sb.from('supplier_public_profiles')
+      .select('*')
       .order('rating', { ascending: false });
-
-    query = query.in('status', getSupplierPublicVisibilityStatuses());
 
     if (activeCat !== 'all') query = query.eq('speciality', activeCat);
 
@@ -81,11 +77,23 @@ export default function Suppliers({ lang, user }) {
     setLoading(false);
   };
 
-  const filtered = suppliers.filter(s =>
-    (s.company_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (s.bio_ar || '').includes(search) ||
-    (s.bio_en || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = suppliers.filter(s => {
+    const q = search.toLowerCase();
+    return [
+      s.company_name,
+      s.bio_ar,
+      s.bio_en,
+      s.speciality,
+      s.city,
+      s.country,
+      s.maabar_supplier_id,
+      s.trade_link,
+      s.wechat,
+      s.whatsapp,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(q));
+  });
 
   const stars = (r) => {
     let s = '';
@@ -247,9 +255,9 @@ export default function Suppliers({ lang, user }) {
                       {s.city}
                     </span>
                   )}
-                  {s.products?.length > 0 && (
+                  {s.product_count > 0 && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
-                      {s.products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
+                      {s.product_count} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
                     </span>
                   )}
                   {trustSignals.includes('trade_profile_available') && (
@@ -269,20 +277,14 @@ export default function Suppliers({ lang, user }) {
                   )}
                 </div>
 
-                {/* TRUST SCORE */}
-                {(s.trust_score > 0 || trustSignals.length > 0) && (
+                {/* TRUST SIGNALS */}
+                {trustSignals.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1 }}>
                         {isAr ? 'إشارات الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}
                       </span>
-                      {s.trust_score > 0 && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{s.trust_score}%</span>}
                     </div>
-                    {s.trust_score > 0 && (
-                      <div style={{ height: 2, background: 'var(--border-subtle)', borderRadius: 1, overflow: 'hidden', marginBottom: 8 }}>
-                        <div style={{ width: `${s.trust_score}%`, height: '100%', background: 'rgba(139,120,255,0.5)', borderRadius: 1 }} />
-                      </div>
-                    )}
                     <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
                       {isAr
                         ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'الحساب بانتظار المراجعة'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}${trustSignals.includes('wechat_available') ? ' · WeChat متوفر' : ''}`

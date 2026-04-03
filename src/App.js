@@ -7,7 +7,6 @@ import {
   DEFAULT_DISPLAY_CURRENCY,
   fetchDisplayRates,
   getCachedDisplayRates,
-  getStoredDisplayCurrency,
   normalizeDisplayCurrency,
   persistDisplayCurrencyPreference,
 } from './lib/displayCurrency';
@@ -17,8 +16,12 @@ import {
   getSupplierPrimaryRoute,
   getSupplierTradeLinks,
   shouldNotifyAdminOfConfirmedSupplier,
-  shouldPromoteSupplierAfterEmailConfirmation,
 } from './lib/supplierOnboarding';
+import {
+  AUTH_CALLBACK_PATH,
+  buildAuthCallbackPath,
+  hasAuthCallbackPayload,
+} from './lib/authRedirects';
 
 // Pages
 import Home from './pages/Home';
@@ -40,6 +43,8 @@ import Chat from './pages/Chat';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
 import FAQ from './pages/FAQ';
+import FAQTraders from './pages/FAQTraders';
+import FAQSuppliers from './pages/FAQSuppliers';
 import AdminSeed from './pages/AdminSeed';
 import AgentPanel from './pages/AgentPanel';
 // ApolloAgent removed — file not found
@@ -49,12 +54,22 @@ import PaymentSuccess from './pages/PaymentSuccess';
 // Components
 import Navbar from './components/Navbar';
 import AIHub from './components/AIHub';
+import BrandedLoading from './components/BrandedLoading';
+import useMobileViewport from './hooks/useMobileViewport';
+
+function getLocaleDisplayCurrency(lang) {
+  if (lang === 'ar') return 'SAR';
+  if (lang === 'zh') return 'CNY';
+  return 'USD';
+}
 
 function App() {
+  useMobileViewport();
+
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [lang, setLang] = useState('ar');
-  const [displayCurrency, setDisplayCurrency] = useState(() => getStoredDisplayCurrency());
+  const [displayCurrency, setDisplayCurrency] = useState('SAR');
   const [exchangeRates, setExchangeRates] = useState(() => getCachedDisplayRates());
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
@@ -91,10 +106,10 @@ function App() {
   useEffect(() => {
     if (profile?.preferred_display_currency) {
       setDisplayCurrency(normalizeDisplayCurrency(profile.preferred_display_currency));
-    } else if (!user) {
-      setDisplayCurrency(getStoredDisplayCurrency());
+      return;
     }
-  }, [profile?.preferred_display_currency, user]);
+    setDisplayCurrency(getLocaleDisplayCurrency(lang));
+  }, [profile?.preferred_display_currency, user, lang]);
 
   const updateDisplayCurrency = async (nextCurrency) => {
     const normalized = normalizeDisplayCurrency(nextCurrency || DEFAULT_DISPLAY_CURRENCY);
@@ -159,22 +174,7 @@ function App() {
       return loadProfile(id, attempt + 1, sessionUser);
     }
 
-    let profileRow = data;
-
-    if (profileRow && shouldPromoteSupplierAfterEmailConfirmation(profileRow, sessionUser)) {
-      const { data: promotedProfile, error: promoteError } = await sb
-        .from('profiles')
-        .update({ status: 'verification_required' })
-        .eq('id', id)
-        .select('*')
-        .single();
-
-      if (!promoteError && promotedProfile) {
-        profileRow = promotedProfile;
-      } else if (promoteError) {
-        console.error('supplier review promotion error:', promoteError);
-      }
-    }
+    const profileRow = data;
 
     if (profileRow) {
       setProfile(profileRow);
@@ -228,7 +228,7 @@ function App() {
 
   const SupplierVerificationLocked = () => (
     <div style={{
-      minHeight: '100vh',
+      minHeight: 'var(--app-dvh)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -314,10 +314,12 @@ function App() {
   );
 
   const DashboardRouter = () => {
-    if (loading || (user && !profile && !profileError)) return <div className="loading">...</div>;
+    if (loading || (user && !profile && !profileError)) {
+      return <BrandedLoading lang={lang} tone="dashboard" fullscreen />;
+    }
     if (profileError) return (
       <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         background: '#0a0a0b', gap: 16, padding: 24,
       }}>
@@ -352,7 +354,7 @@ function App() {
       if (supplierState.isRejectedStage)
         return (
           <div style={{
-            minHeight: '100vh', display: 'flex', flexDirection: 'column',
+            minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             background: '#0a0a0b', gap: 16, padding: 24, textAlign: 'center',
           }}>
@@ -375,7 +377,7 @@ function App() {
       if (supplierState.isInactiveStage)
         return (
           <div style={{
-            minHeight: '100vh', display: 'flex', flexDirection: 'column',
+            minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             background: '#0a0a0b', gap: 16, padding: 24, textAlign: 'center',
           }}>
@@ -413,51 +415,21 @@ function App() {
   };
 
   /* ─── Loading screen ─────────────────────────── */
-  if (loading) return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#0a0a0b',
-      gap: 12,
-    }}>
-      {/* Logo mark */}
-      <div style={{
-        fontFamily: "'Inter', sans-serif",
-        fontSize: 13,
-        fontWeight: 600,
-        letterSpacing: '3px',
-        color: 'rgba(255,255,255,0.35)',
-      }}>
-        MAABAR
-      </div>
-      {/* Subtle pulse bar */}
-      <div style={{
-        width: 32,
-        height: 1,
-        background: 'rgba(255,255,255,0.12)',
-        borderRadius: 1,
-        animation: 'loadPulse 1.4s ease-in-out infinite',
-      }} />
-      <style>{`
-        @keyframes loadPulse {
-          0%, 100% { opacity: 0.3; transform: scaleX(1); }
-          50%       { opacity: 0.7; transform: scaleX(1.6); }
-        }
-      `}</style>
-    </div>
-  );
+  if (loading) return <BrandedLoading lang={lang} tone="app" fullscreen />;
 
   function AppContent() {
     const location = useLocation();
     const isSupplierAccessPage = location.pathname === '/supplier-access';
-    const isAuthCallbackPage = location.pathname === '/auth/callback';
+    const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
     const isChromelessPage = isSupplierAccessPage || isAuthCallbackPage;
     const pageDir = isChromelessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
     const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
     const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
+
+    if (!isAuthCallbackPage && hasAuthCallbackPayload(location.search, location.hash)) {
+      return <Navigate to={buildAuthCallbackPath(location.search, location.hash)} replace />;
+    }
+
     const withSupplierVerifiedAccess = (element) => {
       if (supplierState && !supplierState.canAccessOperationalFeatures) {
         return <SupplierVerificationLocked />;
@@ -466,7 +438,7 @@ function App() {
     };
 
     return (
-      <div dir={pageDir}>
+      <div dir={pageDir} className="app-shell">
         {!isChromelessPage && <Navbar {...sharedProps} />}
         <Routes>
           <Route path="/"               element={<Home            {...sharedProps} />} />
@@ -488,6 +460,8 @@ function App() {
           <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
           <Route path="/terms"          element={<Terms           {...sharedProps} />} />
           <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
+          <Route path="/faq/traders"    element={<FAQTraders      {...sharedProps} />} />
+          <Route path="/faq/suppliers"  element={<FAQSuppliers    {...sharedProps} />} />
           <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
           <Route path="/agent"          element={<AgentPanel />} />
           {/* /apollo route removed — ApolloAgent not available */}

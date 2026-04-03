@@ -5,7 +5,7 @@ export default function NotFound({ lang }) {
   const nav = useNavigate();
   const isAr = lang === 'ar';
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: 40, textAlign: 'center' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: 40, textAlign: 'center' }}>
       <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20 }}>404</p>
       <h1 style={{ fontSize: isAr ? 36 : 48, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : -1 }}>
         {isAr ? 'الصفحة غير موجودة' : 'Page Not Found'}

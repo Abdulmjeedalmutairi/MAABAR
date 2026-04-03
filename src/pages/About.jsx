@@ -69,7 +69,7 @@ export default function About({ lang }) {
   usePageTitle('about', lang);
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-base)' }}>
+    <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', background: 'var(--bg-base)' }}>
 
       {/* HERO */}
       <div style={{

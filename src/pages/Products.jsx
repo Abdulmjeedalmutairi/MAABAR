@@ -8,9 +8,9 @@ import { getPrimaryProductImage } from '../lib/productMedia';
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
-  getSupplierPublicVisibilityStatuses,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import { attachSupplierProfiles } from '../lib/profileVisibility';
 
 const CATEGORIES = {
   ar: [
@@ -78,6 +78,10 @@ function buildSearchableText(product = {}) {
     product.profiles?.company_name,
     product.profiles?.city,
     product.profiles?.country,
+    product.profiles?.maabar_supplier_id,
+    product.spec_customization,
+    product.spec_material,
+    product.spec_packaging_details,
   ]
     .filter(Boolean)
     .join(' ')
@@ -105,9 +109,11 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [capabilityFilters, setCapabilityFilters] = useState({ sample: false, customization: false });
   const isAr = lang === 'ar';
   const isSupplier = profile?.role === 'supplier';
   const cats = CATEGORIES[lang] || CATEGORIES.ar;
+  const uiDisplayCurrency = displayCurrency || (lang === 'ar' ? 'SAR' : lang === 'zh' ? 'CNY' : 'USD');
 
   usePageTitle('products', lang);
 
@@ -115,19 +121,21 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
 
   const loadProducts = async () => {
     setLoading(true);
+
     const { data } = await sb
       .from('products')
-      .select('*,profiles!inner(company_name,rating,id,status,trade_link,wechat,factory_images,years_experience,trust_score,country,city,maabar_supplier_id)')
+      .select('*')
       .eq('is_active', true)
-      .in('profiles.status', getSupplierPublicVisibilityStatuses())
       .order('created_at', { ascending: false });
 
-    if (data) {
-      setProducts(data.filter((product) => isSupplierPubliclyVisible(product.profiles?.status)));
-    } else {
-      setProducts([]);
+    if (Array.isArray(data) && data.length > 0) {
+      const productsWithSuppliers = await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles');
+      setProducts(productsWithSuppliers.filter((product) => isSupplierPubliclyVisible(product.profiles?.status)));
+      setLoading(false);
+      return;
     }
 
+    setProducts([]);
     setLoading(false);
   };
 
@@ -138,7 +146,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
       const converted = buildDisplayPrice({
         amount: p.price_from,
         sourceCurrency: p.currency || 'USD',
-        displayCurrency: displayCurrency || p.currency || 'USD',
+        displayCurrency: uiDisplayCurrency,
         rates: exchangeRates,
         lang,
       }).displayAmount;
@@ -148,15 +156,17 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
       const converted = buildDisplayPrice({
         amount: p.price_from,
         sourceCurrency: p.currency || 'USD',
-        displayCurrency: displayCurrency || p.currency || 'USD',
+        displayCurrency: uiDisplayCurrency,
         rates: exchangeRates,
         lang,
       }).displayAmount;
       return !priceRange.max || converted <= parseFloat(priceRange.max);
     })
+    .filter(p => !capabilityFilters.sample || Boolean(p.sample_available))
+    .filter(p => !capabilityFilters.customization || Boolean(p.spec_customization))
     .sort((a, b) => {
-      const aPrice = buildDisplayPrice({ amount: a.price_from, sourceCurrency: a.currency || 'USD', displayCurrency: displayCurrency || a.currency || 'USD', rates: exchangeRates, lang }).displayAmount;
-      const bPrice = buildDisplayPrice({ amount: b.price_from, sourceCurrency: b.currency || 'USD', displayCurrency: displayCurrency || b.currency || 'USD', rates: exchangeRates, lang }).displayAmount;
+      const aPrice = buildDisplayPrice({ amount: a.price_from, sourceCurrency: a.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang }).displayAmount;
+      const bPrice = buildDisplayPrice({ amount: b.price_from, sourceCurrency: b.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang }).displayAmount;
       if (sortBy === 'price_asc') return aPrice - bPrice;
       if (sortBy === 'price_desc') return bPrice - aPrice;
       return new Date(b.created_at) - new Date(a.created_at);
@@ -172,7 +182,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           </h1>
           <p className={`page-sub${isAr ? ' ar' : ''}`}>
             {isAr
-              ? 'تصفح منتجات الموردين الصينيين المعتمدين مع تفاصيل أوضح للثقة وMOQ والعينات والتجهيز.'
+              ? 'تصفح منتجات الموردين الصينيين المعتمدين مع تفاصيل أوضح للثقة والحد الأدنى للطلب والعينات ومدة التجهيز.'
               : lang === 'zh'
                 ? '浏览认证中国供应商产品，查看更清晰的 MOQ、样品、交期与信任信息。'
                 : 'Browse verified Chinese supplier products with clearer MOQ, sample, lead time, and trust details.'}
@@ -193,7 +203,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           </p>
           <p style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
             {isAr
-              ? 'أسماء صينية عند توفرها، وMOQ، والعينات، ووقت التجهيز، وإشارات ثقة المورد معروضة بشكل أوضح قبل التواصل.'
+              ? 'الأسماء الصينية عند توفرها، والحد الأدنى للطلب، والعينات، ومدة التجهيز، وإشارات ثقة المورد معروضة بشكل أوضح قبل التواصل.'
               : lang === 'zh'
                 ? '如有中文品名、MOQ、样品、备货周期与供应商信任信号，会在联系前更清楚地展示。'
                 : 'Chinese factory naming, MOQ, samples, lead time, and supplier trust signals are surfaced more clearly before you contact the supplier.'}
@@ -252,7 +262,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
             {isAr ? 'السعر:' : lang === 'zh' ? '价格:' : 'Price:'}
           </span>
@@ -273,13 +283,58 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
             value={priceRange.max}
             onChange={e => setPriceRange(p => ({ ...p, max: e.target.value }))}
           />
-          <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{displayCurrency || 'USD'}</span>
+          <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{uiDisplayCurrency}</span>
           {(priceRange.min || priceRange.max) && (
             <button
               className="btn-outline"
               style={{ padding: '6px 12px', fontSize: 11, minHeight: 32 }}
               onClick={() => setPriceRange({ min: '', max: '' })}>
               {isAr ? 'مسح' : lang === 'zh' ? '清除' : 'Clear'}
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {isAr ? 'تصفية سريعة:' : lang === 'zh' ? '快速筛选：' : 'Quick filters:'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setCapabilityFilters(prev => ({ ...prev, sample: !prev.sample }))}
+            style={{
+              padding: '6px 12px',
+              fontSize: 11,
+              minHeight: 32,
+              borderRadius: 20,
+              cursor: 'pointer',
+              border: '1px solid',
+              borderColor: capabilityFilters.sample ? 'rgba(45,122,79,0.25)' : 'var(--border-subtle)',
+              background: capabilityFilters.sample ? 'rgba(45,122,79,0.08)' : 'transparent',
+              color: capabilityFilters.sample ? '#2d7a4f' : 'var(--text-secondary)',
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+            }}>
+            {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample available'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCapabilityFilters(prev => ({ ...prev, customization: !prev.customization }))}
+            style={{
+              padding: '6px 12px',
+              fontSize: 11,
+              minHeight: 32,
+              borderRadius: 20,
+              cursor: 'pointer',
+              border: '1px solid',
+              borderColor: capabilityFilters.customization ? 'rgba(139,120,255,0.25)' : 'var(--border-subtle)',
+              background: capabilityFilters.customization ? 'rgba(139,120,255,0.08)' : 'transparent',
+              color: capabilityFilters.customization ? 'rgba(139,120,255,0.92)' : 'var(--text-secondary)',
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+            }}>
+            {isAr ? 'تخصيص / علامة خاصة' : lang === 'zh' ? 'OEM / 定制' : 'OEM / customization'}
+          </button>
+          {(capabilityFilters.sample || capabilityFilters.customization) && (
+            <button type="button" className="btn-outline" style={{ padding: '6px 12px', fontSize: 11, minHeight: 32 }} onClick={() => setCapabilityFilters({ sample: false, customization: false })}>
+              {isAr ? 'مسح التصفية' : lang === 'zh' ? '清空筛选' : 'Clear filters'}
             </button>
           )}
         </div>
@@ -297,8 +352,8 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
             <p style={{ color: 'var(--text-disabled)', fontSize: 14, marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
               {isAr ? 'لا توجد منتجات مطابقة' : lang === 'zh' ? '暂无匹配产品' : 'No products found'}
             </p>
-            {(search || activeCategory !== 'all') && (
-              <button onClick={() => { setSearch(''); setActiveCategory('all'); }} style={{
+            {(search || activeCategory !== 'all' || capabilityFilters.sample || capabilityFilters.customization) && (
+              <button onClick={() => { setSearch(''); setActiveCategory('all'); setCapabilityFilters({ sample: false, customization: false }); }} style={{
                 background: 'none',
                 border: '1px solid var(--border-subtle)',
                 color: 'var(--text-secondary)',
@@ -362,21 +417,12 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                 )}
 
                 {(() => {
-                  const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
-                  return (
-                    <>
-                      <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>
-                      {price.isConverted && (
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>
-                          {isAr ? `الأصل: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Source: ${price.formattedSource}`}
-                        </p>
-                      )}
-                    </>
-                  );
+                  const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang });
+                  return <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>;
                 })()}
 
                 <p className="product-meta">
-                  MOQ: {p.moq || '—'} · {p.profiles?.company_name || '—'}
+                  {isAr ? `الحد الأدنى للطلب: ${p.moq || '—'}` : `MOQ: ${p.moq || '—'}`} · {p.profiles?.company_name || '—'}
                   {(p.profiles?.city || p.profiles?.country) && ` · ${[p.profiles?.city, p.profiles?.country].filter(Boolean).join(', ')}`}
                 </p>
 
@@ -393,7 +439,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                   )}
                   {p.spec_customization && (
                     <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                      {isAr ? 'OEM / تخصيص' : lang === 'zh' ? '支持 OEM / 定制' : 'OEM / customization'}
+                      {isAr ? 'تخصيص / علامة خاصة' : lang === 'zh' ? '支持 OEM / 定制' : 'OEM / customization'}
                     </span>
                   )}
                   {supplierMaabarId && isReviewedSupplier && (
