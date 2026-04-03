@@ -408,11 +408,23 @@ function App() {
     return <DashboardBuyer {...sharedProps} />;
   };
 
+  // عند تغيير اللغة — نحفظها في الـ profile تلقائياً
+  const handleSetLang = async (newLang) => {
+    setLang(newLang);
+    if (user?.id && ['ar', 'en', 'zh'].includes(newLang)) {
+      try {
+        await sb.from('profiles').update({ lang: newLang }).eq('id', user.id);
+      } catch (e) {
+        console.error('Failed to save lang preference:', e);
+      }
+    }
+  };
+
   const sharedProps = {
     user,
     profile,
     lang,
-    setLang,
+    setLang: handleSetLang,
     setUser,
     setProfile,
     displayCurrency,
