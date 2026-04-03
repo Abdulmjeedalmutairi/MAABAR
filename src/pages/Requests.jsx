@@ -190,7 +190,7 @@ export default function Requests({ lang, user, profile }) {
   const isZh       = effectiveLang === 'zh';
   const isSupplier = profile?.role === 'supplier';
   
-  // إذا تغيرت اللغة وعندنا طلبات — أعد الترجمة
+  // ترجمة الطلبات عند تغيير اللغة أو عند تحميل الطلبات
   useEffect(() => {
     if (isSupplier && effectiveLang !== 'ar' && requests.length > 0) {
       const retranslate = async () => {
@@ -221,7 +221,7 @@ export default function Requests({ lang, user, profile }) {
       };
       retranslate();
     }
-  }, [effectiveLang, isSupplier]);
+  }, [effectiveLang, isSupplier, requests.length]);
   const isManagedMode = String(newReq.sourcing_mode || 'direct').toLowerCase() === 'managed';
   const cats       = CATEGORIES[lang] || CATEGORIES.ar;
 
@@ -283,37 +283,6 @@ export default function Requests({ lang, user, profile }) {
     }
     if (data) {
       setRequests(data);
-      
-      // نترجم عناوين الطلبات إذا لغة المورد مو عربية
-      if (isSupplier && effectiveLang !== 'ar' && data.length > 0) {
-        const translations = {};
-        for (const request of data) {
-          // نختار النص المناسب للترجمة (أي لغة موجودة)
-          const titleToTranslate = request.title_ar || request.title_en || request.title_zh || '';
-          const descToTranslate = request.description || '';
-          
-          // نكتشف لغة المصدر
-          const hasArabic = /[\u0600-\u06FF]/.test(titleToTranslate);
-          const hasChinese = /[\u4e00-\u9fff]/.test(titleToTranslate);
-          const sourceLang = hasArabic ? 'ar' : hasChinese ? 'zh' : 'en';
-
-          if (titleToTranslate && sourceLang !== effectiveLang) {
-            const translatedTitle = await translateRequestText(titleToTranslate, sourceLang, effectiveLang);
-            translations[request.id] = { ...translations[request.id], title: translatedTitle };
-          }
-          
-          if (descToTranslate) {
-            const descHasArabic = /[\u0600-\u06FF]/.test(descToTranslate);
-            const descHasChinese = /[\u4e00-\u9fff]/.test(descToTranslate);
-            const descSourceLang = descHasArabic ? 'ar' : descHasChinese ? 'zh' : 'en';
-            if (descSourceLang !== effectiveLang) {
-              const translatedDesc = await translateRequestText(descToTranslate, descSourceLang, effectiveLang);
-              translations[request.id] = { ...translations[request.id], description: translatedDesc };
-            }
-          }
-        }
-        setTranslatedRequests(translations);
-      }
     }
     setLoading(false);
   };
@@ -1082,28 +1051,33 @@ export default function Requests({ lang, user, profile }) {
                       ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close')
                       : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
                   </button>
-                  
-                  <button 
-                    className="btn-outline" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleDetails(r.id);
-                    }}
-                    style={{ 
-                      padding: '8px 16px', 
-                      fontSize: 12,
-                      minHeight: 32,
-                      width: '100%',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      display: 'block',
-                    }}
-                  >
-                    {expandedDetails[r.id] 
-                      ? (isAr ? 'إخفاء التفاصيل' : lang === 'zh' ? '隐藏详情' : 'Hide Details') 
-                      : (isAr ? 'تفاصيل الطلب' : lang === 'zh' ? '查看详情' : 'Request Details')}
-                  </button>
                 </div>
+              </div>
+
+              {/* زر تفاصيل الطلب - خارج الصف الجانبي */}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDetails(r.id);
+                  }}
+                  style={{ 
+                    background: 'none',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '8px 16px', 
+                    fontSize: 12,
+                    color: 'var(--text-secondary)',
+                    width: '100%',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    display: 'block',
+                  }}
+                >
+                  {expandedDetails[r.id] 
+                    ? (isAr ? '▲ إخفاء التفاصيل' : lang === 'zh' ? '▲ 隐藏详情' : '▲ Hide Details') 
+                    : (isAr ? '▼ تفاصيل الطلب' : lang === 'zh' ? '▼ 查看详情' : '▼ Request Details')}
+                </button>
               </div>
 
               {/* تفاصيل الطلب الموسعة */}
