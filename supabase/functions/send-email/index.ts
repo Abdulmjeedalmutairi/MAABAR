@@ -59,9 +59,8 @@ function wrap(content, options = {}) {
   const ikStyle = 'display:inline-block;min-width:120px;font-size:13px;color:#777777;vertical-align:top;';
   const ivStyle = 'display:inline-block;font-size:13px;color:#333333;vertical-align:top;';
   const bwStyle = `margin-top:24px;text-align:${locale.align};`;
-  const btStyle = 'display:inline-block;background-color:#2C2C2C;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;';
+  const btStyle = 'display:inline-block;background-color:#2C2C2C;padding:16px 36px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;';
 
-  // Replace CSS classes with inline styles
   const rendered = content
     .replace(/<div class="bd">/g, `<div style="direction:${locale.dir};text-align:${locale.align};">`)
     .replace(/<p class="gr">/g, `<p style="${grStyle}">`)
@@ -75,60 +74,75 @@ function wrap(content, options = {}) {
     .replace(/class="bt"/g, `style="${btStyle}"`);
 
   return `<!DOCTYPE html>
-<html lang="${locale.lang}" dir="${locale.dir}">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${subject}</title>
 </head>
-<body style="margin:0;padding:0;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f7f5f2">
-<tr><td align="center" style="padding:40px 20px;">
-<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff">
+<body style="margin:0; padding:0; background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f5f5">
+<tr>
+<td align="center" style="padding:40px 20px;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;">
 
-<!-- HEADER -->
+<!-- Header -->
 <tr>
-<td bgcolor="#2C2C2C" style="padding:28px 40px;text-align:center;background-color:#2C2C2C !important;">
-<table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+<td bgcolor="#2C2C2C" style="padding:32px 40px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr>
-<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">MAABAR</td>
-<td style="font-family:Georgia,serif;font-size:22px;color:#888888;padding:0 14px;">|</td>
-<td style="font-family:Georgia,serif;font-size:22px;font-weight:400;color:#ffffff;white-space:nowrap;">مَعبر</td>
+<td>
+<span style="color:#ffffff; font-family:Georgia, serif; font-size:20px; letter-spacing:4px; font-weight:400;">MAABAR</span>
+<span style="color:#888888; font-family:Georgia, serif; font-size:20px; letter-spacing:2px; margin:0 12px;">|</span>
+<span style="color:#ffffff; font-family:Georgia, serif; font-size:20px;">مَعبر</span>
+</td>
 </tr>
 <tr>
-<td colspan="3" style="font-family:Georgia,serif;font-size:14px;color:#888888;text-align:center;padding-top:8px;letter-spacing:2px;">迈巴尔</td>
+<td style="padding-top:8px;">
+<span style="font-family:Georgia, serif; font-size:13px; color:#888888; letter-spacing:2px;">迈巴尔</span>
+</td>
 </tr>
 </table>
 </td>
 </tr>
 
-<!-- DIVIDER -->
-<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e6e3" height="1"></td></tr></table></td></tr>
-
-<!-- CONTENT -->
+<!-- Divider -->
 <tr>
-<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:15px;color:#333333;line-height:1.7;">
+<td bgcolor="#e8e6e3" style="height:1px; font-size:1px; line-height:1px;">&nbsp;</td>
+</tr>
+
+<!-- Body -->
+<tr>
+<td bgcolor="#ffffff" style="padding:48px 40px; direction:${locale.dir}; text-align:${locale.align};">
 ${rendered}
 </td>
 </tr>
 
-<!-- DIVIDER -->
-<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e6e3" height="1"></td></tr></table></td></tr>
-
-<!-- FOOTER -->
+<!-- Footer line -->
 <tr>
-<td bgcolor="#f7f5f2" style="padding:24px 40px;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">
-<p style="margin:0 0 6px 0;">© 2026 مَعبر · Riyadh, Saudi Arabia</p>
-<p style="margin:0;font-size:11px;">
-<a href="https://maabar.io" style="color:#777777;text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
-<a href="mailto:info@maabar.io" style="color:#777777;text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
-<a href="https://maabar.io/unsubscribe" style="color:#aaaaaa;text-decoration:none;">إلغاء الاشتراك</a>
-</p>
+<td bgcolor="#e8e6e3" style="height:1px; font-size:1px; line-height:1px;">&nbsp;</td>
+</tr>
+
+<!-- Footer -->
+<tr>
+<td bgcolor="#f7f5f2" style="padding:24px 40px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td style="font-family:Arial, sans-serif; font-size:12px; color:#aaaaaa; line-height:1.8;">
+<a href="https://maabar.io" style="color:#888888; text-decoration:none;">maabar.io</a>
+&nbsp;&nbsp;·&nbsp;&nbsp;
+<a href="mailto:info@maabar.io" style="color:#888888; text-decoration:none;">info@maabar.io</a>
+<br>
+© 2026 مَعبر · Riyadh, Saudi Arabia
+</td>
+</tr>
+</table>
 </td>
 </tr>
 
 </table>
-</td></tr>
+</td>
+</tr>
 </table>
 </body>
 </html>`;
