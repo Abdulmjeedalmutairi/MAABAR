@@ -93,10 +93,10 @@ function wrap(content, options = {}) {
 <tr>
 <td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">MAABAR</td>
 <td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#cccccc;padding:0 10px;">|</td>
-<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">&#1605;&#1614;&#1593;&#1576;&#1585;</td>
+<td style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#ffffff;white-space:nowrap;">مَعبر</td>
 </tr>
 <tr>
-<td colspan="3" style="font-family:Georgia,serif;font-size:15px;color:#cccccc;text-align:center;padding-top:5px;">&#36855;&#24052;&#23572;</td>
+<td colspan="3" style="font-family:Georgia,serif;font-size:15px;color:#cccccc;text-align:center;padding-top:5px;">迈巴尔</td>
 </tr>
 </table>
 </td>
@@ -118,11 +118,11 @@ ${rendered}
 <!-- FOOTER -->
 <tr>
 <td bgcolor="#f7f5f2" style="padding:24px 40px;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">
-<p style="margin:0 0 6px 0;">&#169; 2026 &#1605;&#1614;&#1593;&#1576;&#1585; &middot; Riyadh, Saudi Arabia</p>
+<p style="margin:0 0 6px 0;">© 2026 مَعبر · Riyadh, Saudi Arabia</p>
 <p style="margin:0;font-size:11px;">
-<a href="https://maabar.io" style="color:#777777;text-decoration:none;">maabar.io</a> &nbsp;&middot;&nbsp;
-<a href="mailto:info@maabar.io" style="color:#777777;text-decoration:none;">info@maabar.io</a> &nbsp;&middot;&nbsp;
-<a href="https://maabar.io/unsubscribe" style="color:#aaaaaa;text-decoration:none;">&#1573;&#1604;&#1594;&#1575;&#1569; &#1575;&#1604;&#1575;&#1588;&#1578;&#1585;&#1575;&#1603;</a>
+<a href="https://maabar.io" style="color:#777777;text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
+<a href="mailto:info@maabar.io" style="color:#777777;text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
+<a href="https://maabar.io/unsubscribe" style="color:#aaaaaa;text-decoration:none;">إلغاء الاشتراك</a>
 </p>
 </td>
 </tr>
