@@ -1455,6 +1455,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
   }, [activeTab, isRestrictedSupplierTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // إذا تغيرت اللغة — أعد تحميل الاستفسارات مع الترجمة الجديدة
+  useEffect(() => {
+    if (lang !== 'ar' && activeTab === 'product-inquiries') {
+      loadProductInquiries();
+    }
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
   }, [displayCurrency]);

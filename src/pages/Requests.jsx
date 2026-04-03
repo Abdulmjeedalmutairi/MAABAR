@@ -190,10 +190,28 @@ export default function Requests({ lang, user, profile }) {
   const isZh       = effectiveLang === 'zh';
   const isSupplier = profile?.role === 'supplier';
   
-  // Debug: تحقق من اللغة
+  // إذا تغيرت اللغة وعندنا طلبات — أعد الترجمة
   useEffect(() => {
-    console.log('Requests page - lang:', lang, 'isSupplier:', isSupplier, 'profile role:', profile?.role, 'isAr:', isAr, 'isZh:', isZh);
-  }, [lang, isSupplier, profile, isAr, isZh]);
+    if (isSupplier && effectiveLang !== 'ar' && requests.length > 0) {
+      const retranslate = async () => {
+        const translations = {};
+        for (const request of requests) {
+          const titleToTranslate = request.title_ar || request.title_en || '';
+          const descToTranslate = request.description || '';
+          if (titleToTranslate) {
+            const translatedTitle = await translateRequestText(titleToTranslate, 'ar', effectiveLang);
+            translations[request.id] = { ...translations[request.id], title: translatedTitle };
+          }
+          if (descToTranslate) {
+            const translatedDesc = await translateRequestText(descToTranslate, 'ar', effectiveLang);
+            translations[request.id] = { ...translations[request.id], description: translatedDesc };
+          }
+        }
+        setTranslatedRequests(translations);
+      };
+      retranslate();
+    }
+  }, [effectiveLang, isSupplier]);
   const isManagedMode = String(newReq.sourcing_mode || 'direct').toLowerCase() === 'managed';
   const cats       = CATEGORIES[lang] || CATEGORIES.ar;
 

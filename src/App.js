@@ -179,6 +179,12 @@ function App() {
     if (profileRow) {
       setProfile(profileRow);
       setProfileError(false);
+      // Set language from profile preference
+      if (profileRow.lang && ['ar', 'en', 'zh'].includes(profileRow.lang)) {
+        setLang(profileRow.lang);
+      } else if (profileRow.preferred_language && ['ar', 'en', 'zh'].includes(profileRow.preferred_language)) {
+        setLang(profileRow.preferred_language);
+      }
       await maybeNotifyAdminOfConfirmedSupplier(profileRow, sessionUser);
       // Send trader welcome email once after email confirmation — deduplicated via ref + notifications table
       if (profileRow?.role === 'buyer' && profileRow?.status === 'active' && !welcomeEmailSentRef.current) {

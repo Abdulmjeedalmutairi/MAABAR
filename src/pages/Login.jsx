@@ -504,6 +504,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     const metaData = {
       role,
       status: isSupplier ? 'registered' : 'active',
+      lang: effectiveLang,
       ...(!isSupplier && {
         full_name: `${trimValue(firstName)} ${trimValue(lastName)}`.trim(),
         phone: trimValue(phone),
