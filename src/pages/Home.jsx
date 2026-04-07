@@ -407,8 +407,8 @@ export default function Home({ lang, user }) {
         <div style={{
           borderRadius: 28,
           border: '1px solid rgba(0,0,0,0.10)',
-          background: 'linear-gradient(180deg, rgba(13,13,17,0.96), rgba(18,18,24,0.94))',
-          boxShadow: '0 30px 80px rgba(0,0,0,0.28)',
+          background: '#FFFFFF',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
           padding: '28px clamp(20px, 4vw, 34px)',
         }}>
           <div style={{ marginBottom: 18 }}>
