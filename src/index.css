@@ -1846,8 +1846,8 @@ footer {
 .modal-overlay.open, .req-modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
 
 .modal-box, .req-modal-box {
-  background: var(--panel-sheen-strong), var(--bg-overlay);
-  border: 1px solid var(--accent-border-strong);
+  background: #FFFFFF;
+  border: 1px solid rgba(0,0,0,0.07);
   border-radius: var(--radius-xl);
   padding: var(--space-10) var(--space-8);
   width: 100%;
@@ -1855,7 +1855,7 @@ footer {
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.25s ease;
-  box-shadow: var(--shadow-md), var(--accent-shadow);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
 }
 
 .modal-title, .req-modal-title { font-size: 20px; font-weight: 500; margin-bottom: var(--space-3); color: var(--text-primary); }
@@ -2323,9 +2323,17 @@ input:-webkit-autofill:active {
   overflow: hidden;
   border-radius: 28px;
   border: 1px solid rgba(0,0,0,0.07);
-  background: #FFFFFF;
+  background: #FFFFFF !important;
   box-shadow: 0 8px 40px rgba(0,0,0,0.10);
   animation: slideUp 0.32s ease;
+}
+
+.role-tour-modal * {
+  --bg-base: #FAF8F5;
+  --bg-subtle: #FFFFFF;
+  --bg-raised: #FFFFFF;
+  --bg-overlay: #FFFFFF;
+  --bg-muted: #FFFFFF;
 }
 
 .role-tour-glow {
