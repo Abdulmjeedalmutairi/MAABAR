@@ -7,7 +7,7 @@ import RoleIntroTour from '../components/RoleIntroTour';
 
 const T = {
   ar: {
-    tag: 'مَعبر · المنصة الوحيدة التي تحمي التاجر السعودي في كل خطوة',
+    tag: 'الحل لجميع مشاكل استيرادك من الصين',
     title: 'لا تبحث\nمعبر\nيبحث لك',
     mainSub: 'استورد بثقة — بدون وسطاء، بدون مخاطر',
     sub: 'ارفع طلبك فقط، ومعبر يتولى فهمه وترتيبه، ثم يراجعه داخلياً ويطابقه مع الموردين المناسبين ويعيد لك أفضل 3 عروض بشكل واضح داخل نفس صفحة الطلب.',
@@ -112,7 +112,7 @@ const T = {
     finalSecondary: 'ارفع طلبك بنفسك',
   },
   en: {
-    tag: 'Maabar · The Only Platform That Protects Saudi Traders at Every Step',
+    tag: 'Your complete solution for importing from China',
     title: "Don't Search\nLet the Supplier\nCome to You",
     mainSub: 'Import with confidence — no middlemen, no risks',
     sub: 'Submit the request once and let Maabar structure it, review it internally, match the right suppliers, and return the top 3 offers clearly inside the same request page.',
@@ -217,7 +217,7 @@ const T = {
     finalSecondary: 'Post Your Request Yourself',
   },
   zh: {
-    tag: 'Maabar · 唯一在每一步保护沙特贸易商的平台',
+    tag: '解决您从中国进口的所有问题',
     title: '无需搜索\n让供应商\n主动找您',
     mainSub: '放心进口 — 无中间商，无风险',
     sub: '发布您的需求，认证中国供应商竞相报价 — 按您的信任程度付款，随着每次成功交易增加信任。',
