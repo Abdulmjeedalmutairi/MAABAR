@@ -34,6 +34,8 @@ import {
   getProductInquiryStatusLabel,
 } from '../lib/productInquiry';
 
+const SUPABASE_ANON_KEY_CONST = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+
 // Function لترجمة الاستفسارات
 const translateInquiryText = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
@@ -43,7 +45,7 @@ const translateInquiryText = async (text, sourceLang, targetLang) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY_CONST}`,
       },
       body: JSON.stringify({
         task: 'chat_translation',
@@ -71,6 +73,35 @@ const translateInquiryText = async (text, sourceLang, targetLang) => {
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+
+// ─── Currency helpers (requests tab) ────────────────────────────────────────
+const REQUEST_EXCHANGE_RATES = {
+  SAR_TO_CNY: 1.93,
+  SAR_TO_USD: 0.27,
+};
+
+const getCurrencyForLang = (lang) => {
+  if (lang === 'zh') return { code: 'CNY', symbol: '¥' };
+  if (lang === 'en') return { code: 'USD', symbol: '$' };
+  return { code: 'SAR', symbol: '﷼' };
+};
+
+const convertFromSAR = (amountSAR, lang) => {
+  if (lang === 'zh') return amountSAR * REQUEST_EXCHANGE_RATES.SAR_TO_CNY;
+  if (lang === 'en') return amountSAR * REQUEST_EXCHANGE_RATES.SAR_TO_USD;
+  return amountSAR;
+};
+
+const fmtRequestCurrency = (amountSAR, lang) => {
+  if (!amountSAR || isNaN(Number(amountSAR))) return '—';
+  const converted = convertFromSAR(Number(amountSAR), lang);
+  const { code, symbol } = getCurrencyForLang(lang);
+  if (lang === 'ar') return `${converted.toFixed(2)} ${symbol}`;
+  if (lang === 'zh') return `${converted.toFixed(2)} ${code}`;
+  return `${symbol}${converted.toFixed(2)}`;
+};
+
+
 
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
 const VERIFICATION_IMAGE_LIMIT = 5;
@@ -138,6 +169,7 @@ const T = {
     imageUploaded: 'تم رفع الصورة', videoUploaded: 'تم رفع الفيديو', maxVideo: 'الحد الأقصى للفيديو 50MB',
     galleryImages: 'صور المنتج', addMoreImages: 'إضافة صور أخرى', galleryHint: `حتى ${PRODUCT_GALLERY_LIMIT} صور — الصورة الأولى هي الرئيسية حالياً`, maxImagesReached: `وصلت للحد الأقصى (${PRODUCT_GALLERY_LIMIT} صور)`, maxImagesError: `يمكن رفع ${PRODUCT_GALLERY_LIMIT} صور كحد أقصى`, removeMedia: 'حذف', previewStep: 'معاينة قبل النشر', continueToPreview: 'متابعة للمعاينة', backToEdit: 'رجوع للتعديل', publishNow: 'نشر المنتج', previewNote: 'راجع الوسائط والمواصفات والسعر قبل النشر. العملة المعروضة هنا لا تغيّر عملة المنتج الأصلية.', previewBadge: 'معاينة', previewEmptyMedia: 'ما تمت إضافة صور بعد', primaryImage: 'الصورة الرئيسية', videoLimitHint: `فيديو واحد فقط لكل منتج`,
     specsTitle: 'مواصفات المنتج', specMaterial: 'الخامة / المادة', specDimensions: 'الأبعاد / المقاس', specWeight: 'وزن القطعة', specColors: 'الألوان أو الخيارات', specPackaging: 'تفاصيل التغليف', specCustomization: 'التخصيص / OEM', specLeadTime: 'مدة التجهيز (أيام)', productSavedWithFallback: 'تم حفظ المنتج، لكن بعض الحقول الجديدة تحتاج تفعيل قاعدة البيانات حتى تُحفظ بالكامل.',
+    variantsTitle: 'خيارات المنتج', variantsHint: 'أضف مجموعات الخيارات المتاحة (ألوان، مقاسات، موديلات...)', addVariantGroup: '+ إضافة مجموعة خيارات', variantGroupName: 'اسم المجموعة', variantGroupNamePlaceholder: 'مثال: اللون / المقاس / الموديل', variantValues: 'الخيارات المتاحة', variantValuesPlaceholder: 'اكتب ثم اضغط Enter أو فاصلة للإضافة', removeGroup: 'حذف المجموعة',
     sampleSettings: 'إعدادات العينة', sampleAvailable: 'متاح للعينة',
     samplePrice: 'سعر العينة (ريال) *', sampleShipping: 'تكلفة الشحن (ريال)',
     sampleMaxQty: 'الحد الأقصى للكمية', sampleNote: 'ملاحظة للعينة',
@@ -178,6 +210,7 @@ const T = {
     imageUploaded: 'Image uploaded', videoUploaded: 'Video uploaded', maxVideo: 'Max 50MB',
     galleryImages: 'Product Images', addMoreImages: 'Add More Images', galleryHint: `Up to ${PRODUCT_GALLERY_LIMIT} images — the first image stays the primary cover`, maxImagesReached: `Maximum reached (${PRODUCT_GALLERY_LIMIT} images)`, maxImagesError: `You can upload up to ${PRODUCT_GALLERY_LIMIT} images`, removeMedia: 'Remove', previewStep: 'Preview Before Publish', continueToPreview: 'Continue to Preview', backToEdit: 'Back to Edit', publishNow: 'Publish Product', previewNote: 'Review media, specs, and pricing before publishing. Display currency never replaces the saved source product currency.', previewBadge: 'Preview', previewEmptyMedia: 'No product images yet', primaryImage: 'Primary image', videoLimitHint: 'One product video only',
     specsTitle: 'Product Specifications', specMaterial: 'Material', specDimensions: 'Dimensions / Size', specWeight: 'Unit Weight', specColors: 'Colors / Variants', specPackaging: 'Packaging Details', specCustomization: 'Customization / OEM', specLeadTime: 'Lead Time (days)', productSavedWithFallback: 'Product saved, but some new fields still need the DB migration before they can persist fully.',
+    variantsTitle: 'Product Options', variantsHint: 'Add option groups available for this product (colors, sizes, models...)', addVariantGroup: '+ Add option group', variantGroupName: 'Group name', variantGroupNamePlaceholder: 'e.g. Color / Size / Model', variantValues: 'Available options', variantValuesPlaceholder: 'Type then press Enter or comma to add', removeGroup: 'Remove group',
     sampleSettings: 'Sample Settings', sampleAvailable: 'Available for Sample',
     samplePrice: 'Sample Price (SAR) *', sampleShipping: 'Shipping Cost (SAR)',
     sampleMaxQty: 'Max Sample Qty', sampleNote: 'Sample Note',
@@ -218,6 +251,7 @@ const T = {
     imageUploaded: '图片已上传', videoUploaded: '视频已上传', maxVideo: '最大50MB',
     galleryImages: '产品图片', addMoreImages: '继续添加图片', galleryHint: `最多 ${PRODUCT_GALLERY_LIMIT} 张图片 — 第一张将作为主图`, maxImagesReached: `已达到上限（${PRODUCT_GALLERY_LIMIT} 张）`, maxImagesError: `最多可上传 ${PRODUCT_GALLERY_LIMIT} 张图片`, removeMedia: '删除', previewStep: '发布前预览', continueToPreview: '继续预览', backToEdit: '返回编辑', publishNow: '发布产品', previewNote: '发布前请先确认媒体、规格和价格。这里的显示货币不会替代产品原始货币。', previewBadge: '预览', previewEmptyMedia: '暂未添加产品图片', primaryImage: '主图', videoLimitHint: '每个产品仅支持 1 个视频',
     specsTitle: '产品规格', specMaterial: '材质', specDimensions: '尺寸 / 规格', specWeight: '单件重量', specColors: '颜色 / 款式', specPackaging: '包装信息', specCustomization: '定制 / OEM', specLeadTime: '交期（天）', productSavedWithFallback: '产品已保存，但部分新字段仍需要先执行数据库迁移后才能完整持久化。',
+    variantsTitle: '产品选项', variantsHint: '添加该产品的可选项组（颜色、尺寸、型号等）', addVariantGroup: '+ 添加选项组', variantGroupName: '组名称', variantGroupNamePlaceholder: '例：颜色 / 尺寸 / 型号', variantValues: '可用选项', variantValuesPlaceholder: '输入后按 Enter 或逗号添加', removeGroup: '删除该组',
     sampleSettings: '样品设置', sampleAvailable: '可提供样品',
     samplePrice: '样品价格 (SAR) *', sampleShipping: '运费 (SAR)',
     sampleMaxQty: '最大样品数量', sampleNote: '样品备注',
@@ -304,6 +338,7 @@ const emptyProduct = {
   desc_en: '', desc_ar: '',
   image_url: null, gallery_images: [], video_url: null,
   spec_material: '', spec_dimensions: '', spec_unit_weight: '', spec_color_options: '', spec_packaging_details: '', spec_customization: '', spec_lead_time_days: '',
+  variants: [],
   sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '',
 };
 
@@ -316,6 +351,7 @@ const PRODUCT_OPTIONAL_DB_FIELDS = [
   'spec_packaging_details',
   'spec_customization',
   'spec_lead_time_days',
+  'variants',
 ];
 
 const buildProductWritePayload = (rawProduct, supplierId) => {
@@ -348,6 +384,7 @@ const buildProductWritePayload = (rawProduct, supplierId) => {
     sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null,
     sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3, 10) : null,
     sample_note: product.sample_note || null,
+    variants: Array.isArray(product.variants) ? product.variants.filter(g => g.name && g.values?.length) : [],
     is_active: true,
   };
 };
@@ -671,6 +708,97 @@ function ProductForm({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ─── قسم خيارات المنتج (Variants) ─── */}
+      <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+        <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 6, textTransform: 'uppercase' }}>{t.variantsTitle}</p>
+        <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>{t.variantsHint}</p>
+
+        {(data.variants || []).map((group, gIdx) => (
+          <div key={gIdx} style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
+            <button
+              onClick={() => setData(prev => ({ ...prev, variants: prev.variants.filter((_, i) => i !== gIdx) }))}
+              style={{ position: 'absolute', top: 10, insetInlineEnd: 10, background: 'none', border: 'none', color: 'var(--text-disabled)', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}
+              title={t.removeGroup}
+            >×</button>
+
+            {/* اسم المجموعة */}
+            <div className="form-group" style={{ marginBottom: 10 }}>
+              <label className="form-label">{t.variantGroupName}</label>
+              <input
+                className="form-input"
+                placeholder={t.variantGroupNamePlaceholder}
+                value={group.name || ''}
+                onChange={e => setData(prev => {
+                  const v = [...prev.variants];
+                  v[gIdx] = { ...v[gIdx], name: e.target.value };
+                  return { ...prev, variants: v };
+                })}
+              />
+            </div>
+
+            {/* القيم كـ tags */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">{t.variantValues}</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                {(group.values || []).map((val, vIdx) => (
+                  <span key={vIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', borderRadius: 20, fontSize: 12, color: 'var(--text-primary)' }}>
+                    {val}
+                    <button
+                      onClick={() => setData(prev => {
+                        const v = [...prev.variants];
+                        v[gIdx] = { ...v[gIdx], values: v[gIdx].values.filter((_, i) => i !== vIdx) };
+                        return { ...prev, variants: v };
+                      })}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-disabled)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                className="form-input"
+                placeholder={t.variantValuesPlaceholder}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const val = e.target.value.trim().replace(/,$/, '');
+                    if (!val) return;
+                    setData(prev => {
+                      const v = [...prev.variants];
+                      const existing = v[gIdx].values || [];
+                      if (!existing.includes(val)) {
+                        v[gIdx] = { ...v[gIdx], values: [...existing, val] };
+                      }
+                      return { ...prev, variants: v };
+                    });
+                    e.target.value = '';
+                  }
+                }}
+                onBlur={e => {
+                  const val = e.target.value.trim().replace(/,$/, '');
+                  if (!val) return;
+                  setData(prev => {
+                    const v = [...prev.variants];
+                    const existing = v[gIdx].values || [];
+                    if (!existing.includes(val)) {
+                      v[gIdx] = { ...v[gIdx], values: [...existing, val] };
+                    }
+                    return { ...prev, variants: v };
+                  });
+                  e.target.value = '';
+                }}
+              />
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={() => setData(prev => ({ ...prev, variants: [...(prev.variants || []), { name: '', values: [] }] }))}
+          style={{ background: 'transparent', border: '1px dashed var(--border-muted)', borderRadius: 'var(--radius-md)', padding: '8px 16px', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer', width: '100%', marginTop: 4 }}
+        >
+          {t.addVariantGroup}
+        </button>
       </div>
 
       <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
@@ -1285,8 +1413,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [productInquiries, setProductInquiries] = useState([]);
   const [inquiryReplies, setInquiryReplies] = useState({});
   const [replyingInquiryId, setReplyingInquiryId] = useState(null);
-  const [translatedInquiries, setTranslatedInquiries] = useState({}); // لتخزين الاستفسارات المترجمة
+
   const [requests, setRequests]             = useState([]);
+  const [expandedRequest, setExpandedRequest] = useState(null);
   const [managedMatches, setManagedMatches] = useState([]);
   const [managedMatchGroup, setManagedMatchGroup] = useState('new');
   const [managedOfferForms, setManagedOfferForms] = useState({});
@@ -1538,6 +1667,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeCat]);
 
+  // الترجمات محفوظة في DB — لا حاجة لـ client-side translation
+
+
+
   const loadStats = async () => {
     const [products, offersData, messages, acceptedOffers, payments, openProductInquiries] = await Promise.all([
       sb.from('products').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('is_active', true),
@@ -1574,32 +1707,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       const inquiriesWithProfiles = await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles');
       setProductInquiries(inquiriesWithProfiles);
       
-      // نترجم الاستفسارات إذا لغة المورد مختلفة عن لغة النص
-      if (inquiriesWithProfiles.length > 0) {
-        const translations = {};
-        for (const inquiry of inquiriesWithProfiles) {
-          if (inquiry.question_text) {
-            // نحاول نكتشف لغة النص (بسيط - نتحقق من وجود حروف عربية/صينية)
-            const hasArabic = /[\u0600-\u06FF]/.test(inquiry.question_text);
-            const hasChinese = /[\u4e00-\u9fff]/.test(inquiry.question_text);
-            
-            let sourceLang = 'en'; // default
-            if (hasArabic) sourceLang = 'ar';
-            else if (hasChinese) sourceLang = 'zh';
-            
-            // نترجم فقط إذا لغة المصدر مختلفة عن لغة المورد
-            if (sourceLang !== lang) {
-              const translated = await translateInquiryText(
-                inquiry.question_text, 
-                sourceLang,
-                lang
-              );
-              translations[inquiry.id] = translated;
-            }
-          }
-        }
-        setTranslatedInquiries(translations);
-      }
+      // الترجمات محفوظة في DB — لا حاجة لترجمة client-side
     } catch (error) {
       console.error('load product inquiries error:', error);
       setProductInquiries([]);
@@ -1614,11 +1722,31 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     setReplyingInquiryId(inquiry.id);
+
+    // نترجم الرد للغات الثلاثة عند الحفظ
+    let messageAr = message, messageEn = message, messageZh = message;
+    try {
+      const hasArabic = /[\u0600-\u06FF]/.test(message);
+      const hasChinese = /[\u4e00-\u9fff]/.test(message);
+      const srcLang = hasArabic ? 'ar' : hasChinese ? 'zh' : 'en';
+      const [toEn, toZh, toAr] = await Promise.all([
+        srcLang !== 'en' ? translateInquiryText(message, srcLang, 'en') : Promise.resolve(message),
+        srcLang !== 'zh' ? translateInquiryText(message, srcLang, 'zh') : Promise.resolve(message),
+        srcLang !== 'ar' ? translateInquiryText(message, srcLang, 'ar') : Promise.resolve(message),
+      ]);
+      messageEn = toEn || message;
+      messageZh = toZh || message;
+      messageAr = toAr || message;
+    } catch (e) { console.error('reply translation error:', e); }
+
     const { error } = await sb.from('product_inquiry_replies').insert({
       inquiry_id: inquiry.id,
       sender_id: user.id,
       receiver_id: inquiry.buyer_id,
       message,
+      message_ar: messageAr,
+      message_en: messageEn,
+      message_zh: messageZh,
     });
 
     if (error) {
@@ -2143,17 +2271,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const loadRequests = async () => {
     if (!user) return;
     setLoadingRequests(true);
-    // جلب الطلبات الظاهرة للمورد: المفتوحة + التي وصلتها عروض حتى لا تختفي بعد أول عرض
     let query = sb.from('requests').select('*').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data, error } = await query;
-    console.log('loadRequests result:', data?.length, 'error:', error);
     if (error) {
       setRequests([]);
       setLoadingRequests(false);
       return;
     }
-    if (data) setRequests(data);
+    setRequests(data || []);
     setLoadingRequests(false);
   };
 
@@ -2622,6 +2748,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     return item?.title_ar || item?.title_en;
   };
 
+  // يقرأ الوصف المترجم من DB مباشرة
+  const getDesc = (item) => {
+    if (lang === 'zh') return item?.description_zh || item?.description_en || item?.description_ar || item?.description;
+    if (lang === 'en') return item?.description_en || item?.description_ar || item?.description;
+    return item?.description_ar || item?.description;
+  };
+
   const fmtDate = (d) => {
     if (!d) return '';
     const diff = Math.floor((Date.now() - new Date(d)) / 1000);
@@ -3073,8 +3206,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               {!loadingRequests && requests.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0' }}><p style={{ color: 'var(--text-disabled)', fontSize: 14, ...arFont }}>{isAr ? 'لا توجد طلبات' : lang === 'zh' ? '暂无需求' : 'No requests'}</p></div>}
 
               {!loadingRequests && requests.map(r => (
-                <div key={r.id} style={{ marginBottom: offerForms[r.id] ? 0 : 10 }}>
-                  <div style={{ border: '1px solid var(--border-subtle)', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, background: 'var(--bg-subtle)', transition: 'all 0.15s', borderRadius: offerForms[r.id] ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)' }}
+                <div key={r.id} style={{ marginBottom: (offerForms[r.id] || expandedRequest === r.id) ? 0 : 10 }}>
+                  <div style={{ border: '1px solid var(--border-subtle)', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, background: 'var(--bg-subtle)', transition: 'all 0.15s', borderRadius: (offerForms[r.id] || expandedRequest === r.id) ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-muted)'; e.currentTarget.style.background = 'var(--bg-muted)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-subtle)'; }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -3087,23 +3220,108 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {r.category && r.category !== 'other' && <span style={{ fontSize: 10, padding: '2px 8px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-disabled)' }}>{cats.find(c => c.val === r.category)?.label || r.category}</span>}
                         <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.created_at)}</span>
                       </div>
-                      <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text-primary)', ...arFont }}>{getTitle(r)}</h3>
+                      <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text-primary)', ...arFont }}>
+                        {getTitle(r)}
+                      </h3>
                       <div style={{ display: 'flex', gap: 16, color: 'var(--text-disabled)', fontSize: 12, flexWrap: 'wrap' }}>
                         <span>{r.profiles?.full_name || r.profiles?.company_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader')}</span>
                         <span>{r.quantity || '—'}</span>
-                        {r.description && <span>{r.description.substring(0, 55)}…</span>}
+                        {getDesc(r) && <span>{getDesc(r).substring(0, 55)}…</span>}
                       </div>
                     </div>
-                    <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
-                      {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
-                    </button>
+                    {/* أزرار العمل */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                      <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
+                        {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
+                      </button>
+                      <button
+                        onClick={() => setExpandedRequest(expandedRequest === r.id ? null : r.id)}
+                        style={{ background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        {expandedRequest === r.id
+                          ? (isAr ? 'إخفاء التفاصيل ▲' : lang === 'zh' ? '隐藏详情 ▲' : 'Hide details ▲')
+                          : (isAr ? 'تفاصيل الطلب ▼' : lang === 'zh' ? '查看详情 ▼' : 'View details ▼')}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* قسم تفاصيل الطلب الكاملة */}
+                  {expandedRequest === r.id && (
+                    <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderTop: 'none', padding: '18px 22px', borderRadius: offerForms[r.id] ? 0 : '0 0 var(--radius-lg) var(--radius-lg)' }}>
+                      <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', margin: '0 0 14px' }}>
+                        {isAr ? 'تفاصيل الطلب الكاملة' : lang === 'zh' ? '完整需求详情' : 'Full Request Details'}
+                      </p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                        {/* الوصف */}
+                        {getDesc(r) && (
+                          <div style={{ gridColumn: '1 / -1', padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الوصف' : lang === 'zh' ? '描述' : 'Description'}</p>
+                            <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0, ...arFont }}>
+                              {getDesc(r)}
+                            </p>
+                          </div>
+                        )}
+                        {/* الكمية */}
+                        {r.quantity && (
+                          <div style={{ padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity'}</p>
+                            <p style={{ fontSize: 14, color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>{r.quantity}</p>
+                          </div>
+                        )}
+                        {/* الميزانية لكل وحدة — مع تحويل العملة */}
+                        {r.budget_per_unit && (
+                          <div style={{ padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الميزانية التقريبية / وحدة' : lang === 'zh' ? '参考预算（每件）' : 'Budget hint / unit'}</p>
+                            <p style={{ fontSize: 14, color: 'var(--text-primary)', margin: 0, fontWeight: 500, direction: 'ltr' }}>
+                              {fmtRequestCurrency(r.budget_per_unit, lang)}
+                            </p>
+                          </div>
+                        )}
+                        {/* خطة الدفع */}
+                        {r.payment_plan && (
+                          <div style={{ padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment plan'}</p>
+                            <p style={{ fontSize: 14, color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>
+                              {isAr ? `دفعة مقدمة ${r.payment_plan}%` : lang === 'zh' ? `预付款 ${r.payment_plan}%` : `${r.payment_plan}% upfront`}
+                            </p>
+                          </div>
+                        )}
+                        {/* متطلب العينة */}
+                        {r.sample_requirement && (
+                          <div style={{ padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'العينة' : lang === 'zh' ? '样品要求' : 'Sample'}</p>
+                            <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>
+                              {r.sample_requirement === 'required'
+                                ? (isAr ? 'إلزامية' : lang === 'zh' ? '必须提供' : 'Required')
+                                : r.sample_requirement === 'preferred'
+                                  ? (isAr ? 'مفضلة' : lang === 'zh' ? '建议提供' : 'Preferred')
+                                  : (isAr ? 'غير مطلوبة' : lang === 'zh' ? '无需样品' : 'Not needed')}
+                            </p>
+                          </div>
+                        )}
+                        {/* الموعد النهائي */}
+                        {r.response_deadline && (
+                          <div style={{ padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الموعد النهائي' : lang === 'zh' ? '截止日期' : 'Deadline'}</p>
+                            <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0, direction: 'ltr' }}>{fmtDate(r.response_deadline)}</p>
+                          </div>
+                        )}
+                        {/* صورة مرجعية */}
+                        {r.reference_image && (
+                          <div style={{ gridColumn: '1 / -1', padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 8 }}>{isAr ? 'صورة مرجعية' : lang === 'zh' ? '参考图片' : 'Reference image'}</p>
+                            <img src={r.reference_image} alt="ref" style={{ maxWidth: '100%', maxHeight: 180, borderRadius: 8, objectFit: 'contain' }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {offerForms[r.id] && (
                     <div style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderTop: 'none', padding: '18px 22px', marginBottom: 10, borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }}>
                       {(r.budget_per_unit || r.payment_plan || r.sample_requirement) && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-                          {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${r.budget_per_unit} SAR` : lang === 'zh' ? `预算参考：${r.budget_per_unit} SAR` : `Budget hint: ${r.budget_per_unit} SAR`}</span>}
+                          {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${fmtRequestCurrency(r.budget_per_unit, lang)}` : lang === 'zh' ? `预算参考：${fmtRequestCurrency(r.budget_per_unit, lang)}` : `Budget hint: ${fmtRequestCurrency(r.budget_per_unit, lang)}`}</span>}
                           {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}%` : `Payment plan: ${r.payment_plan}%`}</span>}
                           {r.sample_requirement && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `العينة: ${r.sample_requirement === 'required' ? 'إلزامية' : r.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة'}` : lang === 'zh' ? `样品：${r.sample_requirement === 'required' ? '必须提供' : r.sample_requirement === 'preferred' ? '建议提供' : '无需样品'}` : `Sample: ${r.sample_requirement === 'required' ? 'Required' : r.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed'}`}</span>}
                         </div>
@@ -3573,7 +3791,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6, ...arFont }}>{productName}</p>
                         <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 4 }}>{buyerName}</p>
                         <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.8, margin: 0, ...arFont }}>
-                          {translatedInquiries[inquiry.id] || inquiry.question_text}
+                          {lang === 'zh' ? (inquiry.question_text_zh || inquiry.question_text_en || inquiry.question_text)
+                           : lang === 'en' ? (inquiry.question_text_en || inquiry.question_text_ar || inquiry.question_text)
+                           : (inquiry.question_text_ar || inquiry.question_text)}
                         </p>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 6 }}>
@@ -3589,7 +3809,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
                           {isAr ? 'آخر رد محفوظ' : lang === 'zh' ? '最近回复' : 'Latest saved reply'}
                         </p>
-                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0, ...arFont }}>{lastReply.message}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0, ...arFont }}>
+                          {lang === 'zh' ? (lastReply.message_zh || lastReply.message_en || lastReply.message)
+                           : lang === 'en' ? (lastReply.message_en || lastReply.message_ar || lastReply.message)
+                           : (lastReply.message_ar || lastReply.message)}
+                        </p>
                       </div>
                     )}
 

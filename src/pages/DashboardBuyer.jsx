@@ -1075,7 +1075,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       {r.estimated_delivery && (
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>
                           {isAr ? 'التسليم المتوقع: ' : 'Expected delivery: '}
-                          {new Date(r.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}
+                          {new Date(r.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}
                         </p>
                       )}
                     </div>
@@ -1503,7 +1503,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? '#5a9a72' : 'var(--text-secondary)' }}>
                           {statusLabel}
                         </span>
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
                       </div>
                     </div>
 

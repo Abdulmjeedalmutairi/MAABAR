@@ -411,9 +411,15 @@ function App() {
   // عند تغيير اللغة — نحفظها في الـ profile تلقائياً
   const handleSetLang = async (newLang) => {
     setLang(newLang);
+    // ربط العملة باللغة — عند تغيير اللغة تتغير العملة تلقائياً
+    const localeCurrency = getLocaleDisplayCurrency(newLang);
+    setDisplayCurrency(normalizeDisplayCurrency(localeCurrency));
     if (user?.id && ['ar', 'en', 'zh'].includes(newLang)) {
       try {
-        await sb.from('profiles').update({ lang: newLang }).eq('id', user.id);
+        await sb.from('profiles').update({
+          lang: newLang,
+          preferred_display_currency: localeCurrency,
+        }).eq('id', user.id);
       } catch (e) {
         console.error('Failed to save lang preference:', e);
       }

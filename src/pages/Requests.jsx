@@ -313,13 +313,41 @@ export default function Requests({ lang, user, profile }) {
     }
 
     setSubmitting(true);
+
+    // ترجمة العنوان والوصف للغات الثلاث قبل الحفظ
+    const descAr = String(newReq.description || '').trim();
+    let titleArFinal = titleAr || fallbackTitle;
+    let titleEnFinal = titleEn || fallbackTitle;
+    let titleZhFinal = titleEn || titleAr || fallbackTitle;
+    let descEnFinal = descAr;
+    let descZhFinal = descAr;
+
+    try {
+      const [tEn, tZh, dEn, dZh] = await Promise.all([
+        titleAr ? translateRequestText(titleAr, 'ar', 'en') : Promise.resolve(titleEnFinal),
+        titleAr ? translateRequestText(titleAr, 'ar', 'zh') : Promise.resolve(titleZhFinal),
+        descAr  ? translateRequestText(descAr, 'ar', 'en')  : Promise.resolve(''),
+        descAr  ? translateRequestText(descAr, 'ar', 'zh')  : Promise.resolve(''),
+      ]);
+      titleEnFinal = tEn || titleEnFinal;
+      titleZhFinal = tZh || titleZhFinal;
+      descEnFinal  = dEn || descAr;
+      descZhFinal  = dZh || descAr;
+    } catch (e) {
+      console.error('Translation before save failed:', e);
+      // نكمل بالقيم الأصلية إذا فشلت الترجمة
+    }
+
     const payload = {
       buyer_id: user.id,
-      title_ar: titleAr || fallbackTitle,
-      title_en: titleEn || fallbackTitle,
-      title_zh: titleEn || titleAr || fallbackTitle,
+      title_ar: titleArFinal,
+      title_en: titleEnFinal,
+      title_zh: titleZhFinal,
       quantity,
-      description: String(newReq.description || '').trim(),
+      description: descAr,
+      description_ar: descAr,
+      description_en: descEnFinal,
+      description_zh: descZhFinal,
       category: newReq.category || 'other',
       status: 'open',
       budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
@@ -335,7 +363,7 @@ export default function Requests({ lang, user, profile }) {
     const { data: insertedRequest, error } = await runWithOptionalColumns({
       table: 'requests',
       payload,
-      optionalKeys: ['sourcing_mode', 'managed_status', 'managed_review_state', 'response_deadline'],
+      optionalKeys: ['sourcing_mode', 'managed_status', 'managed_review_state', 'response_deadline', 'description_ar', 'description_en', 'description_zh'],
       execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('*').single(),
     });
 

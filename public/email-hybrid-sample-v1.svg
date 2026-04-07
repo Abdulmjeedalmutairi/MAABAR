@@ -1,0 +1,30 @@
+<svg width="1200" height="1180" viewBox="0 0 1200 1180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1180" fill="#0A0A0B"/>
+  <rect x="48" y="48" width="1104" height="1084" rx="26" fill="#101114"/>
+  <rect x="48" y="48" width="1104" height="220" rx="26" fill="#0A0A0B"/>
+  <line x1="48" y1="268.5" x2="1152" y2="268.5" stroke="rgba(255,255,255,0.08)"/>
+  <text x="600" y="136" text-anchor="middle" fill="#F5F5F2" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" letter-spacing="8">MAABAR</text>
+  <text x="600" y="180" text-anchor="middle" fill="rgba(245,245,242,0.48)" font-family="Arial, Helvetica, sans-serif" font-size="20" letter-spacing="2">Saudi B2B sourcing, designed as a dark-first email experience</text>
+  <text x="120" y="372" fill="rgba(245,245,242,0.52)" font-family="Arial, Helvetica, sans-serif" font-size="20" letter-spacing="3">SUPPLIER EARLY ACCESS</text>
+  <text x="120" y="472" fill="#F5F5F2" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700">Position your company</text>
+  <text x="120" y="558" fill="#F5F5F2" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700">early in the Saudi market</text>
+  <text x="120" y="636" fill="rgba(245,245,242,0.78)" font-family="Arial, Helvetica, sans-serif" font-size="30">A sample hybrid email direction that feels closer to the Maabar site</text>
+  <text x="120" y="682" fill="rgba(245,245,242,0.78)" font-family="Arial, Helvetica, sans-serif" font-size="30">while keeping the important message blocks clear inside Gmail.</text>
+  <rect x="120" y="748" width="286" height="72" rx="14" fill="#F5F5F2"/>
+  <text x="263" y="793" text-anchor="middle" fill="#0A0A0B" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">Apply for Early Access</text>
+  <rect x="120" y="896" width="296" height="168" rx="22" fill="#16161A" stroke="rgba(255,255,255,0.08)"/>
+  <rect x="452" y="896" width="296" height="168" rx="22" fill="#16161A" stroke="rgba(255,255,255,0.08)"/>
+  <rect x="784" y="896" width="296" height="168" rx="22" fill="#16161A" stroke="rgba(255,255,255,0.08)"/>
+  <text x="160" y="950" fill="rgba(245,245,242,0.48)" font-family="Arial, Helvetica, sans-serif" font-size="18" letter-spacing="2">01</text>
+  <text x="160" y="1000" fill="#F5F5F2" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Apply</text>
+  <text x="160" y="1044" fill="rgba(245,245,242,0.72)" font-family="Arial, Helvetica, sans-serif" font-size="22">Submit your company details</text>
+  <text x="160" y="1074" fill="rgba(245,245,242,0.72)" font-family="Arial, Helvetica, sans-serif" font-size="22">for early access review.</text>
+  <text x="492" y="950" fill="rgba(245,245,242,0.48)" font-family="Arial, Helvetica, sans-serif" font-size="18" letter-spacing="2">02</text>
+  <text x="492" y="1000" fill="#F5F5F2" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Get Reviewed</text>
+  <text x="492" y="1044" fill="rgba(245,245,242,0.72)" font-family="Arial, Helvetica, sans-serif" font-size="22">Selected suppliers move</text>
+  <text x="492" y="1074" fill="rgba(245,245,242,0.72)" font-family="Arial, Helvetica, sans-serif" font-size="22">through onboarding first.</text>
+  <text x="824" y="950" fill="rgba(245,245,242,0.48)" font-family="Arial, Helvetica, sans-serif" font-size="18" letter-spacing="2">03</text>
+  <text x="824" y="1000" fill="#F5F5F2" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Go Live</text>
+  <text x="824" y="1044" fill="rgba(245,245,242,0.72)" font-family="Arial, Helvetica, sans-serif" font-size="22">Enter the market with a</text>
+  <text x="824" y="1074" fill="rgba(245,245,242,0.72)" font-family="Arial, Helvetica, sans-serif" font-size="22">stronger early position.</text>
+</svg>

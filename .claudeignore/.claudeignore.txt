@@ -1,0 +1,8 @@
+node_modules/
+build/
+.git/
+.vercel/
+package-lock.json
+docs/
+email-templates/
+scripts/

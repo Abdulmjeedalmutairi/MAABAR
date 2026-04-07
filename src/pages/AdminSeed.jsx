@@ -1210,13 +1210,16 @@ Score is 0-100. Focus on credibility, proof completeness, business identity clar
       if (notificationError) throw notificationError;
 
       if (caseItem.email) {
+        // نستخدم لغة المورد نفسه لإرسال الإيميل — مش لغة الأدمن
+        const supplierLang = caseItem.lang || caseItem.preferred_language || 'en';
+
         if (decision === 'approved') {
           await sendMaabarEmail({
             type: 'supplier_approved',
             to: caseItem.email,
             data: {
               name: caseItem.company_name || caseItem.full_name || 'Supplier',
-              lang,
+              lang: supplierLang,
               maabarSupplierId: updated.maabar_supplier_id || caseItem.maabar_supplier_id || '',
             },
           });
@@ -1228,7 +1231,7 @@ Score is 0-100. Focus on credibility, proof completeness, business identity clar
             to: caseItem.email,
             data: {
               name: caseItem.company_name || caseItem.full_name || 'Supplier',
-              lang,
+              lang: supplierLang,
               reason,
               notes,
             },
@@ -1241,7 +1244,7 @@ Score is 0-100. Focus on credibility, proof completeness, business identity clar
             to: caseItem.email,
             data: {
               name: caseItem.company_name || caseItem.full_name || 'Supplier',
-              lang,
+              lang: supplierLang,
               reason,
               notes,
             },

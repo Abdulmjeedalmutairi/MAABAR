@@ -12,6 +12,7 @@ import {
 import { attachSupplierProfiles, fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import {
   getProductInquiryQuestion,
+  getProductInquiryAllTranslations,
   getProductInquiryTemplates,
 } from '../lib/productInquiry';
 import BrandedLoading from '../components/BrandedLoading';
@@ -369,6 +370,8 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
     setSendingInquiry(true);
 
+    const inquiryTranslations = getProductInquiryAllTranslations(selectedInquiryTemplate);
+
     const { data: inquiry, error } = await sb
       .from('product_inquiries')
       .insert({
@@ -377,6 +380,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         supplier_id: supplierId,
         template_key: selectedInquiryTemplate,
         question_text: questionText,
+        ...inquiryTranslations,
       })
       .select('id')
       .single();
@@ -628,6 +632,29 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                 <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6 }}>{spec.value}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ─── خيارات المنتج (Variants) ─── */}
+        {Array.isArray(product.variants) && product.variants.filter(g => g.name && g.values?.length).length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
+              {isAr ? 'خيارات المنتج' : lang === 'zh' ? '产品选项' : 'Product Options'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {product.variants.filter(g => g.name && g.values?.length).map((group, i) => (
+                <div key={i} style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>{group.name}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {group.values.map((val, j) => (
+                      <span key={j} style={{ padding: '5px 12px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', fontSize: 12, color: 'var(--text-primary)' }}>
+                        {val}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
