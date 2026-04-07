@@ -246,7 +246,7 @@ export default function Suppliers({ lang, user }) {
                     </span>
                   )}
                   {supplierMaabarId && isReviewedSupplier && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 20, color: 'rgba(139,120,255,0.88)', letterSpacing: 0.5 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 20, color: 'rgba(0,0,0,0.55)', letterSpacing: 0.5 }}>
                       {isAr ? `معرّف: ${supplierMaabarId}` : lang === 'zh' ? `编号：${supplierMaabarId}` : `ID: ${supplierMaabarId}`}
                     </span>
                   )}
@@ -266,12 +266,12 @@ export default function Suppliers({ lang, user }) {
                     </span>
                   )}
                   {trustSignals.includes('wechat_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 20, color: 'rgba(139,120,255,0.85)', letterSpacing: 0.6 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 20, color: 'rgba(0,0,0,0.55)', letterSpacing: 0.6 }}>
                       WeChat
                     </span>
                   )}
                   {trustSignals.includes('factory_media_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
                       {isAr ? 'صور منشأة' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                     </span>
                   )}
@@ -307,13 +307,13 @@ export default function Suppliers({ lang, user }) {
                       onClick={e => { e.stopPropagation(); nav(`/chat/${s.id}`); }}
                       style={{
                         padding: '6px 12px', fontSize: 11, cursor: 'pointer',
-                        background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)',
-                        color: 'rgba(139,120,255,0.85)', borderRadius: 'var(--radius-md)',
+                        background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)',
+                        color: 'rgba(0,0,0,0.55)', borderRadius: 'var(--radius-md)',
                         transition: 'all 0.15s', letterSpacing: 0.5,
                         fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,120,255,0.15)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,120,255,0.08)'; }}>
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.55)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.55)'; }}>
                       {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
                     </button>
                     <span style={{ fontSize: 12, color: 'var(--text-primary)', letterSpacing: 1, lineHeight: '28px' }}>

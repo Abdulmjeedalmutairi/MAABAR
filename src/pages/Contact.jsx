@@ -48,7 +48,7 @@ export default function Contact({ lang }) {
 
           <button onClick={() => nav('/support')} style={{ ...styles.supportBtn, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
-              <p style={{ fontSize: 11, letterSpacing: 2, color: 'rgba(139,120,255,0.85)', marginBottom: 4 }}>{t.support}</p>
+              <p style={{ fontSize: 11, letterSpacing: 2, color: 'rgba(0,0,0,0.55)', marginBottom: 4 }}>{t.support}</p>
               <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>{t.supportBtn}</p>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{t.supportSub}</p>
             </div>
@@ -92,8 +92,8 @@ const styles = {
     alignItems: 'center',
     gap: 16,
     padding: '20px 28px',
-    border: '1px solid rgba(139,120,255,0.2)',
-    background: 'rgba(139,120,255,0.06)',
+    border: '1px solid rgba(0,0,0,0.10)',
+    background: 'rgba(0,0,0,0.05)',
     color: 'var(--text-primary)',
     marginBottom: 12,
     borderRadius: 12,

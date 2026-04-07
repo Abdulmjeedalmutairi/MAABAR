@@ -325,9 +325,9 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
               borderRadius: 20,
               cursor: 'pointer',
               border: '1px solid',
-              borderColor: capabilityFilters.customization ? 'rgba(139,120,255,0.25)' : 'var(--border-subtle)',
-              background: capabilityFilters.customization ? 'rgba(139,120,255,0.08)' : 'transparent',
-              color: capabilityFilters.customization ? 'rgba(139,120,255,0.92)' : 'var(--text-secondary)',
+              borderColor: capabilityFilters.customization ? 'rgba(0,0,0,0.55)' : 'var(--border-subtle)',
+              background: capabilityFilters.customization ? 'rgba(0,0,0,0.55)' : 'transparent',
+              color: capabilityFilters.customization ? 'rgba(0,0,0,0.55)' : 'var(--text-secondary)',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
             {isAr ? 'تخصيص / علامة خاصة' : lang === 'zh' ? 'OEM / 定制' : 'OEM / customization'}
@@ -433,17 +433,17 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                     </span>
                   )}
                   {p.spec_lead_time_days && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.9)' }}>
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)', color: 'rgba(0,0,0,0.55)' }}>
                       {isAr ? `تجهيز ${p.spec_lead_time_days} يوم` : lang === 'zh' ? `交期 ${p.spec_lead_time_days} 天` : `Lead time ${p.spec_lead_time_days}d`}
                     </span>
                   )}
                   {p.spec_customization && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(0,0,0,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                       {isAr ? 'تخصيص / علامة خاصة' : lang === 'zh' ? '支持 OEM / 定制' : 'OEM / customization'}
                     </span>
                   )}
                   {supplierMaabarId && isReviewedSupplier && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.9)' }}>
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)', color: 'rgba(0,0,0,0.55)' }}>
                       {isAr ? `معرّف المورد ${supplierMaabarId}` : lang === 'zh' ? `供应商编号 ${supplierMaabarId}` : `Supplier ID ${supplierMaabarId}`}
                     </span>
                   )}
@@ -453,12 +453,12 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                     </span>
                   )}
                   {supplierTrustSignals.includes('wechat_available') && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)', color: 'rgba(0,0,0,0.55)' }}>
                       WeChat
                     </span>
                   )}
                   {supplierTrustSignals.includes('factory_media_available') && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(0,0,0,0.04)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                       {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                     </span>
                   )}

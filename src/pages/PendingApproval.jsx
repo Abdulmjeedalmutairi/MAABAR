@@ -224,7 +224,7 @@ function ProofRow({ label, value, isPositive, isAr }) {
         fontSize: 11,
         color: isPositive ? '#7bc091' : 'var(--text-disabled)',
         border: `1px solid ${isPositive ? 'rgba(58,122,82,0.2)' : 'var(--border-subtle)'}`,
-        background: isPositive ? 'rgba(58,122,82,0.08)' : 'rgba(255,255,255,0.03)',
+        background: isPositive ? 'rgba(58,122,82,0.08)' : 'rgba(0,0,0,0.04)',
         borderRadius: 999,
         padding: '4px 10px',
         whiteSpace: 'nowrap',
@@ -275,12 +275,12 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
           overflow: 'hidden',
           borderRadius: 32,
           border: '1px solid var(--border-subtle)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+          background: 'rgba(0,0,0,0.03)',
           boxShadow: '0 30px 80px rgba(0,0,0,0.24)',
           padding: '32px 32px 28px',
           marginBottom: 20,
         }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at top right, rgba(255,255,255,0.08), transparent 28%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.03)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <p style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 14 }}>
               {t.tag}
@@ -291,8 +291,8 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
               gap: 8,
               padding: '6px 12px',
               borderRadius: 999,
-              border: '1px solid rgba(255,255,255,0.14)',
-              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(0,0,0,0.07)',
+              background: 'rgba(0,0,0,0.04)',
               color: 'var(--text-secondary)',
               fontSize: 11,
               letterSpacing: 1.1,
@@ -354,7 +354,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
                       padding: '20px 18px',
                       borderRadius: 22,
                       border: '1px solid var(--border-subtle)',
-                      background: index === 1 ? 'rgba(255,255,255,0.05)' : 'var(--bg-muted)',
+                      background: index === 1 ? 'rgba(0,0,0,0.04)' : 'var(--bg-muted)',
                       animation: `pendingFade 0.45s ease ${index * 0.08}s both`,
                     }}
                   >
@@ -422,7 +422,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
           <div style={{
             borderRadius: 28,
             border: '1px solid var(--border-subtle)',
-            background: 'linear-gradient(180deg, var(--bg-subtle), rgba(255,255,255,0.02))',
+            background: 'rgba(0,0,0,0.03)',
             padding: 24,
             display: 'flex',
             flexDirection: 'column',
@@ -442,7 +442,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
               </div>
             </div>
 
-            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.04)' }}>
               <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', margin: '0 0 10px' }}>
                 {t.prepareTitle}
               </p>
@@ -456,7 +456,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
               </div>
             </div>
 
-            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.04)' }}>
               <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', margin: '0 0 10px' }}>
                 {t.expectationsTitle}
               </p>
@@ -470,7 +470,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
               </div>
             </div>
 
-            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.04)' }}>
               <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', margin: '0 0 10px' }}>
                 {t.supportTitle}
               </p>
@@ -479,7 +479,7 @@ export default function PendingApproval({ lang = 'en', profile, setUser, setProf
               </p>
             </div>
 
-            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+            <div style={{ padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.04)' }}>
               <p style={{ fontSize: 12, lineHeight: 1.8, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {t.founder}
               </p>

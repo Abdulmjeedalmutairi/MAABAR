@@ -589,7 +589,7 @@ export default function Requests({ lang, user, profile }) {
                 </p>
               </div>
               <button onClick={() => nav('/login/buyer')} style={{
-                background: 'rgba(255,255,255,0.88)', color: '#0a0a0b',
+                background: '#FFFFFF', color: '#0a0a0b',
                 border: 'none', padding: '9px 20px',
                 fontSize: 12, fontWeight: 500,
                 cursor: 'pointer', borderRadius: 'var(--radius-md)',
@@ -633,8 +633,8 @@ export default function Requests({ lang, user, profile }) {
             ].map((option) => {
               const active = option.key === 'idea' ? false : (option.key === 'managed' ? isManagedMode : !isManagedMode);
               return (
-                <div key={option.key} style={{ background: option.featured ? 'rgba(139,120,255,0.08)' : 'var(--bg-subtle)', border: `1px solid ${active ? 'rgba(139,120,255,0.22)' : option.featured ? 'rgba(139,120,255,0.16)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-xl)', padding: '18px 20px' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'rgba(139,120,255,0.9)' : 'var(--text-disabled)', marginBottom: 8 }}>
+                <div key={option.key} style={{ background: option.featured ? 'rgba(0,0,0,0.55)' : 'var(--bg-subtle)', border: `1px solid ${active ? 'rgba(0,0,0,0.55)' : option.featured ? 'rgba(0,0,0,0.55)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-xl)', padding: '18px 20px' }}>
+                  <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'rgba(0,0,0,0.55)' : 'var(--text-disabled)', marginBottom: 8 }}>
                     {option.eyebrow}
                   </p>
                   <h3 style={{ fontSize: 18, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{option.title}</h3>
@@ -1003,7 +1003,7 @@ export default function Requests({ lang, user, profile }) {
                       </span>
                     )}
                     {r.sample_requirement === 'preferred' && (
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(0,0,0,0.05)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                         {isAr ? '⚪ عينة مفضلة' : lang === 'zh' ? '⚪ 建议提供样品' : '⚪ Sample Preferred'}
                       </span>
                     )}
@@ -1186,7 +1186,7 @@ export default function Requests({ lang, user, profile }) {
                   marginBottom: 10,
                   borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
                 }}>
-                  <div style={{ marginBottom: 16, padding: '14px 16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ marginBottom: 16, padding: '14px 16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.04)' }}>
                     <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8 }}>
                       {isAr ? 'ماذا يجعل العرض أقوى؟' : lang === 'zh' ? '怎样让报价更专业？' : 'What makes this quote stronger?'}
                     </p>

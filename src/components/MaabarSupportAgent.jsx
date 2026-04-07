@@ -233,8 +233,8 @@ export function MaabarSupportAgent({ lang = 'ar', user, profile, compact = false
         <div style={{
           padding: '14px 16px',
           borderRadius: 14,
-          border: '1px solid rgba(139,120,255,0.16)',
-          background: 'rgba(139,120,255,0.06)',
+          border: '1px solid rgba(0,0,0,0.10)',
+          background: 'rgba(0,0,0,0.05)',
           color: 'var(--text-secondary)',
           fontSize: 13,
           lineHeight: 1.8,

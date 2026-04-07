@@ -115,20 +115,20 @@ export default function SupplierLanding({ lang }) {
           gap: 16,
           alignItems: 'stretch',
         }} className="supplier-trust-grid">
-          <div style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', padding: '22px 22px 20px' }}>
-            <p style={{ fontSize: 10, letterSpacing: 2.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.42)', marginBottom: 12 }}>{t.trustTitle}</p>
+          <div style={{ borderRadius: 24, border: '1px solid rgba(0,0,0,0.07)', background: 'rgba(0,0,0,0.03)', padding: '22px 22px 20px' }}>
+            <p style={{ fontSize: 10, letterSpacing: 2.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', marginBottom: 12 }}>{t.trustTitle}</p>
             <div style={{ display: 'grid', gap: 10 }}>
               {t.trustItems.map((item) => (
-                <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'rgba(255,255,255,0.72)' }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.78)', marginTop: 7, flex: '0 0 auto' }} />
+                <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'rgba(0,0,0,0.45)' }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(0,0,0,0.04)', marginTop: 7, flex: '0 0 auto' }} />
                   <span style={{ fontSize: 13, lineHeight: 1.75, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', padding: '22px' }}>
-            <p style={{ fontSize: 10, letterSpacing: 2.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.42)', marginBottom: 12 }}>
+          <div style={{ borderRadius: 24, border: '1px solid rgba(0,0,0,0.07)', background: 'rgba(0,0,0,0.03)', padding: '22px' }}>
+            <p style={{ fontSize: 10, letterSpacing: 2.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', marginBottom: 12 }}>
               {isAr ? 'كيف تسير العملية' : lang === 'zh' ? '流程怎么走' : 'How the flow works'}
             </p>
             <div style={{ display: 'grid', gap: 10 }}>
@@ -139,8 +139,8 @@ export default function SupplierLanding({ lang }) {
                 isAr ? '4) متابعة من فريق مَعبر إذا لزم توضيح أو عند الموافقة' : lang === 'zh' ? '4) 如需补充资料或审核通过，Maabar 团队会直接联系您' : '4) Maabar follows up directly if clarification is needed or once approved',
               ].map((item, index) => (
                 <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span style={{ minWidth: 26, height: 26, borderRadius: 999, border: '1px solid rgba(255,255,255,0.14)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11 }}>{index + 1}</span>
-                  <span style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(255,255,255,0.72)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item}</span>
+                  <span style={{ minWidth: 26, height: 26, borderRadius: 999, border: '1px solid rgba(0,0,0,0.07)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11 }}>{index + 1}</span>
+                  <span style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(0,0,0,0.45)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item}</span>
                 </div>
               ))}
             </div>
@@ -150,7 +150,7 @@ export default function SupplierLanding({ lang }) {
 
       {/* FEATURES */}
       <div className="sl-features">
-        <p className="section-label" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <p className="section-label" style={{ color: 'rgba(0,0,0,0.30)' }}>
           {isAr ? 'لماذا مَعبر' : lang === 'zh' ? '为什么选择 Maabar' : 'Why Maabar'}
         </p>
         <div className="sl-features-grid">
@@ -170,7 +170,7 @@ export default function SupplierLanding({ lang }) {
         <button className="sl-cta" onClick={goToRegister}>{t.cta}</button>
       </div>
 
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <footer style={{ borderTop: '1px solid rgba(0,0,0,0.07)' }}>
         <div className="footer-logo"><BrandLogo size="sm" /></div>
         <p className="footer-copy">{t.copyright}</p>
       </footer>
