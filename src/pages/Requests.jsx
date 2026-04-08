@@ -71,6 +71,37 @@ const formatCurrencyWithConversion = (amountSAR, lang) => {
   }
 };
 
+// Function لتحويل JSON إلى نص مقروء إذا كان الوصف يحتوي على JSON
+const parseJsonIfNeeded = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      // إذا كان JSON يحتوي على checkout و product_id، نعرضه بطريقة مقروءة
+      if (parsed.checkout !== undefined || parsed.product_id) {
+        let readable = '';
+        if (parsed.product_id) readable += `Product ID: ${parsed.product_id}\n`;
+        if (parsed.checkout !== undefined) readable += `Checkout: ${parsed.checkout ? 'Yes' : 'No'}\n`;
+        if (parsed.quantity) readable += `Quantity: ${parsed.quantity}\n`;
+        if (parsed.notes) readable += `Notes: ${parsed.notes}\n`;
+        // إذا كان هناك أي حقول أخرى مهمة
+        const otherFields = Object.keys(parsed).filter(key => !['product_id', 'checkout', 'quantity', 'notes'].includes(key));
+        if (otherFields.length > 0) {
+          readable += `Other details: ${otherFields.join(', ')}`;
+        }
+        return readable.trim() || text;
+      }
+      return text; // إذا لم يكن checkout/product_id، نعيد النص كما هو
+    } catch (error) {
+      // إذا فشل التحليل، نعيد النص الأصلي
+      return text;
+    }
+  }
+  return text;
+};
+
 // Function لترجمة عناوين الطلبات
 const translateRequestText = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
@@ -261,15 +292,37 @@ export default function Requests({ lang, user, profile }) {
         console.log('Starting translation for', data.length, 'requests, lang:', lang);
         const translations = {};
         for (const request of data) {
+          // إذا كانت اللغة zh وكان هناك title_zh، استخدمه مباشرة
+          if (lang === 'zh' && request.title_zh) {
+            translations[request.id] = {
+              ...translations[request.id],
+              title: request.title_zh
+            };
+            continue;
+          }
+          
+          // إذا كانت اللغة en وكان هناك title_en، استخدمه مباشرة
+          if (lang === 'en' && request.title_en) {
+            translations[request.id] = {
+              ...translations[request.id],
+              title: request.title_en
+            };
+            continue;
+          }
+          
+          // إذا لم يكن هناك ترجمة جاهزة، نترجم من أفضل مصدر متاح
           if (request.title_ar || request.description) {
             const titleToTranslate = request.title_ar || request.title_en || '';
             const descToTranslate = request.description || '';
+            const parsedDesc = parseJsonIfNeeded(descToTranslate);
             
             if (titleToTranslate) {
               console.log('Translating title for request', request.id, ':', titleToTranslate.substring(0, 50));
+              // نحدد لغة المصدر: إذا كان title_ar موجودًا نعتبره عربيًا، وإلا نعتبره إنجليزيًا
+              const sourceLang = request.title_ar ? 'ar' : 'en';
               const translatedTitle = await translateRequestText(
                 titleToTranslate,
-                'ar', // نفترض العناوين بالعربية
+                sourceLang,
                 lang
               );
               console.log('Translated title:', translatedTitle.substring(0, 50));
@@ -279,9 +332,9 @@ export default function Requests({ lang, user, profile }) {
               };
             }
             
-            if (descToTranslate) {
+            if (parsedDesc) {
               const translatedDesc = await translateRequestText(
-                descToTranslate,
+                parsedDesc,
                 'ar', // نفترض الوصف بالعربية
                 lang
               );
@@ -545,7 +598,7 @@ export default function Requests({ lang, user, profile }) {
               display: 'flex', alignItems: 'center', gap: 10,
             }}>
               <span style={{ fontSize: 13, color: '#5a9a72', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                {isAr ? '📝 طلبك محفوظ — أكمل الإرسال' : '📝 Your draft is saved — complete submission'}
+                {isAr ? '📝 طلبك محفوظ — أكمل الإرسال' : lang === 'zh' ? '📝 您的草稿已保存 — 完成提交' : '📝 Your draft is saved — complete submission'}
               </span>
             </div>
           )}
@@ -564,11 +617,12 @@ export default function Requests({ lang, user, profile }) {
             }}>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                  {isAr ? 'كيف يشتغل مَعبر؟' : 'How does Maabar work?'}
+                  {isAr ? 'كيف يشتغل مَعبر؟' : lang === 'zh' ? 'Maabar 如何运作？' : 'How does Maabar work?'}
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {isAr
                     ? 'اكتب طلبك ← موردون صينيون يرسلون عروضهم ← اختر الأفضل ← استلم بضاعتك'
+                    : lang === 'zh' ? '发布需求 ← 供应商报价 ← 选择最佳报价 ← 收货'
                     : 'Post request ← Suppliers send offers ← Choose the best ← Receive your order'}
                 </p>
               </div>
@@ -580,7 +634,7 @@ export default function Requests({ lang, user, profile }) {
                 whiteSpace: 'nowrap', transition: 'all 0.15s',
                 minHeight: 36,
               }}>
-                {isAr ? 'تسجيل مجاني' : 'Free Sign Up'}
+                {isAr ? 'تسجيل مجاني' : lang === 'zh' ? '免费注册' : 'Free Sign Up'}
               </button>
             </div>
           )}
@@ -1002,7 +1056,10 @@ export default function Requests({ lang, user, profile }) {
                   </div>
 
                   <h3 className={`req-name${isAr ? ' ar' : ''}`}>
-                    {translatedRequests[r.id]?.title || (isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar)}
+                    {translatedRequests[r.id]?.title || 
+                      (lang === 'ar' ? r.title_ar || r.title_en || r.title_zh :
+                       lang === 'zh' ? r.title_zh || r.title_en || r.title_ar :
+                       r.title_en || r.title_ar || r.title_zh)}
                   </h3>
 
                   <div className="req-meta">
@@ -1010,7 +1067,7 @@ export default function Requests({ lang, user, profile }) {
                     <span>{r.quantity || '—'}</span>
                     {(translatedRequests[r.id]?.description || r.description) && (
                       <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
-                        {(translatedRequests[r.id]?.description || r.description || '').substring(0, 60)}…
+                        {parseJsonIfNeeded(translatedRequests[r.id]?.description || r.description || '').substring(0, 60)}…
                       </span>
                     )}
                   </div>
