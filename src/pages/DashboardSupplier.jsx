@@ -560,7 +560,7 @@ function ProductForm({
         </div>
       </div>
 
-      <div style={{ marginBottom: 22, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.03)' }}>
+      <div style={{ marginBottom: 22, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
         <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase', marginBottom: 10 }}>
           {isAr ? 'نصيحة قبل النشر' : lang === 'zh' ? '发布前建议' : 'Before you publish'}
         </p>
@@ -578,10 +578,10 @@ function ProductForm({
         </div>
       </div>
 
-      <div style={{ marginBottom: 22, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.05)' }}>
+      <div style={{ marginBottom: 22, padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
           <div>
-            <p style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(139,120,255,0.9)', textTransform: 'uppercase', marginBottom: 6 }}>
+            <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 6 }}>
               {isAr ? 'جاهزية النشر التجارية' : lang === 'zh' ? '发布完整度' : 'Publishing readiness'}
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, ...arFont }}>
@@ -590,14 +590,14 @@ function ProductForm({
           </div>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{completenessPct}%</span>
         </div>
-        <div style={{ height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 14 }}>
-          <div style={{ width: `${completenessPct}%`, height: '100%', borderRadius: 999, background: 'rgba(139,120,255,0.75)' }} />
+        <div style={{ height: 4, borderRadius: 999, background: 'rgba(0,0,0,0.07)', overflow: 'hidden', marginBottom: 14 }}>
+          <div style={{ width: `${completenessPct}%`, height: '100%', borderRadius: 999, background: '#1a1a1a' }} />
         </div>
         <div style={{ display: 'grid', gap: 8 }}>
           {completenessItems.map((item) => (
             <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <span style={{ fontSize: 12, color: item.done ? 'var(--text-primary)' : 'var(--text-secondary)', ...arFont }}>{item.label}</span>
-              <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, border: '1px solid', borderColor: item.done ? 'rgba(58,122,82,0.25)' : 'var(--border-subtle)', background: item.done ? 'rgba(58,122,82,0.08)' : 'rgba(255,255,255,0.03)', color: item.done ? '#5a9a72' : 'var(--text-disabled)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, border: '1px solid', borderColor: item.done ? 'rgba(58,122,82,0.25)' : 'var(--border-subtle)', background: item.done ? 'rgba(58,122,82,0.08)' : 'var(--bg-subtle)', color: item.done ? '#5a9a72' : 'var(--text-disabled)', whiteSpace: 'nowrap' }}>
                 {item.done ? (isAr ? 'مكتمل' : lang === 'zh' ? '已完成' : 'Done') : (isAr ? 'ينقصه' : lang === 'zh' ? '待补充' : 'Missing')}
               </span>
             </div>
@@ -730,8 +730,8 @@ function ProductPreviewPanel({ product, onPublish, onBack, t, isAr, saving, lang
       <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 20, lineHeight: 1.7, ...arFont }}>{t.previewNote}</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 20 }}>
-        <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'rgba(139,120,255,0.05)', border: '1px solid rgba(139,120,255,0.18)' }}>
-          <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 10 }}>
+        <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)' }}>
+          <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>
             {isAr ? 'جاهزية العرض' : lang === 'zh' ? '发布摘要' : 'Listing readiness'}
           </p>
           <p style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, ...arFont }}>
@@ -1190,7 +1190,7 @@ function SaveFeedbackCard({ feedback, isAr = false }) {
     success: { border: 'rgba(80,180,120,0.22)', background: 'rgba(80,180,120,0.08)', title: '#78b08f', body: '#9ec7ad', meta: '#78b08f' },
     warning: { border: 'rgba(255,192,87,0.22)', background: 'rgba(255,192,87,0.08)', title: '#d8b46f', body: 'var(--text-secondary)', meta: '#d8b46f' },
     error: { border: 'rgba(214,106,106,0.22)', background: 'rgba(214,106,106,0.08)', title: '#d88787', body: '#cf9a9a', meta: '#d88787' },
-    neutral: { border: 'rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.06)', title: 'var(--text-primary)', body: 'var(--text-secondary)', meta: 'var(--text-disabled)' },
+    neutral: { border: 'rgba(0,0,0,0.08)', background: 'var(--bg-subtle)', title: 'var(--text-primary)', body: 'var(--text-secondary)', meta: 'var(--text-disabled)' },
   };
   const palette = tones[feedback.tone] || tones.neutral;
 
@@ -1204,7 +1204,7 @@ function SaveFeedbackCard({ feedback, isAr = false }) {
           )}
         </div>
         {feedback.meta && (
-          <span style={{ alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', fontSize: 11, color: palette.meta, whiteSpace: 'nowrap' }}>
+          <span style={{ alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', fontSize: 11, color: palette.meta, whiteSpace: 'nowrap' }}>
             {feedback.meta}
           </span>
         )}
@@ -1224,7 +1224,7 @@ function SupplierJourneyStepper({ steps, isAr, lang }) {
 
   const stateStyles = {
     completed: { border: '1px solid rgba(80,180,120,0.22)', background: 'rgba(80,180,120,0.08)', color: '#78b08f' },
-    current: { border: '1px solid rgba(139,120,255,0.24)', background: 'rgba(139,120,255,0.09)', color: 'rgba(193,184,255,0.92)' },
+    current: { border: '1px solid rgba(0,0,0,0.15)', background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.88)' },
     under_review: { border: '1px solid rgba(255,192,87,0.22)', background: 'rgba(255,192,87,0.09)', color: '#d8b46f' },
     verified: { border: '1px solid rgba(80,180,120,0.26)', background: 'rgba(80,180,120,0.12)', color: '#8ad1a3' },
     upcoming: { border: '1px solid var(--border-subtle)', background: 'var(--bg-base)', color: 'var(--text-disabled)' },
@@ -2686,7 +2686,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginBottom: 16, lineHeight: 1.7, ...arFont, maxWidth: 420 }}>{t.desc}</p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', fontSize: 11 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
             <span style={{ color: 'var(--text-disabled)' }}>{t.supplierStageLabel}</span>
             <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{getSupplierStageLabel(supplierState.stage, lang)}</strong>
           </span>
@@ -2696,8 +2696,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             </span>
           )}
           {supplierMaabarId && supplierState.isApprovedStage && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.08)', color: 'rgba(139,120,255,0.9)', fontSize: 11 }}>
-              <span style={{ color: 'rgba(139,120,255,0.7)' }}>{t.supplierIdLabel}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
+              <span style={{ color: 'var(--text-secondary)' }}>{t.supplierIdLabel}</span>
               <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
             </span>
           )}
@@ -2743,8 +2743,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <div style={{
                 padding: '28px 28px 24px',
                 borderRadius: 'var(--radius-xl)',
-                border: '1px solid rgba(139,120,255,0.18)',
-                background: 'rgba(139,120,255,0.06)',
+                border: '1px solid rgba(0,0,0,0.08)',
+                background: 'var(--bg-subtle)',
               }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
                   MAABAR SUPPLIER ACCESS
@@ -2779,7 +2779,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             <div style={section}>
               {isOnboardingLimited ? (
                 <>
-                  <div style={{ marginBottom: 24, padding: '24px 26px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.18)', borderRadius: 'var(--radius-xl)' }}>
+                  <div style={{ marginBottom: 24, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-xl)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <div style={{ maxWidth: 720 }}>
                         <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
@@ -2802,7 +2802,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ minWidth: 220, maxWidth: 280, flex: '1 1 220px' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8, ...arFont }}>{t.onboardingProgress}</p>
                         <p style={{ fontSize: 32, color: 'var(--text-primary)', marginBottom: 6 }}>{profileReadiness.completedRequiredCount}/{profileReadiness.totalRequiredCount}</p>
-                        <div style={{ width: '100%', height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 10 }}>
+                        <div style={{ width: '100%', height: 8, borderRadius: 999, background: 'rgba(0,0,0,0.07)', overflow: 'hidden', marginBottom: 10 }}>
                           <div style={{ width: `${supplierState.isUnderReviewStage || supplierState.isApprovedStage ? 100 : profileReadiness.progressPercent}%`, height: '100%', background: 'var(--text-primary)' }} />
                         </div>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, ...arFont }}>
@@ -2876,7 +2876,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <>
               {/* ── Onboarding / verification ── */}
               {supplierState.isApprovedStage && (
-                <div style={{ marginBottom: 32, padding: '24px 26px', background: 'linear-gradient(135deg, rgba(80,180,120,0.10), rgba(139,120,255,0.08))', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 'var(--radius-xl)' }}>
+                <div style={{ marginBottom: 32, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 'var(--radius-xl)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     <div style={{ maxWidth: 720 }}>
                       <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#8ad1a3', marginBottom: 10, fontWeight: 700 }}>
@@ -2901,7 +2901,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </div>
                     </div>
                     <div style={{ minWidth: 220, maxWidth: 280, flex: '1 1 220px' }}>
-                      <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(10,10,11,0.18)' }}>
+                      <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8, ...arFont }}>{isAr ? 'حالة الحساب' : lang === 'zh' ? '账户状态' : 'Account status'}</p>
                         <p style={{ fontSize: 22, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>{isAr ? 'موثّق' : lang === 'zh' ? '已验证' : 'Verified'}</p>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, ...arFont }}>
@@ -2915,7 +2915,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
               )}
               {needsVerification && (
-                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-lg)' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
                     {t.verificationCtaTitle}
                   </p>
@@ -3729,7 +3729,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
               </div>
 
-              <div style={{ marginBottom: 18, padding: '14px 16px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.06)', maxWidth: 920 }}>
+              <div style={{ marginBottom: 18, padding: '14px 16px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)', maxWidth: 920 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                   <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8, ...arFont }}>
                     {isAr
@@ -4136,7 +4136,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.settingsTitle}</h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760 }}>
-                <div style={{ padding: '22px 24px', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(139,120,255,0.18)', background: 'rgba(139,120,255,0.06)' }}>
+                <div style={{ padding: '22px 24px', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
                   <p style={{ fontSize: 10, letterSpacing: 2.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>{isAr ? 'رحلة الانضمام' : lang === 'zh' ? '入驻流程' : 'Onboarding journey'}</p>
                   <h3 style={{ fontSize: 22, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 10, ...arFont }}>{verificationStatusHeadline}</h3>
                   <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 16, ...arFont }}>{verificationStatusBody}</p>

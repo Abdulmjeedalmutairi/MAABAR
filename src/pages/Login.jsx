@@ -695,7 +695,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         <div style={{
           position: 'fixed',
           inset: 0,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)',
           backgroundSize: '56px 56px',
           pointerEvents: 'none',
           zIndex: 0,
@@ -820,8 +820,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   onClick={() => resendConfirmationEmail(submittedEmail)}
                   disabled={resendingConfirmation}
                   style={{
-                    background: 'rgba(255,255,255,0.88)',
-                    color: '#0a0a0b',
+                    background: '#1a1a1a',
+                    color: '#ffffff',
                     border: 'none',
                     borderRadius: 'var(--radius-md)',
                     minHeight: 42,
@@ -1068,8 +1068,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 disabled={loading}
                 style={{
                   width: '100%',
-                  background: 'rgba(255,255,255,0.88)',
-                  color: '#0a0a0b',
+                  background: '#1a1a1a',
+                  color: '#ffffff',
                   border: 'none',
                   padding: '14px',
                   fontSize: 14,
@@ -1191,29 +1191,29 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
         }}>
           <div onClick={(e) => e.stopPropagation()} style={{
-            background: '#0f0f11', border: '1px solid rgba(255,255,255,0.1)',
+            background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.07)',
             borderRadius: 12, maxWidth: 600, width: '100%', maxHeight: '80vh',
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
           }}>
-            <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: lang === 'zh' ? 0 : 1, color: '#fff', fontFamily: termsFont, margin: 0 }}>
+            <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: lang === 'zh' ? 0 : 1, color: 'rgba(0,0,0,0.88)', fontFamily: termsFont, margin: 0 }}>
                 {isAr ? 'الشروط والأحكام' : lang === 'zh' ? '条款与条件' : 'Terms & Conditions'}
               </p>
-              <button onClick={() => setShowTerms(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
+              <button onClick={() => setShowTerms(false)} style={{ background: 'none', border: 'none', color: 'rgba(0,0,0,0.45)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
             </div>
             <div style={{ overflowY: 'auto', padding: '24px 28px' }} dir={termsDir}>
               {termsSections.map((section, index) => (
                 <div key={index} style={{ marginBottom: 24 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: termsFont, marginBottom: 8 }}>{section.title}</p>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: termsFont, lineHeight: 1.9, whiteSpace: 'pre-line', margin: 0 }}>{section.body}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.88)', fontFamily: termsFont, marginBottom: 8 }}>{section.title}</p>
+                  <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.55)', fontFamily: termsFont, lineHeight: 1.9, whiteSpace: 'pre-line', margin: 0 }}>{section.body}</p>
                 </div>
               ))}
             </div>
-            <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button onClick={() => setShowTerms(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: termsFont }}>
+            <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(0,0,0,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button onClick={() => setShowTerms(false)} style={{ background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.10)', color: 'rgba(0,0,0,0.60)', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: termsFont }}>
                 {isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
               </button>
-              <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#fff', border: 'none', color: '#0f0f11', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: termsFont }}>
+              <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#1a1a1a', border: 'none', color: '#ffffff', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: termsFont }}>
                 {isAr ? 'أوافق' : lang === 'zh' ? '我同意' : 'I Agree'}
               </button>
             </div>

@@ -350,9 +350,9 @@ export default function Chat({ lang, user, profile }) {
       return (
         <a href={url} target="_blank" rel="noreferrer" style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '8px 12px', background: 'rgba(139,120,255,0.1)',
-          border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-md)',
-          color: 'rgba(139,120,255,0.85)', fontSize: 12, textDecoration: 'none',
+          padding: '8px 12px', background: 'var(--bg-subtle)',
+          border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-md)',
+          color: 'var(--text-secondary)', fontSize: 12, textDecoration: 'none',
         }}>
           PDF: {name}
         </a>
@@ -434,10 +434,10 @@ export default function Chat({ lang, user, profile }) {
 
       <div style={{
         padding: '7px 16px',
-        background: 'rgba(139,120,255,0.06)',
-        border: '1px solid rgba(139,120,255,0.12)',
+        background: 'var(--bg-subtle)',
+        border: '1px solid rgba(0,0,0,0.07)',
         borderRadius: 'var(--radius-md)',
-        fontSize: 11, color: 'rgba(139,120,255,0.65)',
+        fontSize: 11, color: 'var(--text-secondary)',
         textAlign: 'center', margin: '8px 16px',
         fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
       }}>

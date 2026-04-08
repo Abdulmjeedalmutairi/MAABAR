@@ -444,7 +444,7 @@ export default function PaymentSuccess({ lang, user }) {
           <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
             {t.tag}
           </p>
-          <h1 style={{ fontSize: isAr ? 38 : 48, fontWeight: 300, color: '#2C2C2C', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)', letterSpacing: isAr ? 0 : -1.4 }}>
+          <h1 style={{ fontSize: isAr ? 38 : 48, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)', letterSpacing: isAr ? 0 : -1.4 }}>
             {t.title}
           </h1>
           <p style={{ fontSize: 14, color: '#7a7a7a', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
@@ -471,14 +471,14 @@ export default function PaymentSuccess({ lang, user }) {
                 <SummaryRow label={t.shippingMethod} value={shippingMethod || '—'} />
               </div>
               <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid #E5E0D8' }}>
-                <p style={{ fontSize: 16, color: '#2C2C2C', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                <p style={{ fontSize: 16, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
                   {requestTitle}
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {isReviewedSupplier && <span style={successBadgeStyle('#5a9a72', 'rgba(58,122,82,0.1)', 'rgba(58,122,82,0.2)')}>✓ {t.verifiedSupplier}</span>}
-                  {supplierTrustSignals.includes('trade_profile_available') && <span style={successBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>{t.tradeProfile}</span>}
-                  {supplierTrustSignals.includes('wechat_available') && <span style={successBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>{t.wechatAvailable}</span>}
-                  {supplierTrustSignals.includes('factory_media_available') && <span style={successBadgeStyle('#7a7a7a', 'rgba(255,255,255,0.75)', '#E5E0D8')}>{t.factoryPhotos}</span>}
+                  {supplierTrustSignals.includes('trade_profile_available') && <span style={successBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>{t.tradeProfile}</span>}
+                  {supplierTrustSignals.includes('wechat_available') && <span style={successBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>{t.wechatAvailable}</span>}
+                  {supplierTrustSignals.includes('factory_media_available') && <span style={successBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>{t.factoryPhotos}</span>}
                 </div>
               </div>
             </div>
@@ -491,33 +491,33 @@ export default function PaymentSuccess({ lang, user }) {
                 <div style={{ display: 'grid', gap: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
                     <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.supplier}</span>
-                    <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{supplierName}</strong>
+                    <strong style={{ fontSize: 13, color: 'var(--text-primary)' }}>{supplierName}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
                     <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.leadTime}</span>
-                    <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{leadTimeLabel}</strong>
+                    <strong style={{ fontSize: 13, color: 'var(--text-primary)' }}>{leadTimeLabel}</strong>
                   </div>
                   {shippingMethod && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
                       <span style={{ fontSize: 12, color: '#7a7a7a' }}>{t.shippingMethod}</span>
-                      <strong style={{ fontSize: 13, color: '#2C2C2C' }}>{shippingMethod}</strong>
+                      <strong style={{ fontSize: 13, color: 'var(--text-primary)' }}>{shippingMethod}</strong>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div style={{ border: '1px solid rgba(139,120,255,0.15)', background: 'rgba(139,120,255,0.06)', padding: '24px 24px 22px' }}>
-                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
+              <div style={{ border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)', padding: '24px 24px 22px' }}>
+                <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 14, fontFamily: 'var(--font-body)' }}>
                   {t.nextCheckpoint}
                 </p>
-                <h3 style={{ fontSize: isAr ? 20 : 22, fontWeight: 400, color: '#2C2C2C', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                <h3 style={{ fontSize: isAr ? 20 : 22, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
                   {checkpointTitle}
                 </h3>
                 <p style={{ fontSize: 12, color: '#5f5f63', lineHeight: 1.8, marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
                   {checkpointBody}
                 </p>
                 <p style={{ fontSize: 12, color: '#5f5f63', lineHeight: 1.75, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
-                  <strong style={{ color: '#2C2C2C', fontWeight: 500 }}>{t.buyerProtection}:</strong> {t.buyerProtectionBody}
+                  <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{t.buyerProtection}:</strong> {t.buyerProtectionBody}
                 </p>
               </div>
             </div>
@@ -529,11 +529,11 @@ export default function PaymentSuccess({ lang, user }) {
             </p>
             <div className="success-steps" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#E5E0D8' }}>
               {t.steps.map((s, i) => (
-                <div key={i} style={{ background: i === 0 ? '#2C2C2C' : '#F7F5F2', padding: '24px 20px', animation: `fadeIn 0.4s ease ${i * 0.1}s both` }}>
+                <div key={i} style={{ background: i === 0 ? '#1a1a1a' : 'var(--bg-subtle)', padding: '24px 20px', animation: `fadeIn 0.4s ease ${i * 0.1}s both` }}>
                   <p style={{ fontFamily: 'var(--font-en)', fontSize: 24, fontWeight: 300, color: i === 0 ? 'rgba(247,245,242,0.2)' : '#E5E0D8', marginBottom: 16, lineHeight: 1 }}>
                     {s.n}
                   </p>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: i === 0 ? '#F7F5F2' : '#2C2C2C', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: i === 0 ? '#ffffff' : 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
                     {s.t}
                   </p>
                   <p style={{ fontSize: 11, color: i === 0 ? 'rgba(247,245,242,0.45)' : '#7a7a7a', lineHeight: 1.6, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>
@@ -546,7 +546,7 @@ export default function PaymentSuccess({ lang, user }) {
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button onClick={() => nav('/dashboard')} style={{
-              background: '#2C2C2C', color: '#F7F5F2', border: 'none',
+              background: '#1a1a1a', color: '#ffffff', border: 'none',
               padding: '13px 32px', fontSize: 11, letterSpacing: 2,
               textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
               fontFamily: 'var(--font-body)', transition: 'all 0.2s',
@@ -565,11 +565,11 @@ export default function PaymentSuccess({ lang, user }) {
         </div>
       </div>
 
-      <footer style={{ background: '#2C2C2C', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-ar)', fontSize: 16, fontWeight: 600, color: '#F7F5F2', letterSpacing: 1 }}>
-          مَعبر <span style={{ fontFamily: 'var(--font-en)', fontSize: 13, opacity: 0.5 }}>| MAABAR</span>
+      <footer style={{ background: '#FFFFFF', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.07)' }}>
+        <div style={{ fontFamily: 'var(--font-ar)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 1 }}>
+          مَعبر <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, opacity: 0.5 }}>| MAABAR</span>
         </div>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, letterSpacing: 1 }}>{t.copy}</p>
+        <p style={{ color: 'var(--text-disabled)', fontSize: 11, letterSpacing: 1 }}>{t.copy}</p>
       </footer>
 
       <style>{`
@@ -589,10 +589,10 @@ function StatusShell({ isAr, tag, title, body, primaryAction, secondaryAction })
       <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '0 clamp(16px, 5vw, 24px)' }}>
         <div style={{ background: '#FFFFFF', border: '1px solid #E5E0D8', padding: '34px 30px' }}>
           <p style={{ fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 14, fontFamily: 'var(--font-body)' }}>{tag}</p>
-          <h1 style={{ fontSize: isAr ? 30 : 36, fontWeight: 300, color: '#2C2C2C', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{title}</h1>
+          <h1 style={{ fontSize: isAr ? 30 : 36, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{title}</h1>
           <p style={{ fontSize: 14, color: '#6A6A6F', lineHeight: 1.8, marginBottom: 22, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-body)' }}>{body}</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button onClick={primaryAction.onClick} style={{ background: '#2C2C2C', color: '#F7F5F2', border: 'none', padding: '12px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{primaryAction.label}</button>
+            <button onClick={primaryAction.onClick} style={{ background: '#1a1a1a', color: '#ffffff', border: 'none', padding: '12px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{primaryAction.label}</button>
             <button onClick={secondaryAction.onClick} style={{ background: 'none', color: '#7a7a7a', border: '1px solid #E5E0D8', padding: '12px 24px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{secondaryAction.label}</button>
           </div>
         </div>
@@ -605,7 +605,7 @@ function SummaryRow({ label, value, mono = false }) {
   return (
     <div style={{ padding: '14px 16px', border: '1px solid #E5E0D8', background: '#FBFAF8' }}>
       <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#8D8A84', marginBottom: 8 }}>{label}</p>
-      <p style={{ fontSize: 13, color: '#2C2C2C', margin: 0, fontFamily: mono ? 'var(--font-en)' : 'inherit', wordBreak: 'break-word' }}>{value}</p>
+      <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0, fontFamily: mono ? 'var(--font-en)' : 'inherit', wordBreak: 'break-word' }}>{value}</p>
     </div>
   );
 }

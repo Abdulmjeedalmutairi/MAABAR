@@ -241,7 +241,7 @@ function App() {
         maxWidth: 560,
         borderRadius: 24,
         border: '1px solid var(--border-subtle)',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+        background: '#FFFFFF',
         padding: '36px 30px',
         textAlign: lang === 'ar' ? 'right' : 'left',
       }}>
@@ -321,15 +321,15 @@ function App() {
       <div style={{
         minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        background: '#0a0a0b', gap: 16, padding: 24,
+        background: 'var(--bg-base)', gap: 16, padding: 24,
       }}>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontFamily: 'var(--font-ar)', textAlign: 'center', lineHeight: 1.8 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-ar)', textAlign: 'center', lineHeight: 1.8 }}>
           فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.
         </p>
         <button
           onClick={() => { setProfileError(false); setLoading(true); loadProfile(user?.id, 1, user); }}
           style={{
-            background: 'rgba(255,255,255,0.88)', color: '#0a0a0b',
+            background: '#1a1a1a', color: '#ffffff',
             border: 'none', padding: '12px 28px', borderRadius: 6,
             fontSize: 13, cursor: 'pointer', fontWeight: 500,
           }}>
@@ -338,8 +338,8 @@ function App() {
         <button
           onClick={() => sb.auth.signOut()}
           style={{
-            background: 'none', color: 'rgba(255,255,255,0.3)',
-            border: '1px solid rgba(255,255,255,0.1)', padding: '10px 24px', borderRadius: 6,
+            background: 'none', color: 'var(--text-disabled)',
+            border: '1px solid var(--border-default)', padding: '10px 24px', borderRadius: 6,
             fontSize: 12, cursor: 'pointer',
           }}>
           تسجيل الخروج
@@ -356,17 +356,17 @@ function App() {
           <div style={{
             minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            background: '#0a0a0b', gap: 16, padding: 24, textAlign: 'center',
+            background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
           }}>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
               نأسف، لم يتم قبول حسابك.
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
-              للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'rgba(255,255,255,0.5)' }}>hello@maabar.io</a>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
+              للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
             </p>
             <button onClick={() => sb.auth.signOut()} style={{
-              background: 'none', color: 'rgba(255,255,255,0.3)',
-              border: '1px solid rgba(255,255,255,0.1)', padding: '10px 24px',
+              background: 'none', color: 'var(--text-disabled)',
+              border: '1px solid var(--border-default)', padding: '10px 24px',
               borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
             }}>
               تسجيل الخروج
@@ -379,17 +379,17 @@ function App() {
           <div style={{
             minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            background: '#0a0a0b', gap: 16, padding: 24, textAlign: 'center',
+            background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
           }}>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
               حساب المورد متوقف مؤقتاً.
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontFamily: 'var(--font-ar)', maxWidth: 460, lineHeight: 1.9 }}>
-              إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'rgba(255,255,255,0.5)' }}>hello@maabar.io</a>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)', maxWidth: 460, lineHeight: 1.9 }}>
+              إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
             </p>
             <button onClick={() => sb.auth.signOut()} style={{
-              background: 'none', color: 'rgba(255,255,255,0.3)',
-              border: '1px solid rgba(255,255,255,0.1)', padding: '10px 24px',
+              background: 'none', color: 'var(--text-disabled)',
+              border: '1px solid var(--border-default)', padding: '10px 24px',
               borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
             }}>
               تسجيل الخروج

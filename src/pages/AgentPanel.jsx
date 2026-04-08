@@ -70,11 +70,11 @@ export default function AgentPanel() {
             width: '100%', padding: '12px 16px', border: '1px solid #E5E0D8',
             background: 'rgba(247,245,242,0.8)', fontSize: 14, outline: 'none',
             borderRadius: 2, marginBottom: 12, textAlign: 'center',
-            boxSizing: 'border-box', color: '#2C2C2C'
+            boxSizing: 'border-box', color: 'var(--text-primary)'
           }}
         />
         <button onClick={login} style={{
-          width: '100%', background: '#2C2C2C', color: '#F7F5F2',
+          width: '100%', background: '#1a1a1a', color: '#ffffff',
           border: 'none', padding: 13, fontSize: 11, letterSpacing: 2,
           textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2
         }}>دخول</button>
@@ -88,17 +88,16 @@ export default function AgentPanel() {
       {/* HEADER */}
       <div style={{
         padding: '40px 60px 0',
-        background: 'rgba(0,0,0,0.52)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)'
+        background: 'var(--bg-subtle)',
+        borderBottom: '1px solid rgba(0,0,0,0.07)'
       }}>
-        <p style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
+        <p style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', marginBottom: 10 }}>
           MAABAR
         </p>
-        <h1 style={{ fontSize: 48, fontWeight: 300, color: '#F7F5F2', fontFamily: 'var(--font-en)', letterSpacing: -1, marginBottom: 6 }}>
+        <h1 style={{ fontSize: 48, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', letterSpacing: -1, marginBottom: 6 }}>
           Dev Agent
         </h1>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 32, letterSpacing: 3, textTransform: 'uppercase' }}>
+        <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)', marginBottom: 32, letterSpacing: 3, textTransform: 'uppercase' }}>
           مطور الموقع الذكي
         </p>
 
@@ -110,8 +109,8 @@ export default function AgentPanel() {
           ].map(t => (
             <button key={t.id} onClick={() => { setMode(t.id); setSuggestions([]); }} style={{
               padding: '12px 28px', background: 'none', border: 'none',
-              borderBottom: mode === t.id ? '1px solid rgba(255,255,255,0.6)' : '1px solid transparent',
-              color: mode === t.id ? '#F7F5F2' : 'rgba(255,255,255,0.3)',
+              borderBottom: mode === t.id ? '1px solid rgba(0,0,0,0.60)' : '1px solid transparent',
+              color: mode === t.id ? 'var(--text-primary)' : 'rgba(0,0,0,0.35)',
               fontSize: 11, cursor: 'pointer', transition: 'all 0.2s',
               letterSpacing: 2, textTransform: 'uppercase',
               fontFamily: 'var(--font-ar)'
@@ -142,7 +141,7 @@ export default function AgentPanel() {
                   width: '100%', padding: '12px 14px', border: '1px solid #E5E0D8',
                   fontSize: 14, resize: 'vertical', outline: 'none',
                   fontFamily: 'var(--font-ar)', boxSizing: 'border-box',
-                  background: 'rgba(247,245,242,0.8)', color: '#2C2C2C', borderRadius: 2
+                  background: 'rgba(247,245,242,0.8)', color: 'var(--text-primary)', borderRadius: 2
                 }}
               />
             </>
@@ -160,7 +159,7 @@ export default function AgentPanel() {
                   width: '100%', padding: '12px 14px', border: '1px solid #E5E0D8',
                   fontSize: 14, resize: 'vertical', outline: 'none',
                   fontFamily: 'var(--font-ar)', boxSizing: 'border-box',
-                  background: 'rgba(247,245,242,0.8)', color: '#2C2C2C', borderRadius: 2
+                  background: 'rgba(247,245,242,0.8)', color: 'var(--text-primary)', borderRadius: 2
                 }}
               />
             </>
@@ -171,8 +170,8 @@ export default function AgentPanel() {
             disabled={loading}
             style={{
               marginTop: 16,
-              background: loading ? '#7a7a7a' : '#2C2C2C',
-              color: '#F7F5F2', border: 'none', padding: '12px 32px',
+              background: loading ? '#7a7a7a' : '#1a1a1a',
+              color: '#ffffff', border: 'none', padding: '12px 32px',
               fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
               cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 2,
               transition: 'all 0.2s'
@@ -199,7 +198,7 @@ export default function AgentPanel() {
                     <span style={{ fontSize: 11, color: '#7a7a7a', fontFamily: 'var(--font-en)', minWidth: 20 }}>
                       {String(s.priority).padStart(2, '0')}
                     </span>
-                    <p style={{ fontSize: 15, fontWeight: 500, color: '#2C2C2C', fontFamily: 'var(--font-ar)' }}>{s.title}</p>
+                    <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ar)' }}>{s.title}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     <span style={{
@@ -208,8 +207,8 @@ export default function AgentPanel() {
                     }}>{s.category}</span>
                     <span style={{
                       fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', padding: '3px 10px',
-                      background: s.impact === 'عالي' ? '#2C2C2C' : 'transparent',
-                      color: s.impact === 'عالي' ? '#F7F5F2' : '#7a7a7a',
+                      background: s.impact === 'عالي' ? '#1a1a1a' : 'transparent',
+                      color: s.impact === 'عالي' ? '#ffffff' : '#7a7a7a',
                       border: '1px solid #E5E0D8', borderRadius: 2
                     }}>{s.impact}</span>
                   </div>
@@ -221,7 +220,7 @@ export default function AgentPanel() {
                   onClick={() => { setMode('dev'); setCommand(`طبّق هذا الاقتراح: ${s.title} — ${s.description}`); setSuggestions([]); }}
                   style={{
                     marginTop: 12, marginRight: 32, background: 'none', border: 'none',
-                    color: '#2C2C2C', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+                    color: 'var(--text-primary)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
                     cursor: 'pointer', padding: 0, textDecoration: 'underline'
                   }}>
                   تطبيق هذا الاقتراح
@@ -244,7 +243,7 @@ export default function AgentPanel() {
                 padding: '16px 0',
                 animation: 'fadeIn 0.4s ease'
               }}>
-                <p style={{ fontSize: 13, color: '#2C2C2C', marginBottom: 6, fontFamily: 'var(--font-ar)' }}>{item.cmd}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 6, fontFamily: 'var(--font-ar)' }}>{item.cmd}</p>
                 {item.file && (
                   <p style={{ fontSize: 11, color: '#7a7a7a', marginBottom: 4, fontFamily: 'var(--font-en)', letterSpacing: 0.5 }}>
                     {item.file}
@@ -260,11 +259,11 @@ export default function AgentPanel() {
         )}
       </div>
 
-      <footer style={{ background: '#2C2C2C', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 80 }}>
-        <div style={{ fontFamily: 'var(--font-en)', fontSize: 16, fontWeight: 600, color: '#F7F5F2', letterSpacing: 2 }}>
+      <footer style={{ background: 'var(--bg-subtle)', borderTop: '1px solid rgba(0,0,0,0.07)', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 80 }}>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 2 }}>
           MAABAR <span style={{ fontFamily: 'var(--font-ar)', fontSize: 13, opacity: 0.5 }}>| مَعبر</span>
         </div>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, letterSpacing: 1 }}>Dev Agent v2</p>
+        <p style={{ color: 'var(--text-disabled)', fontSize: 11, letterSpacing: 1 }}>Dev Agent v2</p>
       </footer>
     </div>
   );

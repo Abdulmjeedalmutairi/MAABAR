@@ -155,7 +155,7 @@ export default function AuthCallback({ user, profile, lang }) {
         maxWidth: 520,
         borderRadius: 24,
         border: '1px solid var(--border-subtle)',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+        background: 'var(--bg-raised)',
         padding: '36px 30px',
         textAlign: lang === 'ar' ? 'right' : 'left',
       }}>
@@ -243,7 +243,7 @@ export default function AuthCallback({ user, profile, lang }) {
             width: 40,
             height: 2,
             borderRadius: 999,
-            background: 'rgba(255,255,255,0.18)',
+            background: 'rgba(0,0,0,0.10)',
             marginTop: 24,
             overflow: 'hidden',
             position: 'relative',
@@ -251,7 +251,7 @@ export default function AuthCallback({ user, profile, lang }) {
             <span style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(255,255,255,0.75)',
+              background: 'rgba(0,0,0,0.45)',
               transformOrigin: 'left center',
               animation: 'authCallbackPulse 1.2s ease-in-out infinite',
             }} />

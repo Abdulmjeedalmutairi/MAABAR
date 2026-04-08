@@ -406,9 +406,9 @@ export default function Home({ lang, user }) {
       <section style={{ maxWidth: 1280, margin: '-34px auto 0', padding: '0 24px 12px', position: 'relative', zIndex: 2 }}>
         <div style={{
           borderRadius: 28,
-          border: '1px solid rgba(139,120,255,0.16)',
-          background: 'linear-gradient(180deg, rgba(13,13,17,0.96), rgba(18,18,24,0.94))',
-          boxShadow: '0 30px 80px rgba(0,0,0,0.28)',
+          border: '1px solid rgba(0,0,0,0.07)',
+          background: 'var(--bg-subtle)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
           padding: '28px clamp(20px, 4vw, 34px)',
         }}>
           <div style={{ marginBottom: 18 }}>
@@ -427,16 +427,16 @@ export default function Home({ lang, user }) {
             {startOptions.map((option) => (
               <div key={option.key} style={{
                 borderRadius: 24,
-                border: option.featured ? '1px solid rgba(139,120,255,0.28)' : '1px solid var(--border-subtle)',
+                border: option.featured ? '1px solid rgba(0,0,0,0.15)' : '1px solid var(--border-subtle)',
                 background: option.featured
-                  ? 'linear-gradient(180deg, rgba(139,120,255,0.12), rgba(255,255,255,0.03))'
-                  : 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+                  ? 'linear-gradient(180deg, rgba(0,0,0,0.06), transparent)'
+                  : 'var(--bg-subtle)',
                 padding: '20px 20px 18px',
                 display: 'grid',
                 gap: 12,
               }}>
                 <div>
-                  <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'rgba(139,120,255,0.92)' : 'var(--text-disabled)' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'var(--text-primary)' : 'var(--text-disabled)' }}>
                     {option.eyebrow}
                   </p>
                   <h3 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 400, color: 'var(--text-primary)', ...arFont }}>{option.title}</h3>

@@ -194,10 +194,10 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '3px 10px',
-                background: 'rgba(139,120,255,0.10)',
-                border: '1px solid rgba(139,120,255,0.25)',
+                background: 'var(--bg-subtle)',
+                border: '1px solid rgba(0,0,0,0.10)',
                 borderRadius: 20, fontSize: 11,
-                color: 'rgba(139,120,255,0.85)',
+                color: 'var(--text-secondary)',
               }}>
                 <span style={{ fontSize: 10, fontWeight: 700 }}>✓</span>
                 {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified Supplier'}
@@ -212,7 +212,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             {supplier.country ? ` · ${supplier.country}` : ''}
           </p>
           {supplierMaabarId && isReviewedSupplier && (
-            <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.4 }}>
+            <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.4 }}>
               <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'معرّف مورد مَعبر' : lang === 'zh' ? 'Maabar 供应商编号' : 'Maabar Supplier ID'}</span>
               <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
             </div>
@@ -222,7 +222,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
               {products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
             </span>
             {products.filter(p => p.sample_available).length > 0 && (
-              <span style={{ fontSize: 11, color: 'rgba(139,120,255,0.85)', background: 'rgba(139,120,255,0.08)', padding: '2px 10px', borderRadius: 20, border: '1px solid rgba(139,120,255,0.2)' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '2px 10px', borderRadius: 20, border: '1px solid rgba(0,0,0,0.08)' }}>
                 {isAr ? 'عينات متاحة' : lang === 'zh' ? '可提供样品' : 'Samples Available'}
               </span>
             )}
@@ -257,10 +257,10 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
         {/* PROTECTION BADGE */}
         <div style={{
           padding: '10px 16px', marginBottom: 24,
-          background: 'rgba(139,120,255,0.06)',
-          border: '1px solid rgba(139,120,255,0.15)',
+          background: 'var(--bg-subtle)',
+          border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: 'var(--radius-md)',
-          fontSize: 12, color: 'rgba(139,120,255,0.7)',
+          fontSize: 12, color: 'var(--text-secondary)',
           textAlign: isAr ? 'right' : 'left',
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
         }}>
@@ -379,7 +379,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             {isAr ? 'تواصل مباشر' : lang === 'zh' ? '直接联系' : 'Direct Contact'}
           </button>
           {products.some(p => p.sample_available) && (
-            <button className="btn-outline" style={{ borderColor: 'rgba(139,120,255,0.3)', color: 'rgba(139,120,255,0.85)' }}
+            <button className="btn-outline" style={{ borderColor: 'rgba(0,0,0,0.15)', color: 'var(--text-secondary)' }}
               onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
               {isAr ? 'طلب عينة' : lang === 'zh' ? '请求样品' : 'Request Sample'}
             </button>
@@ -710,12 +710,12 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                         </span>
                       )}
                       {trustSignals.includes('wechat_available') && (
-                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
                           WeChat
                         </span>
                       )}
                       {trustSignals.includes('factory_media_available') && (
-                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                           {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                         </span>
                       )}

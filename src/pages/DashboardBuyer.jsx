@@ -931,8 +931,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   padding: '28px 0',
                   animation: `fadeIn 0.35s ease ${idx * 0.04}s both`,
                   scrollMarginTop: 110,
-                  background: isFocusedRequest ? 'rgba(139,120,255,0.04)' : 'transparent',
-                  boxShadow: isFocusedRequest ? 'inset 0 0 0 1px rgba(139,120,255,0.14)' : 'none',
+                  background: isFocusedRequest ? 'var(--bg-subtle)' : 'transparent',
+                  boxShadow: isFocusedRequest ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : 'none',
                   borderRadius: isFocusedRequest ? 'var(--radius-lg)' : 0,
                 }}>
                   {/* Title + status */}
@@ -993,8 +993,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   {!managed && <StatusBar status={r.shipping_status || r.status} isAr={isAr} />}
 
                   {nextStepCopy && (
-                    <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(139,120,255,0.16)', background: 'rgba(139,120,255,0.05)' }}>
-                      <p style={{ fontSize: 11, color: 'rgba(139,120,255,0.92)', marginBottom: 6, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                         {nextStepCopy.title}
                       </p>
                       <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -1007,11 +1007,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                       {isAr ? 'الكمية' : 'Qty'}: {r.quantity || '—'}
                     </span>
-                    <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: managed ? 'rgba(139,120,255,0.08)' : 'var(--bg-subtle)', border: `1px solid ${managed ? 'rgba(139,120,255,0.18)' : 'var(--border-subtle)'}`, color: managed ? 'rgba(139,120,255,0.92)' : 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                       {managed ? (isAr ? 'طلب مُدار' : 'Managed request') : `${isAr ? 'العروض' : 'Offers'}: ${r.offers.length}`}
                     </span>
                     {managed && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                         {isAr ? 'العروض المختارة لك' : 'Selected offers for you'}: {(r.managedShortlist || []).length}
                       </span>
                     )}
@@ -1021,17 +1021,17 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       </span>
                     )}
                     {!managed && fastestOffer?.delivery_days && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.18)', color: 'rgba(139,120,255,0.92)' }}>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
                         {isAr ? 'أسرع تجهيز' : 'Fastest lead time'}: {fastestOffer.delivery_days}{isAr ? ' يوم' : lang === 'zh' ? ' 天' : 'd'}
                       </span>
                     )}
                     {!managed && acceptedOffer?.profiles?.company_name && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                         {isAr ? 'المورد المختار' : 'Selected supplier'}: {acceptedOffer.profiles.company_name}
                       </span>
                     )}
                     {isFocusedRequest && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(139,120,255,0.12)', border: '1px solid rgba(139,120,255,0.22)', color: 'rgba(139,120,255,0.95)' }}>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
                         {isAr ? 'آخر طلب تم إنشاؤه' : 'Recently created request'}
                       </span>
                     )}
@@ -1162,12 +1162,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                         </span>
                                       )}
                                       {supplierTrustSignals.includes('wechat_available') && (
-                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
                                           WeChat
                                         </span>
                                       )}
                                       {supplierTrustSignals.includes('factory_media_available') && (
-                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                                           {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                                         </span>
                                       )}
@@ -1201,7 +1201,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                   </div>
 
                                   {o.note && (
-                                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)' }}>
+                                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
                                       <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
                                         {isAr ? 'ملاحظة تجارية' : lang === 'zh' ? '商务备注' : 'Commercial note'}
                                       </p>
@@ -1257,7 +1257,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                   </p>
                                 )}
                                 {r.status === 'ready_to_ship' && (
-                                  <div style={{ padding: '12px 12px', background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.2)', borderRadius: 'var(--radius-md)' }}>
+                                  <div style={{ padding: '12px 12px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-md)' }}>
                                     <p style={{ fontSize: 11, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>
                                       {isAr ? 'شحنتك جاهزة — ادفع الدفعة الثانية لإتمام الشحن' : 'Shipment ready — Pay second installment to ship'}
                                     </p>
@@ -1387,7 +1387,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           </p>
                         )}
                       </div>
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: s.status === 'approved' ? 'rgba(58,122,82,0.1)' : s.status === 'rejected' ? 'rgba(160,112,112,0.1)' : 'rgba(139,120,255,0.08)', color: s.status === 'approved' ? '#5a9a72' : s.status === 'rejected' ? '#a07070' : 'rgba(139,120,255,0.9)' }}>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: s.status === 'approved' ? 'rgba(58,122,82,0.1)' : s.status === 'rejected' ? 'rgba(160,112,112,0.1)' : 'var(--bg-subtle)', color: s.status === 'approved' ? '#5a9a72' : s.status === 'rejected' ? '#a07070' : 'var(--text-secondary)' }}>
                         {s.status === 'approved' ? (isAr ? 'تمت الموافقة' : lang === 'zh' ? '已批准' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوضة' : lang === 'zh' ? '已拒绝' : 'Rejected') : (isAr ? 'قيد المراجعة' : lang === 'zh' ? '审核中' : 'Pending')}
                       </span>
                     </div>
@@ -1395,7 +1395,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     {(supplierTrustSignals.length > 0 || s.profiles?.rating > 0) && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                         {s.profiles?.rating > 0 && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                             ★ {s.profiles.rating.toFixed(1)}{s.profiles?.reviews_count ? ` · ${s.profiles.reviews_count}` : ''}
                           </span>
                         )}
@@ -1405,12 +1405,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           </span>
                         )}
                         {supplierTrustSignals.includes('wechat_available') && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(139,120,255,0.08)', border: '1px solid rgba(139,120,255,0.2)', color: 'rgba(139,120,255,0.85)' }}>
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
                             WeChat
                           </span>
                         )}
                         {supplierTrustSignals.includes('factory_media_available') && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                             {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                           </span>
                         )}

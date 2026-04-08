@@ -1343,7 +1343,7 @@ Shape: {"action":"add_requests","count":3,"data":[{"title_ar":"","title_en":"","
     <div className="adminseed-page" dir={isAr ? 'rtl' : 'ltr'} style={{ minHeight: 'var(--app-dvh)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
       <div className="adminseed-shell" style={{ maxWidth: 1440, margin: '0 auto', padding: '92px 24px 48px' }}>
         <div className="adminseed-hero" style={{ ...sectionCardStyle(), padding: 'var(--adminseed-hero-padding, 28px)', marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(circle at top right, rgba(139,120,255,0.12), transparent 28%)' }} />
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(circle at top right, rgba(0,0,0,0.04), transparent 28%)' }} />
           <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 18, justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ maxWidth: 880 }}>
               <p style={{ margin: '0 0 12px', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>
@@ -1619,9 +1619,9 @@ Shape: {"action":"add_requests","count":3,"data":[{"title_ar":"","title_en":"","
                           minHeight: 34,
                           padding: '0 12px',
                           borderRadius: 999,
-                          border: `1px solid ${bucketFilter === bucket ? 'rgba(139,120,255,0.26)' : 'var(--border-subtle)'}`,
-                          background: bucketFilter === bucket ? 'rgba(139,120,255,0.1)' : 'rgba(255,255,255,0.03)',
-                          color: bucketFilter === bucket ? '#d7d0ff' : 'var(--text-secondary)',
+                          border: `1px solid ${bucketFilter === bucket ? 'rgba(0,0,0,0.15)' : 'var(--border-subtle)'}`,
+                          background: bucketFilter === bucket ? '#1a1a1a' : 'transparent',
+                          color: bucketFilter === bucket ? '#ffffff' : 'var(--text-secondary)',
                           cursor: 'pointer',
                           fontSize: 11,
                         }}
@@ -1657,8 +1657,8 @@ Shape: {"action":"add_requests","count":3,"data":[{"title_ar":"","title_en":"","
                           textAlign,
                           padding: '14px 14px 12px',
                           borderRadius: 18,
-                          border: `1px solid ${isSelected ? 'rgba(139,120,255,0.26)' : 'var(--border-subtle)'}`,
-                          background: isSelected ? 'rgba(139,120,255,0.08)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${isSelected ? 'rgba(0,0,0,0.15)' : 'var(--border-subtle)'}`,
+                          background: isSelected ? 'var(--bg-subtle)' : 'transparent',
                           color: 'var(--text-primary)',
                           cursor: 'pointer',
                         }}

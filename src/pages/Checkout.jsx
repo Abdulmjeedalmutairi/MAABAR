@@ -456,10 +456,10 @@ export default function Checkout({ lang, user, profile }) {
 
             {/* PAYMENT SPLIT BREAKDOWN */}
             {!isSecondPayment && selectedPct < 100 && (
-              <div style={{ background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.15)', borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginBottom: 18 }}>
+              <div style={{ background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginBottom: 18 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.firstPayment}</span>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(139,120,255,0.85)' }}>{fmt(firstPayment)} {currencyLabel}</span>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{fmt(firstPayment)} {currencyLabel}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.secondPayment}</span>
@@ -490,14 +490,14 @@ export default function Checkout({ lang, user, profile }) {
                     ✓ {t.verifiedSupplier}
                   </span>
                 )}
-                <span style={trustBadgeStyle('rgba(139,120,255,0.9)', 'rgba(139,120,255,0.08)', 'rgba(139,120,255,0.2)')}>
+                <span style={trustBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-muted)')}>
                   {t.leadTime}: {leadTimeLabel}
                 </span>
-                <span style={trustBadgeStyle('var(--text-secondary)', 'rgba(255,255,255,0.04)', 'var(--border-subtle)')}>
+                <span style={trustBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>
                   {t.origin}: {originLabel}
                 </span>
                 {shippingMethod && (
-                  <span style={trustBadgeStyle('var(--text-secondary)', 'rgba(255,255,255,0.04)', 'var(--border-subtle)')}>
+                  <span style={trustBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>
                     {t.shippingMethod}: {shippingMethod}
                   </span>
                 )}
@@ -514,8 +514,8 @@ export default function Checkout({ lang, user, profile }) {
               )}
             </div>
 
-            <div style={{ background: 'rgba(139,120,255,0.06)', border: '1px solid rgba(139,120,255,0.15)', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(139,120,255,0.9)', marginBottom: 10, fontFamily: 'var(--font-sans)' }}>
+            <div style={{ background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10, fontFamily: 'var(--font-sans)' }}>
                 {t.protectionTitle}
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.75, marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -565,7 +565,7 @@ export default function Checkout({ lang, user, profile }) {
                         <span style={{ fontSize: 13, fontWeight: 500, color: selectedPct === opt.pct ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                           {opt.pct}% — {opt.label}
                         </span>
-                        <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(139,120,255,0.85)' }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
                           {fmt(Math.round(total * opt.pct / 100))} {currencyLabel}
                         </span>
                       </div>

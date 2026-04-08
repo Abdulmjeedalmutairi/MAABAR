@@ -97,8 +97,8 @@ const ToggleBtn = ({ active, onClick, children, isAr }) => (
 
 const SubmitBtn = ({ onClick, disabled, loading, label, loadingLabel, isAr }) => (
   <button onClick={onClick} disabled={disabled || loading} style={{
-    background: disabled ? 'var(--bg-raised)' : 'rgba(255,255,255,0.88)',
-    color: disabled ? 'var(--text-disabled)' : '#0a0a0b',
+    background: disabled ? 'var(--bg-raised)' : '#1a1a1a',
+    color: disabled ? 'var(--text-disabled)' : '#ffffff',
     border: '1px solid var(--border-default)',
     padding: '12px', fontSize: 13, fontWeight: 500,
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -258,7 +258,7 @@ function AssistantTool({ lang, user, onClose }) {
               </p>
             )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={submitRequest} style={{ flex: 1, background: 'rgba(255,255,255,0.88)', color: '#0a0a0b', border: 'none', padding: '10px', fontSize: 12, fontWeight: 500, cursor: 'pointer', borderRadius: 'var(--radius-md)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              <button onClick={submitRequest} style={{ flex: 1, background: 'var(--bg-raised)', color: 'var(--text-primary)', border: 'none', padding: '10px', fontSize: 12, fontWeight: 500, cursor: 'pointer', borderRadius: 'var(--radius-md)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {lb.submit}
               </button>
               <button onClick={() => setRequestData(null)} style={{ background: 'none', border: '1px solid var(--border-subtle)', padding: '10px 14px', fontSize: 12, cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)' }}>
@@ -435,7 +435,7 @@ function CalcTool({ lang, onClose }) {
             {r1.notes && <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontStyle: 'italic' }}>{r1.notes}</p>}
             <div style={{ display: 'flex', gap: 8 }}>
               <ResetBtn onClick={() => { setR1(null); setF1({ product: '', qty: '', unitPrice: '', weight: '', shipping: 'sea' }); }} label={isAr ? 'حساب جديد' : 'New'} />
-              <button onClick={() => setTab(2)} style={{ flex: 1, background: 'rgba(255,255,255,0.88)', color: '#0a0a0b', border: 'none', padding: '10px', fontSize: 11, fontWeight: 500, cursor: 'pointer', borderRadius: 'var(--radius-md)', letterSpacing: 1 }}>
+              <button onClick={() => setTab(2)} style={{ flex: 1, background: 'var(--bg-raised)', color: 'var(--text-primary)', border: 'none', padding: '10px', fontSize: 11, fontWeight: 500, cursor: 'pointer', borderRadius: 'var(--radius-md)', letterSpacing: 1 }}>
                 {isAr ? 'احسب الربح ←' : 'Calc Profit →'}
               </button>
             </div>
@@ -898,13 +898,13 @@ opportunity_score: من 0 إلى 100.`,
                   {maabarSuppliers.map((s, i) => (
                     <div key={i} onClick={() => nav(`/supplier/${s.id}`)} style={{
                       padding: '10px 14px', background: 'var(--bg-raised)',
-                      border: '1px solid rgba(139,120,255,0.15)',
+                      border: '1px solid rgba(0,0,0,0.08)',
                       borderRadius: 'var(--radius-md)', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 10,
                       transition: 'all 0.15s',
                     }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(139,120,255,0.3)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,120,255,0.15)'; e.currentTarget.style.background = 'var(--bg-raised)'; }}>
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.background = 'var(--bg-raised)'; }}>
                       <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                         {s.avatar_url
                           ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -914,7 +914,7 @@ opportunity_score: من 0 إلى 100.`,
                         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>{s.company_name}</p>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)' }}>{s.city || ''}</p>
                       </div>
-                      <span style={{ fontSize: 10, color: 'rgba(139,120,255,0.85)', letterSpacing: 0.5 }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
                         {isAr ? 'عرض ←' : 'View →'}
                       </span>
                     </div>
