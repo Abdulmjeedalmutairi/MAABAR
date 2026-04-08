@@ -1,0 +1,6 @@
+{
+  "apply": false,
+  "scope": "all",
+  "defaultPassword": "CHANGE_ME_PRIVATE_STRONG_PASSWORD",
+  "includePasswords": false
+}

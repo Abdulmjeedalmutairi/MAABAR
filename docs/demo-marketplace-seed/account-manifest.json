@@ -1,0 +1,428 @@
+{
+  "generatedAt": "2026-04-01T19:03:25.009Z",
+  "note": "Synthetic demo-only account list to be created via existing auth flow before applying the SQL seed.",
+  "suppliers": [
+    {
+      "seedKey": "supplier-consumer-electronics",
+      "email": "seed.supplier.consumer-electronics@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "VoltBridge Consumer Tech Co., Ltd.",
+        "city": "Shenzhen",
+        "country": "China",
+        "trade_link": "https://trade.voltbridge-demo.example/storefront",
+        "speciality": "Consumer Electronics & Mobile Accessories",
+        "status": "registered"
+      },
+      "company_name": "VoltBridge Consumer Tech Co., Ltd.",
+      "speciality": "Consumer Electronics & Mobile Accessories",
+      "city": "Shenzhen",
+      "country": "China",
+      "trade_link": "https://trade.voltbridge-demo.example/storefront"
+    },
+    {
+      "seedKey": "supplier-smart-home-security",
+      "email": "seed.supplier.smart-home-security@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "HomeMesh Secure Systems Co., Ltd.",
+        "city": "Hangzhou",
+        "country": "China",
+        "trade_link": "https://trade.homemesh-demo.example/security",
+        "speciality": "Smart Home, Access Control & Security",
+        "status": "registered"
+      },
+      "company_name": "HomeMesh Secure Systems Co., Ltd.",
+      "speciality": "Smart Home, Access Control & Security",
+      "city": "Hangzhou",
+      "country": "China",
+      "trade_link": "https://trade.homemesh-demo.example/security"
+    },
+    {
+      "seedKey": "supplier-solar-energy-storage",
+      "email": "seed.supplier.solar-energy-storage@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "SunHarbor Energy Tech Co., Ltd.",
+        "city": "Ningbo",
+        "country": "China",
+        "trade_link": "https://trade.sunharbor-demo.example/solar",
+        "speciality": "Solar Energy, Inverters & Storage",
+        "status": "registered"
+      },
+      "company_name": "SunHarbor Energy Tech Co., Ltd.",
+      "speciality": "Solar Energy, Inverters & Storage",
+      "city": "Ningbo",
+      "country": "China",
+      "trade_link": "https://trade.sunharbor-demo.example/solar"
+    },
+    {
+      "seedKey": "supplier-building-materials-hardware",
+      "email": "seed.supplier.building-materials-hardware@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "StoneAxis Building Supply Co., Ltd.",
+        "city": "Foshan",
+        "country": "China",
+        "trade_link": "https://trade.stoneaxis-demo.example/materials",
+        "speciality": "Building Materials, Fixtures & Hardware",
+        "status": "registered"
+      },
+      "company_name": "StoneAxis Building Supply Co., Ltd.",
+      "speciality": "Building Materials, Fixtures & Hardware",
+      "city": "Foshan",
+      "country": "China",
+      "trade_link": "https://trade.stoneaxis-demo.example/materials"
+    },
+    {
+      "seedKey": "supplier-hospitality-furniture",
+      "email": "seed.supplier.hospitality-furniture@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "HarborNest Furnishings Co., Ltd.",
+        "city": "Foshan",
+        "country": "China",
+        "trade_link": "https://trade.harbornest-demo.example/furniture",
+        "speciality": "Hospitality, Office & Residential Furniture",
+        "status": "registered"
+      },
+      "company_name": "HarborNest Furnishings Co., Ltd.",
+      "speciality": "Hospitality, Office & Residential Furniture",
+      "city": "Foshan",
+      "country": "China",
+      "trade_link": "https://trade.harbornest-demo.example/furniture"
+    },
+    {
+      "seedKey": "supplier-packaging-printing",
+      "email": "seed.supplier.packaging-printing@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "PackFolio Print & Pack Co., Ltd.",
+        "city": "Qingdao",
+        "country": "China",
+        "trade_link": "https://trade.packfolio-demo.example/packaging",
+        "speciality": "Packaging, Labels & Printing",
+        "status": "registered"
+      },
+      "company_name": "PackFolio Print & Pack Co., Ltd.",
+      "speciality": "Packaging, Labels & Printing",
+      "city": "Qingdao",
+      "country": "China",
+      "trade_link": "https://trade.packfolio-demo.example/packaging"
+    },
+    {
+      "seedKey": "supplier-textiles-apparel",
+      "email": "seed.supplier.textiles-apparel@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "LoomPeak Textile Works Co., Ltd.",
+        "city": "Shaoxing",
+        "country": "China",
+        "trade_link": "https://trade.loompeak-demo.example/textiles",
+        "speciality": "Textiles, Uniforms & Apparel",
+        "status": "registered"
+      },
+      "company_name": "LoomPeak Textile Works Co., Ltd.",
+      "speciality": "Textiles, Uniforms & Apparel",
+      "city": "Shaoxing",
+      "country": "China",
+      "trade_link": "https://trade.loompeak-demo.example/textiles"
+    },
+    {
+      "seedKey": "supplier-beauty-packaging-care",
+      "email": "seed.supplier.beauty-packaging-care@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "PureForm Beauty Pack Co., Ltd.",
+        "city": "Guangzhou",
+        "country": "China",
+        "trade_link": "https://trade.pureform-demo.example/beauty",
+        "speciality": "Beauty Packaging & Personal Care Tools",
+        "status": "registered"
+      },
+      "company_name": "PureForm Beauty Pack Co., Ltd.",
+      "speciality": "Beauty Packaging & Personal Care Tools",
+      "city": "Guangzhou",
+      "country": "China",
+      "trade_link": "https://trade.pureform-demo.example/beauty"
+    },
+    {
+      "seedKey": "supplier-foodservice-kitchen",
+      "email": "seed.supplier.foodservice-kitchen@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "KitchenRoute Supply Co., Ltd.",
+        "city": "Xiamen",
+        "country": "China",
+        "trade_link": "https://trade.kitchenroute-demo.example/horeca",
+        "speciality": "Food Service, Kitchen & HORECA Supplies",
+        "status": "registered"
+      },
+      "company_name": "KitchenRoute Supply Co., Ltd.",
+      "speciality": "Food Service, Kitchen & HORECA Supplies",
+      "city": "Xiamen",
+      "country": "China",
+      "trade_link": "https://trade.kitchenroute-demo.example/horeca"
+    },
+    {
+      "seedKey": "supplier-industrial-tools-safety",
+      "email": "seed.supplier.industrial-tools-safety@example.com",
+      "role": "supplier",
+      "signupProfile": {
+        "company_name": "ForgeGrid Industrial Co., Ltd.",
+        "city": "Suzhou",
+        "country": "China",
+        "trade_link": "https://trade.forgegrid-demo.example/tools",
+        "speciality": "Industrial Tools, Safety & Site Equipment",
+        "status": "registered"
+      },
+      "company_name": "ForgeGrid Industrial Co., Ltd.",
+      "speciality": "Industrial Tools, Safety & Site Equipment",
+      "city": "Suzhou",
+      "country": "China",
+      "trade_link": "https://trade.forgegrid-demo.example/tools"
+    }
+  ],
+  "traders": [
+    {
+      "seedKey": "trader-riyadh-retail-group",
+      "email": "seed.trader.riyadh-retail-group@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Faisal Alqahtani",
+        "phone": "+966550101001",
+        "city": "Riyadh",
+        "company_name": "Riyadh Retail Group",
+        "status": "active"
+      },
+      "full_name": "Faisal Alqahtani",
+      "company_name": "Riyadh Retail Group",
+      "city": "Riyadh",
+      "phone": "+966550101001"
+    },
+    {
+      "seedKey": "trader-jeddah-gadgets",
+      "email": "seed.trader.jeddah-gadgets@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Huda Alharbi",
+        "phone": "+966550101002",
+        "city": "Jeddah",
+        "company_name": "Jeddah Gadgets Trading",
+        "status": "active"
+      },
+      "full_name": "Huda Alharbi",
+      "company_name": "Jeddah Gadgets Trading",
+      "city": "Jeddah",
+      "phone": "+966550101002"
+    },
+    {
+      "seedKey": "trader-khobar-smart-living",
+      "email": "seed.trader.khobar-smart-living@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Mazen Alotaibi",
+        "phone": "+966550101003",
+        "city": "Al Khobar",
+        "company_name": "Khobar Smart Living",
+        "status": "active"
+      },
+      "full_name": "Mazen Alotaibi",
+      "company_name": "Khobar Smart Living",
+      "city": "Al Khobar",
+      "phone": "+966550101003"
+    },
+    {
+      "seedKey": "trader-riyadh-facility-buying",
+      "email": "seed.trader.riyadh-facility-buying@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Reem Alenzi",
+        "phone": "+966550101004",
+        "city": "Riyadh",
+        "company_name": "Riyadh Facility Buying Co.",
+        "status": "active"
+      },
+      "full_name": "Reem Alenzi",
+      "company_name": "Riyadh Facility Buying Co.",
+      "city": "Riyadh",
+      "phone": "+966550101004"
+    },
+    {
+      "seedKey": "trader-qassim-green-supply",
+      "email": "seed.trader.qassim-green-supply@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Yousef Almutairi",
+        "phone": "+966550101005",
+        "city": "Buraidah",
+        "company_name": "Qassim Green Supply",
+        "status": "active"
+      },
+      "full_name": "Yousef Almutairi",
+      "company_name": "Qassim Green Supply",
+      "city": "Buraidah",
+      "phone": "+966550101005"
+    },
+    {
+      "seedKey": "trader-jeddah-site-power",
+      "email": "seed.trader.jeddah-site-power@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Sara Alzahrani",
+        "phone": "+966550101006",
+        "city": "Jeddah",
+        "company_name": "Jeddah Site Power",
+        "status": "active"
+      },
+      "full_name": "Sara Alzahrani",
+      "company_name": "Jeddah Site Power",
+      "city": "Jeddah",
+      "phone": "+966550101006"
+    },
+    {
+      "seedKey": "trader-riyadh-fitout-group",
+      "email": "seed.trader.riyadh-fitout-group@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Abdullah Alshehri",
+        "phone": "+966550101007",
+        "city": "Riyadh",
+        "company_name": "Riyadh Fitout Group",
+        "status": "active"
+      },
+      "full_name": "Abdullah Alshehri",
+      "company_name": "Riyadh Fitout Group",
+      "city": "Riyadh",
+      "phone": "+966550101007"
+    },
+    {
+      "seedKey": "trader-madinah-build-mart",
+      "email": "seed.trader.madinah-build-mart@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Waleed Alghamdi",
+        "phone": "+966550101008",
+        "city": "Madinah",
+        "company_name": "Madinah Build Mart",
+        "status": "active"
+      },
+      "full_name": "Waleed Alghamdi",
+      "company_name": "Madinah Build Mart",
+      "city": "Madinah",
+      "phone": "+966550101008"
+    },
+    {
+      "seedKey": "trader-jeddah-hospitality-procurement",
+      "email": "seed.trader.jeddah-hospitality-procurement@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Lama Alghamdi",
+        "phone": "+966550101009",
+        "city": "Jeddah",
+        "company_name": "Jeddah Hospitality Procurement",
+        "status": "active"
+      },
+      "full_name": "Lama Alghamdi",
+      "company_name": "Jeddah Hospitality Procurement",
+      "city": "Jeddah",
+      "phone": "+966550101009"
+    },
+    {
+      "seedKey": "trader-riyadh-office-source",
+      "email": "seed.trader.riyadh-office-source@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Nawaf Alsubaie",
+        "phone": "+966550101010",
+        "city": "Riyadh",
+        "company_name": "Riyadh Office Source",
+        "status": "active"
+      },
+      "full_name": "Nawaf Alsubaie",
+      "company_name": "Riyadh Office Source",
+      "city": "Riyadh",
+      "phone": "+966550101010"
+    },
+    {
+      "seedKey": "trader-riyadh-beauty-house",
+      "email": "seed.trader.riyadh-beauty-house@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Noura Alotaibi",
+        "phone": "+966550101011",
+        "city": "Riyadh",
+        "company_name": "Riyadh Beauty House",
+        "status": "active"
+      },
+      "full_name": "Noura Alotaibi",
+      "company_name": "Riyadh Beauty House",
+      "city": "Riyadh",
+      "phone": "+966550101011"
+    },
+    {
+      "seedKey": "trader-dammam-food-brand",
+      "email": "seed.trader.dammam-food-brand@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Rakan Alrashidi",
+        "phone": "+966550101012",
+        "city": "Dammam",
+        "company_name": "Dammam Food Brand House",
+        "status": "active"
+      },
+      "full_name": "Rakan Alrashidi",
+      "company_name": "Dammam Food Brand House",
+      "city": "Dammam",
+      "phone": "+966550101012"
+    },
+    {
+      "seedKey": "trader-riyadh-uniform-hub",
+      "email": "seed.trader.riyadh-uniform-hub@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Raghad Alharbi",
+        "phone": "+966550101013",
+        "city": "Riyadh",
+        "company_name": "Riyadh Uniform Hub",
+        "status": "active"
+      },
+      "full_name": "Raghad Alharbi",
+      "company_name": "Riyadh Uniform Hub",
+      "city": "Riyadh",
+      "phone": "+966550101013"
+    },
+    {
+      "seedKey": "trader-makkah-hotel-linen",
+      "email": "seed.trader.makkah-hotel-linen@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Khaled Binjaber",
+        "phone": "+966550101014",
+        "city": "Makkah",
+        "company_name": "Makkah Hotel Linen Supply",
+        "status": "active"
+      },
+      "full_name": "Khaled Binjaber",
+      "company_name": "Makkah Hotel Linen Supply",
+      "city": "Makkah",
+      "phone": "+966550101014"
+    },
+    {
+      "seedKey": "trader-jeddah-salon-source",
+      "email": "seed.trader.jeddah-salon-source@example.com",
+      "role": "buyer",
+      "signupProfile": {
+        "full_name": "Abeer Alsahli",
+        "phone": "+966550101015",
+        "city": "Jeddah",
+        "company_name": "Jeddah Salon Source",
+        "status": "active"
+      },
+      "full_name": "Abeer Alsahli",
+      "company_name": "Jeddah Salon Source",
+      "city": "Jeddah",
+      "phone": "+966550101015"
+    }
+  ]
+}

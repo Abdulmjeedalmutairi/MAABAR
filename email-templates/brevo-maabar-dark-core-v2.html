@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="supported-color-schemes" content="dark light" />
+  <title>{{params.subject}}</title>
+  <style>
+    /* ── Reset ── */
+    body, table, td { margin:0; padding:0; border-spacing:0; }
+    img { border:0; display:block; max-width:100%; }
+
+    /* ── Mobile ── */
+    @media only screen and (max-width:640px) {
+      .shell        { width:100% !important; }
+      .hero-td      { padding:28px 20px 20px !important; }
+      .cards-td     { padding:0 20px 24px !important; }
+      .headline     { font-size:30px !important; line-height:1.32 !important; }
+      .paragraph    { font-size:15px !important; }
+      .col-wrap     { display:block !important; width:100% !important; }
+      .col-left,
+      .col-right    { display:block !important; width:100% !important;
+                      padding:0 0 10px 0 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#09080d;background-image:linear-gradient(180deg,#09080d 0%,#09080d 100%);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:rgba(255,255,255,.90);">
+
+<!-- ═══ Preheader ═══ -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;">{{params.preheader}}</div>
+
+<!-- ═══ OUTER TABLE ═══ -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#09080d"
+  style="background:#09080d;background-image:linear-gradient(180deg,#09080d,#09080d);">
+<tr>
+<td align="center" bgcolor="#09080d"
+  style="background:#09080d;background-image:linear-gradient(180deg,#09080d,#09080d);padding:28px 14px;">
+
+  <!-- ═══ SHELL ═══ -->
+  <table class="shell" role="presentation" width="680" cellpadding="0" cellspacing="0" border="0">
+
+    <!-- ── Logo Row ── -->
+    <tr>
+      <td style="padding:0 0 20px 0;">
+        <div style="display:inline-block;direction:ltr;">
+          <span style="font-family:Inter,-apple-system,sans-serif;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.90);">MAABAR</span>
+          <span style="font-size:14px;color:rgba(255,255,255,.40);margin:0 8px;">|</span>
+          <span style="font-family:Georgia,'Noto Kufi Arabic',serif;font-size:17px;font-weight:600;color:rgba(255,255,255,.90);">مَعبر</span>
+        </div>
+      </td>
+    </tr>
+
+    <!-- ── Hero Card ── -->
+    <tr>
+      <td bgcolor="#09080d"
+        style="background:#09080d;background-image:radial-gradient(circle at 82% 18%,rgba(142,120,228,.14),transparent 28%),radial-gradient(ellipse at 22% 50%,rgba(142,120,228,.09),transparent 54%),linear-gradient(180deg,#09080d,#09080d);border:1px solid rgba(255,255,255,.07);border-radius:22px;overflow:hidden;">
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+          <!-- Hero content -->
+          <tr>
+            <td class="hero-td" style="padding:40px 34px 24px;">
+
+              <!-- eyebrow -->
+              <div style="font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(224,218,252,.65);margin-bottom:20px;">{{params.eyebrow}}</div>
+
+              <!-- headline -->
+              <div class="headline" style="font-size:40px;line-height:1.24;font-weight:300;color:rgba(255,255,255,.92);margin-bottom:16px;">{{params.headline}}</div>
+
+              <!-- paragraph -->
+              <div class="paragraph" style="font-size:16px;line-height:1.90;color:rgba(255,255,255,.58);margin-bottom:10px;">{{params.paragraph}}</div>
+
+              <!-- secondary paragraph -->
+              <div style="font-size:13px;line-height:1.95;color:rgba(255,255,255,.38);max-width:490px;margin-bottom:30px;">{{params.secondary_paragraph}}</div>
+
+              <!-- CTA -->
+              <a href="{{params.cta_url}}"
+                style="display:inline-block;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(228,223,255,.92));color:#0a0a0b;text-decoration:none;padding:12px 28px;border-radius:7px;font-size:14px;font-weight:600;">
+                {{params.cta_label}}
+              </a>
+
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 34px;">
+              <div style="height:1px;background:rgba(255,255,255,.06);"></div>
+            </td>
+          </tr>
+
+          <!-- Benefits panel -->
+          <tr>
+            <td class="cards-td" style="padding:20px 34px 10px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                bgcolor="#100f18"
+                style="background:#100f18;background-image:linear-gradient(180deg,#100f18,#100f18);border:1px solid rgba(255,255,255,.06);border-radius:16px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <div style="font-size:11px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:12px;">{{params.benefits_title}}</div>
+                    <!-- benefit 1 -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+                      <tr>
+                        <td valign="top" style="padding:5px 10px 0 0;"><div style="width:6px;height:6px;border-radius:50%;background:rgba(142,120,228,.70);"></div></td>
+                        <td style="font-size:13px;line-height:1.85;color:rgba(255,255,255,.42);">{{params.benefit_1}}</td>
+                      </tr>
+                    </table>
+                    <!-- benefit 2 -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+                      <tr>
+                        <td valign="top" style="padding:5px 10px 0 0;"><div style="width:6px;height:6px;border-radius:50%;background:rgba(142,120,228,.70);"></div></td>
+                        <td style="font-size:13px;line-height:1.85;color:rgba(255,255,255,.42);">{{params.benefit_2}}</td>
+                      </tr>
+                    </table>
+                    <!-- benefit 3 -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="top" style="padding:5px 10px 0 0;"><div style="width:6px;height:6px;border-radius:50%;background:rgba(142,120,228,.70);"></div></td>
+                        <td style="font-size:13px;line-height:1.85;color:rgba(255,255,255,.42);">{{params.benefit_3}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Two-col cards -->
+          <tr>
+            <td class="cards-td" style="padding:12px 34px 28px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="col-left" valign="top" width="50%" style="padding:0 6px 0 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                      bgcolor="#100f18"
+                      style="background:#100f18;background-image:linear-gradient(180deg,#100f18,#100f18);border:1px solid rgba(255,255,255,.06);border-radius:16px;">
+                      <tr>
+                        <td style="padding:16px 18px;">
+                          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.88);margin-bottom:8px;">{{params.block_1_title}}</div>
+                          <div style="font-size:13px;line-height:1.85;color:rgba(255,255,255,.38);">{{params.block_1_text}}</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td class="col-right" valign="top" width="50%" style="padding:0 0 0 6px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                      bgcolor="#100f18"
+                      style="background:#100f18;background-image:linear-gradient(180deg,#100f18,#100f18);border:1px solid rgba(255,255,255,.06);border-radius:16px;">
+                      <tr>
+                        <td style="padding:16px 18px;">
+                          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.88);margin-bottom:8px;">{{params.block_2_title}}</div>
+                          <div style="font-size:13px;line-height:1.85;color:rgba(255,255,255,.38);">{{params.block_2_text}}</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+
+    <!-- ── Footer ── -->
+    <tr>
+      <td style="padding:16px 4px 0;text-align:center;font-size:11px;line-height:1.9;color:rgba(255,255,255,.22);">
+        {{params.footer_line_1}}<br>
+        {{params.footer_line_2}}
+      </td>
+    </tr>
+
+  </table>
+  <!-- /SHELL -->
+
+</td>
+</tr>
+</table>
+<!-- /OUTER TABLE -->
+
+</body>
+</html>
