@@ -80,18 +80,6 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
   return (
     <div lang="en" style={{ minHeight: 'var(--app-dvh,100dvh)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
 
-      {/* NAV */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(9,8,13,0.90)', backdropFilter: 'blur(18px)', borderBottom: '1px solid var(--border-subtle)' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px', minHeight: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <BrandLogo as="button" size="sm" onClick={() => nav('/')} />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={goToSignIn} style={{ background: 'none', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em' }}>
-              Already approved? Sign in
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* CONTENT */}
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px 60px' }}>
 
@@ -133,6 +121,13 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
             <span style={{ fontSize: 13, fontWeight: 600, color: '#E8A020' }}>
               {SPOTS_LEFT} of {TOTAL_SPOTS} spots remaining in your category
             </span>
+          </div>
+
+          {/* Already approved? Sign in */}
+          <div style={{ textAlign: 'right', marginTop: 16 }}>
+            <button onClick={goToSignIn} style={{ background: 'none', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em' }}>
+              Already approved? Sign in
+            </button>
           </div>
         </div>
 

@@ -419,9 +419,8 @@ function App() {
 
   function AppContent() {
     const location = useLocation();
-    const isSupplierAccessPage = location.pathname === '/supplier-access';
     const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
-    const isChromelessPage = isSupplierAccessPage || isAuthCallbackPage;
+    const isChromelessPage = isAuthCallbackPage;
     const pageDir = isChromelessPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
     const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
     const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';

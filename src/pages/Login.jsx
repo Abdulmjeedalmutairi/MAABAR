@@ -526,7 +526,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard'
     );
 
-    const { error } = await sb.auth.signUp({
+    const { data: signUpData, error } = await sb.auth.signUp({
       email: trimValue(email),
       password: pass,
       options: { emailRedirectTo, data: metaData },
@@ -543,7 +543,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     if (isSupplier) {
       try {
         await sendMaabarEmail({
-          type: 'supplier_signup_bundle',
+          type: 'supplier_welcome',
           data: {
             name: trimValue(supCompany),
             companyName: trimValue(supCompany),
@@ -556,6 +556,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             city: trimValue(supCity),
             speciality: trimValue(speciality),
             lang,
+            confirmationUrl: signUpData?.user?.confirmation_url || emailRedirectTo,
           },
         });
       } catch (emailError) {
