@@ -70,7 +70,7 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
     if (user && profile?.role === 'supplier') {
       nav(supplierPrimaryRoute);
     } else {
-      nav('/login/supplier?lang=en');
+      nav('/login/supplier?lang=en&mode=signup');
     }
   };
   const goToSignIn = () => nav('/login/supplier?lang=en');

@@ -691,22 +691,17 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         padding: '80px 24px 60px',
         background: 'var(--bg-base)',
         position: 'relative',
-      }}>
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)',
-          backgroundSize: '56px 56px',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }} />
+      }}
+      dir={isAr ? 'rtl' : 'ltr'}>
+
 
         <button
           onClick={() => nav(-1)}
           style={{
             position: 'fixed',
             top: 72,
-            right: 24,
+            right: isAr ? 'auto' : 24,
+            left: isAr ? 24 : 'auto',
             zIndex: 10,
             background: 'var(--bg-raised)',
             border: '1px solid var(--border-subtle)',
@@ -1088,6 +1083,41 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   ? l.signin
                   : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
               </button>
+
+              {isSupplier && mode === 'signin' && (
+                <button
+                  onClick={() => setMode('signup')}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-default)',
+                    padding: '14px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    marginTop: 16,
+                    borderRadius: 'var(--radius-md)',
+                    transition: 'all 0.2s',
+                    minHeight: 48,
+                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-strong)';
+                    e.currentTarget.style.background = 'var(--bg-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-default)';
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {isAr ? 'تقديم طلب مورد جديد →' : lang === 'zh' ? '申请成为供应商 →' : 'Apply as a new supplier →'}
+                </button>
+              )}
 
               {!isSupplier && (
                 <>
