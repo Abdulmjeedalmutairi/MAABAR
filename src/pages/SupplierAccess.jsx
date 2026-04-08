@@ -70,7 +70,7 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
     if (user && profile?.role === 'supplier') {
       nav(supplierPrimaryRoute);
     } else {
-      nav('/register/supplier?lang=en');
+      nav('/login/supplier?lang=en');
     }
   };
   const goToSignIn = () => nav('/login/supplier?lang=en');
@@ -177,13 +177,13 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
           {/* Language Selection */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
             <button 
-              onClick={() => nav('/register/supplier?lang=en')}
+              onClick={() => nav('/login/supplier?lang=en')}
               style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
             >
               English
             </button>
             <button 
-              onClick={() => nav('/register/supplier?lang=zh')}
+              onClick={() => nav('/login/supplier?lang=zh')}
               style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
             >
               中文
