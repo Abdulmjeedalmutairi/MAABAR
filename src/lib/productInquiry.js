@@ -12,7 +12,8 @@ export async function fetchProductInquiryThreads(sb, { buyerId } = {}) {
 export function getProductInquiryProductName(inquiry) {
   return inquiry?.product_name || inquiry?.product_name_ar || inquiry?.product_name_en || '';
 }
-
+export function getProductInquiryQuestion() { return ''; }
+export function getProductInquiryTemplates() { return []; }
 export function getProductInquiryStatusLabel(status) {
   const labels = {
     open: 'مفتوح',

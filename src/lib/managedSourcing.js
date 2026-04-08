@@ -4,6 +4,8 @@ export function isManagedRequest(request) {
 
 export function buildManagedBriefRow() { return null; }
 
+export function getManagedVerificationLevel() { return null; }
+
 export async function generateManagedBriefWithAI() {
   return null;
 }
