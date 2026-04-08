@@ -177,11 +177,12 @@ ${supplierIdBlock}
       en: { subject: 'Your supplier application was received — Maabar', eyebrow: 'Application Received', title: `Hello ${d.name || ''},`, body: 'We received your supplier application and basic company details. After email confirmation, you will enter the supplier dashboard to complete verification, and the Maabar team will review the account after verification is submitted.', confirmCta: 'Confirm Email & Continue →' },
       zh: { subject: '我们已收到您的供应商申请 — Maabar', eyebrow: 'Application Received', title: `${d.name || ''}，您好`, body: '我们已收到您的供应商申请和基础公司资料。完成邮箱确认后，您会进入供应商控制台继续完成认证；提交认证后，Maabar 团队会开始审核该账户。', confirmCta: '确认邮箱并继续 →' },
     } as any)[lang] || { subject: 'تم استلام طلب انضمام المورد — مَعبر', eyebrow: 'Application Received', title: `أهلاً ${d.name || ''}،`, body: 'استلمنا طلب انضمامك.', confirmCta: 'Confirm Email & Continue →' };
+    const hasConfirmUrl = d.confirmationUrl && d.confirmationUrl !== '#';
     return ({ subject: t.subject, html: wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
-<div class="bw"><a href="${d.confirmationUrl || '#'}" class="bt">${t.confirmCta}</a></div>
+${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
 </div>`, { lang }) });
   },

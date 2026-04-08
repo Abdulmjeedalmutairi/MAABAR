@@ -534,6 +534,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     setLoading(false);
 
+    console.log('Supabase signup response:', signUpData);
+    console.log('confirmation_url:', signUpData?.user?.confirmation_url);
+    console.log('emailRedirectTo:', emailRedirectTo);
+
     if (error) {
       setMsg(error.message);
       setMsgType('error');
@@ -541,6 +545,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     }
 
     if (isSupplier) {
+      const confirmationUrl = signUpData?.user?.confirmation_url || emailRedirectTo;
+      console.log('Sending supplier_welcome email with confirmationUrl:', confirmationUrl);
+      
       try {
         await sendMaabarEmail({
           type: 'supplier_welcome',
@@ -556,11 +563,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             city: trimValue(supCity),
             speciality: trimValue(speciality),
             lang: effectiveLang,
-            confirmationUrl: signUpData?.user?.confirmation_url || emailRedirectTo,
+            confirmationUrl,
           },
         });
+        console.log('supplier_welcome email sent successfully');
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);
+        // Continue anyway — don't fail the signup flow
       }
 
       setSubmittedEmail(trimValue(email));
