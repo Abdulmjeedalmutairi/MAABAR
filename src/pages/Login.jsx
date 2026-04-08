@@ -555,7 +555,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             country: trimValue(country),
             city: trimValue(supCity),
             speciality: trimValue(speciality),
-            lang,
+            lang: effectiveLang,
             confirmationUrl: signUpData?.user?.confirmation_url || emailRedirectTo,
           },
         });
@@ -572,9 +572,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     }
 
     setMsg(
-      lang === 'ar'
+      effectiveLang === 'ar'
         ? 'أرسلنا رسالة تأكيد لبريدك الإلكتروني. افتحها واضغط على الرابط للمتابعة.'
-        : lang === 'zh'
+        : effectiveLang === 'zh'
           ? '确认邮件已发送至您的邮箱，请点击邮件中的链接继续。'
           : 'We sent a confirmation email. Please click the link to continue.'
     );
