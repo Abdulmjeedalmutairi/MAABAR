@@ -30,7 +30,7 @@ const L = {
     country: 'الدولة',
     supCity: 'المدينة',
     speciality: 'التخصص (اختياري)',
-    supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب الأساسي.',
+    supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب الأساسي.',
     contactHint: 'وسائل التواصل اختيارية الآن. إذا أضفت WeChat أو WhatsApp سيسهّل ذلك على الفريق التواصل معك.',
     verificationLater: 'لن نطلب الآن السجل التجاري أو الرخصة أو صور المصنع أو بيانات استلام الأرباح. إذا احتجناها، ستكون في خطوة التحقق اللاحقة داخل حالة الحساب.',
     signin: 'تسجيل الدخول',
@@ -542,10 +542,20 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     if (isSupplier) {
       try {
+        // إيميل التوثيق بلغة المستخدم
         await sendMaabarEmail({
-          type: 'supplier_signup_bundle',
+          type: 'supplier_confirmation',
           data: {
             name: trimValue(supCompany),
+            email: trimValue(email),
+            lang: effectiveLang,
+            redirectTo: emailRedirectTo,
+          },
+        });
+        // إشعار الأدمن
+        await sendMaabarEmail({
+          type: 'admin_new_supplier',
+          data: {
             companyName: trimValue(supCompany),
             email: trimValue(email),
             whatsapp: trimValue(whatsapp),
@@ -555,7 +565,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             country: trimValue(country),
             city: trimValue(supCity),
             speciality: trimValue(speciality),
-            lang,
           },
         });
       } catch (emailError) {
@@ -668,8 +677,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     zh: [
       { title: '1. 平台定义', body: 'Maabar 是连接沙特贸易商与中国供应商的电子贸易中介平台。Maabar 仅作为中介存在，并非用户之间交易的合同方。' },
       { title: '2. 注册条款', body: '贸易商：用户须在沙特阿拉伯居住或经营业务。\n供应商：用户须持有有效商业登记或营业执照，并在账户激活前接受 Maabar 审核。' },
-      { title: '3. 合同成立方式', body: '交易通过“报价—接受”的方式成立：贸易商发布需求，供应商提交报价，贸易商确认所选报价后，该确认即构成具有约束力的协议。' },
-      { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出“货物已准备好”通知后支付。' },
+      { title: '3. 合同成立方式', body: '交易通过"报价—接受"的方式成立：贸易商发布需求，供应商提交报价，贸易商确认所选报价后，该确认即构成具有约束力的协议。' },
+      { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出"货物已准备好"通知后支付。' },
       { title: '5. 平台佣金', body: 'Maabar 对交易收取 0% 佣金。' },
       { title: '6. 问题与退货', body: '如货物损坏或与描述存在重大差异，可在 48 小时内发起争议。Maabar 会在 7 个工作日内完成审查。' },
       { title: '7. 隐私与数据保护', body: 'Maabar 遵守沙特 PDPL 要求，不会向任何第三方出售用户数据。' },
