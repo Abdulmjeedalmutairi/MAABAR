@@ -544,8 +544,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       try {
         // إيميل التوثيق بلغة المستخدم
         await sendMaabarEmail({
-          type: 'supplier_confirmation',
-          data: {
+  type: 'supplier_confirmation',
+  to: trimValue(email),
+  data: {
             name: trimValue(supCompany),
             email: trimValue(email),
             lang: effectiveLang,
