@@ -2137,7 +2137,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!user) return;
     setLoadingRequests(true);
     // جلب الطلبات الظاهرة للمورد: المفتوحة + التي وصلتها عروض حتى لا تختفي بعد أول عرض
-    let query = sb.from('requests').select('*').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
+    let query = sb.from('requests').select('*, profiles!buyer_id(full_name, company_name)').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data, error } = await query;
     console.log('loadRequests result:', data?.length, 'error:', error);
