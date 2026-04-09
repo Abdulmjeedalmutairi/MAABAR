@@ -177,19 +177,13 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
   supplier_confirmation: async (d) => {
     if (!adminSb) throw new Error('No admin client');
     
-    // Wait for user to be synced in Supabase Auth system
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
     const { data: linkData, error } = await adminSb.auth.admin.generateLink({
       type: 'magiclink',
       email: d.email,
       options: { redirectTo: 'https://maabar.io/auth/callback' },
     });
     
-    if (error) {
-      console.error('generateLink failed:', error);
-      throw error;
-    }
+    if (error) throw error;
     
     const confirmUrl = linkData?.properties?.action_link || '#';
     const lang = d.lang || 'ar';
@@ -224,6 +218,7 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
     };
     
     const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
+    console.log('[supplier_confirmation] hasConfirmUrl:', hasConfirmUrl, 'lang:', lang);
     const html = wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
@@ -238,10 +233,12 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${confirmUrl}" class="bt">${t.confir
       throw new Error('Failed to generate email HTML');
     }
     
-    return { 
+    const result = { 
       subject: t.subject, 
       html
     };
+    console.log('[supplier_confirmation] returning:', JSON.stringify({ subject: result.subject, htmlLength: result.html?.length, htmlDefined: !!result.html }));
+    return result;
   },
 
   trader_welcome: (d) => {
@@ -458,6 +455,7 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 
 // ─── Send helper ─────────────────────────────────────────────────────────────
 async function sendEmail(to: string, subject: string, html: string) {
+  console.log('[sendEmail] body:', JSON.stringify({ to, subject, htmlLength: html?.length, htmlDefined: !!html }));
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
@@ -508,11 +506,11 @@ serve(async (req) => {
 
     if (type === 'supplier_signup_bundle') {
       if (!data?.email) return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
-      const welcomeTpl = templates.supplier_welcome(data || {});
+      const welcomeTpl = await templates.supplier_welcome(data || {});
       const welcomeResult = await sendEmail(data.email, welcomeTpl.subject, welcomeTpl.html);
       let adminResult = null;
       if (data?.sendAdmin === true) {
-        const adminTpl = templates.admin_new_supplier(data || {});
+        const adminTpl = await templates.admin_new_supplier(data || {});
         adminResult = await sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html);
       }
       return new Response(JSON.stringify({ ok: true, welcomeResult, adminResult }), { headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -534,7 +532,8 @@ serve(async (req) => {
       lang: normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar',
       maabarSupplierId: data?.maabarSupplierId || emailContext.profileRow?.maabar_supplier_id || '',
     };
-    const tpl = factory(payload);
+    const tpl = await factory(payload);
+    console.log('[handler] tpl:', JSON.stringify({ subject: tpl.subject, htmlLength: tpl.html?.length, htmlDefined: !!tpl.html }));
     const recipient = tpl.to || emailContext.recipient;
     if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const result = await sendEmail(recipient, tpl.subject, tpl.html);
