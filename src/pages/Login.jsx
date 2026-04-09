@@ -550,7 +550,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       
       try {
         await sendMaabarEmail({
-          type: 'supplier_welcome',
+          type: 'supplier_confirmation',
           data: {
             name: trimValue(supCompany),
             companyName: trimValue(supCompany),
@@ -566,7 +566,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             confirmationUrl,
           },
         });
-        console.log('supplier_welcome email sent successfully');
+        console.log('supplier_confirmation email sent successfully');
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);
         // Continue anyway — don't fail the signup flow

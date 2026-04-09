@@ -187,6 +187,51 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
 </div>`, { lang }) });
   },
 
+  supplier_confirmation: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { 
+        subject: 'تأكيد بريدك الإلكتروني — مَعبر', 
+        eyebrow: 'Email Confirmation', 
+        title: `أهلاً ${d.name || ''}،`, 
+        body: 'يرجى تأكيد بريدك الإلكتروني لتفعيل حساب المورد الخاص بك على منصة مَعبر.', 
+        confirmCta: 'تفعيل الحساب ←' 
+      },
+      en: { 
+        subject: 'Confirm your email — Maabar', 
+        eyebrow: 'Email Confirmation', 
+        title: `Hello ${d.name || ''},`, 
+        body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+        confirmCta: 'Activate Account →' 
+      },
+      zh: { 
+        subject: '确认您的邮箱 — Maabar', 
+        eyebrow: '邮箱确认', 
+        title: `${d.name || ''}，您好`, 
+        body: '请确认您的邮箱地址以激活您在 Maabar 的供应商账户。', 
+        confirmCta: '激活账户 →' 
+      },
+    } as any)[lang] || { 
+      subject: 'Confirm your email — Maabar', 
+      eyebrow: 'Email Confirmation', 
+      title: `Hello ${d.name || ''},`, 
+      body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+      confirmCta: 'Activate Account →' 
+    };
+    
+    const hasConfirmUrl = d.confirmationUrl && d.confirmationUrl !== '#';
+    return ({ 
+      subject: t.subject, 
+      html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
+</div>`, { lang }) 
+    });
+  },
+
   trader_welcome: (d) => {
     const lang = d.lang || 'ar';
     const t = ({
