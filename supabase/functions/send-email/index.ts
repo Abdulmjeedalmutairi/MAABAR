@@ -110,6 +110,8 @@ const templates: Record<string, (d: any) => any> = {
 
   supplier_confirmation: async (d) => {
     if (!adminSb) throw new Error('No admin client');
+    // انتظر حتى يتسجل المستخدم في Supabase
+    await new Promise(resolve => setTimeout(resolve, 2000));
     const { data: linkData, error } = await adminSb.auth.admin.generateLink({
       type: 'signup',
       email: d.email,
