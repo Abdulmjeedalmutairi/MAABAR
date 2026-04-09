@@ -498,11 +498,98 @@ async function resolveEmailContext(to: string, data: any = {}) {
   return { recipient, lang: inferredLang, profileRow };
 }
 
+// ─── Supabase Auth Email Hook ───────────────────────────────────────────────
+const HOOK_SECRET = 'v1,whsec_yk/9+FQ3Y5OlNPdMAoit5pB1yR3ZMzQTVYJTVdU1Y2x4+GXoceU7wH1mC7uo9dY9OO9cvFf73lA41+9R';
+
+async function handleSupabaseAuthHook(body: any, authHeader: string | null) {
+  // Verify hook secret (optional but recommended)
+  if (authHeader) {
+    const expected = `Bearer ${HOOK_SECRET}`;
+    if (authHeader !== expected) {
+      console.error('[hook] Authorization header mismatch');
+      throw new Error('Invalid hook secret');
+    }
+  }
+
+  const { user, email_data, event } = body;
+  if (!user || !email_data) {
+    throw new Error('Missing user or email_data in hook payload');
+  }
+
+  const email = user.email;
+  const lang = user.user_metadata?.lang || 'ar';
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+  const token = email_data.token_hash;
+  const redirectTo = email_data.redirect_to || 'https://maabar.io/auth/callback';
+
+  if (!email || !token) {
+    throw new Error('Missing email or token in hook payload');
+  }
+
+  // Build confirmation URL (Supabase Auth verification endpoint)
+  const confirmUrl = `https://utzalmszfqfcofywfetv.supabase.co/auth/v1/verify?token=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
+
+  console.log('[hook] Processing confirmation for:', email, 'lang:', lang, 'confirmUrl length:', confirmUrl.length);
+
+  const t = ({
+    ar: { 
+      subject: 'تأكيد بريدك الإلكتروني — مَعبر', 
+      eyebrow: 'Email Confirmation', 
+      title: `أهلاً ${name || ''}،`, 
+      body: 'يرجى تأكيد بريدك الإلكتروني لتفعيل حساب المورد الخاص بك على منصة مَعبر.', 
+      confirmCta: 'تفعيل الحساب ←' 
+    },
+    en: { 
+      subject: 'Confirm your email — Maabar', 
+      eyebrow: 'Email Confirmation', 
+      title: `Hello ${name || ''},`, 
+      body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+      confirmCta: 'Activate Account →' 
+    },
+    zh: { 
+      subject: '确认您的邮箱 — Maabar', 
+      eyebrow: '邮箱确认', 
+      title: `${name || ''}，您好`, 
+      body: '请确认您的邮箱地址以激活您在 Maabar 的供应商账户。', 
+      confirmCta: '激活账户 →' 
+    },
+  } as any)[lang] || { 
+    subject: 'Confirm your email — Maabar', 
+    eyebrow: 'Email Confirmation', 
+    title: `Hello ${name || ''},`, 
+    body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+    confirmCta: 'Activate Account →' 
+  };
+
+  const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
+  const html = wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+${hasConfirmUrl ? `<div class="bw"><a href="${confirmUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
+</div>`, { lang });
+
+  await sendEmail(email, t.subject, html);
+  return {};
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
-    const { type, to, data } = await req.json();
+    const body = await req.json();
+    const authHeader = req.headers.get('Authorization');
+
+    // Check if this is a Supabase Auth email hook
+    if (body.user && body.email_data) {
+      console.log('[hook] Received Supabase Auth hook');
+      const result = await handleSupabaseAuthHook(body, authHeader);
+      return new Response(JSON.stringify(result), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    // Legacy send-email API
+    const { type, to, data } = body;
 
     if (type === 'supplier_signup_bundle') {
       if (!data?.email) return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });

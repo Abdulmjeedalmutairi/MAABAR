@@ -542,17 +542,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     if (isSupplier) {
       try {
-        // إيميل التوثيق بلغة المستخدم
-        await sendMaabarEmail({
-  type: 'supplier_confirmation',
-  to: trimValue(email),
-  data: {
-            name: trimValue(supCompany),
-            email: trimValue(email),
-            lang: effectiveLang,
-            redirectTo: emailRedirectTo,
-          },
-        });
         // إشعار الأدمن
         await sendMaabarEmail({
           type: 'admin_new_supplier',
