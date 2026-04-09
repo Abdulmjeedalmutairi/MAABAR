@@ -74,33 +74,23 @@ const formatCurrencyWithConversion = (amountSAR, lang) => {
 // Function لتحويل JSON إلى نص مقروء إذا كان الوصف يحتوي على JSON
 const parseJsonIfNeeded = (text) => {
   if (!text || typeof text !== 'string') return text;
-  
   const trimmed = text.trim();
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     try {
       const parsed = JSON.parse(trimmed);
-      // إذا كان JSON يحتوي على checkout و product_id، نعرضه بطريقة مقروءة
-      if (parsed.checkout !== undefined || parsed.product_id) {
-        let readable = '';
-        if (parsed.product_id) readable += `Product ID: ${parsed.product_id}\n`;
-        if (parsed.checkout !== undefined) readable += `Checkout: ${parsed.checkout ? 'Yes' : 'No'}\n`;
-        if (parsed.quantity) readable += `Quantity: ${parsed.quantity}\n`;
-        if (parsed.notes) readable += `Notes: ${parsed.notes}\n`;
-        // إذا كان هناك أي حقول أخرى مهمة
-        const otherFields = Object.keys(parsed).filter(key => !['product_id', 'checkout', 'quantity', 'notes'].includes(key));
-        if (otherFields.length > 0) {
-          readable += `Other details: ${otherFields.join(', ')}`;
-        }
-        return readable.trim() || text;
-      }
-      return text; // إذا لم يكن checkout/product_id، نعيد النص كما هو
-    } catch (error) {
-      // إذا فشل التحليل، نعيد النص الأصلي
-      return text;
-    }
+      const readable = [
+        parsed.product_name,
+        parsed.description,
+        parsed.specifications,
+        parsed.notes,
+        parsed.quantity ? 'Qty: ' + parsed.quantity : null,
+      ].filter(Boolean).join(' · ');
+      return readable || null;
+    } catch { return text; }
   }
   return text;
 };
+
 
 // Function لترجمة عناوين الطلبات
 const translateRequestText = async (text, sourceLang, targetLang) => {
@@ -269,8 +259,8 @@ export default function Requests({ lang, user, profile }) {
     setLoading(true);
     let query = sb
       .from('requests')
-      .select('*')
-      .in('status', ['open', 'offers_received'])
+      .select('*, profiles!buyer_id(full_name, company_name)')
+.in('status', ['open', 'offers_received'])
       .or('sourcing_mode.is.null,sourcing_mode.eq.direct')
       .order('created_at', { ascending: false });
     // Filter by supplier's speciality unless "show all" toggled
@@ -1063,7 +1053,7 @@ export default function Requests({ lang, user, profile }) {
                   </h3>
 
                   <div className="req-meta">
-                    <span>{isAr ? 'طلب مشتري عبر مَعبر' : lang === 'zh' ? 'Maabar 买家需求' : 'Maabar buyer request'}</span>
+                    <span>{r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : 'Trader')}</span>
                     <span>{r.quantity || '—'}</span>
                     {(translatedRequests[r.id]?.description || r.description) && (
                       <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
