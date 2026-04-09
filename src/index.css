@@ -517,10 +517,7 @@ nav.scrolled {
   display: flex;
   align-items: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 82% 18%, rgba(var(--accent-rgb), 0.18), transparent 28%),
-    linear-gradient(180deg, rgba(var(--accent-rgb), 0.08), transparent 40%),
-    var(--bg-base);
+  background: var(--bg-base);
 }
 
 
@@ -529,9 +526,7 @@ nav.scrolled {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 24% 48%, rgba(var(--accent-rgb), 0.12) 0%, transparent 58%),
-    radial-gradient(circle at 74% 22%, rgba(var(--accent-rgb), 0.08) 0%, transparent 34%);
+  background: none;
   z-index: 0;
   pointer-events: none;
 }
@@ -1888,9 +1883,9 @@ footer {
 /* ══════════════════════════════════════════
    SUPPLIER LANDING
 ══════════════════════════════════════════ */
-.supplier-landing { min-height: var(--app-dvh); padding-top: var(--page-top-offset); background: radial-gradient(circle at 80% 14%, rgba(var(--accent-rgb), 0.10), transparent 28%), var(--bg-base); }
+.supplier-landing { min-height: var(--app-dvh); padding-top: var(--page-top-offset); background: var(--bg-base); }
 
-.sl-hero { padding: var(--space-20) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); flex-wrap: wrap; border-bottom: 1px solid rgba(var(--accent-rgb), 0.14); background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.12), transparent 60%); }
+.sl-hero { padding: var(--space-20) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); flex-wrap: wrap; border-bottom: 1px solid rgba(var(--accent-rgb), 0.14); background: transparent; }
 .sl-hero-left { max-width: 520px; }
 .sl-tag { color: var(--text-disabled); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: var(--space-6); font-weight: 500; }
 
@@ -1939,10 +1934,7 @@ footer {
 
 .brand-loading-shell.fullscreen {
   min-height: var(--app-dvh);
-  background:
-    radial-gradient(circle at top, rgba(var(--accent-rgb), 0.16), transparent 40%),
-    radial-gradient(circle at 82% 20%, rgba(var(--accent-rgb), 0.10), transparent 28%),
-    linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), rgba(255,255,255,0));
+  background: var(--bg-base);
 }
 
 .brand-loading-shell.section {
@@ -2006,7 +1998,7 @@ footer {
 .brand-loading-logo-ring {
   inset: 0;
   border: 1px solid var(--accent-border-strong);
-  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.14), transparent 68%);
+  background: transparent;
   animation: brandLoadingRing 3.8s linear infinite;
 }
 

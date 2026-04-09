@@ -4,10 +4,8 @@ import BrandLogo from '../components/BrandLogo';
 import usePageTitle from '../hooks/usePageTitle';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 
-const ACCESS_DEADLINE = '2026-04-14T23:59:59Z';
-const TOTAL_SPOTS = 10;
-const SPOTS_TAKEN = 2;
-const SPOTS_LEFT = TOTAL_SPOTS - SPOTS_TAKEN;
+// Deadline: 14 days from now
+const ACCESS_DEADLINE = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
 function getTimeLeft() {
   const diff = new Date(ACCESS_DEADLINE).getTime() - Date.now();
@@ -21,33 +19,106 @@ function getTimeLeft() {
   };
 }
 
-const BENEFITS = [
-  {
-    title: '0% Commission',
-    desc: 'No fees on any transaction. Zero cuts for founding suppliers.',
+const TRANSLATIONS = {
+  en: {
+    badge: 'Founding Supplier Program',
+    title: 'The Saudi market is waiting.<br />Be first to reach it.',
+    subtitle: 'We are selecting verified suppliers for early access to the Saudi market — upload your products now and go live from day one.',
+    countdownLabel: 'EARLY REGISTRATION CLOSES IN',
+    alreadyApproved: 'Already approved? Sign in',
+    whatYouGet: 'What you get',
+    benefits: [
+      {
+        title: '0% Commission',
+        desc: 'No fees on any transaction. Zero cuts for founding suppliers.',
+      },
+      {
+        title: 'Direct Access to Saudi Buyers',
+        desc: 'Saudi Arabia imports $100B annually from China. Maabar connects you directly.',
+      },
+      {
+        title: 'Priority Placement',
+        desc: 'Your products appear first in search results and category listings from launch day.',
+      },
+      {
+        title: 'Founding Supplier Badge',
+        desc: 'A permanent badge on your profile that builds trust with Saudi traders from day one.',
+      },
+    ],
+    howItWorks: 'How it works',
+    steps: [
+      'Submit your application',
+      'Get approved as a Founding Supplier',
+      'Upload your products and prepare your profile',
+      'Your products go live on launch day',
+      'Start receiving requests from Saudi merchants immediately',
+    ],
+    reviewNote: 'Review takes 24 to 72 hours · Limited spots available',
+    footerLine1: 'maabar.io · support@maabar.io',
+    footerLine2: 'Saudi Arabia × China',
+    comingSoon: 'Coming soon on App Store & Google Play',
+    languageEnglish: 'English',
+    languageChinese: '中文',
+    ctaLabels: {
+      openDashboard: 'Open Supplier Dashboard',
+      viewStatus: 'View Application Status',
+      continueApplication: 'Continue Application',
+      applyNow: 'APPLY NOW →',
+    },
   },
-  {
-    title: 'Direct Access to Saudi Buyers',
-    desc: 'Saudi Arabia imports $100B annually from China. Maabar connects you directly.',
+  zh: {
+    badge: '创始供应商计划',
+    title: '沙特市场正等待着。<br />成为第一批进入者。',
+    subtitle: '我们正在筛选经过验证的供应商，以早期进入沙特市场 — 立即上传您的产品，从第一天起即可上线。',
+    countdownLabel: '早期注册即将截止',
+    alreadyApproved: '已经批准了？登录',
+    whatYouGet: '您将获得',
+    benefits: [
+      {
+        title: '0% 佣金',
+        desc: '任何交易均不收取费用。创始供应商零分成。',
+      },
+      {
+        title: '直接对接沙特买家',
+        desc: '沙特每年从中国进口 1000 亿美元。Maabar 直接为您对接。',
+      },
+      {
+        title: '优先展示',
+        desc: '您的产品将在搜索结果和分类列表中优先显示，从发布之日起。',
+      },
+      {
+        title: '创始供应商徽章',
+        desc: '永久显示在您的主页上，从第一天起就建立与沙特商家的信任。',
+      },
+    ],
+    howItWorks: '流程怎么走',
+    steps: [
+      '提交您的申请',
+      '获批准成为创始供应商',
+      '上传您的产品并完善个人资料',
+      '您的产品在发布日上线',
+      '立即开始接收沙特商家的询价',
+    ],
+    reviewNote: '审核需要 24 到 72 小时 · 名额有限',
+    footerLine1: 'maabar.io · support@maabar.io',
+    footerLine2: '沙特阿拉伯 × 中国',
+    comingSoon: '即将上线 App Store 与 Google Play',
+    languageEnglish: 'English',
+    languageChinese: '中文',
+    ctaLabels: {
+      openDashboard: '打开供应商仪表板',
+      viewStatus: '查看申请状态',
+      continueApplication: '继续申请',
+      applyNow: '立即申请 →',
+    },
   },
-  {
-    title: 'Priority Placement',
-    desc: 'Your products appear first in search results and category listings from launch day.',
-  },
-];
+};
 
-const HOW_STEPS = [
-  'Submit your application',
-  'Get approved as a Founding Supplier',
-  'Upload your products and prepare your profile',
-  'Your products go live on launch day',
-  'Start receiving requests from Saudi merchants immediately',
-];
-
-export default function SupplierAccess({ user, profile, lang = 'en' }) {
-  usePageTitle('supplier-access', lang);
+export default function SupplierAccess({ user, profile, lang = 'zh' }) {
   const nav = useNavigate();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+  const [currentLang, setCurrentLang] = useState(lang); // Local language state
+  usePageTitle('supplier-access', currentLang);
 
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
@@ -56,50 +127,57 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
 
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRouteRaw = supplierState ? getSupplierPrimaryRoute(profile, user) : '/login/supplier';
-  const supplierPrimaryRoute = supplierPrimaryRouteRaw + (supplierPrimaryRouteRaw.includes('?') ? '&lang=en' : '?lang=en');
+  const supplierPrimaryRoute = supplierPrimaryRouteRaw + (supplierPrimaryRouteRaw.includes('?') ? `&lang=${currentLang}` : `?lang=${currentLang}`);
   const hasExistingSupplierAccount = Boolean(user && profile?.role === 'supplier');
 
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
+
   const ctaLabel = useMemo(() => {
-    if (supplierState?.isApprovedStage || supplierState?.isInactiveStage) return 'Open Supplier Dashboard';
-    if (supplierState?.isUnderReviewStage) return 'View Application Status';
-    if (supplierState?.isApplicationStage) return 'Continue Application';
-    return 'APPLY NOW →';
-  }, [supplierState]);
+    if (supplierState?.isApprovedStage || supplierState?.isInactiveStage) return t.ctaLabels.openDashboard;
+    if (supplierState?.isUnderReviewStage) return t.ctaLabels.viewStatus;
+    if (supplierState?.isApplicationStage) return t.ctaLabels.continueApplication;
+    return t.ctaLabels.applyNow;
+  }, [supplierState, t]);
 
   const goToApply = () => {
     if (user && profile?.role === 'supplier') {
       nav(supplierPrimaryRoute);
     } else {
-      nav('/login/supplier?lang=en&mode=signup');
+      nav(`/login/supplier?lang=${currentLang}&mode=signup`);
     }
   };
-  const goToSignIn = () => nav('/login/supplier?lang=en');
+  const goToSignIn = () => nav(`/login/supplier?lang=${currentLang}`);
 
   const fmt = (v) => String(v).padStart(2, '0');
 
   return (
-    <div lang="en" style={{ minHeight: 'var(--app-dvh,100dvh)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
+    <div lang={currentLang} style={{ minHeight: 'var(--app-dvh,100dvh)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
 
       {/* CONTENT */}
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px 60px' }}>
 
+        {/* Already approved? Sign in - MOVED TO TOP */}
+        <div style={{ textAlign: 'right', padding: '20px 0 10px' }}>
+          <button onClick={goToSignIn} style={{ background: 'none', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em' }}>
+            {t.alreadyApproved}
+          </button>
+        </div>
+
         {/* HERO */}
-        <div style={{ padding: '48px 0 36px' }}>
+        <div style={{ padding: '0 0 36px' }}>
           <div style={{ display: 'inline-block', background: 'var(--text-primary)', color: 'var(--bg-base)', fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '5px 12px', borderRadius: 4, marginBottom: 22 }}>
-            Founding Supplier Program
+            {t.badge}
           </div>
 
-          <h1 style={{ fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 800, lineHeight: 1.12, color: 'var(--text-primary)', margin: '0 0 18px' }}>
-            The Saudi market is waiting.<br />Be first to reach it.
-          </h1>
+          <h1 style={{ fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 800, lineHeight: 1.12, color: 'var(--text-primary)', margin: '0 0 18px' }} dangerouslySetInnerHTML={{ __html: t.title }} />
 
           <p style={{ fontSize: 17, lineHeight: 1.75, color: 'var(--text-secondary)', margin: '0 0 32px', maxWidth: 520 }}>
-            We are selecting verified suppliers for early access to the Saudi market — upload your products now and go live from day one.
+            {t.subtitle}
           </p>
 
           {/* COUNTDOWN */}
           <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 14, padding: '20px 24px', marginBottom: 14 }}>
-            <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>Official launch in</div>
+            <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{t.countdownLabel}</div>
             <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
               {[
                 { v: fmt(timeLeft.days), l: 'DAYS' },
@@ -115,33 +193,20 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
             </div>
           </div>
 
-          {/* SPOTS */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 16 }}>⚠️</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E8A020' }}>
-              {SPOTS_LEFT} of {TOTAL_SPOTS} spots remaining in your category
-            </span>
-          </div>
-
-          {/* Already approved? Sign in */}
-          <div style={{ textAlign: 'right', marginTop: 16 }}>
-            <button onClick={goToSignIn} style={{ background: 'none', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em' }}>
-              Already approved? Sign in
-            </button>
-          </div>
+          {/* SPOTS SECTION REMOVED COMPLETELY */}
         </div>
 
         {/* WHAT YOU GET */}
         <div style={{ marginBottom: 36 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20 }}>What you get</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20 }}>{t.whatYouGet}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {BENEFITS.map((b, i) => (
+            {t.benefits.map((b, i) => (
               <div key={b.title}>
                 <div style={{ padding: '16px 0' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{b.title}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{b.desc}</div>
                 </div>
-                {i < BENEFITS.length - 1 && <div style={{ height: 1, background: 'var(--border-subtle)' }} />}
+                {i < t.benefits.length - 1 && <div style={{ height: 1, background: 'var(--border-subtle)' }} />}
               </div>
             ))}
           </div>
@@ -149,9 +214,9 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
 
         {/* HOW IT WORKS */}
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20 }}>How it works</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20 }}>{t.howItWorks}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {HOW_STEPS.map((step, i) => (
+            {t.steps.map((step, i) => (
               <div key={step} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)', minWidth: 20, paddingTop: 1 }}>{String(i + 1).padStart(2, '0')}</span>
                 <span style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{step}</span>
@@ -169,31 +234,32 @@ export default function SupplierAccess({ user, profile, lang = 'en' }) {
             {ctaLabel}
           </button>
           
-          {/* Language Selection */}
+          {/* Language Selection - TOGGLE WITHOUT NAVIGATION */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
             <button 
-              onClick={() => nav('/login/supplier?lang=en')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+              onClick={() => setCurrentLang('en')}
+              style={{ background: 'none', border: 'none', color: currentLang === 'en' ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              English
+              {t.languageEnglish}
             </button>
             <button 
-              onClick={() => nav('/login/supplier?lang=zh')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+              onClick={() => setCurrentLang('zh')}
+              style={{ background: 'none', border: 'none', color: currentLang === 'zh' ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              中文
+              {t.languageChinese}
             </button>
           </div>
           
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.7 }}>
-            Review takes 24 to 72 hours · Limited spots available
+            {t.reviewNote}
           </div>
         </div>
 
         {/* FOOTER */}
-        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.9 }}>
-          <div>maabar.io · info@maabar.io</div>
-          <div>Saudi Arabia × China</div>
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.9, marginTop: 40 }}>
+          <div>{t.footerLine1}</div>
+          <div>{t.footerLine2}</div>
+          <div style={{ marginTop: 8, fontSize: 11, color: '#bbb' }}>{t.comingSoon}</div>
         </div>
 
       </div>

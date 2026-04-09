@@ -91,7 +91,6 @@ const parseJsonIfNeeded = (text) => {
   return text;
 };
 
-
 // Function لترجمة عناوين الطلبات
 const translateRequestText = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
@@ -259,8 +258,8 @@ export default function Requests({ lang, user, profile }) {
     setLoading(true);
     let query = sb
       .from('requests')
-      .select('*, profiles!buyer_id(full_name, company_name)')
-.in('status', ['open', 'offers_received'])
+      .select('*, profiles!requests_buyer_id_fkey(full_name, company_name)')
+      .in('status', ['open', 'offers_received'])
       .or('sourcing_mode.is.null,sourcing_mode.eq.direct')
       .order('created_at', { ascending: false });
     // Filter by supplier's speciality unless "show all" toggled
@@ -1053,11 +1052,11 @@ export default function Requests({ lang, user, profile }) {
                   </h3>
 
                   <div className="req-meta">
-                    <span>{r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : 'Trader')}</span>
+                    <span>{r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '买家' : 'Trader')}</span>
                     <span>{r.quantity || '—'}</span>
                     {(translatedRequests[r.id]?.description || r.description) && (
                       <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
-                        {parseJsonIfNeeded(translatedRequests[r.id]?.description || r.description || '').substring(0, 60)}…
+                        {(parseJsonIfNeeded(translatedRequests[r.id]?.description) || parseJsonIfNeeded(r.description) || '').substring(0, 60)}…
                       </span>
                     )}
                   </div>

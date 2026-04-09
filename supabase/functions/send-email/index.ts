@@ -108,31 +108,7 @@ ${rendered}
 // ─── Templates ───────────────────────────────────────────────────────────────
 const templates: Record<string, (d: any) => any> = {
 
-  supplier_confirmation: async (d) => {
-    if (!adminSb) throw new Error('No admin client');
-    // انتظر حتى يتسجل المستخدم في Supabase
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const { data: linkData, error } = await adminSb.auth.admin.generateLink({
-      type: 'magiclink',
-      email: d.email,
-      options: { redirectTo: d.redirectTo || 'https://maabar.io/dashboard' },
-    });
-    if (error) throw error;
-    const confirmUrl = linkData?.properties?.action_link || '';
-    const lang = d.lang || 'ar';
-    const t = ({
-      ar: { subject: 'تأكيد بريدك الإلكتروني — مَعبر', eyebrow: 'Confirm Your Email', title: `أهلاً ${d.name || ''}،`, body: 'شكراً لتسجيلك كمورد في مَعبر. اضغط على الزر أدناه لتأكيد بريدك الإلكتروني وتفعيل حسابك.', cta: 'تأكيد البريد الإلكتروني ←' },
-      en: { subject: 'Confirm your email — Maabar', eyebrow: 'Confirm Your Email', title: `Hello ${d.name || ''},`, body: 'Thank you for registering as a supplier on Maabar. Click the button below to confirm your email and activate your account.', cta: 'Confirm Email →' },
-      zh: { subject: '请确认您的邮箱 — Maabar', eyebrow: 'Confirm Your Email', title: `${d.name || ''}，您好`, body: '感谢您在 Maabar 注册为供应商。请点击下方按钮确认您的邮箱并激活账户。', cta: '确认邮箱 →' },
-    } as any)[lang] || { subject: 'تأكيد بريدك — مَعبر', eyebrow: 'Confirm Your Email', title: `أهلاً،`, body: 'اضغط لتأكيد بريدك.', cta: 'تأكيد ←' };
-    return { subject: t.subject, html: wrap(`
-<div class="bd">
-<p class="gr">${t.eyebrow}</p>
-<p class="tg">${t.title}</p>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 24px;">${t.body}</p>
-<div class="bw"><a href="${confirmUrl}" class="bt">${t.cta}</a></div>
-</div>`, { lang }) };
-  },
+
 
   admin_new_supplier: (d) => ({
     subject: `طلب انضمام مورد جديد — ${d.companyName || ''}`,
@@ -184,16 +160,95 @@ ${supplierIdBlock}
   supplier_welcome: (d) => {
     const lang = d.lang || 'ar';
     const t = ({
-      ar: { subject: 'تم استلام طلب انضمام المورد — مَعبر', eyebrow: 'Application Received', title: `أهلاً ${d.name || ''}،`, body: 'استلمنا طلب انضمامك كمورد مع بيانات شركتك الأساسية. بعد تأكيد البريد الإلكتروني، ستدخل مباشرة إلى لوحة المورد لإكمال التحقق، ثم يراجع فريق مَعبر الطلب بعد إرسال التحقق.' },
-      en: { subject: 'Your supplier application was received — Maabar', eyebrow: 'Application Received', title: `Hello ${d.name || ''},`, body: 'We received your supplier application and basic company details. After email confirmation, you will enter the supplier dashboard to complete verification, and the Maabar team will review the account after verification is submitted.' },
-      zh: { subject: '我们已收到您的供应商申请 — Maabar', eyebrow: 'Application Received', title: `${d.name || ''}，您好`, body: '我们已收到您的供应商申请和基础公司资料。完成邮箱确认后，您会进入供应商控制台继续完成认证；提交认证后，Maabar 团队会开始审核该账户。' },
-    } as any)[lang] || { subject: 'تم استلام طلب انضمام المورد — مَعبر', eyebrow: 'Application Received', title: `أهلاً ${d.name || ''}،`, body: 'استلمنا طلب انضمامك.' };
+      ar: { subject: 'تم استلام طلب انضمام المورد — مَعبر', eyebrow: 'Application Received', title: `أهلاً ${d.name || ''}،`, body: 'استلمنا طلب انضمامك كمورد مع بيانات شركتك الأساسية. بعد تأكيد البريد الإلكتروني، ستدخل مباشرة إلى لوحة المورد لإكمال التحقق، ثم يراجع فريق مَعبر الطلب بعد إرسال التحقق.', confirmCta: 'تأكيد البريد والمتابعة ←' },
+      en: { subject: 'Your supplier application was received — Maabar', eyebrow: 'Application Received', title: `Hello ${d.name || ''},`, body: 'We received your supplier application and basic company details. After email confirmation, you will enter the supplier dashboard to complete verification, and the Maabar team will review the account after verification is submitted.', confirmCta: 'Confirm Email & Continue →' },
+      zh: { subject: '我们已收到您的供应商申请 — Maabar', eyebrow: 'Application Received', title: `${d.name || ''}，您好`, body: '我们已收到您的供应商申请和基础公司资料。完成邮箱确认后，您会进入供应商控制台继续完成认证；提交认证后，Maabar 团队会开始审核该账户。', confirmCta: '确认邮箱并继续 →' },
+    } as any)[lang] || { subject: 'تم استلام طلب انضمام المورد — مَعبر', eyebrow: 'Application Received', title: `أهلاً ${d.name || ''}،`, body: 'استلمنا طلب انضمامك.', confirmCta: 'Confirm Email & Continue →' };
+    const hasConfirmUrl = d.confirmationUrl && d.confirmationUrl !== '#';
     return ({ subject: t.subject, html: wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
+${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
 </div>`, { lang }) });
+  },
+
+  supplier_confirmation: async (d) => {
+    if (!adminSb) throw new Error('No admin client');
+    
+    const { data: linkData, error } = await adminSb.auth.admin.generateLink({
+      type: 'magiclink',
+      email: d.email,
+      options: { redirectTo: 'https://maabar.io/auth/callback' },
+    });
+    
+    if (error) throw error;
+    
+    const confirmUrl = linkData?.properties?.action_link || '#';
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { 
+        subject: 'تأكيد بريدك الإلكتروني — مَعبر', 
+        eyebrow: 'Email Confirmation', 
+        title: `أهلاً ${d.name || ''}،`, 
+        body: 'يرجى تأكيد بريدك الإلكتروني لتفعيل حساب المورد الخاص بك على منصة مَعبر.', 
+        confirmCta: 'تفعيل الحساب ←' 
+      },
+      en: { 
+        subject: 'Confirm your email — Maabar', 
+        eyebrow: 'Email Confirmation', 
+        title: `Hello ${d.name || ''},`, 
+        body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+        confirmCta: 'Activate Account →' 
+      },
+      zh: { 
+        subject: '确认您的邮箱 — Maabar', 
+        eyebrow: '邮箱确认', 
+        title: `${d.name || ''}，您好`, 
+        body: '请确认您的邮箱地址以激活您在 Maabar 的供应商账户。', 
+        confirmCta: '激活账户 →' 
+      },
+    } as any)[lang] || { 
+      subject: 'Confirm your email — Maabar', 
+      eyebrow: 'Email Confirmation', 
+      title: `Hello ${d.name || ''},`, 
+      body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+      confirmCta: 'Activate Account →' 
+    };
+    
+    const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
+    console.log('[supplier_confirmation] hasConfirmUrl:', hasConfirmUrl, 'lang:', lang);
+    const html = wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+${hasConfirmUrl ? `
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+ <tr>
+ <td align="center" style="padding: 24px 0;">
+ <a href="${confirmUrl}" 
+ style="display:inline-block;padding:14px 32px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
+ ${t.confirmCta}
+ </a>
+ </td>
+ </tr>
+</table>` : ''}
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
+</div>`, { lang });
+    
+    // Ensure html is a non-empty string
+    if (!html || typeof html !== 'string') {
+      console.error('Generated html is invalid:', html);
+      throw new Error('Failed to generate email HTML');
+    }
+    
+    const result = { 
+      subject: t.subject, 
+      html
+    };
+    console.log('[supplier_confirmation] returning:', JSON.stringify({ subject: result.subject, htmlLength: result.html?.length, htmlDefined: !!result.html }));
+    return result;
   },
 
   trader_welcome: (d) => {
@@ -410,6 +465,7 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 
 // ─── Send helper ─────────────────────────────────────────────────────────────
 async function sendEmail(to: string, subject: string, html: string) {
+  console.log('[sendEmail] body:', JSON.stringify({ to, subject, htmlLength: html?.length, htmlDefined: !!html }));
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
@@ -452,19 +508,128 @@ async function resolveEmailContext(to: string, data: any = {}) {
   return { recipient, lang: inferredLang, profileRow };
 }
 
+// ─── Supabase Auth Email Hook ───────────────────────────────────────────────
+const HOOK_SECRET_RAW = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
+
+async function handleSupabaseAuthHook(body: any, authHeader: string | null, headers: Headers) {
+  // Check if this is a Supabase Auth Hook (identified by User-Agent)
+  const userAgent = headers.get('user-agent') || '';
+  const isSupabaseHook = userAgent.includes('Go-http-client');
+  
+  console.log('[hook] User-Agent:', userAgent);
+  console.log('[hook] Is Supabase hook?', isSupabaseHook);
+  
+  if (!isSupabaseHook) {
+    // Only verify auth for non-hook requests (e.g., direct API calls)
+    console.log('[hook] Non-hook request, verifying Authorization header');
+    if (!authHeader || authHeader !== HOOK_SECRET_RAW) {
+      console.error('[hook] Unauthorized non-hook request');
+      throw new Error('Unauthorized');
+    }
+    console.log('[hook] Non-hook request authorized');
+  } else {
+    // Supabase hook request - allow through directly
+    console.log('[hook] Supabase hook request accepted (no auth verification)');
+  }
+
+  const { user, email_data, event } = body;
+  if (!user || !email_data) {
+    throw new Error('Missing user or email_data in hook payload');
+  }
+
+  const email = user.email;
+  const lang = user.user_metadata?.lang || 'ar';
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+  const token = email_data.token_hash;
+  const redirectTo = email_data.redirect_to || 'https://maabar.io/auth/callback';
+
+  if (!email || !token) {
+    throw new Error('Missing email or token in hook payload');
+  }
+
+  // Build confirmation URL (Supabase Auth verification endpoint)
+  const baseUrl = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
+  const confirmUrl = `${baseUrl}/auth/v1/verify?token=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
+
+  console.log('[hook] Processing confirmation for:', email, 'lang:', lang, 'confirmUrl length:', confirmUrl.length);
+
+  const t = ({
+    ar: { 
+      subject: 'تأكيد بريدك الإلكتروني — مَعبر', 
+      eyebrow: 'Email Confirmation', 
+      title: `أهلاً ${name || ''}،`, 
+      body: 'يرجى تأكيد بريدك الإلكتروني لتفعيل حساب المورد الخاص بك على منصة مَعبر.', 
+      confirmCta: 'تفعيل الحساب ←' 
+    },
+    en: { 
+      subject: 'Confirm your email — Maabar', 
+      eyebrow: 'Email Confirmation', 
+      title: `Hello ${name || ''},`, 
+      body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+      confirmCta: 'Activate Account →' 
+    },
+    zh: { 
+      subject: '确认您的邮箱 — Maabar', 
+      eyebrow: '邮箱确认', 
+      title: `${name || ''}，您好`, 
+      body: '请确认您的邮箱地址以激活您在 Maabar 的供应商账户。', 
+      confirmCta: '激活账户 →' 
+    },
+  } as any)[lang] || { 
+    subject: 'Confirm your email — Maabar', 
+    eyebrow: 'Email Confirmation', 
+    title: `Hello ${name || ''},`, 
+    body: 'Please confirm your email address to activate your supplier account on Maabar.', 
+    confirmCta: 'Activate Account →' 
+  };
+
+  const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
+  const html = wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+${hasConfirmUrl ? `
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+ <tr>
+ <td align="center" style="padding: 24px 0;">
+ <a href="${confirmUrl}" 
+ style="display:inline-block;padding:14px 32px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
+ ${t.confirmCta}
+ </a>
+ </td>
+ </tr>
+</table>` : ''}
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
+</div>`, { lang });
+
+  await sendEmail(email, t.subject, html);
+  return {};
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
-    const { type, to, data } = await req.json();
+    const body = await req.json();
+    const authHeader = req.headers.get('Authorization');
+
+    // Check if this is a Supabase Auth email hook
+    if (body.user && body.email_data) {
+      console.log('[hook] Received Supabase Auth hook');
+      const result = await handleSupabaseAuthHook(body, authHeader, req.headers);
+      return new Response(JSON.stringify(result), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    // Legacy send-email API
+    const { type, to, data } = body;
 
     if (type === 'supplier_signup_bundle') {
       if (!data?.email) return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
-      const welcomeTpl = templates.supplier_welcome(data || {});
+      const welcomeTpl = await templates.supplier_welcome(data || {});
       const welcomeResult = await sendEmail(data.email, welcomeTpl.subject, welcomeTpl.html);
       let adminResult = null;
       if (data?.sendAdmin === true) {
-        const adminTpl = templates.admin_new_supplier(data || {});
+        const adminTpl = await templates.admin_new_supplier(data || {});
         adminResult = await sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html);
       }
       return new Response(JSON.stringify({ ok: true, welcomeResult, adminResult }), { headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -486,7 +651,8 @@ serve(async (req) => {
       lang: normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar',
       maabarSupplierId: data?.maabarSupplierId || emailContext.profileRow?.maabar_supplier_id || '',
     };
-    const tpl = factory(payload);
+    const tpl = await factory(payload);
+    console.log('[handler] tpl:', JSON.stringify({ subject: tpl.subject, htmlLength: tpl.html?.length, htmlDefined: !!tpl.html }));
     const recipient = tpl.to || emailContext.recipient;
     if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
     const result = await sendEmail(recipient, tpl.subject, tpl.html);
