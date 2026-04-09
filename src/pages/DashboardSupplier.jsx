@@ -1311,6 +1311,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [offerForms, setOfferForms]         = useState({});
   const [offers, setOffers]                 = useState({});
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   const [settings, setSettings] = useState(() => buildSettingsState(profile || {}, displayCurrency || 'USD'));
   const [verification, setVerification] = useState(() => buildVerificationState(profile || {}));
@@ -2137,7 +2138,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!user) return;
     setLoadingRequests(true);
     // جلب الطلبات الظاهرة للمورد: المفتوحة + التي وصلتها عروض حتى لا تختفي بعد أول عرض
-    let query = sb.from('requests').select('*, profiles!buyer_id(full_name, company_name)').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
+    let query = sb.from('requests').select('*, profiles!requests_buyer_id_fkey(full_name, company_name)').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data, error } = await query;
     console.log('loadRequests result:', data?.length, 'error:', error);
@@ -3087,6 +3088,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {r.description && <span>{r.description.substring(0, 55)}…</span>}
                       </div>
                     </div>
+                    <button className="btn-outline" onClick={() => setSelectedRequest(r)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
+  {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
+</button>
                     <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
                       {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
                     </button>
@@ -4264,7 +4268,41 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       {/* ══════════════════════════════════════
           EDIT OFFER MODAL
       ══════════════════════════════════════ */}
-      {editOfferModal && (
+      {selectedRequest && (
+  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-xl)', padding: '36px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto' }}>
+      <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
+        {isAr ? 'تفاصيل الطلب' : lang === 'zh' ? '需求详情' : 'Request Details'}
+      </p>
+      <h3 style={{ fontSize: 20, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 20, ...arFont }}>{getTitle(selectedRequest)}</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {[
+          [isAr ? 'التاجر' : lang === 'zh' ? '采购商' : 'Buyer', selectedRequest.profiles?.full_name || selectedRequest.profiles?.company_name || '—'],
+          [isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity', selectedRequest.quantity || '—'],
+          [isAr ? 'التصنيف' : lang === 'zh' ? '分类' : 'Category', selectedRequest.category || '—'],
+          [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit ? `${selectedRequest.budget_per_unit} SAR` : '—'],
+          [isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan', selectedRequest.payment_plan ? `${selectedRequest.payment_plan}%` : '—'],
+          [isAr ? 'العينة' : lang === 'zh' ? '样品' : 'Sample', selectedRequest.sample_requirement || '—'],
+          [isAr ? 'الوصف' : lang === 'zh' ? '描述' : 'Description', selectedRequest.description || '—'],
+        ].map(([label, value]) => (
+          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-disabled)', flexShrink: 0 }}>{label}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right', ...arFont }}>{value}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+        <button className="btn-dark-sm" onClick={() => { setSelectedRequest(null); toggleOfferForm(selectedRequest.id); }} style={{ flex: 1, minHeight: 44 }}>
+          {isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote'}
+        </button>
+        <button className="btn-outline" onClick={() => setSelectedRequest(null)} style={{ minHeight: 44, padding: '0 18px' }}>
+          {isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{editOfferModal && (
         <div style={{
           position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.7)',
