@@ -30,7 +30,7 @@ const L = {
     country: 'الدولة',
     supCity: 'المدينة',
     speciality: 'التخصص (اختياري)',
-    supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب الأساسي.',
+    supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب الأساسي.',
     contactHint: 'وسائل التواصل اختيارية الآن. إذا أضفت WeChat أو WhatsApp سيسهّل ذلك على الفريق التواصل معك.',
     verificationLater: 'لن نطلب الآن السجل التجاري أو الرخصة أو صور المصنع أو بيانات استلام الأرباح. إذا احتجناها، ستكون في خطوة التحقق اللاحقة داخل حالة الحساب.',
     signin: 'تسجيل الدخول',
@@ -526,17 +526,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard'
     );
 
-    const { data: signUpData, error } = await sb.auth.signUp({
+    const { error } = await sb.auth.signUp({
       email: trimValue(email),
       password: pass,
       options: { emailRedirectTo, data: metaData },
     });
 
     setLoading(false);
-
-    console.log('Supabase signup response:', signUpData);
-    console.log('confirmation_url:', signUpData?.user?.confirmation_url);
-    console.log('emailRedirectTo:', emailRedirectTo);
 
     if (error) {
       setMsg(error.message);
@@ -545,14 +541,21 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     }
 
     if (isSupplier) {
-      const confirmationUrl = signUpData?.user?.confirmation_url || emailRedirectTo;
-      console.log('Sending supplier_welcome email with confirmationUrl:', confirmationUrl);
-      
       try {
+        // إيميل التوثيق بلغة المستخدم
         await sendMaabarEmail({
-          type: 'supplier_welcome',
+          type: 'supplier_confirmation',
           data: {
             name: trimValue(supCompany),
+            email: trimValue(email),
+            lang: effectiveLang,
+            redirectTo: emailRedirectTo,
+          },
+        });
+        // إشعار الأدمن
+        await sendMaabarEmail({
+          type: 'admin_new_supplier',
+          data: {
             companyName: trimValue(supCompany),
             email: trimValue(email),
             whatsapp: trimValue(whatsapp),
@@ -562,14 +565,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             country: trimValue(country),
             city: trimValue(supCity),
             speciality: trimValue(speciality),
-            lang: effectiveLang,
-            confirmationUrl,
           },
         });
-        console.log('supplier_welcome email sent successfully');
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);
-        // Continue anyway — don't fail the signup flow
       }
 
       setSubmittedEmail(trimValue(email));
@@ -581,9 +580,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     }
 
     setMsg(
-      effectiveLang === 'ar'
+      lang === 'ar'
         ? 'أرسلنا رسالة تأكيد لبريدك الإلكتروني. افتحها واضغط على الرابط للمتابعة.'
-        : effectiveLang === 'zh'
+        : lang === 'zh'
           ? '确认邮件已发送至您的邮箱，请点击邮件中的链接继续。'
           : 'We sent a confirmation email. Please click the link to continue.'
     );
@@ -678,8 +677,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     zh: [
       { title: '1. 平台定义', body: 'Maabar 是连接沙特贸易商与中国供应商的电子贸易中介平台。Maabar 仅作为中介存在，并非用户之间交易的合同方。' },
       { title: '2. 注册条款', body: '贸易商：用户须在沙特阿拉伯居住或经营业务。\n供应商：用户须持有有效商业登记或营业执照，并在账户激活前接受 Maabar 审核。' },
-      { title: '3. 合同成立方式', body: '交易通过“报价—接受”的方式成立：贸易商发布需求，供应商提交报价，贸易商确认所选报价后，该确认即构成具有约束力的协议。' },
-      { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出“货物已准备好”通知后支付。' },
+      { title: '3. 合同成立方式', body: '交易通过"报价—接受"的方式成立：贸易商发布需求，供应商提交报价，贸易商确认所选报价后，该确认即构成具有约束力的协议。' },
+      { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出"货物已准备好"通知后支付。' },
       { title: '5. 平台佣金', body: 'Maabar 对交易收取 0% 佣金。' },
       { title: '6. 问题与退货', body: '如货物损坏或与描述存在重大差异，可在 48 小时内发起争议。Maabar 会在 7 个工作日内完成审查。' },
       { title: '7. 隐私与数据保护', body: 'Maabar 遵守沙特 PDPL 要求，不会向任何第三方出售用户数据。' },
@@ -701,17 +700,22 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         padding: '80px 24px 60px',
         background: 'var(--bg-base)',
         position: 'relative',
-      }}
-      dir={isAr ? 'rtl' : 'ltr'}>
-
+      }}>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)',
+          backgroundSize: '56px 56px',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
 
         <button
           onClick={() => nav(-1)}
           style={{
             position: 'fixed',
             top: 72,
-            right: isAr ? 'auto' : 24,
-            left: isAr ? 24 : 'auto',
+            right: 24,
             zIndex: 10,
             background: 'var(--bg-raised)',
             border: '1px solid var(--border-subtle)',
@@ -1093,41 +1097,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   ? l.signin
                   : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
               </button>
-
-              {isSupplier && mode === 'signin' && (
-                <button
-                  onClick={() => setMode('signup')}
-                  style={{
-                    width: '100%',
-                    background: 'transparent',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-default)',
-                    padding: '14px',
-                    fontSize: 14,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    marginTop: 16,
-                    borderRadius: 'var(--radius-md)',
-                    transition: 'all 0.2s',
-                    minHeight: 48,
-                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-strong)';
-                    e.currentTarget.style.background = 'var(--bg-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-default)';
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  {isAr ? 'تقديم طلب مورد جديد →' : lang === 'zh' ? '申请成为供应商 →' : 'Apply as a new supplier →'}
-                </button>
-              )}
 
               {!isSupplier && (
                 <>
