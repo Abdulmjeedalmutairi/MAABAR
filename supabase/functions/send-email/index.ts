@@ -516,11 +516,11 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 <div class="ir"><span class="ik">الرابط التجاري</span><span class="iv">${d.tradeLink || '-'}</span></div>
 <div class="ir"><span class="ik">رقم السجل</span><span class="iv">${d.regNumber || '-'}</span></div>
 <div class="ir"><span class="ik">سنوات الخبرة</span><span class="iv">${d.yearsExperience || '-'}</span></div>
-<div class="ir"><span class="ik">رخصة التصنيع</span><span class="iv">${d.licensePhoto ? 'مرفقة' : '-'}</span></div>
-<div class="ir"><span class="ik">صور المعمل</span><span class="iv">${d.factoryImagesCount || 0}</span></div>
-<div class="ir"><span class="ik">فيديوهات المعمل</span><span class="iv">${d.factoryVideosCount || 0}</span></div>
+<div class="ir"><span class="ik">رخصة الأعمال</span><span class="iv">${d.licensePhoto ? 'مرفوعة ✓' : 'غير مرفوعة'}</span></div>
+<div class="ir"><span class="ik">صور المصنع</span><span class="iv">${d.factoryImagesCount || 0} صورة</span></div>
+<div class="ir"><span class="ik">فيديوهات المصنع</span><span class="iv">${d.factoryVideosCount || 0} فيديو</span></div>
 </div>
-<div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة الطلب ←</a></div>
+<div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة المورد ←</a></div>
 </div>`),
   }),
 };
