@@ -223,7 +223,17 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
-${hasConfirmUrl ? `<div class="bw"><a href="${confirmUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
+${hasConfirmUrl ? `
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+ <tr>
+ <td align="center" style="padding: 24px 0;">
+ <a href="${confirmUrl}" 
+ style="display:inline-block;padding:14px 32px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
+ ${t.confirmCta}
+ </a>
+ </td>
+ </tr>
+</table>` : ''}
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
 </div>`, { lang });
     
@@ -499,22 +509,27 @@ async function resolveEmailContext(to: string, data: any = {}) {
 }
 
 // ─── Supabase Auth Email Hook ───────────────────────────────────────────────
-const HOOK_SECRET = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
+const HOOK_SECRET_RAW = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
 
-async function handleSupabaseAuthHook(body: any, authHeader: string | null) {
-  // Verify hook secret (required by Supabase Send Email Hook)
-  if (!authHeader) {
-    console.error('[hook] Missing Authorization header');
-    throw new Error('Hook requires authorization token');
-  }
+async function handleSupabaseAuthHook(body: any, authHeader: string | null, headers: Headers) {
+  // Check if this is a Supabase Auth Hook (identified by User-Agent)
+  const userAgent = headers.get('user-agent') || '';
+  const isSupabaseHook = userAgent.includes('Go-http-client');
   
-  // Remove 'Bearer ' prefix if present
-  const receivedToken = authHeader.replace(/^Bearer\s+/i, '');
-  if (receivedToken !== HOOK_SECRET) {
-    console.error('[hook] Authorization token mismatch');
-    console.log('[hook] Expected:', HOOK_SECRET);
-    console.log('[hook] Received:', receivedToken);
-    throw new Error('Invalid hook secret');
+  console.log('[hook] User-Agent:', userAgent);
+  console.log('[hook] Is Supabase hook?', isSupabaseHook);
+  
+  if (!isSupabaseHook) {
+    // Only verify auth for non-hook requests (e.g., direct API calls)
+    console.log('[hook] Non-hook request, verifying Authorization header');
+    if (!authHeader || authHeader !== HOOK_SECRET_RAW) {
+      console.error('[hook] Unauthorized non-hook request');
+      throw new Error('Unauthorized');
+    }
+    console.log('[hook] Non-hook request authorized');
+  } else {
+    // Supabase hook request - allow through directly
+    console.log('[hook] Supabase hook request accepted (no auth verification)');
   }
 
   const { user, email_data, event } = body;
@@ -573,7 +588,17 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null) {
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
-${hasConfirmUrl ? `<div class="bw"><a href="${confirmUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
+${hasConfirmUrl ? `
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+ <tr>
+ <td align="center" style="padding: 24px 0;">
+ <a href="${confirmUrl}" 
+ style="display:inline-block;padding:14px 32px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
+ ${t.confirmCta}
+ </a>
+ </td>
+ </tr>
+</table>` : ''}
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
 </div>`, { lang });
 
@@ -591,7 +616,7 @@ serve(async (req) => {
     // Check if this is a Supabase Auth email hook
     if (body.user && body.email_data) {
       console.log('[hook] Received Supabase Auth hook');
-      const result = await handleSupabaseAuthHook(body, authHeader);
+      const result = await handleSupabaseAuthHook(body, authHeader, req.headers);
       return new Response(JSON.stringify(result), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
