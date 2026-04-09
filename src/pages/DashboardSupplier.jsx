@@ -1890,6 +1890,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
 
+    // Bug 1 — Verification submits automatically without reaching step 3
+    if (verificationStep !== 3) {
+      setVerificationSaved(false);
+      setVerificationMsg(t.verificationReviewRequired);
+      setVerificationStep(3);
+      return;
+    }
+
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
@@ -1901,13 +1909,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
       setVerificationStep(2);
-      return;
-    }
-
-    if (verificationStep !== 3) {
-      setVerificationSaved(false);
-      setVerificationMsg(t.verificationReviewRequired);
-      setVerificationStep(3);
       return;
     }
 
@@ -1992,6 +1993,36 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       });
     } catch (emailError) {
       console.error('supplier verification submitted email error:', emailError);
+    }
+
+    // Bug 2 — Admin email arrives empty
+    try {
+      await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'admin_supplier_verification',
+          data: {
+            recipientUserId: user.id,
+            name: mergedProfile.company_name || mergedProfile.full_name || user.email?.split('@')[0] || 'Supplier',
+            email: user.email,
+            companyName: mergedProfile.company_name || '',
+            city: mergedProfile.city || '',
+            country: mergedProfile.country || '',
+            whatsapp: mergedProfile.whatsapp || '',
+            wechat: mergedProfile.wechat || '',
+            tradeLink: mergedProfile.trade_link || '',
+            regNumber: verification.reg_number || '',
+            yearsExperience: verification.years_experience || '',
+            licensePhoto: verification.license_photo || '',
+            factoryImagesCount: verificationImages.length,
+            factoryVideosCount: verificationVideos.length,
+            lang,
+          },
+        }),
+      });
+    } catch (adminEmailError) {
+      console.error('admin supplier verification email error:', adminEmailError);
     }
 
     setVerificationSaved(true);

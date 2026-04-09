@@ -461,6 +461,68 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 </div>`),
     });
   },
+
+  supplier_verification_submitted: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: {
+        subject: 'استلمنا طلب التحقق — مَعبر',
+        eyebrow: 'Verification Received',
+        title: `أهلاً ${d.name || ''}،`,
+        body: 'استلمنا طلب التحقق التجاري الخاص بك. سيراجع فريق مَعبر بياناتك ويردّ عليك خلال 24 إلى 72 ساعة.',
+        cta: 'عرض حالة الحساب ←',
+      },
+      en: {
+        subject: 'Verification request received — Maabar',
+        eyebrow: 'Verification Received',
+        title: `Hello ${d.name || ''},`,
+        body: 'We received your business verification request. The Maabar team will review your details and respond within 24 to 72 hours.',
+        cta: 'View account status →',
+      },
+      zh: {
+        subject: '我们已收到您的认证申请 — Maabar',
+        eyebrow: 'Verification Received',
+        title: `${d.name || ''}，您好`,
+        body: '我们已收到您的企业认证申请，Maabar 团队将在 24 至 72 小时内审核您的资料并回复。',
+        cta: '查看账户状态 →',
+      },
+    } as any)[lang] || { subject: 'Verification request received — Maabar', eyebrow: 'Verification Received', title: `Hello ${d.name || ''},`, body: 'We received your verification request and will respond within 24–72 hours.', cta: 'View account status →' };
+    return ({
+      subject: t.subject,
+      html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 24px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=verification" class="bt">${t.cta}</a></div>
+</div>`, { lang }),
+    });
+  },
+
+  admin_supplier_verification: (d) => ({
+    subject: `طلب تحقق مورد — ${d.companyName || d.email || ''}`,
+    to: ADMIN_EMAIL,
+    html: wrap(`
+<div class="bd">
+<p class="gr">Supplier Verification Request</p>
+<p class="tg">طلب تحقق جديد يحتاج مراجعة</p>
+<div class="ib">
+<p class="il">بيانات المورد</p>
+<div class="ir"><span class="ik">اسم الشركة</span><span class="iv">${d.companyName || '-'}</span></div>
+<div class="ir"><span class="ik">الإيميل</span><span class="iv">${d.email || '-'}</span></div>
+<div class="ir"><span class="ik">الدولة / المدينة</span><span class="iv">${[d.country, d.city].filter(Boolean).join(' / ') || '-'}</span></div>
+<div class="ir"><span class="ik">WhatsApp</span><span class="iv">${d.whatsapp || '-'}</span></div>
+<div class="ir"><span class="ik">WeChat</span><span class="iv">${d.wechat || '-'}</span></div>
+<div class="ir"><span class="ik">الرابط التجاري</span><span class="iv">${d.tradeLink || '-'}</span></div>
+<div class="ir"><span class="ik">رقم السجل</span><span class="iv">${d.regNumber || '-'}</span></div>
+<div class="ir"><span class="ik">سنوات الخبرة</span><span class="iv">${d.yearsExperience || '-'}</span></div>
+<div class="ir"><span class="ik">رخصة التصنيع</span><span class="iv">${d.licensePhoto ? 'مرفقة' : '-'}</span></div>
+<div class="ir"><span class="ik">صور المعمل</span><span class="iv">${d.factoryImagesCount || 0}</span></div>
+<div class="ir"><span class="ik">فيديوهات المعمل</span><span class="iv">${d.factoryVideosCount || 0}</span></div>
+</div>
+<div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة الطلب ←</a></div>
+</div>`),
+  }),
 };
 
 // ─── Send helper ─────────────────────────────────────────────────────────────
