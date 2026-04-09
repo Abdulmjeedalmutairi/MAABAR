@@ -527,7 +527,8 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null) {
   }
 
   // Build confirmation URL (Supabase Auth verification endpoint)
-  const confirmUrl = `https://utzalmszfqfcofywfetv.supabase.co/auth/v1/verify?token=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
+  const baseUrl = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
+  const confirmUrl = `${baseUrl}/auth/v1/verify?token=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
 
   console.log('[hook] Processing confirmation for:', email, 'lang:', lang, 'confirmUrl length:', confirmUrl.length);
 
