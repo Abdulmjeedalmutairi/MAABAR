@@ -499,16 +499,22 @@ async function resolveEmailContext(to: string, data: any = {}) {
 }
 
 // ─── Supabase Auth Email Hook ───────────────────────────────────────────────
-const HOOK_SECRET = 'v1,whsec_yk/9+FQ3Y5OlNPdMAoit5pB1yR3ZMzQTVYJTVdU1Y2x4+GXoceU7wH1mC7uo9dY9OO9cvFf73lA41+9R';
+const HOOK_SECRET = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
 
 async function handleSupabaseAuthHook(body: any, authHeader: string | null) {
-  // Verify hook secret (optional but recommended)
-  if (authHeader) {
-    const expected = `Bearer ${HOOK_SECRET}`;
-    if (authHeader !== expected) {
-      console.error('[hook] Authorization header mismatch');
-      throw new Error('Invalid hook secret');
-    }
+  // Verify hook secret (required by Supabase Send Email Hook)
+  if (!authHeader) {
+    console.error('[hook] Missing Authorization header');
+    throw new Error('Hook requires authorization token');
+  }
+  
+  // Remove 'Bearer ' prefix if present
+  const receivedToken = authHeader.replace(/^Bearer\s+/i, '');
+  if (receivedToken !== HOOK_SECRET) {
+    console.error('[hook] Authorization token mismatch');
+    console.log('[hook] Expected:', HOOK_SECRET);
+    console.log('[hook] Received:', receivedToken);
+    throw new Error('Invalid hook secret');
   }
 
   const { user, email_data, event } = body;

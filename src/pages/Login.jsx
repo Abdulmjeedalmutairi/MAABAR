@@ -694,8 +694,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         <div style={{
           position: 'fixed',
           inset: 0,
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)',
-          backgroundSize: '56px 56px',
+          backgroundImage: 'none',
           pointerEvents: 'none',
           zIndex: 0,
         }} />
