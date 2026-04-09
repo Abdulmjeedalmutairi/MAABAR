@@ -1056,7 +1056,7 @@ export default function Requests({ lang, user, profile }) {
                     <span>{r.quantity || '—'}</span>
                     {(translatedRequests[r.id]?.description || r.description) && (
                       <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>
-                        {parseJsonIfNeeded(translatedRequests[r.id]?.description || r.description || '').substring(0, 60)}…
+                        {(parseJsonIfNeeded(translatedRequests[r.id]?.description) || parseJsonIfNeeded(r.description) || '').substring(0, 60)}…
                       </span>
                     )}
                   </div>
