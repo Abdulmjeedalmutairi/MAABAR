@@ -174,7 +174,24 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
 </div>`, { lang }) });
   },
 
-  supplier_confirmation: (d) => {
+  supplier_confirmation: async (d) => {
+    if (!adminSb) throw new Error('No admin client');
+    
+    // Wait for user to be synced in Supabase Auth system
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    
+    const { data: linkData, error } = await adminSb.auth.admin.generateLink({
+      type: 'magiclink',
+      email: d.email,
+      options: { redirectTo: 'https://maabar.io/auth/callback' },
+    });
+    
+    if (error) {
+      console.error('generateLink failed:', error);
+      throw error;
+    }
+    
+    const confirmUrl = linkData?.properties?.action_link || '#';
     const lang = d.lang || 'ar';
     const t = ({
       ar: { 
@@ -206,8 +223,6 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
       confirmCta: 'Activate Account →' 
     };
     
-    // Use redirectTo (provided by Login.jsx) or confirmationUrl as fallback
-    const confirmUrl = d.redirectTo || d.confirmationUrl || '#';
     const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
     const html = wrap(`
 <div class="bd">
