@@ -130,7 +130,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
 
     if (Array.isArray(data) && data.length > 0) {
       const productsWithSuppliers = await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles');
-      setProducts(productsWithSuppliers.filter((product) => isSupplierPubliclyVisible(product.profiles?.status)));
+      setProducts(productsWithSuppliers);
       setLoading(false);
       return;
     }
