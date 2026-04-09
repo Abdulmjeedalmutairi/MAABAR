@@ -258,7 +258,7 @@ export default function Requests({ lang, user, profile }) {
     setLoading(true);
     let query = sb
       .from('requests')
-      .select('*, profiles!requests_buyer_id_fkey(full_name, company_name)')
+      .select('*, profiles!buyer_id(full_name, company_name)')
       .in('status', ['open', 'offers_received'])
       .or('sourcing_mode.is.null,sourcing_mode.eq.direct')
       .order('created_at', { ascending: false });
