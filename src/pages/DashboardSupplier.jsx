@@ -79,6 +79,15 @@ const VERIFICATION_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 
 
 // جلب سعر الصرف USD → SAR
+const getUsdToCny = async () => {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    return data?.rates?.CNY || 7.25;
+  } catch {
+    return 7.25;
+  }
+};
 const getUsdToSar = async () => {
   try {
     const res = await fetch('https://open.er-api.com/v6/latest/USD');
@@ -1301,6 +1310,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [product, setProduct]               = useState(emptyProduct);
   const [usdRate, setUsdRate]               = useState(3.75);
   useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
+  const [cnyRate, setCnyRate] = useState(7.25);
+  useEffect(() => { getUsdToCny().then(r => setCnyRate(r)); }, []);
   const [editingProduct, setEditingProduct] = useState(null);
   const [saving, setSaving]                 = useState(false);
   const [pendingTracking, setPendingTracking] = useState([]);
@@ -3127,7 +3138,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                                 border: '1px solid var(--border-subtle)', borderRadius: 3,
                                 fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
                               }}>
-                                ≈ {(parseFloat(offers[r.id]?.price || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                                {lang === 'ar' ? `≈ ${(parseFloat(offers[r.id]?.price || 0) * (usdRate || 3.75)).toFixed(2)} ﷼` : lang === 'zh' ? `≈ ${(parseFloat(offers[r.id]?.price || 0) * (cnyRate || 7.25)).toFixed(2)} ¥` : null}
                               </div>
                             )}
                           </div>
@@ -3153,7 +3164,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                                 border: '1px solid var(--border-subtle)', borderRadius: 3,
                                 fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
                               }}>
-                                ≈ {(parseFloat(offers[r.id]?.shippingCost || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
+                                {lang === 'ar' ? `≈ ${(parseFloat(offers[r.id]?.shippingCost || 0) * (usdRate || 3.75)).toFixed(2)} ﷼` : lang === 'zh' ? `≈ ${(parseFloat(offers[r.id]?.shippingCost || 0) * (cnyRate || 7.25)).toFixed(2)} ¥` : null}
                               </div>
                             )}
                           </div>
