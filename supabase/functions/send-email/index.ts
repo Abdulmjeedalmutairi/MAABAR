@@ -209,16 +209,24 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
     // Use redirectTo (provided by Login.jsx) or confirmationUrl as fallback
     const confirmUrl = d.redirectTo || d.confirmationUrl || '#';
     const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
-    return ({ 
-      subject: t.subject, 
-      html: wrap(`
+    const html = wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
 ${hasConfirmUrl ? `<div class="bw"><a href="${confirmUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
-</div>`, { lang }) 
-    });
+</div>`, { lang });
+    
+    // Ensure html is a non-empty string
+    if (!html || typeof html !== 'string') {
+      console.error('Generated html is invalid:', html);
+      throw new Error('Failed to generate email HTML');
+    }
+    
+    return { 
+      subject: t.subject, 
+      html
+    };
   },
 
   trader_welcome: (d) => {
