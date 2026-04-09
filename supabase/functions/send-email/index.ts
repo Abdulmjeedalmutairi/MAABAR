@@ -13,21 +13,6 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ─── UPDATED: Brand lockup — light theme ────────────────────────────────────
-function brandLockup(variant = 'header') {
-  const isHeader = variant === 'header';
-  const pad = isHeader ? '28px 22px 24px' : '0';
-  const titleSize = isHeader ? 22 : 16;
-  return `
-  <div style="text-align:center;width:100%;padding:${pad};background:#FAF8F5;">
-    <div style="font-size:${titleSize}px;line-height:1.2;font-weight:700;color:rgba(0,0,0,0.88);letter-spacing:2.4px;font-family:Georgia,serif;">
-      مَعبر &nbsp;<span style="color:rgba(0,0,0,0.22);">|</span>&nbsp; MAABAR
-    </div>
-    <div style="font-size:11px;line-height:1.2;color:rgba(0,0,0,0.22);margin-top:6px;letter-spacing:2px;font-family:Arial,sans-serif;">迈巴尔</div>
-  </div>`;
-}
-
-// ─── UPDATED: Wrap — light theme ────────────────────────────────────────────
 function localeMeta(lang = 'ar') {
   if (lang === 'zh') return { lang: 'zh', dir: 'ltr', align: 'left', font: `'Segoe UI', Arial, sans-serif` };
   if (lang === 'en') return { lang: 'en', dir: 'ltr', align: 'left', font: `'Segoe UI', Arial, sans-serif` };
@@ -38,7 +23,6 @@ function wrap(content, options: any = {}) {
   const locale = localeMeta(options.lang || 'ar');
   const subject = options.subject || 'مَعبر';
 
-  // Inline style tokens — light theme
   const grStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:rgba(0,0,0,0.22);margin:0 0 10px;text-transform:uppercase;';
   const tgStyle = 'font-family:Georgia,serif;font-size:22px;line-height:1.4;font-weight:700;color:rgba(0,0,0,0.88);margin:0 0 16px;';
   const ibStyle = 'background-color:#FAF8F5;border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:16px 18px;margin:0 0 20px;';
@@ -121,8 +105,11 @@ ${rendered}
 </html>`;
 }
 
-// ─── Templates — unchanged ───────────────────────────────────────────────────
+// ─── Templates ───────────────────────────────────────────────────────────────
 const templates: Record<string, (d: any) => any> = {
+
+
+
   admin_new_supplier: (d) => ({
     subject: `طلب انضمام مورد جديد — ${d.companyName || ''}`,
     to: ADMIN_EMAIL,
@@ -219,14 +206,16 @@ ${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t
       confirmCta: 'Activate Account →' 
     };
     
-    const hasConfirmUrl = d.confirmationUrl && d.confirmationUrl !== '#';
+    // Use redirectTo (provided by Login.jsx) or confirmationUrl as fallback
+    const confirmUrl = d.redirectTo || d.confirmationUrl || '#';
+    const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
     return ({ 
       subject: t.subject, 
       html: wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
-${hasConfirmUrl ? `<div class="bw"><a href="${d.confirmationUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
+${hasConfirmUrl ? `<div class="bw"><a href="${confirmUrl}" class="bt">${t.confirmCta}</a></div>` : ''}
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body}</p>
 </div>`, { lang }) 
     });
@@ -425,9 +414,8 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
     const paragraphs = Array.isArray(d.paragraphs) ? d.paragraphs : [];
     const renderedParagraphs = paragraphs.map((p: string) => `<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 16px;">${p}</p>`).join('');
     const renderedInfoRows = infoRows.length
-      ? infoRows.map((row: any, i: number) => `<div class="ir"><span class="ik">${row?.label || '-'}</span><span class="iv">${row?.value || '-'}</span></div>`).join('')
+      ? infoRows.map((row: any) => `<div class="ir"><span class="ik">${row?.label || '-'}</span><span class="iv">${row?.value || '-'}</span></div>`).join('')
       : `<div class="ir"><span class="ik">التفاصيل</span><span class="iv">—</span></div>`;
-
     return ({
       subject: d.subject || 'مَعبر',
       html: wrap(`
