@@ -113,7 +113,7 @@ const templates: Record<string, (d: any) => any> = {
     // انتظر حتى يتسجل المستخدم في Supabase
     await new Promise(resolve => setTimeout(resolve, 2000));
     const { data: linkData, error } = await adminSb.auth.admin.generateLink({
-      type: 'signup',
+      type: 'magiclink',
       email: d.email,
       options: { redirectTo: d.redirectTo || 'https://maabar.io/dashboard' },
     });
