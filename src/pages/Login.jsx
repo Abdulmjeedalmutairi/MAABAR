@@ -557,6 +557,15 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             speciality: trimValue(speciality),
           },
         });
+        // BUG 3 — No confirmation email to supplier after registration
+        await sendMaabarEmail({
+          type: 'supplier_application_received',
+          data: {
+            email: trimValue(email),
+            companyName: trimValue(supCompany),
+            lang: 'en',
+          },
+        });
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);
       }

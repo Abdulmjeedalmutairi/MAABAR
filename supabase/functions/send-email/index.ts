@@ -523,6 +523,43 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 <div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة المورد ←</a></div>
 </div>`),
   }),
+
+  // BUG 3 — No confirmation email to supplier after registration
+  supplier_application_received: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      en: {
+        subject: 'Maabar — Application Received | 申请已收到',
+        eyebrow: 'Application Received',
+        title: `Hello ${d.companyName || ''},`,
+        body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 hours.',
+        cta: 'Login to Maabar →',
+      },
+      zh: {
+        subject: 'Maabar — Application Received | 申请已收到',
+        eyebrow: '申请已收到',
+        title: `${d.companyName || ''}，您好`,
+        body: '我们已收到您的供应商申请。Maabar 团队将在 24 小时内审核您的资料并与您联系。',
+        cta: '登录 Maabar →',
+      },
+    } as any)[lang] || {
+      subject: 'Maabar — Application Received | 申请已收到',
+      eyebrow: 'Application Received',
+      title: `Hello ${d.companyName || ''},`,
+      body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 hours.',
+      cta: 'Login to Maabar →',
+    };
+    return {
+      subject: t.subject,
+      html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 24px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io" class="bt">${t.cta}</a></div>
+</div>`, { lang }),
+    };
+  },
 };
 
 // ─── Send helper ─────────────────────────────────────────────────────────────
@@ -600,7 +637,11 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null, head
   }
 
   const email = user.email;
-  const lang = user.user_metadata?.lang || 'ar';
+  // BUG 1 — Verification email sent in Arabic to Chinese suppliers
+  // If user is registering as a supplier, default to 'en' regardless of user_metadata.lang
+  const userLang = user.user_metadata?.lang || 'ar';
+  const userRole = user.user_metadata?.role || user.app_metadata?.role;
+  const lang = userRole === 'supplier' ? 'en' : userLang;
   const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
   const token = email_data.token_hash;
   const redirectTo = email_data.redirect_to || 'https://maabar.io/auth/callback';

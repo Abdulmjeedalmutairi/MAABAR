@@ -1415,6 +1415,24 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
 
+  // BUG 4 — Refreshing the page resets the verification flow
+  useEffect(() => {
+    if (!user || !profile) return;
+    // If supplier is registered but not yet verified, set flag
+    if (profile.status === 'registered' || profile.status === 'pending') {
+      localStorage.setItem('maabar_supplier_verified', 'true');
+    }
+  }, [user, profile]);
+
+  // On page load, if flag exists and user is on verification tab, keep them there
+  useEffect(() => {
+    if (!user) return;
+    const isVerified = localStorage.getItem('maabar_supplier_verified') === 'true';
+    if (isVerified && activeTab !== 'verification' && supplierState.isApplicationStage) {
+      setActiveTab('verification');
+    }
+  }, [user, activeTab, supplierState.isApplicationStage]);
+
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
     loadStats(); loadPendingTracking(); loadRejectedOffers();
@@ -1529,9 +1547,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (isVerificationLocked) return;
+    // BUG 2 — Prevent auto‑jump: only block step from exceeding max reachable step,
+    // never automatically increase verificationStep.
     if (verificationStep > maxAccessibleVerificationStep) {
       setVerificationStep(maxAccessibleVerificationStep);
     }
+    // No else branch — we never increase verificationStep automatically.
   }, [isVerificationLocked, maxAccessibleVerificationStep, verificationStep]);
 
   // Save product form draft to sessionStorage on every change
@@ -2026,6 +2047,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     setVerificationSaved(true);
+    // Clear the verification flag after successful submission
+    localStorage.removeItem('maabar_supplier_verified');
     setVerificationMsg(t.verificationSubmitted);
     setVerificationStep(3);
   };
