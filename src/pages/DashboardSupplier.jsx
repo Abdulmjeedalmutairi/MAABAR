@@ -1485,7 +1485,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   
     useEffect(() => {
-      
+
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tab) {
@@ -2219,6 +2219,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
     setVerificationStep(3);
+    setActiveTab('overview');
+    if (dashboardUiStateKey) sessionStorage.removeItem(dashboardUiStateKey);
   };
 
   const savePayout = async () => {
@@ -4373,7 +4375,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           ))}
                         </div>
                         <div className="vf-fu" style={{ animationDelay: '0.1s', display: 'grid', gap: 10 }}>
-                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { await saveVerification(); if (!verificationMsg || verificationSaved) setShowVfSuccess(true); }}>
+                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { await saveVerification(); if (verificationSaved) setShowVfSuccess(true); }}>
                             {savingVerification
                               ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '提交中...' : 'Submitting...')
                               : (isAr ? 'إرسال طلب التحقق ←' : lang === 'zh' ? '提交认证申请 →' : 'Submit verification request →')}
