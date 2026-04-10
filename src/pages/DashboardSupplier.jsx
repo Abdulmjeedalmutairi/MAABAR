@@ -4309,11 +4309,11 @@ setVerification(prev => ({
                           )}
                         </div>
 
-                        {/* Factory video — optional */}
+                        {/* Factory video — required */}
                         <div className="vf-fu" style={{ animationDelay: '0.3s', marginBottom: 12 }}>
                           <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
                             {isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory Video'}
-                            <span style={{ fontWeight: 300, marginRight: 6 }}>— {isAr ? 'اختياري' : lang === 'zh' ? '可选' : 'optional'}</span>
+                            <span style={{ color: 'var(--error, #e53e3e)', marginRight: 4 }}>*</span>
                           </p>
                           {verificationVideos.length > 0 ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
