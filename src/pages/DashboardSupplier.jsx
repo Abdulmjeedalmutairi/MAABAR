@@ -1505,7 +1505,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const rawDraft = sessionStorage.getItem(verificationDraftKey);
     if (!rawDraft) {
-      console.log('[step-caller-1]', 1);
       setVerificationStep(1);
       setDraftSavedAt('');
       return;
@@ -1524,7 +1523,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
         }));
       }
-      console.log('[step-caller-2]', Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
+
       setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
       setDraftSavedAt(parsed?.savedAt || '');
     } catch {
@@ -1554,7 +1553,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     // never automatically increase verificationStep.
     // Also prevent auto‑jump back when deleting a photo on step 3 if verification is not locked.
     if (!isVerificationLocked && verificationStep > maxAccessibleVerificationStep && verificationStep !== 3) {
-      console.log('[step-caller-3]', maxAccessibleVerificationStep);
+
       setVerificationStep(maxAccessibleVerificationStep);
     }
     // No else branch — we never increase verificationStep automatically.
@@ -1920,7 +1919,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (verificationStep !== 3) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationReviewRequired);
-      console.log('[step-caller-4]', 3);
+
       setVerificationStep(3);
       return;
     }
@@ -1928,7 +1927,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
-      console.log('[step-caller-5]', 1);
+
       setVerificationStep(1);
       return;
     }
@@ -1936,7 +1935,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!verificationProgress.hasVerificationBasics) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
-      console.log('[step-caller-6]', 2);
+
       setVerificationStep(2);
       return;
     }
@@ -2058,7 +2057,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     // Clear the verification flag after successful submission
     localStorage.removeItem('maabar_supplier_verified');
     setVerificationMsg(t.verificationSubmitted);
-    console.log('[step-caller-7]', 3);
+
     setVerificationStep(3);
   };
 
@@ -2173,7 +2172,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setVerificationMsg(isAr ? 'تم حفظ ملف الشركة. الآن أرفق مستندات التحقق ثم أكمل الإرسال النهائي.' : lang === 'zh' ? '公司资料已保存。现在请上传认证文件，然后完成最终提交。' : 'Company profile saved. Now add your verification files, then complete the final submission.');
       setActiveTab('verification');
       if (typeof nextVerificationStep === 'number') {
-        console.log('[step-caller-8]', Math.min(3, Math.max(1, nextVerificationStep)));
+
         setVerificationStep(Math.min(3, Math.max(1, nextVerificationStep)));
       }
     }
@@ -2762,7 +2761,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const openVerificationFlow = () => {
     setActiveTab('verification');
     if (!isVerificationLocked) {
-      console.log('[step-caller-9]', verificationProgress.firstIncompleteStep);
+
       setVerificationStep(verificationProgress.firstIncompleteStep);
     }
   };
@@ -3799,7 +3798,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <button
                         key={label}
                         type="button"
-                        onClick={() => { console.log('[step-caller-10]', stepNumber); canOpenStep && setVerificationStep(stepNumber); }}
+                        onClick={() => { canOpenStep && setVerificationStep(stepNumber); }}
                         disabled={!canOpenStep}
                         style={{
                           textAlign: isAr ? 'right' : 'left',
@@ -4070,7 +4069,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </div>
 
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <button onClick={() => { console.log('[step-caller-11]', 1); setVerificationStep(1); }} className="btn-outline" style={{ minHeight: 46, padding: '0 18px', fontSize: 12 }}>{isAr ? 'رجوع لبيانات الشركة' : lang === 'zh' ? '返回公司资料' : 'Back to company profile'}</button>
+                        <button onClick={() => { setVerificationStep(1); }} className="btn-outline" style={{ minHeight: 46, padding: '0 18px', fontSize: 12 }}>{isAr ? 'رجوع لبيانات الشركة' : lang === 'zh' ? '返回公司资料' : 'Back to company profile'}</button>
                         <button
                           onClick={() => {
                             const isStepReady = Boolean(String(verification.reg_number || '').trim()) && Boolean(String(verification.years_experience || '').trim()) && Boolean(String(verification.license_photo || '').trim()) && verificationImages.length > 0;
@@ -4080,7 +4079,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                               return;
                             }
                             setVerificationMsg('');
-                            console.log('[step-caller-12]', 3);
+
                             setVerificationStep(3);
                           }}
                           className="btn-primary"
@@ -4098,7 +4097,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 18, background: 'var(--bg-base)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 14 }}>
                             <p style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', margin: 0 }}>{isAr ? 'الملف الأساسي' : lang === 'zh' ? '基础资料' : 'Basic profile'}</p>
-                            <button onClick={() => { console.log('[step-caller-13]', 1); setVerificationStep(1); }} className="btn-outline" style={{ minHeight: 34, padding: '0 12px', fontSize: 10 }}>{isAr ? 'تعديل' : lang === 'zh' ? '编辑' : 'Edit'}</button>
+                            <button onClick={() => { setVerificationStep(1); }} className="btn-outline" style={{ minHeight: 34, padding: '0 12px', fontSize: 10 }}>{isAr ? 'تعديل' : lang === 'zh' ? '编辑' : 'Edit'}</button>
                           </div>
                           {[ 
                             [t.companyName, settings.company_name || '—'],
@@ -4118,7 +4117,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 18, background: 'var(--bg-base)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 14 }}>
                             <p style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', margin: 0 }}>{isAr ? 'التحقق والوسائط' : lang === 'zh' ? '认证与媒体' : 'Verification & media'}</p>
-                            <button onClick={() => { console.log('[step-caller-14]', 2); setVerificationStep(2); }} className="btn-outline" style={{ minHeight: 34, padding: '0 12px', fontSize: 10 }}>{isAr ? 'تعديل' : lang === 'zh' ? '编辑' : 'Edit'}</button>
+                            <button onClick={() => { setVerificationStep(2); }} className="btn-outline" style={{ minHeight: 34, padding: '0 12px', fontSize: 10 }}>{isAr ? 'تعديل' : lang === 'zh' ? '编辑' : 'Edit'}</button>
                           </div>
                           {[ 
                             [t.regNumber, verification.reg_number || '—'],
@@ -4147,7 +4146,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </div>
 
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <button onClick={() => { console.log('[step-caller-15]', 2); setVerificationStep(2); }} className="btn-outline" style={{ minHeight: 46, padding: '0 18px', fontSize: 12 }}>{isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}</button>
+                        <button onClick={() => { setVerificationStep(2); }} className="btn-outline" style={{ minHeight: 46, padding: '0 18px', fontSize: 12 }}>{isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}</button>
                         <button onClick={saveVerification} disabled={savingVerification} className="btn-primary" style={{ padding: '12px 28px', minHeight: 46, fontSize: 13 }}>
                           {savingVerification ? t.saving : (isAr ? 'إرسال طلب التحقق' : lang === 'zh' ? '提交认证申请' : 'Submit verification request')}
                         </button>
