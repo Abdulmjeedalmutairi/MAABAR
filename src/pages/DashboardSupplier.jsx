@@ -1543,7 +1543,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         factory_images: normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
         factory_videos: normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
       },
-      step: verificationStep,
+      step: Math.min(verificationStep, 2),
       savedAt,
     }));
     setDraftSavedAt(savedAt);
