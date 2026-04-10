@@ -1704,7 +1704,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setPayout(buildPayoutState(profile));
   }, [profile, displayCurrency, verificationDraftKey]);
 
-  (() => {
+  useEffect(() => {
     if (!verificationDraftKey) return;
 
     const rawDraft = sessionStorage.getItem(verificationDraftKey);
@@ -1722,7 +1722,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       if (parsed?.verification) {
         setVerification((prev) => ({
           ...prev,
-          ...puseEffectarsed.verification,
+          ...parsed.verification,
           factory_images: normalizeVerificationMedia(parsed.verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
         }));
@@ -2909,7 +2909,7 @@ setVerification(prev => ({
   const openVerificationFlow = () => {
     setActiveTab('verification');
     if (!isVerificationLocked) {
-      setVerificationStep(verificationProgress.firstIncompleteStep);
+      setVerificationStep(Math.min(verificationProgress.firstIncompleteStep, 2));
     }
   };
 
