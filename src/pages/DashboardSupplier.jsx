@@ -1635,6 +1635,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
+  const saveDraftFirstRunRef = useRef(true);
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
@@ -1735,6 +1736,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   }, [verificationDraftKey]);
 
   useEffect(() => {
+    if (saveDraftFirstRunRef.current) {
+      saveDraftFirstRunRef.current = false;
+      return;
+    }
     if (!verificationDraftKey || isVerificationLocked) return;
 
     const savedAt = new Date().toISOString();
@@ -3032,13 +3037,6 @@ setVerification(prev => ({
                         <p style={{ fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1.8, marginBottom: 16, ...arFont }}>
                           {verificationStatusBody}
                         </p>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <button onClick={() => setActiveTab(supplierState.isUnderReviewStage ? 'verification' : 'settings')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
-                            {supplierState.isUnderReviewStage
-                              ? (isAr ? 'عرض حالة التحقق' : lang === 'zh' ? '查看认证状态' : 'View verification status')
-                              : settingsCtaLabel}
-                          </button>
-                        </div>
                       </div>
                       <div style={{ minWidth: 220, maxWidth: 280, flex: '1 1 220px' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8, ...arFont }}>{t.onboardingProgress}</p>
