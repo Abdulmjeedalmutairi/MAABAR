@@ -1704,7 +1704,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setPayout(buildPayoutState(profile));
   }, [profile, displayCurrency, verificationDraftKey]);
 
-  useEffect(() => {
+  (() => {
     if (!verificationDraftKey) return;
 
     const rawDraft = sessionStorage.getItem(verificationDraftKey);
@@ -1722,7 +1722,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       if (parsed?.verification) {
         setVerification((prev) => ({
           ...prev,
-          ...parsed.verification,
+          ...puseEffectarsed.verification,
           factory_images: normalizeVerificationMedia(parsed.verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
         }));
@@ -1751,12 +1751,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setDraftSavedAt(savedAt);
   }, [verificationDraftKey, settings, verification, verificationStep, isVerificationLocked]);
 
-  useEffect(() => {
-    if (isVerificationLocked) return;
-    if (verificationStep > maxAccessibleVerificationStep && maxAccessibleVerificationStep === 1) {
-      setVerificationStep(maxAccessibleVerificationStep);
-    }
-  }, [isVerificationLocked, maxAccessibleVerificationStep, verificationStep]);
+  
 
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
