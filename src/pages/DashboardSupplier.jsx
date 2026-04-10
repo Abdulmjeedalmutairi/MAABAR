@@ -1727,7 +1727,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
         }));
       }
-      setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
+      setVerificationStep(Math.min(2, Math.max(1, Number(parsed?.step) || 1)));
       setDraftSavedAt(parsed?.savedAt || '');
     } catch {
       sessionStorage.removeItem(verificationDraftKey);
