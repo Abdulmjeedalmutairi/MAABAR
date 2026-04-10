@@ -2143,6 +2143,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setProfile?.(mergedProfile);
     setSettings(buildSettingsState(mergedProfile, payload.preferred_display_currency || 'USD'));
     setSettingsSavedAt(savedAt);
+    setSettingsMsg(isAr ? 'تم حفظ البيانات بنجاح ✓' : lang === 'zh' ? '保存成功 ✓' : 'Saved successfully ✓');
 
     const shouldAdvanceIntoVerification = !supplierState.isUnderReviewStage
       && !supplierState.isApprovedStage
