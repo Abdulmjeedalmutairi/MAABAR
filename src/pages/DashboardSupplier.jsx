@@ -1765,12 +1765,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
     if (!user || isVerificationLocked) return;
     clearTimeout(verificationTextDebounceRef.current);
-    verificationTextDebounceRef.current = setTimeout(() => {
-      sb.from('profiles').update({
+    verificationTextDebounceRef.current = setTimeout(async () => {
+      await sb.from('profiles').update({
         reg_number: normalizeTextInput(verification.reg_number),
         years_experience: normalizeOptionalInteger(verification.years_experience),
         num_employees: normalizeOptionalInteger(verification.num_employees),
       }).eq('id', user.id);
+      await refreshProfile();
     }, 800);
     return () => clearTimeout(verificationTextDebounceRef.current);
   }, [verification.reg_number, verification.years_experience, verification.num_employees]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2012,6 +2013,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
   };
 
+  const refreshProfile = async () => {
+    const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (data) setProfile?.(data);
+  };
+
   const clearVerificationDraft = () => {
     if (verificationDraftKey) sessionStorage.removeItem(verificationDraftKey);
     setDraftSavedAt('');
@@ -2043,22 +2049,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     if (type === 'license') {
-  await sb.from('profiles').update({ license_photo: path }).eq('id', user.id);
-  setVerification(prev => ({ ...prev, license_photo: path }));
-  return;
-}
+      await sb.from('profiles').update({ license_photo: path }).eq('id', user.id);
+      setVerification(prev => ({ ...prev, license_photo: path }));
+      await refreshProfile();
+      return;
+    }
 
-await sb.from('profiles').update({ 
-  factory_images: [...normalizeVerificationMedia(verification.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
-  factory_photo: verification.factory_photo || path,
-}).eq('id', user.id);
-setVerification(prev => ({
-  ...prev,
-  factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
-  factory_photo: prev.factory_photo || path,
-}));
-
-    
+    await sb.from('profiles').update({
+      factory_images: [...normalizeVerificationMedia(verification.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
+      factory_photo: verification.factory_photo || path,
+    }).eq('id', user.id);
+    setVerification(prev => ({
+      ...prev,
+      factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
+      factory_photo: prev.factory_photo || path,
+    }));
+    await refreshProfile();
   };
 
   const uploadVerificationMedia = async (fileList, mediaType) => {
@@ -2120,6 +2126,7 @@ setVerification(prev => ({
       optionalKeys: ['factory_videos'],
       execute: (p) => sb.from('profiles').update(p).eq('id', user.id),
     });
+    await refreshProfile();
   };
 
   const removeVerificationMedia = (mediaType, pathToRemove) => {
