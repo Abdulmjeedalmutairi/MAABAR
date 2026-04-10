@@ -2024,9 +2024,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     if (type === 'license') {
-      setVerification(prev => ({ ...prev, license_photo: path }));
-      return;
-    }
+  await sb.from('profiles').update({ license_photo: path }).eq('id', user.id);
+  setVerification(prev => ({ ...prev, license_photo: path }));
+  return;
+}
+
+await sb.from('profiles').update({ 
+  factory_images: [...normalizeVerificationMedia(verification.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
+  factory_photo: verification.factory_photo || path,
+}).eq('id', user.id);
+setVerification(prev => ({
+  ...prev,
+  factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
+  factory_photo: prev.factory_photo || path,
+}));
 
     setVerification(prev => ({
       ...prev,
