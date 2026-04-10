@@ -2165,6 +2165,8 @@ setVerification(prev => ({
 
     if (error) {
       setSavingVerification(false);
+      console.log('submittedStatus:', submittedStatus);
+console.log('mergedProfile status:', profile?.status);
       setVerificationMsg(isAr ? 'تعذر حفظ بيانات التحقق. حاول مرة أخرى.' : lang === 'zh' ? '认证资料保存失败，请重试。' : 'Failed to save verification details. Please try again.');
       return;
     }
