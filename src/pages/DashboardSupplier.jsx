@@ -1256,6 +1256,222 @@ function SupplierJourneyStepper({ steps, isAr, lang }) {
     </div>
   );
 }
+// ─── MAABAR VERIFICATION FLOW — DESIGN SYSTEM ───────────────────────────────
+// أضف هذا الكود مباشرة فوق سطر:
+// /* ─── Main ───────────────────────────────── */
+// export default function DashboardSupplier({
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VF_C = {
+  cream: '#FAF8F5', paper: '#F4F1EC', white: '#FFFFFF',
+  ink: '#1A1814', ink60: '#6B6459', ink30: '#A09486',
+  ink10: '#E8E3DC', ink05: '#F0EBE4',
+  sage: '#3D6B4F', sageBg: 'rgba(61,107,79,0.07)', sageBr: 'rgba(61,107,79,0.22)',
+  amber: '#8B6914', amberBg: 'rgba(139,105,20,0.08)', amberBr: 'rgba(139,105,20,0.25)',
+};
+
+const VF_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+@keyframes vf-slideUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes vf-fadeIn    { from{opacity:0} to{opacity:1} }
+@keyframes vf-checkDraw { from{stroke-dashoffset:28} to{stroke-dashoffset:0} }
+@keyframes vf-lineGrow  { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+@keyframes vf-pulse     { 0%,100%{opacity:1}50%{opacity:0.35} }
+@keyframes vf-breathe   { 0%,100%{transform:scale(1)}50%{transform:scale(1.07)} }
+@keyframes vf-ringPulse {
+  0%  { box-shadow:0 0 0 0 rgba(61,107,79,0.3); }
+  60% { box-shadow:0 0 0 18px rgba(61,107,79,0); }
+  100%{ box-shadow:0 0 0 0 rgba(61,107,79,0); }
+}
+
+.vf-fu { animation: vf-slideUp 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.vf-fi { animation: vf-fadeIn 0.45s ease both; }
+
+.vf-field-wrap { position: relative; margin-bottom: 0; }
+.vf-label {
+  display: block; font-size: 12px; color: #A09486;
+  font-family: 'Tajawal', sans-serif; font-weight: 400;
+  margin-bottom: 7px; transition: color 0.2s;
+}
+.vf-field-wrap:focus-within .vf-label { color: #1A1814; }
+.vf-input {
+  width: 100%; background: none; border: none;
+  border-bottom: 1px solid #E8E3DC; outline: none;
+  font-size: 16px; color: #1A1814;
+  font-family: 'Tajawal', sans-serif; font-weight: 400;
+  padding: 8px 0 10px; transition: border-color 0.25s;
+  border-radius: 0; line-height: 1.5;
+}
+.vf-input:focus { border-bottom-color: #1A1814; }
+.vf-input::placeholder { color: #C8BFB0; font-weight: 300; }
+.vf-underline {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: #1A1814; transform-origin: left; transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1); pointer-events: none;
+}
+.vf-field-wrap:focus-within .vf-underline { transform: scaleX(1); }
+.vf-select {
+  width: 100%; background: none; border: none;
+  border-bottom: 1px solid #E8E3DC; outline: none;
+  font-size: 16px; color: #1A1814;
+  font-family: 'Tajawal', sans-serif; font-weight: 400;
+  padding: 8px 0 10px; appearance: none; cursor: pointer;
+  transition: border-color 0.25s; border-radius: 0;
+}
+.vf-select:focus { border-bottom-color: #1A1814; }
+
+.vf-btn-ink {
+  display: block; width: 100%; padding: 15px 28px;
+  background: #1A1814; color: #FAF8F5; border: none; border-radius: 10px;
+  font-size: 15px; font-family: 'Tajawal', sans-serif; font-weight: 500;
+  cursor: pointer; transition: all 0.22s;
+}
+.vf-btn-ink:hover { background:#2D2A24; transform:translateY(-1px); box-shadow:0 6px 18px rgba(26,24,20,0.18); }
+.vf-btn-ink:active { transform:translateY(0); }
+.vf-btn-ink:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+.vf-btn-ghost {
+  display: block; width: 100%; padding: 13px;
+  background: none; color: #6B6459; border: 1px solid #E8E3DC; border-radius: 10px;
+  font-size: 14px; font-family: 'Tajawal', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+}
+.vf-btn-ghost:hover { border-color:#1A1814; color:#1A1814; }
+
+.vf-dot-row { display: flex; align-items: center; margin-bottom: 28px; }
+.vf-dot-seg { height: 1px; flex: 1; background: #E8E3DC; transition: background 0.4s; }
+.vf-dot-seg.on { background: #1A1814; }
+.vf-dot-node { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: all 0.35s; }
+.vf-dot-node.done { background: #3D6B4F; }
+.vf-dot-node.cur  { background: #1A1814; box-shadow: 0 0 0 4px rgba(26,24,20,0.1); }
+.vf-dot-node.next { background: #E8E3DC; }
+
+.vf-sep { display:flex; align-items:center; gap:14px; margin:28px 0 22px; }
+.vf-sep::before,.vf-sep::after { content:''; flex:1; height:1px; background:#E8E3DC; }
+
+.vf-review-row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:12px 20px; border-bottom:1px solid #F0EBE4; gap:16px;
+}
+.vf-review-row:last-child { border-bottom:none; }
+
+.vf-info-row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:12px 20px; border-bottom:1px solid #F0EBE4; gap:16px;
+}
+.vf-info-row:last-child { border-bottom:none; }
+
+.vf-next-item {
+  display:flex; gap:14px; padding:16px 20px;
+  border-bottom:1px solid #F0EBE4; align-items:flex-start;
+}
+.vf-next-item:last-child { border-bottom:none; }
+
+.vf-step-badge { padding:13px 10px; border-radius:10px; text-align:center; }
+`;
+
+function VfChk({ size = 14, color = '#3D6B4F' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <polyline points="20 6 9 17 4 12" stroke={color} strokeWidth="2.2"
+        strokeLinecap="round" strokeLinejoin="round" strokeDasharray="28"
+        style={{ animation: 'vf-checkDraw 0.4s ease 0.1s both' }} />
+    </svg>
+  );
+}
+
+function VfReviewDot() {
+  return (
+    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8B6914', animation: 'vf-breathe 2.4s ease infinite', flexShrink: 0 }} />
+  );
+}
+
+function VfField({ label, delay = 0, children }) {
+  return (
+    <div className="vf-fu" style={{ animationDelay: `${delay}s` }}>
+      <div className="vf-field-wrap">
+        <label className="vf-label">{label}</label>
+        {children}
+        <div className="vf-underline" />
+      </div>
+    </div>
+  );
+}
+
+function VfSep({ label }) {
+  return (
+    <div className="vf-sep">
+      <span style={{ fontSize: 12, color: '#A09486', fontFamily: "'Tajawal', sans-serif", whiteSpace: 'nowrap', fontWeight: 400 }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function VfG2({ children }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 28px' }}>
+      {children}
+    </div>
+  );
+}
+
+function VfDotStepper({ step }) {
+  return (
+    <div className="vf-dot-row">
+      {[1, 2, 3].map((n, i, arr) => (
+        <React.Fragment key={n}>
+          <div className={`vf-dot-node ${n < step ? 'done' : n === step ? 'cur' : 'next'}`} />
+          {i < arr.length - 1 && <div className={`vf-dot-seg ${n < step ? 'on' : ''}`} />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+function VfProgressBar({ step, status }) {
+  const pct = status === 'review' ? 85 : status === 'success' ? 100 : (step / 3) * 100;
+  const color = status === 'review' ? '#8B6914' : status === 'success' ? '#3D6B4F' : '#1A1814';
+  return (
+    <div style={{ height: 1.5, background: '#E8E3DC', marginBottom: 0 }}>
+      <div style={{
+        height: '100%', background: color,
+        width: `${pct}%`, transformOrigin: 'left',
+        animation: 'vf-lineGrow 0.7s cubic-bezier(0.22,1,0.36,1) both',
+      }} />
+    </div>
+  );
+}
+
+function VfStepBadges({ currentState, isAr, lang }) {
+  const steps = [
+    { n: '01', ar: 'الحساب',   en: 'Account',      zh: '账户', state: 'done' },
+    { n: '02', ar: 'الملف',    en: 'Profile',      zh: '资料', state: 'done' },
+    { n: '03', ar: 'التحقق',   en: 'Verification', zh: '认证', state: 'done' },
+    { n: '04', ar: 'المراجعة', en: 'Review',        zh: '审核', state: currentState === 'review' ? 'review' : 'done' },
+  ];
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+      {steps.map(({ n, ar, en, zh, state }) => {
+        const label = isAr ? ar : lang === 'zh' ? zh : en;
+        const isDone   = state === 'done';
+        const isReview = state === 'review';
+        return (
+          <div key={n} className="vf-step-badge" style={{
+            border: `1px solid ${isDone ? 'rgba(61,107,79,0.22)' : isReview ? 'rgba(139,105,20,0.25)' : '#E8E3DC'}`,
+            background: isDone ? 'rgba(61,107,79,0.07)' : isReview ? 'rgba(139,105,20,0.08)' : 'transparent',
+          }}>
+            <p style={{ fontSize: 9, color: isDone ? '#3D6B4F' : isReview ? '#8B6914' : '#A09486', marginBottom: 5, fontFamily: 'Tajawal, sans-serif' }}>{n}</p>
+            <p style={{ fontSize: 11, color: isDone ? '#3D6B4F' : isReview ? '#8B6914' : '#A09486', fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{label}</p>
+            {isDone   && <div style={{ marginTop: 5, display: 'flex', justifyContent: 'center' }}><VfChk size={10} /></div>}
+            {isReview && <div style={{ marginTop: 5, display: 'flex', justifyContent: 'center' }}><VfReviewDot /></div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /* ─── Main ───────────────────────────────── */
 export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile }) {
@@ -1267,7 +1483,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const verificationDraftKey = user?.id ? getSupplierVerificationDraftKey(user.id) : '';
   const dashboardUiStateKey = user?.id ? getSupplierDashboardUiStateKey(user.id) : '';
 
-  useEffect(() => {
+  
+    useEffect(() => {
+
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tab) {
@@ -1330,14 +1548,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSavedAt, setSettingsSavedAt] = useState('');
   const [settingsError, setSettingsError] = useState('');
-  const [settingsMsg, setSettingsMsg] = useState('');
-  const [settingsMsgType, setSettingsMsgType] = useState(''); // 'success' or 'error'
   const [savingVerification, setSavingVerification] = useState(false);
   const [verificationSaved, setVerificationSaved] = useState(false);
   const [verificationMsg, setVerificationMsg] = useState('');
   const [uploadingVerificationDoc, setUploadingVerificationDoc] = useState({ license: false, images: false, videos: false });
   const [verificationStep, setVerificationStep] = useState(1);
-  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState('');
   const [savingPayout, setSavingPayout] = useState(false);
   const [payoutSavedAt, setPayoutSavedAt] = useState('');
@@ -1352,6 +1567,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [uploadingFactory, setUploadingFactory] = useState(false);
   const [samples, setSamples] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
+  const [showVfSuccess, setShowVfSuccess] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState('');
+  const [settingsMsgType, setSettingsMsgType] = useState('success');
   const verificationImages = normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT);
   const verificationVideos = normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT);
   const verificationProgress = getVerificationProgressState({ settings, verification, verificationImages });
@@ -1388,969 +1606,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const isVerificationLocked = supplierState.isUnderReviewStage || supplierState.isApprovedStage;
   const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
   const verificationDraftSavedLabel = draftSavedAt ? formatDraftSavedAt(draftSavedAt, lang) : '';
-
-  // ──────────────────────────────────────────────────────────────
-  // NEW DESIGN SYSTEM (verification flow only)
-  // ──────────────────────────────────────────────────────────────
-
-  // Design tokens (use these exact values)
-  const C = {
-    cream: "#FAF8F5",        // page background
-    paper: "#F4F1EC",        // secondary surfaces
-    white: "#FFFFFF",
-    ink: "#1A1814",          // primary text + buttons
-    ink60: "#6B6459",        // secondary text
-    ink30: "#A09486",        // muted labels
-    ink10: "#E8E3DC",        // borders
-    ink05: "#F0EBE4",        // dividers
-    sage: "#3D6B4F",         // success green
-    sageBg: "rgba(61,107,79,0.07)",
-    sageBr: "rgba(61,107,79,0.22)",
-    amber: "#8B6914",        // under review / warning
-    amberBg: "rgba(139,105,20,0.08)",
-    amberBr: "rgba(139,105,20,0.25)",
-  };
-
-  // Animation styles (inject via <style> tag)
-  const animationStyles = `
-    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes scaleIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
-    @keyframes checkDraw { from{stroke-dashoffset:28} to{stroke-dashoffset:0} }
-    @keyframes lineGrow { from{transform:scaleX(0)} to{transform:scaleX(1)} }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.35} }
-    @keyframes breathe { 0%,100%{transform:scale(1)}50%{transform:scale(1.07)} }
-    @keyframes ringPulse {
-      0% { box-shadow:0 0 0 0 rgba(61,107,79,0.3); }
-      60% { box-shadow:0 0 0 18px rgba(61,107,79,0); }
-      100%{ box-shadow:0 0 0 0 rgba(61,107,79,0); }
-    }
-  `;
-
-  // Helper component: Underline input field (underline‑only style)
-  const UnderlineInput = ({ label, value, onChange, placeholder, required, type = 'text', dir, error, disabled }) => {
-    const id = `input-${label.replace(/\s+/g, '-').toLowerCase()}`;
-    const delay = 0; // will be staggered via inline style
-
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        marginBottom: 28,
-        animation: 'slideUp 0.5s ease-out',
-        animationDelay: `${delay}s`,
-        animationFillMode: 'both',
-      }}>
-        <label htmlFor={id} style={{
-          fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          fontSize: 12,
-          fontWeight: 400,
-          color: error ? '#b91c1c' : C.ink30,
-          marginBottom: 6,
-          transition: 'color 0.2s',
-          ...(isAr && { letterSpacing: 0 }),
-        }}>
-          {label}{required && ' *'}
-        </label>
-        <div style={{ position: 'relative' }}>
-          <input
-            id={id}
-            type={type}
-            value={value || ''}
-            onChange={onChange}
-            placeholder={placeholder}
-            dir={dir}
-            disabled={disabled}
-            style={{
-              width: '100%',
-              border: 'none',
-              borderBottom: `1px solid ${error ? '#b91c1c' : C.ink10}`,
-              background: 'transparent',
-              padding: '10px 0',
-              fontSize: 16,
-              fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-              fontWeight: 400,
-              color: C.ink,
-              outline: 'none',
-              transition: 'border-color 0.2s',
-              ...(placeholder && { color: C.ink30 }),
-            }}
-            onFocus={(e) => {
-              e.target.style.borderBottomColor = C.ink;
-              e.target.previousElementSibling?.style?.color = C.ink;
-            }}
-            onBlur={(e) => {
-              e.target.style.borderBottomColor = error ? '#b91c1c' : C.ink10;
-              e.target.previousElementSibling?.style?.color = error ? '#b91c1c' : C.ink30;
-            }}
-          />
-          <div style={{
-            position: 'absolute',
-            bottom: -1,
-            left: 0,
-            right: 0,
-            height: 2,
-            backgroundColor: C.ink,
-            transform: 'scaleX(0)',
-            transition: 'transform 0.3s ease',
-            pointerEvents: 'none',
-          }} className="underline-overlay" />
-        </div>
-        {error && (
-          <p style={{
-            fontSize: 11,
-            color: '#b91c1c',
-            margin: '6px 0 0',
-            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          }}>
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  // Helper component: Dot stepper (3 dots for form screens)
-  const DotStepper = ({ currentStep, totalSteps = 3 }) => {
-    const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        marginBottom: 32,
-      }}>
-        {steps.map((step, idx) => {
-          const isDone = step < currentStep;
-          const isCurrent = step === currentStep;
-          const isUpcoming = step > currentStep;
-          return (
-            <React.Fragment key={step}>
-              {idx > 0 && (
-                <div style={{
-                  width: 40,
-                  height: 1,
-                  backgroundColor: isDone ? C.sage : C.ink10,
-                  transition: 'background-color 0.3s',
-                }} />
-              )}
-              <div style={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                backgroundColor: isDone ? C.sage : isCurrent ? C.ink : 'transparent',
-                border: `2px solid ${isUpcoming ? C.ink10 : isDone ? C.sage : C.ink}`,
-                boxShadow: isCurrent ? `0 0 0 4px ${C.ink}10` : 'none',
-                transition: 'all 0.3s',
-                position: 'relative',
-              }}>
-                {isDone && (
-                  <svg width="10" height="10" viewBox="0 0 10 10" style={{ position: 'absolute', top: -2, left: -2 }}>
-                    <path d="M2 5 L4 7 L8 3" stroke={C.white} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Helper component: Progress bar (thin line below navbar)
-  const ProgressBar = ({ screen, totalWidth = '100%' }) => {
-    const widthMap = {
-      'form1': '33%',
-      'form2': '66%',
-      'form3': '100%',
-      'success': '100%',
-      'under_review': '85%',
-    };
-    const colorMap = {
-      'form1': C.ink,
-      'form2': C.ink,
-      'form3': C.ink,
-      'success': C.sage,
-      'under_review': C.amber,
-    };
-    const width = widthMap[screen] || '0%';
-    const color = colorMap[screen] || C.ink;
-
-    return (
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '1.5px',
-        backgroundColor: C.ink05,
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          width: width,
-          height: '100%',
-          backgroundColor: color,
-          transformOrigin: 'left',
-          animation: 'lineGrow 0.6s ease-out',
-        }} />
-      </div>
-    );
-  };
-
-  // Helper component: Upload zone (for required fields)
-  const UploadZone = ({ title, hint, accept, multiple, onUpload, uploadedItems, onRemove, onView, limit, type = 'image', uploading }) => {
-    const hasItems = uploadedItems.length > 0;
-    return (
-      <div style={{
-        background: hasItems ? C.white : C.paper,
-        border: `1px solid ${hasItems ? C.sageBr : C.ink10}`,
-        borderRadius: 10,
-        padding: 16,
-        marginBottom: 16,
-        transition: 'all 0.2s',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <p style={{
-            fontSize: 11,
-            color: C.ink30,
-            margin: 0,
-            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          }}>
-            {title}
-          </p>
-          {limit && (
-            <span style={{ fontSize: 11, color: C.ink30 }}>
-              {uploadedItems.length}/{limit}
-            </span>
-          )}
-        </div>
-
-        {hasItems ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {uploadedItems.map((item, idx) => (
-              <div key={item} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: `1px solid ${C.sageBr}`,
-                background: C.sageBg,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    background: C.sage,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <svg width="10" height="10" viewBox="0 0 10 10">
-                      <path d="M2 5 L4 7 L8 3" stroke={C.white} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <span style={{ fontSize: 12, color: C.ink, fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit' }}>
-                    {type === 'image' ? (isAr ? `صورة ${idx + 1}` : `Image ${idx + 1}`) : (isAr ? `فيديو ${idx + 1}` : `Video ${idx + 1}`)}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => onView && onView(item)}
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 10,
-                      background: 'transparent',
-                      border: `1px solid ${C.ink10}`,
-                      color: C.ink60,
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                    }}
-                  >
-                    {isAr ? 'عرض' : 'View'}
-                  </button>
-                  <button
-                    onClick={() => onRemove && onRemove(item)}
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 10,
-                      background: 'transparent',
-                      border: `1px solid ${C.ink10}`,
-                      color: '#b91c1c',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                    }}
-                  >
-                    {isAr ? 'حذف' : 'Remove'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <label style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            padding: '12px 16px',
-            borderRadius: 8,
-            border: `1px dashed ${C.ink10}`,
-            background: C.white,
-            transition: 'all 0.2s',
-            ':hover': { borderColor: C.ink, background: C.white },
-          }}>
-            <span style={{
-              fontSize: 13,
-              color: C.ink60,
-              fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-            }}>
-              {uploading ? '...' : (isAr ? 'رفع الملف' : 'Upload file')}
-            </span>
-            <input
-              type="file"
-              accept={accept}
-              multiple={multiple}
-              style={{ display: 'none' }}
-              onChange={async (e) => {
-                await onUpload(e.target.files);
-                e.target.value = '';
-              }}
-            />
-          </label>
-        )}
-
-        {hint && !hasItems && (
-          <p style={{
-            fontSize: 11,
-            color: C.ink30,
-            margin: '12px 0 0',
-            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          }}>
-            {hint}
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  // Helper component: Video upload (inline row style)
-  const VideoUploadRow = ({ onUpload, uploadedItems, onRemove, onView, uploading }) => {
-    const hasVideo = uploadedItems.length > 0;
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
-        background: hasVideo ? C.sageBg : C.paper,
-        border: `1px dashed ${hasVideo ? C.sageBr : C.ink10}`,
-        borderRadius: 10,
-        marginBottom: 16,
-      }}>
-        <div style={{
-          width: 34,
-          height: 34,
-          borderRadius: 8,
-          background: C.ink05,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M8 5L16 12L8 19V5Z" fill={C.ink30} />
-          </svg>
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 12, color: C.ink, margin: 0, fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit' }}>
-            {hasVideo ? (isAr ? 'فيديو مرفوع' : 'Video uploaded') : (isAr ? 'رفع فيديو' : 'Upload video')}
-          </p>
-          <p style={{ fontSize: 10, color: C.ink30, margin: '4px 0 0', fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit' }}>
-            {hasVideo ? (uploadedItems[0] || '').split('/').pop() : (isAr ? 'جولة في المصنع · MP4 · حتى 50MB' : 'Factory tour · MP4 · up to 50MB')}
-          </p>
-        </div>
-        {hasVideo ? (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => onView && onView(uploadedItems[0])}
-              style={{
-                padding: '6px 12px',
-                fontSize: 10,
-                background: 'transparent',
-                border: `1px solid ${C.ink10}`,
-                color: C.ink60,
-                borderRadius: 6,
-                cursor: 'pointer',
-              }}
-            >
-              {isAr ? 'عرض' : 'View'}
-            </button>
-            <button
-              onClick={() => onRemove && onRemove(uploadedItems[0])}
-              style={{
-                padding: '6px 12px',
-                fontSize: 10,
-                background: 'transparent',
-                border: `1px solid ${C.ink10}`,
-                color: '#b91c1c',
-                borderRadius: 6,
-                cursor: 'pointer',
-              }}
-            >
-              {isAr ? 'حذف' : 'Remove'}
-            </button>
-          </div>
-        ) : (
-          <label style={{
-            padding: '6px 12px',
-            fontSize: 10,
-            background: C.ink,
-            color: C.white,
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          }}>
-            {uploading ? '...' : (isAr ? 'رفع' : 'Upload')}
-            <input
-              type="file"
-              accept="video/*"
-              style={{ display: 'none' }}
-              onChange={async (e) => {
-                await onUpload(e.target.files);
-                e.target.value = '';
-              }}
-            />
-          </label>
-        )}
-      </div>
-    );
-  };
-
-  // End of design system helpers
-  // ──────────────────────────────────────────────────────────────
-
-  // Screen 2 — SUCCESS (after verification submission)
-  const VerificationSuccessScreen = ({ isAr, lang, onViewStatus }) => {
-    const headingText = isAr
-      ? <>طلبك في أيدي<br /><span style={{ fontStyle: 'italic' }}>فريق مَعبر</span></>
-      : lang === 'zh'
-        ? <>您的申请已在<br /><span style={{ fontStyle: 'italic' }}>مَعبر 团队</span>手中</>
-        : <>Your request is in the<br /><span style={{ fontStyle: 'italic' }}>hands of the Maabar team</span></>;
-
-    const bodyText = isAr
-      ? 'سنراجع طلبك ونتواصل معك خلال 72 ساعة.'
-      : lang === 'zh'
-        ? '我们将在 72 小时内审核您的申请并与您联系。'
-        : 'We will review your request and contact you within 72 hours.';
-
-    const steps = [
-      { num: '01', label: isAr ? 'الحساب' : lang === 'zh' ? '账户' : 'Account' },
-      { num: '02', label: isAr ? 'الملف' : lang === 'zh' ? '资料' : 'Profile' },
-      { num: '03', label: isAr ? 'التحقق' : lang === 'zh' ? '认证' : 'Verification' },
-      { num: '04', label: isAr ? 'المراجعة' : lang === 'zh' ? '审核' : 'Review' },
-    ];
-
-    const whatsNext = isAr
-      ? [
-          'راقب بريدك الإلكتروني / ستصلك رسالة فور اعتماد حسابك',
-          'جهّز منتجاتك / يمكنك تجهيز قائمة منتجاتك وإضافتها فور الموافقة',
-          'تواصل معنا / support@maabar.io — نحن هنا إذا احتجت أي مساعدة',
-        ]
-      : lang === 'zh'
-        ? [
-            '留意您的邮箱 / 账户一经批准，您将立即收到邮件通知',
-            '准备您的产品 / 批准后您可以立即开始准备和添加产品列表',
-            '联系我们 / support@maabar.io — 如果您需要任何帮助，我们随时为您服务',
-          ]
-        : [
-            'Watch your email / You’ll receive a message as soon as your account is approved',
-            'Prepare your products / You can start preparing your product list and add them once approved',
-            'Get in touch / support@maabar.io — we’re here if you need any help',
-          ];
-
-    return (
-      <div style={{ maxWidth: 580, margin: '0 auto', animation: 'slideUp 0.5s ease-out' }}>
-        {/* Ring with checkmark */}
-        <div style={{
-          width: 68,
-          height: 68,
-          borderRadius: '50%',
-          background: C.sageBg,
-          border: `1px solid ${C.sageBr}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 16px',
-          animation: 'ringPulse 1.2s ease-out',
-        }}>
-          <svg width="32" height="32" viewBox="0 0 32 32" style={{ animation: 'checkDraw 0.6s ease-out' }}>
-            <circle cx="16" cy="16" r="15" fill="none" stroke={C.sage} strokeWidth="1.5" />
-            <path
-              d="M9 16 L13 20 L23 10"
-              stroke={C.sage}
-              strokeWidth="2.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray="28"
-              strokeDashoffset="0"
-            />
-          </svg>
-        </div>
-
-        {/* Small label */}
-        <p style={{
-          fontSize: 11,
-          color: C.sage,
-          textAlign: 'center',
-          marginBottom: 24,
-          fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          letterSpacing: isAr ? 0 : 1,
-        }}>
-          {isAr ? 'تم الإرسال بنجاح' : lang === 'zh' ? '提交成功' : 'Submitted successfully'}
-        </p>
-
-        {/* Heading */}
-        <h3 style={{
-          fontSize: 42,
-          fontFamily: '"Cormorant Garamond", serif',
-          fontWeight: 300,
-          color: C.ink,
-          textAlign: 'center',
-          lineHeight: 1.3,
-          margin: '0 0 20px',
-        }}>
-          {headingText}
-        </h3>
-
-        {/* Body text */}
-        <p style={{
-          fontSize: 15,
-          fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          fontWeight: 300,
-          color: C.ink60,
-          textAlign: 'center',
-          lineHeight: 1.7,
-          marginBottom: 40,
-        }}>
-          {bodyText}
-        </p>
-
-        {/* Step badges */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 12,
-          marginBottom: 40,
-        }}>
-          {steps.map((step) => (
-            <div key={step.num} style={{
-              padding: '12px 8px',
-              borderRadius: 8,
-              background: C.sageBg,
-              border: `1px solid ${C.sageBr}`,
-              textAlign: 'center',
-            }}>
-              <p style={{ fontSize: 10, color: C.sage, margin: '0 0 6px', letterSpacing: 1 }}>{step.num}</p>
-              <p style={{
-                fontSize: 11,
-                color: C.sage,
-                margin: 0,
-                fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-              }}>
-                {step.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* What's next */}
-        <div style={{
-          background: C.white,
-          border: `1px solid ${C.ink10}`,
-          borderRadius: 12,
-          padding: '20px 20px',
-          marginBottom: 32,
-        }}>
-          <p style={{
-            fontSize: 11,
-            color: C.ink30,
-            margin: '0 0 16px',
-            textAlign: 'center',
-            letterSpacing: 1,
-          }}>
-            {isAr ? 'ماذا بعد؟' : lang === 'zh' ? '接下来做什么？' : 'What’s next?'}
-          </p>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {whatsNext.map((item, idx) => (
-              <li key={idx} style={{
-                padding: '12px 0',
-                borderBottom: idx < whatsNext.length - 1 ? `1px solid ${C.ink05}` : 'none',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 12,
-              }}>
-                <span style={{
-                  fontSize: 10,
-                  color: C.sage,
-                  background: C.sageBg,
-                  borderRadius: '50%',
-                  width: 18,
-                  height: 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  marginTop: 1,
-                }}>
-                  {idx + 1}
-                </span>
-                <p style={{
-                  fontSize: 13,
-                  color: C.ink,
-                  margin: 0,
-                  lineHeight: 1.6,
-                  fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                }}>
-                  {item}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Button */}
-        <button
-          onClick={onViewStatus}
-          style={{
-            width: '100%',
-            padding: '14px 28px',
-            fontSize: 13,
-            background: C.ink,
-            color: C.white,
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          }}
-        >
-          {isAr ? 'عرض حالة الطلب ←' : lang === 'zh' ? '查看申请状态 ←' : 'View request status ←'}
-        </button>
-      </div>
-    );
-  };
-
-  // Screen 3 — UNDER REVIEW (persistent state for verification_under_review)
-  const UnderReviewScreen = ({ isAr, lang, profile, settings, verification, verificationImages, verificationVideos, openVerificationDoc }) => {
-    const steps = [
-      { num: '01', label: isAr ? 'الحساب' : lang === 'zh' ? '账户' : 'Account', done: true },
-      { num: '02', label: isAr ? 'الملف' : lang === 'zh' ? '资料' : 'Profile', done: true },
-      { num: '03', label: isAr ? 'التحقق' : lang === 'zh' ? '认证' : 'Verification', done: true },
-      { num: '04', label: isAr ? 'المراجعة' : lang === 'zh' ? '审核' : 'Review', done: false },
-    ];
-
-    const lockedTags = isAr
-      ? ['إضافة المنتجات · مقفل', 'طلبات التجار · مقفل', 'تقديم العروض · مقفل', 'الرسائل · مقفل']
-      : lang === 'zh'
-        ? ['添加产品 · 锁定', '商家请求 · 锁定', '提交报价 · 锁定', '消息 · 锁定']
-        : ['Add products · locked', 'Merchant requests · locked', 'Submit offers · locked', 'Messages · locked'];
-
-    const whatsNext = isAr
-      ? [
-          'راقب بريدك الإلكتروني / ستصلك رسالة فور اعتماد حسابك من فريق مَعبر',
-          'المدة المتوقعة / عادةً خلال 72 ساعة من وقت الإرسال',
-          'هل تحتاج مساعدة؟ / تواصل معنا على support@maabar.io',
-        ]
-      : lang === 'zh'
-        ? [
-            '留意您的邮箱 / 账户一经 مَعبر 团队批准，您将立即收到邮件通知',
-            '预计时间 / 通常从提交起 72 小时内',
-            '需要帮助吗？ / 通过 support@maabar.io 联系我们',
-          ]
-        : [
-            'Watch your email / You’ll receive a message as soon as your account is approved by the Maabar team',
-            'Expected duration / Usually within 72 hours from submission',
-            'Need help? / Contact us at support@maabar.io',
-          ];
-
-    const amberNote = isAr
-      ? 'يتم حفظ ملفاتك داخل تخزين خاص ولا تُعرض بروابط عامة. بياناتك في أمان.'
-      : lang === 'zh'
-        ? '您的文件保存在私有存储中，不会通过公共链接展示。您的数据是安全的。'
-        : 'Your files are stored in private storage and are not exposed via public links. Your data is safe.';
-
-    return (
-      <div style={{ maxWidth: 780, margin: '0 auto', animation: 'slideUp 0.5s ease-out' }}>
-        {/* Small label */}
-        <p style={{
-          fontSize: 11,
-          color: C.amber,
-          textAlign: 'center',
-          marginBottom: 16,
-          fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          letterSpacing: isAr ? 0 : 1,
-        }}>
-          VERIFICATION_UNDER_REVIEW
-        </p>
-
-        {/* Heading */}
-        <h3 style={{
-          fontSize: 40,
-          fontFamily: '"Cormorant Garamond", serif',
-          fontWeight: 300,
-          color: C.ink,
-          textAlign: 'center',
-          lineHeight: 1.3,
-          margin: '0 0 20px',
-        }}>
-          {isAr
-            ? <>التحقق الآن<br /><span style={{ fontStyle: 'italic' }}>تحت المراجعة</span></>
-            : lang === 'zh'
-              ? <>验证正在<br /><span style={{ fontStyle: 'italic' }}>审核中</span></>
-              : <>Verification now<br /><span style={{ fontStyle: 'italic' }}>under review</span></>}
-        </h3>
-
-        {/* Body text */}
-        <p style={{
-          fontSize: 15,
-          fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-          fontWeight: 300,
-          color: C.ink60,
-          textAlign: 'center',
-          lineHeight: 1.7,
-          marginBottom: 40,
-        }}>
-          {isAr
-            ? 'تم استلام التحقق بنجاح. لن يظهر النموذج القابل للتعديل مرة أخرى أثناء المراجعة.'
-            : lang === 'zh'
-              ? '验证已成功接收。审核期间将不再显示可编辑表单。'
-              : 'Your verification has been successfully received. The editable form will not appear again while under review.'}
-        </p>
-
-        {/* Step badges */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 12,
-          marginBottom: 40,
-        }}>
-          {steps.map((step) => (
-            <div key={step.num} style={{
-              padding: '12px 8px',
-              borderRadius: 8,
-              background: step.done ? C.sageBg : C.amberBg,
-              border: `1px solid ${step.done ? C.sageBr : C.amberBr}`,
-              textAlign: 'center',
-              position: 'relative',
-            }}>
-              <p style={{ fontSize: 10, color: step.done ? C.sage : C.amber, margin: '0 0 6px', letterSpacing: 1 }}>
-                {step.num}
-              </p>
-              <p style={{
-                fontSize: 11,
-                color: step.done ? C.sage : C.amber,
-                margin: 0,
-                fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-              }}>
-                {step.label}
-              </p>
-              {!step.done && (
-                <div style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: C.amber,
-                  animation: 'breathe 1.5s ease-in-out infinite',
-                }} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Submitted data card */}
-        <div style={{
-          background: C.white,
-          border: `1px solid ${C.ink10}`,
-          borderRadius: 12,
-          padding: 24,
-          marginBottom: 24,
-        }}>
-          <p style={{
-            fontSize: 11,
-            color: C.ink30,
-            margin: '0 0 20px',
-            textAlign: 'center',
-            letterSpacing: 1,
-          }}>
-            {isAr ? 'البيانات المُرسلة' : lang === 'zh' ? '已提交数据' : 'Submitted data'}
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px 32px' }}>
-            {/* Company profile */}
-            <div>
-              <p style={{ fontSize: 10, color: C.ink30, margin: '0 0 12px', letterSpacing: 1 }}>
-                {isAr ? 'الملف الأساسي' : lang === 'zh' ? '基础资料' : 'Basic profile'}
-              </p>
-              {[
-                [t.companyName, settings.company_name || '—'],
-                [t.city, settings.city || '—'],
-                [t.country, settings.country || '—'],
-                [t.tradeLink, settings.trade_link || '—'],
-                [t.wechat, settings.wechat || '—'],
-                [t.whatsapp, settings.whatsapp || '—'],
-              ].map(([label, value]) => (
-                <div key={label} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 0',
-                  borderBottom: `1px solid ${C.ink05}`,
-                }}>
-                  <span style={{ fontSize: 12, color: C.ink30, ...arFont }}>{label}</span>
-                  <span style={{ fontSize: 12, color: C.ink, textAlign: isAr ? 'left' : 'right' }}>{value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Verification data */}
-            <div>
-              <p style={{ fontSize: 10, color: C.ink30, margin: '0 0 12px', letterSpacing: 1 }}>
-                {isAr ? 'التحقق والوسائط' : lang === 'zh' ? '认证与媒体' : 'Verification & media'}
-              </p>
-              {[
-                [t.regNumber, verification.reg_number || '—'],
-                [t.yearsExp, verification.years_experience || '—'],
-                [t.employees, verification.num_employees || '—'],
-                [t.businessLicense, verification.license_photo ? (isAr ? 'مرفوع' : lang === 'zh' ? '已上传' : 'Uploaded') : '—'],
-                [isAr ? 'صور التحقق' : lang === 'zh' ? '认证图片' : 'Verification images', verificationImages.length],
-                [isAr ? 'فيديوهات التحقق' : lang === 'zh' ? '认证视频' : 'Verification videos', verificationVideos.length],
-              ].map(([label, value]) => (
-                <div key={label} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 0',
-                  borderBottom: `1px solid ${C.ink05}`,
-                }}>
-                  <span style={{ fontSize: 12, color: C.ink30, ...arFont }}>{label}</span>
-                  <span style={{ fontSize: 12, color: C.ink, textAlign: isAr ? 'left' : 'right' }}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Locked until approval pills */}
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 8,
-          justifyContent: 'center',
-          marginBottom: 32,
-        }}>
-          {lockedTags.map((tag, idx) => (
-            <span
-              key={idx}
-              style={{
-                padding: '6px 12px',
-                fontSize: 10,
-                color: C.ink30,
-                background: C.ink05,
-                borderRadius: 20,
-                fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* What's next list */}
-        <div style={{
-          background: C.white,
-          border: `1px solid ${C.ink10}`,
-          borderRadius: 12,
-          padding: '20px 20px',
-          marginBottom: 24,
-        }}>
-          <p style={{
-            fontSize: 11,
-            color: C.ink30,
-            margin: '0 0 16px',
-            textAlign: 'center',
-            letterSpacing: 1,
-          }}>
-            {isAr ? 'ماذا بعد؟' : lang === 'zh' ? '接下来做什么？' : 'What’s next?'}
-          </p>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {whatsNext.map((item, idx) => (
-              <li key={idx} style={{
-                padding: '12px 0',
-                borderBottom: idx < whatsNext.length - 1 ? `1px solid ${C.ink05}` : 'none',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 12,
-              }}>
-                <span style={{
-                  fontSize: 10,
-                  color: C.amber,
-                  background: C.amberBg,
-                  borderRadius: '50%',
-                  width: 18,
-                  height: 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  marginTop: 1,
-                }}>
-                  {idx + 1}
-                </span>
-                <p style={{
-                  fontSize: 13,
-                  color: C.ink,
-                  margin: 0,
-                  lineHeight: 1.6,
-                  fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                }}>
-                  {item}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Amber note */}
-        <div style={{
-          background: C.amberBg,
-          border: `1px solid ${C.amberBr}`,
-          borderRadius: 10,
-          padding: '16px 20px',
-        }}>
-          <p style={{
-            fontSize: 12,
-            color: C.amber,
-            margin: 0,
-            lineHeight: 1.6,
-            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-            textAlign: 'center',
-          }}>
-            {amberNote}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
   const verificationStepLabels = [
     isAr ? 'بيانات الشركة' : lang === 'zh' ? '公司资料' : 'Company profile',
     isAr ? 'ملفات التحقق' : lang === 'zh' ? '认证文件' : 'Verification files',
@@ -2381,24 +1636,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
 
-  // BUG 4 — Refreshing the page resets the verification flow
-  useEffect(() => {
-    if (!user || !profile) return;
-    // If supplier is registered but not yet verified, set flag
-    if (profile.status === 'registered' || profile.status === 'pending') {
-      localStorage.setItem('maabar_supplier_verified', 'true');
-    }
-  }, [user, profile]);
-
-  // On page load, if flag exists and user is on verification tab, keep them there
-  useEffect(() => {
-    if (!user) return;
-    const isVerified = localStorage.getItem('maabar_supplier_verified') === 'true';
-    if (isVerified && activeTab !== 'verification' && supplierState.isApplicationStage) {
-      setActiveTab('verification');
-    }
-  }, [user, activeTab, supplierState.isApplicationStage]);
-
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
     loadStats(); loadPendingTracking(); loadRejectedOffers();
@@ -2413,7 +1650,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!dashboardUiStateKey) return;
-    sessionStorage.setItem(dashboardUiStateKey, JSON.stringify({ activeTab }));
+   if (activeTab !== 'verification' || isVerificationLocked) {
+  sessionStorage.setItem(dashboardUiStateKey, JSON.stringify({ activeTab }));
+}
   }, [dashboardUiStateKey, activeTab]);
 
   useEffect(() => {
@@ -2455,7 +1694,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
   }, [displayCurrency]);
 
-  useEffect(() => {
+  
+     useEffect(() => {
     if (!profile) return;
     
     // دائمًا نحمّل الأساس من profile
@@ -2511,16 +1751,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setDraftSavedAt(savedAt);
   }, [verificationDraftKey, settings, verification, verificationStep, isVerificationLocked]);
 
-  useEffect(() => {
-    // BUG 2 — Prevent auto‑jump: only block step from exceeding max reachable step,
-    // never automatically increase verificationStep.
-    // Also prevent auto‑jump back when deleting a photo on step 3 if verification is not locked.
-    if (!isVerificationLocked && verificationStep > maxAccessibleVerificationStep && verificationStep !== 3) {
-
-      setVerificationStep(maxAccessibleVerificationStep);
-    }
-    // No else branch — we never increase verificationStep automatically.
-  }, [isVerificationLocked, maxAccessibleVerificationStep, verificationStep]);
+  
 
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
@@ -2788,15 +2019,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     if (type === 'license') {
-      setVerification(prev => ({ ...prev, license_photo: path }));
-      return;
-    }
+  await sb.from('profiles').update({ license_photo: path }).eq('id', user.id);
+  setVerification(prev => ({ ...prev, license_photo: path }));
+  return;
+}
 
-    setVerification(prev => ({
-      ...prev,
-      factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
-      factory_photo: prev.factory_photo || path,
-    }));
+await sb.from('profiles').update({ 
+  factory_images: [...normalizeVerificationMedia(verification.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
+  factory_photo: verification.factory_photo || path,
+}).eq('id', user.id);
+setVerification(prev => ({
+  ...prev,
+  factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
+  factory_photo: prev.factory_photo || path,
+}));
+
+    
   };
 
   const uploadVerificationMedia = async (fileList, mediaType) => {
@@ -2878,25 +2116,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
 
-    // Bug 1 — Verification submits automatically without reaching step 3
-    if (verificationStep !== 3) {
-      setVerificationSaved(false);
-      setVerificationMsg(t.verificationReviewRequired);
-
-      setVerificationStep(3);
-      return;
-    }
-
-    // منع الإرسال إذا كان الطلب مُرسلاً أو معتمداً
-    if (supplierState.isUnderReviewStage || supplierState.isApprovedStage) {
-      setVerificationMsg(isAr ? 'الطلب مُرسل بالفعل' : 'Already submitted');
-      return;
-    }
-
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
-
       setVerificationStep(1);
       return;
     }
@@ -2904,23 +2126,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!verificationProgress.hasVerificationBasics) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
-
       setVerificationStep(2);
       return;
     }
 
-    // Ensure required verification fields are present before DB update
-    if (!verification.reg_number?.trim() || !verification.years_experience || !verification.license_photo?.trim()) {
+    if (verificationStep !== 3) {
       setVerificationSaved(false);
-      setVerificationMsg(t.verificationMissing);
-      setVerificationStep(2);
+      setVerificationMsg(t.verificationReviewRequired);
+      setVerificationStep(3);
       return;
     }
 
-    if (verificationImages.length === 0) {
-      setVerificationSaved(false);
-      setVerificationMsg(t.verificationMissing);
-      setVerificationStep(2);
+    // منع الإرسال إذا كان الطلب مُرسلاً أو معتمداً
+    if (supplierState.isUnderReviewStage || supplierState.isApprovedStage) {
+      setVerificationMsg(isAr ? 'الطلب مُرسل بالفعل' : 'Already submitted');
       return;
     }
 
@@ -2939,7 +2158,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       factory_videos: verificationVideos,
     };
 
-    // 1. DB update must succeed before RPC call
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
@@ -2949,6 +2167,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     if (error) {
       setSavingVerification(false);
+      console.error('DB error:', error);
       setVerificationMsg(isAr ? 'تعذر حفظ بيانات التحقق. حاول مرة أخرى.' : lang === 'zh' ? '认证资料保存失败，请重试。' : 'Failed to save verification details. Please try again.');
       return;
     }
@@ -3008,42 +2227,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       console.error('supplier verification submitted email error:', emailError);
     }
 
-    // Bug 2 — Admin email arrives empty
-    try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          type: 'admin_supplier_verification',
-          data: {
-            recipientUserId: user.id,
-            name: mergedProfile.company_name || mergedProfile.full_name || user.email?.split('@')[0] || 'Supplier',
-            email: user.email,
-            companyName: mergedProfile.company_name || '',
-            city: mergedProfile.city || '',
-            country: mergedProfile.country || '',
-            whatsapp: mergedProfile.whatsapp || '',
-            wechat: mergedProfile.wechat || '',
-            tradeLink: mergedProfile.trade_link || '',
-            regNumber: verification.reg_number || '',
-            yearsExperience: verification.years_experience || '',
-            licensePhoto: verification.license_photo || '',
-            factoryImagesCount: verificationImages.length,
-            factoryVideosCount: verificationVideos.length,
-            lang,
-          },
-        }),
-      });
-    } catch (adminEmailError) {
-      console.error('admin supplier verification email error:', adminEmailError);
-    }
-
     setVerificationSaved(true);
-    // Clear the verification flag after successful submission
-    localStorage.removeItem('maabar_supplier_verified');
     setVerificationMsg(t.verificationSubmitted);
-
     setVerificationStep(3);
+    setActiveTab('overview');
+    if (dashboardUiStateKey) sessionStorage.removeItem(dashboardUiStateKey);
   };
 
   const savePayout = async () => {
@@ -3085,10 +2273,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const saveSettings = async ({ nextVerificationStep = null, navigateToVerification = false } = {}) => {
-    // Clear any previous message
-    setSettingsMsg('');
-    setSettingsMsgType('');
-
     const missingApplicationFields = [
       ['company_name', isAr ? 'اسم الشركة' : lang === 'zh' ? '公司名称' : 'Company name'],
       ['city', t.city],
@@ -3097,14 +2281,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     ].filter(([key]) => !String(settings?.[key] || '').trim());
 
     if (missingApplicationFields.length > 0) {
-      const errorMsg = isAr
+      setSettingsError(isAr
         ? 'أكمل الحقول الأساسية المطلوبة أولاً: اسم الشركة، المدينة، الدولة، والرابط التجاري.'
         : lang === 'zh'
           ? '请先完成基础必填项：公司名称、城市、国家和贸易链接。'
-          : 'Please complete the required basics first: company name, city, country, and trade link.';
-      setSettingsError(errorMsg);
-      setSettingsMsg(errorMsg);
-      setSettingsMsgType('error');
+          : 'Please complete the required basics first: company name, city, country, and trade link.');
       return false;
     }
 
@@ -3122,10 +2303,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSavingSettings(false);
 
     if (error) {
-      const errorMsg = isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.';
-      setSettingsError(errorMsg);
-      setSettingsMsg(errorMsg);
-      setSettingsMsgType('error');
+      setSettingsError(isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.');
       return false;
     }
 
@@ -3139,14 +2317,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setProfile?.(mergedProfile);
     setSettings(buildSettingsState(mergedProfile, payload.preferred_display_currency || 'USD'));
     setSettingsSavedAt(savedAt);
-    const successMsg = isAr ? 'تم حفظ البيانات بنجاح ✓' : lang === 'zh' ? '保存成功 ✓' : 'Saved successfully ✓';
-    setSettingsMsg(successMsg);
-    setSettingsMsgType('success');
-    // Clear message after 4 seconds
-    setTimeout(() => {
-      setSettingsMsg('');
-      setSettingsMsgType('');
-    }, 4000);
 
     const shouldAdvanceIntoVerification = !supplierState.isUnderReviewStage
       && !supplierState.isApprovedStage
@@ -3157,7 +2327,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setVerificationMsg(isAr ? 'تم حفظ ملف الشركة. الآن أرفق مستندات التحقق ثم أكمل الإرسال النهائي.' : lang === 'zh' ? '公司资料已保存。现在请上传认证文件，然后完成最终提交。' : 'Company profile saved. Now add your verification files, then complete the final submission.');
       setActiveTab('verification');
       if (typeof nextVerificationStep === 'number') {
-
         setVerificationStep(Math.min(3, Math.max(1, nextVerificationStep)));
       }
     }
@@ -4751,634 +3920,486 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── VERIFICATION ── */}
+         {/* ── VERIFICATION ── */}
           {activeTab === 'verification' && (
-            <div style={section}>
-              <style>{animationStyles}</style>
-              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
-              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 14, color: C.ink, ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.verificationTitle}</h2>
-              <p style={{ maxWidth: 720, fontSize: 13, color: C.ink60, lineHeight: 1.9, marginBottom: 24, ...arFont }}>{t.verificationIntro}</p>
+            <div style={{ ...section, background: '#FAF8F5', minHeight: '100vh' }}>
+              <style>{VF_CSS}</style>
 
-              {/* Progress bar (thin line below navbar) */}
-              <div style={{ position: 'relative', marginBottom: 32 }}>
-                <ProgressBar
-                  screen={
-                    showSuccessScreen ? 'success' :
-                    isVerificationLocked && supplierState.isUnderReviewStage ? 'under_review' :
-                    !isVerificationLocked ? `form${verificationStep}` :
-                    'form1'
-                  }
-                />
-              </div>
+              {/* Progress bar */}
+              <VfProgressBar
+                step={verificationStep}
+                status={showVfSuccess ? 'success' : isVerificationLocked ? 'review' : 'form'}
+              />
 
-              {/* Draft save note */}
-              <div style={{ marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: `1px solid ${C.ink05}`, background: C.paper, maxWidth: 920 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                  <p style={{ margin: 0, fontSize: 12, color: C.ink60, lineHeight: 1.8, ...arFont }}>
-                    {isAr
-                      ? 'يتم حفظ المسودة محلياً أثناء التنقل بين الخطوات أو تغيير اللغة حتى لا تضيع البيانات.'
-                      : lang === 'zh'
-                        ? '在步骤之间切换或切换语言时，草稿会保存在本机，避免数据丢失。'
-                        : 'This draft is preserved locally while you move between steps or switch language, so nothing resets silently.'}
-                  </p>
-                  {verificationDraftSavedLabel && (
-                    <p style={{ margin: 0, fontSize: 11, color: C.ink30, whiteSpace: 'nowrap' }}>
-                      {isAr ? `آخر حفظ: ${verificationDraftSavedLabel}` : lang === 'zh' ? `最近保存：${verificationDraftSavedLabel}` : `Last saved: ${verificationDraftSavedLabel}`}
+              <div style={{ maxWidth: 580, margin: '0 auto', padding: '44px 24px 80px' }}>
+
+                {/* ── UNDER REVIEW ── */}
+                {isVerificationLocked && !showVfSuccess && (
+                  <div>
+                    <div className="vf-fu" style={{ marginBottom: 36 }}>
+                      <p style={{ fontSize: 11, color: VF_C.amber, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 12 }}>
+                        VERIFICATION_UNDER_REVIEW
+                      </p>
+                      <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 300, color: VF_C.ink, letterSpacing: -0.8, lineHeight: 1.2, marginBottom: 14 }}>
+                        {isAr ? 'التحقق الآن' : lang === 'zh' ? '认证正在' : 'Verification'}
+                        <br />
+                        <em style={{ fontStyle: 'italic', color: VF_C.ink60 }}>
+                          {isAr ? 'تحت المراجعة' : lang === 'zh' ? '审核中' : 'Under Review'}
+                        </em>
+                      </h1>
+                      <p style={{ fontSize: 15, lineHeight: 1.9, color: VF_C.ink60, fontWeight: 300, fontFamily: 'Tajawal, sans-serif' }}>
+                        {isAr
+                          ? 'تم استلام التحقق بنجاح. لن يظهر النموذج القابل للتعديل مرة أخرى أثناء المراجعة.'
+                          : lang === 'zh'
+                            ? '认证资料已成功提交。审核期间表单将保持锁定。'
+                            : 'Your verification was received. The form stays locked during review.'}
+                      </p>
+                    </div>
+
+                    <div className="vf-fu" style={{ marginBottom: 32, animationDelay: '0.08s' }}>
+                      <VfStepBadges currentState="review" isAr={isAr} lang={lang} />
+                    </div>
+
+                    {/* Submitted data */}
+                    <div className="vf-fu" style={{ marginBottom: 28, animationDelay: '0.14s' }}>
+                      <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 10 }}>
+                        {isAr ? 'البيانات المُرسلة' : lang === 'zh' ? '已提交资料' : 'Submitted data'}
+                      </p>
+                      <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden' }}>
+                        {[
+                          [isAr ? 'اسم الشركة' : lang === 'zh' ? '公司名称' : 'Company', settings.company_name || '—'],
+                          [isAr ? 'المدينة / الدولة' : lang === 'zh' ? '城市 / 国家' : 'City / Country', `${settings.city || '—'} · ${settings.country || '—'}`],
+                          [isAr ? 'التخصص' : lang === 'zh' ? '专业' : 'Specialty', settings.speciality || '—'],
+                          ['WeChat', settings.wechat || '—'],
+                          [isAr ? 'رابط المتجر' : lang === 'zh' ? '店铺链接' : 'Trade link', settings.trade_link || '—'],
+                          [isAr ? 'رقم التسجيل' : lang === 'zh' ? '注册号' : 'Reg. number', verification.reg_number || '—'],
+                          [isAr ? 'سنوات الخبرة' : lang === 'zh' ? '从业年限' : 'Experience', verification.years_experience ? `${verification.years_experience} ${isAr ? 'سنوات' : lang === 'zh' ? '年' : 'yrs'}` : '—'],
+                          [isAr ? 'رخصة الأعمال' : lang === 'zh' ? '营业执照' : 'License', verification.license_photo ? (isAr ? 'مرفوعة ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓') : '—'],
+                          [isAr ? 'صور المصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos', verificationImages.length > 0 ? `${verificationImages.length} ${isAr ? 'صور ✓' : lang === 'zh' ? '张 ✓' : 'photos ✓'}` : '—'],
+                          ...(verificationVideos.length > 0 ? [[isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory video', `${verificationVideos.length} ${isAr ? 'فيديو ✓' : lang === 'zh' ? '个 ✓' : 'video ✓'}`]] : []),
+                        ].map(([k, v]) => (
+                          <div key={k} className="vf-info-row">
+                            <span style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, flexShrink: 0 }}>{k}</span>
+                            <span style={{ fontSize: 13, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Locked features */}
+                    <div className="vf-fu" style={{ marginBottom: 28, animationDelay: '0.2s' }}>
+                      <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 10 }}>
+                        {isAr ? 'مقفل حتى الاعتماد' : lang === 'zh' ? '通过前保持锁定' : 'Locked until approval'}
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {[
+                          isAr ? 'إضافة المنتجات' : lang === 'zh' ? '添加产品' : 'Add products',
+                          isAr ? 'طلبات التجار'   : lang === 'zh' ? '采购需求'  : 'Trader requests',
+                          isAr ? 'تقديم العروض'   : lang === 'zh' ? '提交报价'  : 'Submit offers',
+                          isAr ? 'الرسائل'         : lang === 'zh' ? '消息'      : 'Messages',
+                        ].map(f => (
+                          <span key={f} style={{ padding: '7px 14px', borderRadius: 99, border: `1px solid ${VF_C.ink10}`, background: VF_C.paper, fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                            {f} · {isAr ? 'مقفل' : lang === 'zh' ? '锁定' : 'Locked'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* What's next */}
+                    <div className="vf-fu" style={{ marginBottom: 24, animationDelay: '0.26s' }}>
+                      <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden' }}>
+                        {[
+                          { title: isAr ? 'راقب بريدك الإلكتروني' : lang === 'zh' ? '关注邮箱通知' : 'Watch your email',
+                            body:  isAr ? 'ستصلك رسالة فور اعتماد حسابك من فريق مَعبر' : lang === 'zh' ? '账户通过后系统会自动发邮件通知您' : 'You will get an email as soon as your account is approved' },
+                          { title: isAr ? 'المدة المتوقعة' : lang === 'zh' ? '预计时间' : 'Expected time',
+                            body:  isAr ? 'عادةً خلال 72 ساعة من وقت الإرسال' : lang === 'zh' ? '通常在提交后 72 小时内完成' : 'Usually within 72 hours of submission' },
+                          { title: isAr ? 'هل تحتاج مساعدة؟' : lang === 'zh' ? '需要帮助？' : 'Need help?',
+                            body:  isAr ? 'تواصل معنا على support@maabar.io' : lang === 'zh' ? '联系我们：support@maabar.io' : 'Contact us at support@maabar.io' },
+                        ].map(({ title, body }, i) => (
+                          <div key={i} className="vf-next-item" style={{ borderBottom: i < 2 ? `1px solid ${VF_C.ink05}` : 'none' }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: VF_C.ink10, marginTop: 7, flexShrink: 0 }} />
+                            <div>
+                              <p style={{ fontSize: 14, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 500, marginBottom: 3 }}>{title}</p>
+                              <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, lineHeight: 1.6 }}>{body}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Amber note */}
+                    <div className="vf-fu" style={{ animationDelay: '0.32s', padding: '14px 18px', borderRadius: 10, background: VF_C.amberBg, border: `1px solid ${VF_C.amberBr}` }}>
+                      <p style={{ fontSize: 13, color: VF_C.amber, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, lineHeight: 1.7 }}>
+                        {isAr
+                          ? 'يتم حفظ ملفاتك داخل تخزين خاص ولا تُعرض بروابط عامة. بياناتك في أمان.'
+                          : lang === 'zh'
+                            ? '您的文件存储在私有空间，不会通过公开链接暴露。数据安全有保障。'
+                            : 'Your files are stored in private storage and never exposed through public URLs.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── SUCCESS SCREEN ── */}
+                {showVfSuccess && (
+                  <div className="vf-fi" style={{ textAlign: 'center', paddingTop: 8 }}>
+                    <div style={{ width: 68, height: 68, borderRadius: '50%', background: VF_C.sageBg, border: `1.5px solid ${VF_C.sageBr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', animation: 'vf-ringPulse 1.2s ease 0.4s' }}>
+                      <VfChk size={28} color={VF_C.sage} />
+                    </div>
+                    <p style={{ fontSize: 11, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 12 }}>
+                      {isAr ? 'تم الإرسال بنجاح' : lang === 'zh' ? '提交成功' : 'Submitted successfully'}
                     </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Conditional screens */}
-              {showSuccessScreen ? (
-                <VerificationSuccessScreen
-                  isAr={isAr}
-                  lang={lang}
-                  onViewStatus={() => setShowSuccessScreen(false)}
-                />
-              ) : isVerificationLocked && supplierState.isUnderReviewStage ? (
-                <UnderReviewScreen
-                  isAr={isAr}
-                  lang={lang}
-                  profile={profile}
-                  settings={settings}
-                  verification={verification}
-                  verificationImages={verificationImages}
-                  verificationVideos={verificationVideos}
-                  openVerificationDoc={openVerificationDoc}
-                />
-              ) : !isVerificationLocked ? (
-                <>
-                  {/* Dot stepper for form screens */}
-                  <DotStepper currentStep={verificationStep} totalSteps={3} />
-
-                  {/* Step 1: Company profile */}
-                  {verificationStep === 1 && (
-                    <div style={{ animation: 'slideUp 0.5s ease-out', maxWidth: 920 }}>
-                      <h3 style={{
-                        fontSize: 24,
-                        fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                        fontWeight: 400,
-                        color: C.ink,
-                        marginBottom: 32,
-                        ...arFont,
-                      }}>
-                        {isAr ? 'بيانات الشركة' : lang === 'zh' ? '公司资料' : 'Company profile'}
-                      </h3>
-
-                      {/* Save feedback */}
-                      {settingsMsg && (
-                        <div style={{
-                          marginBottom: 24,
-                          padding: '14px 16px',
-                          borderRadius: 10,
-                          border: `1px solid ${settingsMsgType === 'success' ? C.sageBr : '#fecaca'}`,
-                          background: settingsMsgType === 'success' ? C.sageBg : '#fef2f2',
-                        }}>
-                          <p style={{ margin: 0, fontSize: 12, color: settingsMsgType === 'success' ? C.sage : '#b91c1c', ...arFont }}>
-                            {settingsMsg}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Form grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px 32px', marginBottom: 32 }}>
-                        {/* Company name */}
-                        <div style={{ gridColumn: 'span 2' }}>
-                          <UnderlineInput
-                            label={t.companyName}
-                            value={settings.company_name || ''}
-                            onChange={e => setSettings({ ...settings, company_name: e.target.value })}
-                            placeholder={isAr ? 'اسم الشركة بالكامل' : lang === 'zh' ? '完整公司名称' : 'Full company name'}
-                            required
-                            dir={isAr ? 'rtl' : 'ltr'}
-                          />
-                        </div>
-
-                        {/* City + Country */}
-                        <UnderlineInput
-                          label={t.city}
-                          value={settings.city || ''}
-                          onChange={e => setSettings({ ...settings, city: e.target.value })}
-                          placeholder={isAr ? 'المدينة' : lang === 'zh' ? '城市' : 'City'}
-                          required
-                          dir={isAr ? 'rtl' : 'ltr'}
-                        />
-                        <UnderlineInput
-                          label={t.country}
-                          value={settings.country || ''}
-                          onChange={e => setSettings({ ...settings, country: e.target.value })}
-                          placeholder={isAr ? 'الدولة' : lang === 'zh' ? '国家' : 'Country'}
-                          required
-                          dir={isAr ? 'rtl' : 'ltr'}
-                        />
-
-                        {/* Speciality + Business type */}
-                        <div>
-                          <label style={{
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                            fontSize: 12,
-                            fontWeight: 400,
-                            color: C.ink30,
-                            marginBottom: 6,
-                            display: 'block',
-                          }}>
-                            {t.speciality} *
-                          </label>
-                          <select
-                            value={settings.speciality || ''}
-                            onChange={e => setSettings({ ...settings, speciality: e.target.value })}
-                            style={{
-                              width: '100%',
-                              border: 'none',
-                              borderBottom: `1px solid ${C.ink10}`,
-                              background: 'transparent',
-                              padding: '10px 0',
-                              fontSize: 16,
-                              fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                              fontWeight: 400,
-                              color: C.ink,
-                              outline: 'none',
-                            }}
-                          >
-                            <option value="">{isAr ? 'اختر التخصص' : lang === 'zh' ? '请选择专业领域' : 'Select speciality'}</option>
-                            {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => (
-                              <option key={c.val} value={c.val}>{c.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <UnderlineInput
-                          label={isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type'}
-                          value={settings.business_type || ''}
-                          onChange={e => setSettings({ ...settings, business_type: e.target.value })}
-                          placeholder={isAr ? 'اختياري' : lang === 'zh' ? '可选' : 'Optional'}
-                          dir={isAr ? 'rtl' : 'ltr'}
-                        />
-                      </div>
-
-                      {/* Separator */}
-                      <div style={{ textAlign: 'center', margin: '32px 0', position: 'relative' }}>
-                        <span style={{
-                          fontSize: 10,
-                          color: C.ink30,
-                          background: C.cream,
-                          padding: '0 16px',
-                          letterSpacing: 2,
-                          textTransform: 'uppercase',
-                          ...arFont,
-                        }}>
-                          ـــ التواصل ـــ
-                        </span>
-                        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: C.ink05, zIndex: -1 }} />
-                      </div>
-
-                      {/* Contact fields */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px 32px', marginBottom: 32 }}>
-                        <UnderlineInput
-                          label={t.wechat}
-                          value={settings.wechat || ''}
-                          onChange={e => setSettings({ ...settings, wechat: e.target.value })}
-                          placeholder={isAr ? 'معرف WeChat' : lang === 'zh' ? '微信 ID' : 'WeChat ID'}
-                          required
-                          dir="ltr"
-                        />
-                        <UnderlineInput
-                          label={t.whatsapp}
-                          value={settings.whatsapp || ''}
-                          onChange={e => setSettings({ ...settings, whatsapp: e.target.value })}
-                          placeholder={isAr ? 'رقم واتساب' : lang === 'zh' ? 'WhatsApp 号码' : 'WhatsApp number'}
-                          dir="ltr"
-                        />
-                      </div>
-
-                      {/* Trade link */}
-                      <div style={{ marginBottom: 32 }}>
-                        <UnderlineInput
-                          label={t.tradeLink}
-                          value={settings.trade_link || ''}
-                          onChange={e => setSettings({ ...settings, trade_link: e.target.value })}
-                          placeholder={isAr ? 'رابط المتجر أو الملف التجاري' : lang === 'zh' ? '店铺链接或商业文件' : 'Store link or business file'}
-                          required
-                          dir="ltr"
-                        />
-                      </div>
-
-                      {/* Company website */}
-                      <div style={{ marginBottom: 32 }}>
-                        <UnderlineInput
-                          label={isAr ? 'موقع الشركة الإلكتروني' : lang === 'zh' ? '公司官网链接' : 'Company website URL'}
-                          value={settings.company_website || ''}
-                          onChange={e => setSettings({ ...settings, company_website: e.target.value })}
-                          placeholder={isAr ? 'https://' : lang === 'zh' ? 'https://' : 'https://'}
-                          dir="ltr"
-                        />
-                      </div>
-
-                      {/* Company description */}
-                      <div style={{ marginBottom: 40 }}>
-                        <label style={{
-                          fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                          fontSize: 12,
-                          fontWeight: 400,
-                          color: C.ink30,
-                          marginBottom: 6,
-                          display: 'block',
-                        }}>
-                          {isAr ? 'وصف الشركة' : lang === 'zh' ? '公司介绍' : 'Company description'}
-                        </label>
-                        <textarea
-                          value={settings.company_description || ''}
-                          onChange={e => setSettings({ ...settings, company_description: e.target.value })}
-                          placeholder={isAr ? 'وصف مختصر عن نشاط الشركة والمنتجات...' : lang === 'zh' ? '简要介绍公司业务和产品...' : 'Brief description of company activities and products...'}
-                          rows={3}
-                          dir={isAr ? 'rtl' : 'ltr'}
-                          style={{
-                            width: '100%',
-                            border: 'none',
-                            borderBottom: `1px solid ${C.ink10}`,
-                            background: 'transparent',
-                            padding: '10px 0',
-                            fontSize: 16,
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                            fontWeight: 400,
-                            color: C.ink,
-                            outline: 'none',
-                            resize: 'vertical',
-                          }}
-                        />
-                      </div>
-
-                      {/* Buttons */}
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        <button
-                          onClick={() => saveSettings({ nextVerificationStep: 2, navigateToVerification: true })}
-                          disabled={savingSettings}
-                          style={{
-                            padding: '12px 28px',
-                            minHeight: 46,
-                            fontSize: 13,
-                            background: C.ink,
-                            color: C.white,
-                            border: 'none',
-                            borderRadius: 8,
-                            cursor: savingSettings ? 'not-allowed' : 'pointer',
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                            opacity: savingSettings ? 0.6 : 1,
-                          }}
-                        >
-                          {savingSettings ? t.saving : (isAr ? 'حفظ والانتقال للخطوة 2 ←' : lang === 'zh' ? '保存并进入第 2 步 ←' : 'Save and move to step 2 ←')}
-                        </button>
-                        <button
-                          onClick={() => saveSettings()}
-                          disabled={savingSettings}
-                          style={{
-                            minHeight: 46,
-                            padding: '0 18px',
-                            fontSize: 12,
-                            background: 'transparent',
-                            color: C.ink,
-                            border: `1px solid ${C.ink10}`,
-                            borderRadius: 8,
-                            cursor: savingSettings ? 'not-allowed' : 'pointer',
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                            opacity: savingSettings ? 0.6 : 1,
-                          }}
-                        >
-                          {isAr ? 'حفظ فقط' : lang === 'zh' ? '仅保存' : 'Save only'}
-                        </button>
-                      </div>
+                    <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 40, fontWeight: 300, color: VF_C.ink, letterSpacing: -1, lineHeight: 1.15, marginBottom: 16 }}>
+                      {isAr ? 'طلبك في أيدي' : lang === 'zh' ? '您的申请已交到' : 'Your request is in the hands of'}
+                      <br />
+                      <em style={{ fontStyle: 'italic', color: VF_C.ink60 }}>
+                        {isAr ? 'فريق مَعبر' : lang === 'zh' ? 'Maabar 团队' : 'the Maabar team'}
+                      </em>
+                    </h1>
+                    <p style={{ fontSize: 15, lineHeight: 1.9, color: VF_C.ink60, fontWeight: 300, maxWidth: 340, margin: '0 auto 36px', fontFamily: 'Tajawal, sans-serif' }}>
+                      {isAr
+                        ? 'سنراجع طلبك ونتواصل معك خلال 72 ساعة.'
+                        : lang === 'zh'
+                          ? '我们会在 72 小时内审核并与您联系。'
+                          : 'We will review your request and contact you within 72 hours.'}
+                    </p>
+                    <div style={{ marginBottom: 36 }}>
+                      <VfStepBadges currentState="success" isAr={isAr} lang={lang} />
                     </div>
-                  )}
-
-                  {/* Step 2: Verification files */}
-                  {verificationStep === 2 && (
-                    <div style={{ animation: 'slideUp 0.5s ease-out', maxWidth: 920 }}>
-                      <h3 style={{
-                        fontSize: 24,
-                        fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                        fontWeight: 400,
-                        color: C.ink,
-                        marginBottom: 32,
-                        ...arFont,
-                      }}>
-                        {isAr ? 'ملفات التحقق' : lang === 'zh' ? '认证文件' : 'Verification files'}
-                      </h3>
-
-                      {/* Verification fields */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px 32px', marginBottom: 32 }}>
-                        <UnderlineInput
-                          label={t.regNumber}
-                          value={verification.reg_number || ''}
-                          onChange={e => setVerification(prev => ({ ...prev, reg_number: e.target.value }))}
-                          placeholder={isAr ? 'رقم التسجيل الرسمي' : lang === 'zh' ? '官方注册号码' : 'Official registration number'}
-                          required
-                          dir="ltr"
-                        />
-                        <UnderlineInput
-                          label={t.yearsExp}
-                          value={verification.years_experience || ''}
-                          onChange={e => setVerification(prev => ({ ...prev, years_experience: e.target.value }))}
-                          placeholder={isAr ? 'عدد السنوات' : lang === 'zh' ? '年数' : 'Number of years'}
-                          required
-                          type="number"
-                          dir="ltr"
-                        />
-                      </div>
-
-                      {/* Employees (optional) */}
-                      <div style={{ marginBottom: 40 }}>
-                        <UnderlineInput
-                          label={t.employees}
-                          value={verification.num_employees || ''}
-                          onChange={e => setVerification(prev => ({ ...prev, num_employees: e.target.value }))}
-                          placeholder={isAr ? 'اختياري' : lang === 'zh' ? '可选' : 'Optional'}
-                          type="number"
-                          dir="ltr"
-                        />
-                      </div>
-
-                      {/* Separator */}
-                      <div style={{ textAlign: 'center', margin: '32px 0', position: 'relative' }}>
-                        <span style={{
-                          fontSize: 10,
-                          color: C.ink30,
-                          background: C.cream,
-                          padding: '0 16px',
-                          letterSpacing: 2,
-                          textTransform: 'uppercase',
-                          ...arFont,
-                        }}>
-                          ـــ المستندات ـــ
-                        </span>
-                        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: C.ink05, zIndex: -1 }} />
-                      </div>
-
-                      {/* Business license upload */}
-                      <UploadZone
-                        title={t.businessLicense}
-                        hint={isAr ? 'رخصة الأعمال أو هوية المنشأة (PDF أو صورة)' : lang === 'zh' ? '营业执照或企业身份证（PDF 或图片）' : 'Business license or company ID (PDF or image)'}
-                        accept="image/*,.pdf"
-                        multiple={false}
-                        onUpload={async (files) => {
-                          await uploadVerificationDoc(files?.[0], 'license');
-                        }}
-                        uploadedItems={verification.license_photo ? [verification.license_photo] : []}
-                        onRemove={() => setVerification(prev => ({ ...prev, license_photo: '' }))}
-                        onView={openVerificationDoc}
-                        uploading={uploadingVerificationDoc.license}
-                      />
-
-                      {/* Factory images upload */}
-                      <UploadZone
-                        title={isAr ? 'صور المصنع أو المستودع' : lang === 'zh' ? '工厂或仓库图片' : 'Factory or warehouse images'}
-                        hint={isAr ? 'حتى 5 صور واضحة للمصنع أو خط الإنتاج' : lang === 'zh' ? '最多 5 张清晰的工厂或生产线图片' : 'Up to 5 clear images of factory or production line'}
-                        accept="image/*"
-                        multiple
-                        onUpload={async (files) => {
-                          await uploadVerificationMedia(files, 'image');
-                        }}
-                        uploadedItems={verificationImages}
-                        onRemove={(item) => removeVerificationMedia('image', item)}
-                        onView={openVerificationDoc}
-                        limit={VERIFICATION_IMAGE_LIMIT}
-                        uploading={uploadingVerificationDoc.images}
-                      />
-
-                      {/* Factory video upload (optional) */}
-                      <VideoUploadRow
-                        onUpload={async (files) => {
-                          await uploadVerificationMedia(files, 'video');
-                        }}
-                        uploadedItems={verificationVideos}
-                        onRemove={(item) => removeVerificationMedia('video', item)}
-                        onView={openVerificationDoc}
-                        uploading={uploadingVerificationDoc.videos}
-                      />
-
-                      {/* Buttons */}
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 40 }}>
-                        <button
-                          onClick={() => setVerificationStep(1)}
-                          style={{
-                            minHeight: 46,
-                            padding: '0 18px',
-                            fontSize: 12,
-                            background: 'transparent',
-                            color: C.ink,
-                            border: `1px solid ${C.ink10}`,
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                          }}
-                        >
-                          {isAr ? 'رجوع لبيانات الشركة' : lang === 'zh' ? '返回公司资料' : 'Back to company profile'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            const isStepReady = Boolean(String(verification.reg_number || '').trim()) &&
-                                               Boolean(String(verification.years_experience || '').trim()) &&
-                                               Boolean(String(verification.license_photo || '').trim()) &&
-                                               verificationImages.length > 0;
-                            if (!isStepReady) {
-                              setVerificationSaved(false);
-                              setVerificationMsg(t.verificationMissing);
-                              return;
-                            }
-                            setVerificationMsg('');
-                            setVerificationStep(3);
-                          }}
-                          style={{
-                            padding: '12px 28px',
-                            minHeight: 46,
-                            fontSize: 13,
-                            background: C.ink,
-                            color: C.white,
-                            border: 'none',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                          }}
-                        >
-                          {isAr ? 'التالي: المراجعة النهائية ←' : lang === 'zh' ? '下一步：最终确认 ←' : 'Next: Final review ←'}
-                        </button>
-                      </div>
+                    <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', padding: '0 20px', textAlign: isAr ? 'right' : 'left', marginBottom: 32 }}>
+                      {[
+                        { title: isAr ? 'راقب بريدك الإلكتروني' : lang === 'zh' ? '关注邮箱' : 'Watch your email',
+                          body:  isAr ? 'ستصلك رسالة فور اعتماد حسابك' : lang === 'zh' ? '账户通过后会收到邮件' : 'You will be notified when approved' },
+                        { title: isAr ? 'جهّز منتجاتك' : lang === 'zh' ? '准备您的产品' : 'Prepare your products',
+                          body:  isAr ? 'يمكنك تجهيز قائمة منتجاتك وإضافتها فور الموافقة' : lang === 'zh' ? '可以提前准备产品列表，通过后立即发布' : 'You can prepare your product list and add them upon approval' },
+                        { title: isAr ? 'تواصل معنا' : lang === 'zh' ? '联系我们' : 'Contact us',
+                          body:  'support@maabar.io' },
+                      ].map(({ title, body }, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 14, padding: '16px 0', borderBottom: i < 2 ? `1px solid ${VF_C.ink05}` : 'none', alignItems: 'flex-start' }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: VF_C.ink10, marginTop: 7, flexShrink: 0 }} />
+                          <div>
+                            <p style={{ fontSize: 14, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 500, marginBottom: 3 }}>{title}</p>
+                            <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, lineHeight: 1.6 }}>{body}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                    <button
+                      className="vf-btn-ink"
+                      onClick={() => setShowVfSuccess(false)}>
+                      {isAr ? 'عرض حالة الطلب ←' : lang === 'zh' ? '查看申请状态 →' : 'View request status →'}
+                    </button>
+                  </div>
+                )}
 
-                  {/* Step 3: Final review */}
-                  {verificationStep === 3 && (
-                    <div style={{ animation: 'slideUp 0.5s ease-out', maxWidth: 920 }}>
-                      <h3 style={{
-                        fontSize: 24,
-                        fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                        fontWeight: 400,
-                        color: C.ink,
-                        marginBottom: 32,
-                        ...arFont,
-                      }}>
-                        {isAr ? 'المراجعة النهائية' : lang === 'zh' ? '最终确认' : 'Final review'}
-                      </h3>
+                {/* ── ACTIVE FORM ── */}
+                {!isVerificationLocked && !showVfSuccess && (
+                  <div>
+                    <VfDotStepper step={verificationStep} />
+                    <div className="vf-fu" style={{ marginBottom: 36 }}>
+                      <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 300, color: VF_C.ink, letterSpacing: -0.8, lineHeight: 1.2, marginBottom: 6 }}>
+                        {verificationStep === 1
+                          ? (isAr ? 'بيانات الشركة'      : lang === 'zh' ? '公司资料' : 'Company Profile')
+                          : verificationStep === 2
+                            ? (isAr ? 'ملفات التحقق'      : lang === 'zh' ? '认证文件' : 'Verification Files')
+                            : (isAr ? 'المراجعة النهائية' : lang === 'zh' ? '最终确认' : 'Final Review')}
+                      </h1>
+                      <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                        {verificationStep === 1
+                          ? (isAr ? 'معلومات شركتك — تُحفظ مباشرة في حسابك' : lang === 'zh' ? '公司信息将直接保存到您的账户' : 'Company info — saved directly to your account')
+                          : verificationStep === 2
+                            ? (isAr ? 'المستندات المطلوبة للتحقق من موثوقيتك' : lang === 'zh' ? '验证可信度所需的文件' : 'Documents required to verify your credibility')
+                            : (isAr ? 'راجع كل شيء — لن يُرسل الطلب إلا عند تأكيدك' : lang === 'zh' ? '请确认所有内容后再提交' : 'Review everything — request only submits on confirmation')}
+                      </p>
+                    </div>
 
-                      {/* Review card */}
-                      <div style={{
-                        background: C.white,
-                        border: `1px solid ${C.ink10}`,
-                        borderRadius: 12,
-                        padding: 24,
-                        marginBottom: 24,
-                      }}>
-                        {/* Basic profile */}
-                        <div style={{ marginBottom: 24 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <p style={{ fontSize: 11, color: C.ink30, margin: 0, ...arFont }}>
-                              {isAr ? 'الملف الأساسي' : lang === 'zh' ? '基础资料' : 'Basic profile'}
-                            </p>
-                            <button
-                              onClick={() => setVerificationStep(1)}
-                              style={{
-                                padding: '6px 12px',
-                                fontSize: 10,
-                                background: 'transparent',
-                                border: `1px solid ${C.ink10}`,
-                                color: C.ink60,
-                                borderRadius: 6,
-                                cursor: 'pointer',
-                                fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                              }}
-                            >
-                              {isAr ? 'تعديل' : lang === 'zh' ? '编辑' : 'Edit'}
-                            </button>
-                          </div>
-                          {[
-                            [t.companyName, settings.company_name || '—'],
-                            [t.city, settings.city || '—'],
-                            [t.country, settings.country || '—'],
-                            [t.tradeLink, settings.trade_link || '—'],
-                            [t.wechat, settings.wechat || '—'],
-                            [t.whatsapp, settings.whatsapp || '—'],
-                          ].map(([label, value]) => (
-                            <div key={label} style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              padding: '10px 0',
-                              borderBottom: `1px solid ${C.ink05}`,
-                            }}>
-                              <span style={{ fontSize: 13, color: C.ink30, ...arFont }}>{label}</span>
-                              <span style={{ fontSize: 13, color: C.ink, textAlign: isAr ? 'left' : 'right' }}>{value}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Verification & media */}
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <p style={{ fontSize: 11, color: C.ink30, margin: 0, ...arFont }}>
-                              {isAr ? 'التحقق والوسائط' : lang === 'zh' ? '认证与媒体' : 'Verification & media'}
-                            </p>
-                            <button
-                              onClick={() => setVerificationStep(2)}
-                              style={{
-                                padding: '6px 12px',
-                                fontSize: 10,
-                                background: 'transparent',
-                                border: `1px solid ${C.ink10}`,
-                                color: C.ink60,
-                                borderRadius: 6,
-                                cursor: 'pointer',
-                                fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                              }}
-                            >
-                              {isAr ? 'تعديل' : lang === 'zh' ? '编辑' : 'Edit'}
-                            </button>
-                          </div>
-                          {[
-                            [t.regNumber, verification.reg_number || '—'],
-                            [t.yearsExp, verification.years_experience || '—'],
-                            [t.employees, verification.num_employees || '—'],
-                            [t.businessLicense, verification.license_photo ? (isAr ? 'مرفوع' : lang === 'zh' ? '已上传' : 'Uploaded') : '—'],
-                            [isAr ? 'صور التحقق' : lang === 'zh' ? '认证图片' : 'Verification images', verificationImages.length],
-                            [isAr ? 'فيديوهات التحقق' : lang === 'zh' ? '认证视频' : 'Verification videos', verificationVideos.length],
-                          ].map(([label, value]) => (
-                            <div key={label} style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              padding: '10px 0',
-                              borderBottom: `1px solid ${C.ink05}`,
-                            }}>
-                              <span style={{ fontSize: 13, color: C.ink30, ...arFont }}>{label}</span>
-                              <span style={{ fontSize: 13, color: C.ink, textAlign: isAr ? 'left' : 'right' }}>{value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Note */}
-                      <div style={{
-                        marginBottom: 24,
-                        padding: '14px 16px',
-                        borderRadius: 10,
-                        border: `1px solid ${C.ink05}`,
-                        background: C.paper,
-                      }}>
-                        <p style={{ margin: 0, fontSize: 12, color: C.ink60, lineHeight: 1.8, ...arFont }}>
-                          {isAr
-                            ? 'راجع كل شيء قبل الإرسال النهائي. لن يتم تقديم طلب التحقق إلا عند الضغط على زر الإرسال أدناه.'
-                            : lang === 'zh'
-                              ? '请在最终提交前再次确认。只有点击下面的最终提交按钮后，认证申请才会发送审核。'
-                              : 'Review everything before final submission. Your verification request will only be submitted when you click the final button below.'}
+                    {/* Draft saved note */}
+                    {verificationDraftSavedLabel && (
+                      <div style={{ marginBottom: 18, padding: '10px 16px', borderRadius: 10, border: `1px solid ${VF_C.ink10}`, background: VF_C.paper }}>
+                        <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                          {isAr ? `يتم حفظ المسودة محلياً. آخر حفظ: ${verificationDraftSavedLabel}` : lang === 'zh' ? `草稿已自动保存。最近保存：${verificationDraftSavedLabel}` : `Draft saved locally. Last saved: ${verificationDraftSavedLabel}`}
                         </p>
                       </div>
+                    )}
 
-                      {/* Buttons */}
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        <button
-                          onClick={() => setVerificationStep(2)}
-                          style={{
-                            minHeight: 46,
-                            padding: '0 18px',
-                            fontSize: 12,
-                            background: 'transparent',
-                            color: C.ink,
-                            border: `1px solid ${C.ink10}`,
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                          }}
-                        >
-                          {isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}
-                        </button>
-                        <button
-                          onClick={saveVerification}
-                          disabled={savingVerification}
-                          style={{
-                            padding: '12px 28px',
-                            minHeight: 46,
-                            fontSize: 13,
-                            background: C.ink,
-                            color: C.white,
-                            border: 'none',
-                            borderRadius: 8,
-                            cursor: savingVerification ? 'not-allowed' : 'pointer',
-                            fontFamily: isAr ? '"Tajawal", sans-serif' : 'inherit',
-                            opacity: savingVerification ? 0.6 : 1,
-                          }}
-                        >
-                          {savingVerification ? t.saving : (isAr ? 'إرسال طلب التحقق ←' : lang === 'zh' ? '提交认证申请 ←' : 'Submit verification request ←')}
-                        </button>
+                    {/* Error / success messages */}
+                    {verificationMsg && (
+                      <div className="vf-fi" style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, border: `1px solid ${verificationSaved ? VF_C.sageBr : 'rgba(160,112,112,0.2)'}`, background: verificationSaved ? VF_C.sageBg : 'rgba(160,112,112,0.07)' }}>
+                        <p style={{ fontSize: 13, color: verificationSaved ? VF_C.sage : '#a07070', fontFamily: 'Tajawal, sans-serif', fontWeight: 400, lineHeight: 1.7 }}>{verificationMsg}</p>
                       </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                /* If locked but not under review (e.g., approved) */
-                <div style={{ padding: 40, textAlign: 'center', color: C.ink60 }}>
-                  <p>{isAr ? 'الحساب معتمد.' : lang === 'zh' ? '账户已认证。' : 'Account verified.'}</p>
-                </div>
-              )}
+                    )}
+
+                    {/* ── STEP 1 ── */}
+                    {verificationStep === 1 && (
+                      <div>
+                        {settingsMsg && (
+                          <div className="vf-fi" style={{ marginBottom: 20, padding: '11px 16px', borderRadius: 10, background: settingsMsgType === 'success' ? VF_C.sageBg : 'rgba(160,112,112,0.07)', border: `1px solid ${settingsMsgType === 'success' ? VF_C.sageBr : 'rgba(160,112,112,0.2)'}` }}>
+                            <p style={{ fontSize: 13, color: settingsMsgType === 'success' ? VF_C.sage : '#a07070', fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{settingsMsg}</p>
+                          </div>
+                        )}
+
+                        <VfField label={isAr ? 'اسم الشركة *' : lang === 'zh' ? '公司名称 *' : 'Company Name *'} delay={0}>
+                          <input className="vf-input" value={settings.company_name || ''} onChange={e => setSettings({ ...settings, company_name: e.target.value })} />
+                        </VfField>
+                        <div style={{ height: 20 }} />
+                        <VfG2>
+                          <VfField label={isAr ? 'المدينة *' : lang === 'zh' ? '城市 *' : 'City *'} delay={0.05}>
+                            <input className="vf-input" value={settings.city || ''} onChange={e => setSettings({ ...settings, city: e.target.value })} />
+                          </VfField>
+                          <VfField label={isAr ? 'الدولة *' : lang === 'zh' ? '国家 *' : 'Country *'} delay={0.1}>
+                            <input className="vf-input" value={settings.country || ''} onChange={e => setSettings({ ...settings, country: e.target.value })} />
+                          </VfField>
+                        </VfG2>
+                        <div style={{ height: 20 }} />
+                        <VfG2>
+                          <VfField label={isAr ? 'التخصص *' : lang === 'zh' ? '专业 *' : 'Specialty *'} delay={0.15}>
+                            <select className="vf-select" value={settings.speciality || ''} onChange={e => setSettings({ ...settings, speciality: e.target.value })}>
+                              <option value="">—</option>
+                              {(CATEGORIES[lang] || CATEGORIES.en).filter(c => c.val !== 'all').map(c => (
+                                <option key={c.val} value={c.val}>{c.label}</option>
+                              ))}
+                            </select>
+                          </VfField>
+                          <VfField label={isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business Type'} delay={0.2}>
+                            <input className="vf-input" value={settings.business_type || ''} onChange={e => setSettings({ ...settings, business_type: e.target.value })} placeholder={isAr ? 'مصنّع / تاجر جملة' : lang === 'zh' ? '制造商 / 批发商' : 'Manufacturer / Wholesaler'} />
+                          </VfField>
+                        </VfG2>
+                        <VfSep label={isAr ? 'التواصل' : lang === 'zh' ? '联系方式' : 'Contact'} />
+                        <VfG2>
+                          <VfField label="WeChat *" delay={0.25}>
+                            <input className="vf-input" value={settings.wechat || ''} onChange={e => setSettings({ ...settings, wechat: e.target.value })} dir="ltr" />
+                          </VfField>
+                          <VfField label={isAr ? 'واتساب' : 'WhatsApp'} delay={0.3}>
+                            <input className="vf-input" value={settings.whatsapp || ''} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} dir="ltr" placeholder="+86..." />
+                          </VfField>
+                        </VfG2>
+                        <div style={{ height: 20 }} />
+                        <VfField label={isAr ? 'رابط المتجر / الملف التجاري *' : lang === 'zh' ? '店铺链接 *' : 'Trade Profile Link *'} delay={0.35}>
+                          <input className="vf-input" value={settings.trade_link || ''} onChange={e => setSettings({ ...settings, trade_link: e.target.value })} dir="ltr" placeholder="https://alibaba.com/..." />
+                        </VfField>
+                        <div style={{ height: 20 }} />
+                        <VfField label={isAr ? 'موقع الشركة' : lang === 'zh' ? '公司官网' : 'Company Website'} delay={0.4}>
+                          <input className="vf-input" value={settings.company_website || ''} onChange={e => setSettings({ ...settings, company_website: e.target.value })} dir="ltr" placeholder="https://..." />
+                        </VfField>
+                        <div style={{ height: 20 }} />
+                        <VfField label={isAr ? 'وصف الشركة' : lang === 'zh' ? '公司介绍' : 'Company Description'} delay={0.45}>
+                          <textarea className="vf-input" rows={3} style={{ resize: 'none', lineHeight: 1.7 }}
+                            value={settings.company_description || ''}
+                            onChange={e => setSettings({ ...settings, company_description: e.target.value })}
+                            placeholder={isAr ? 'نبذة — ما تنتجه، خبرتك، ميزتك التنافسية' : lang === 'zh' ? '简介 — 产品、经验、竞争优势' : 'Brief — products, experience, competitive advantage'}
+                          />
+                        </VfField>
+                        <div className="vf-fu" style={{ animationDelay: '0.5s', marginTop: 36, display: 'grid', gap: 10 }}>
+                          <button className="vf-btn-ink" disabled={savingSettings}
+                            onClick={() => saveSettings({ nextVerificationStep: 2, navigateToVerification: true })}>
+                            {savingSettings
+                              ? (isAr ? 'جاري الحفظ...' : lang === 'zh' ? '保存中...' : 'Saving...')
+                              : (isAr ? 'حفظ والانتقال للخطوة 2 ←' : lang === 'zh' ? '保存并进入第 2 步 →' : 'Save and continue to step 2 →')}
+                          </button>
+                          <button className="vf-btn-ghost" disabled={savingSettings} onClick={() => saveSettings()}>
+                            {isAr ? 'حفظ فقط' : lang === 'zh' ? '仅保存' : 'Save only'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 2 ── */}
+                    {verificationStep === 2 && (
+                      <div>
+                        <VfG2>
+                          <VfField label={isAr ? 'رقم تسجيل الشركة *' : lang === 'zh' ? '公司注册号 *' : 'Company Reg. Number *'} delay={0}>
+                            <input className="vf-input" value={verification.reg_number || ''} onChange={e => setVerification(prev => ({ ...prev, reg_number: e.target.value }))} dir="ltr" />
+                          </VfField>
+                          <VfField label={isAr ? 'سنوات الخبرة *' : lang === 'zh' ? '从业年限 *' : 'Years of Experience *'} delay={0.05}>
+                            <input className="vf-input" type="number" min="0" value={verification.years_experience || ''} onChange={e => setVerification(prev => ({ ...prev, years_experience: e.target.value }))} dir="ltr" />
+                          </VfField>
+                        </VfG2>
+                        <div style={{ height: 20 }} />
+                        <VfField label={isAr ? 'عدد الموظفين' : lang === 'zh' ? '员工人数' : 'Number of Employees'} delay={0.1}>
+                          <input className="vf-input" type="number" min="0" value={verification.num_employees || ''} onChange={e => setVerification(prev => ({ ...prev, num_employees: e.target.value }))} dir="ltr" placeholder={isAr ? 'اختياري' : lang === 'zh' ? '可选' : 'Optional'} />
+                        </VfField>
+
+                        <VfSep label={isAr ? 'المستندات' : lang === 'zh' ? '文件' : 'Documents'} />
+
+                        {/* License */}
+                        <div className="vf-fu" style={{ animationDelay: '0.2s', marginBottom: 12 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                            {isAr ? 'رخصة الأعمال أو هوية المنشأة *' : lang === 'zh' ? '营业执照或企业证明 *' : 'Business License or Company ID *'}
+                          </p>
+                          {verification.license_photo ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                              <VfChk size={13} />
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                                {isAr ? 'رخصة الأعمال — مرفوعة' : lang === 'zh' ? '营业执照 — 已上传' : 'License — uploaded'}
+                              </p>
+                              <button onClick={() => openVerificationDoc(verification.license_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
+                              </button>
+                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'استبدال' : lang === 'zh' ? '更换' : 'Replace'}
+                                <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'license'); e.target.value = ''; }} />
+                              </label>
+                            </div>
+                          ) : (
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
+                              {uploadingVerificationDoc.license
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                : <>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                      {isAr ? 'رفع الملف' : lang === 'zh' ? '上传文件' : 'Upload file'}
+                                    </p>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                      PDF {isAr ? 'أو صورة' : lang === 'zh' ? '或图片' : 'or image'} · 10MB
+                                    </p>
+                                  </>
+                              }
+                              <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'license'); e.target.value = ''; }} />
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Factory images */}
+                        <div className="vf-fu" style={{ animationDelay: '0.25s', marginBottom: 12 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                            {isAr ? 'صور المصنع أو المستودع *' : lang === 'zh' ? '工厂或仓库照片 *' : 'Factory or Warehouse Photos *'}
+                            <span style={{ fontSize: 11, color: VF_C.ink30, fontWeight: 300, marginRight: 6 }}>{verificationImages.length}/{VERIFICATION_IMAGE_LIMIT}</span>
+                          </p>
+                          {verificationImages.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {verificationImages.map((item, i) => (
+                                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                                  <VfChk size={13} />
+                                  <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                                    {isAr ? `صورة ${i + 1}` : lang === 'zh' ? `图片 ${i + 1}` : `Image ${i + 1}`}
+                                  </p>
+                                  <button onClick={() => openVerificationDoc(item)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                    {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
+                                  </button>
+                                  <button onClick={() => removeVerificationMedia('image', item)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                    {isAr ? 'حذف' : lang === 'zh' ? '删除' : 'Remove'}
+                                  </button>
+                                </div>
+                              ))}
+                              {verificationImages.length < VERIFICATION_IMAGE_LIMIT && (
+                                <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '14px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
+                                  <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>
+                                    + {isAr ? 'إضافة صورة' : lang === 'zh' ? '添加图片' : 'Add image'}
+                                  </p>
+                                  <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => { await uploadVerificationMedia(e.target.files, 'image'); e.target.value = ''; }} />
+                                </label>
+                              )}
+                            </div>
+                          ) : (
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
+                              {uploadingVerificationDoc.images
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                : <>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                      {isAr ? 'صور المصنع أو المستودع' : lang === 'zh' ? '工厂或仓库照片' : 'Factory or warehouse photos'}
+                                    </p>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                      {isAr ? 'حتى 5 صور · JPG أو PNG' : lang === 'zh' ? '最多 5 张 · JPG 或 PNG' : 'Up to 5 photos · JPG or PNG'}
+                                    </p>
+                                  </>
+                              }
+                              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => { await uploadVerificationMedia(e.target.files, 'image'); e.target.value = ''; }} />
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Factory video — optional */}
+                        <div className="vf-fu" style={{ animationDelay: '0.3s', marginBottom: 12 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                            {isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory Video'}
+                            <span style={{ fontWeight: 300, marginRight: 6 }}>— {isAr ? 'اختياري' : lang === 'zh' ? '可选' : 'optional'}</span>
+                          </p>
+                          {verificationVideos.length > 0 ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                              <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill={VF_C.sage} /></svg>
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                                {isAr ? 'فيديو المصنع — مرفوع' : lang === 'zh' ? '工厂视频 — 已上传' : 'Factory video — uploaded'}
+                              </p>
+                              <button onClick={() => removeVerificationMedia('video', verificationVideos[0])} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'حذف' : lang === 'zh' ? '删除' : 'Remove'}
+                              </button>
+                            </div>
+                          ) : (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 10, border: `1px dashed ${VF_C.ink10}`, background: VF_C.paper, cursor: 'pointer' }}>
+                              <div style={{ width: 34, height: 34, borderRadius: 8, background: VF_C.ink05, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill={VF_C.ink30} /></svg>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>
+                                  {isAr ? 'رفع فيديو' : lang === 'zh' ? '上传视频' : 'Upload video'}
+                                </p>
+                                <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, marginTop: 2 }}>
+                                  {isAr ? 'جولة في المصنع · MP4 · حتى 50MB' : lang === 'zh' ? '工厂参观视频 · MP4 · 最大 50MB' : 'Factory tour · MP4 · Max 50MB'}
+                                </p>
+                              </div>
+                              <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async e => { await uploadVerificationMedia(e.target.files, 'video'); e.target.value = ''; }} />
+                            </label>
+                          )}
+                        </div>
+
+                        <div className="vf-fu" style={{ animationDelay: '0.36s', marginTop: 36, display: 'grid', gap: 10 }}>
+                          <button className="vf-btn-ink" onClick={() => {
+                            const isStepReady = Boolean(String(verification.reg_number || '').trim())
+                              && Boolean(String(verification.years_experience || '').trim())
+                              && Boolean(String(verification.license_photo || '').trim())
+                              && verificationImages.length > 0;
+                            if (!isStepReady) { setVerificationSaved(false); setVerificationMsg(t.verificationMissing); return; }
+                            setVerificationMsg('');
+                            setVerificationStep(3);
+                          }}>
+                            {isAr ? 'التالي: المراجعة النهائية ←' : lang === 'zh' ? '下一步：最终确认 →' : 'Next: Final review →'}
+                          </button>
+                          <button className="vf-btn-ghost" onClick={() => setVerificationStep(1)}>
+                            {isAr ? 'رجوع لبيانات الشركة' : lang === 'zh' ? '返回公司资料' : 'Back to company profile'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 3 ── */}
+                    {verificationStep === 3 && (
+                      <div>
+                        <div className="vf-fu" style={{ animationDelay: '0s', background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
+                          {[
+                            [isAr ? 'اسم الشركة'       : lang === 'zh' ? '公司名称'   : 'Company',       settings.company_name || '—'],
+                            [isAr ? 'المدينة / الدولة'  : lang === 'zh' ? '城市 / 国家' : 'City / Country', `${settings.city || '—'} · ${settings.country || '—'}`],
+                            [isAr ? 'التخصص'            : lang === 'zh' ? '专业'       : 'Specialty',      settings.speciality || '—'],
+                            ['WeChat',                                                                         settings.wechat || '—'],
+                            [isAr ? 'رابط المتجر'       : lang === 'zh' ? '店铺链接'   : 'Trade link',     settings.trade_link || '—'],
+                            [isAr ? 'رقم التسجيل'       : lang === 'zh' ? '注册号'     : 'Reg. number',    verification.reg_number || '—'],
+                            [isAr ? 'سنوات الخبرة'      : lang === 'zh' ? '从业年限'   : 'Experience',     verification.years_experience || '—'],
+                            [isAr ? 'رخصة الأعمال'      : lang === 'zh' ? '营业执照'   : 'License',        verification.license_photo ? (isAr ? 'مرفوعة ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓') : '—'],
+                            [isAr ? 'صور المصنع'         : lang === 'zh' ? '工厂图片'   : 'Factory photos', `${verificationImages.length} ${isAr ? 'صور' : lang === 'zh' ? '张' : 'photos'}`],
+                            ...(verificationVideos.length > 0 ? [[isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory video', isAr ? 'مرفوع ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓']] : []),
+                          ].map(([k, v], i, arr) => (
+                            <div key={k} className="vf-review-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${VF_C.ink05}` : 'none' }}>
+                              <span style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, flexShrink: 0 }}>{k}</span>
+                              <span style={{ fontSize: 13, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="vf-fu" style={{ animationDelay: '0.1s', display: 'grid', gap: 10 }}>
+                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { await saveVerification(); if (verificationSaved) setShowVfSuccess(true); }}>
+                            {savingVerification
+                              ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '提交中...' : 'Submitting...')
+                              : (isAr ? 'إرسال طلب التحقق ←' : lang === 'zh' ? '提交认证申请 →' : 'Submit verification request →')}
+                          </button>
+                          <button className="vf-btn-ghost" onClick={() => setVerificationStep(2)}>
+                            {isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
             </div>
           )}
-
           {/* ── PAYOUT ── */}
           {!isRestrictedSupplierTab && activeTab === 'payout' && (
             <div style={section}>
@@ -5586,19 +4607,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <button onClick={saveSettings} disabled={savingSettings} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46 }}>
                   {settingsPrimaryButtonLabel}
                 </button>
-                {settingsMsg && (
-                  <div style={{
-                    marginTop: 12,
-                    padding: '10px 16px',
-                    borderRadius: 6,
-                    fontSize: 13,
-                    color: settingsMsgType === 'success' ? '#1a6b3c' : '#b91c1c',
-                    background: settingsMsgType === 'success' ? '#f0fdf4' : '#fef2f2',
-                    border: `1px solid ${settingsMsgType === 'success' ? '#bbf7d0' : '#fecaca'}`,
-                  }}>
-                    {settingsMsg}
-                  </div>
-                )}
               </div>
             </div>
           )}
