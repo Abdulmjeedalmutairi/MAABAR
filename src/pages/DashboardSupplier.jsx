@@ -3009,9 +3009,6 @@ setVerification(prev => ({
                   <button onClick={openVerificationFlow} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
                     {supplierState.isUnderReviewStage ? (isAr ? 'عرض حالة التحقق' : lang === 'zh' ? '查看认证状态' : 'View verification status') : t.verificationCtaAction}
                   </button>
-                  <button onClick={() => setActiveTab('settings')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>
-                    {t.onboardingGoSettings}
-                  </button>
                   <button onClick={() => setActiveTab('overview')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>
                     {isAr ? 'العودة للوحة المورد' : lang === 'zh' ? '返回控制台' : 'Back to dashboard'}
                   </button>
