@@ -160,7 +160,7 @@ const T = {
     verificationTab: 'التحقق', verificationTitle: 'أكمل التحقق التجاري', verificationIntro: 'أرسل بيانات التحقق والمستندات من هنا بعد إنشاء الحساب. لن نطلبها في التسجيل الأولي.',
     verificationStatusIncomplete: 'التحقق غير مكتمل', verificationStatusComplete: 'تم إرسال التحقق للمراجعة', verificationStatusLocked: 'الحساب الآن تحت المراجعة',
     verificationCtaTitle: 'أكمل التحقق التجاري', verificationCtaBody: 'أرسل السجل التجاري وصورة المصنع وبيانات الخبرة حتى يدخل طلبك مرحلة المراجعة.', verificationCtaAction: 'أكمل التحقق ←',
-    regNumber: 'رقم تسجيل الشركة *', yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)', businessLicense: 'رخصة الأعمال أو هوية المنشأة *', factoryPhoto: 'صورة المصنع أو المستودع *', replaceFile: 'استبدال الملف', viewCurrentFile: 'عرض الملف الحالي', secureStorageNote: 'يتم حفظ هذه الملفات داخل تخزين خاص، ولا تُعرض بروابط عامة.', verificationSubmitted: 'تم إرسال التحقق بنجاح. الحساب الآن تحت المراجعة.', verificationMissing: 'يرجى تعبئة جميع حقول التحقق المطلوبة ورفع المستندات.', verificationProfileRequired: 'أكمل أولاً بيانات الشركة الأساسية واحفظها قبل إرسال التحقق.', verificationConfirm: 'هل أنت متأكد من إرسال طلب التحقق؟ لا يمكن التراجع بعد الإرسال.',
+    regNumber: 'رقم تسجيل الشركة *', yearsExp: 'سنوات الخبرة *', employees: 'عدد الموظفين (اختياري)', businessLicense: 'رخصة الأعمال أو هوية المنشأة *', factoryPhoto: 'صورة المصنع أو المستودع *', replaceFile: 'استبدال الملف', viewCurrentFile: 'عرض الملف الحالي', secureStorageNote: 'يتم حفظ هذه الملفات داخل تخزين خاص، ولا تُعرض بروابط عامة.', verificationSubmitted: 'تم إرسال التحقق بنجاح. الحساب الآن تحت المراجعة.', verificationMissing: 'يرجى تعبئة جميع حقول التحقق المطلوبة ورفع المستندات.', verificationProfileRequired: 'أكمل أولاً بيانات الشركة الأساسية واحفظها قبل إرسال التحقق.',
     payoutTab: 'المدفوعات', payoutTitle: 'إعدادات استلام الدفعات', payoutIntro: 'أضف بياناتك البنكية لتكون جاهزًا لاستقبال الدفعات مستقبلًا عبر معبر.', payoutNote: 'يتم حفظ هذه البيانات بشكل آمن.', payoutLocked: 'إعدادات الدفعات تفتح بعد الموافقة على حسابك.', payoutCtaTitle: 'أكمل بيانات الدفعات', payoutCtaBody: 'حسابك مقبول، لكن بياناتك البنكية ما زالت غير مكتملة.', payoutCtaAction: 'إكمال بيانات الدفعات ←', payoutSaved: 'تم حفظ بيانات الدفعات', beneficiaryName: 'اسم المستفيد', bankName: 'اسم البنك', bankAccountNumber: 'رقم الحساب البنكي', swiftCode: 'SWIFT / BIC', preferredCurrency: 'العملة المفضلة', branchNameOptional: 'اسم الفرع (اختياري)', ibanOptional: 'IBAN (اختياري)', savePayout: 'حفظ بيانات الدفعات', onboardingTitle: 'طلبك ما زال في مرحلة الانضمام', onboardingBody: 'هذه لوحة المورد الأساسية، لكن الإجراءات الأساسية ما زالت مقفلة. أكمل ملف الشركة وأرسل التحقق حتى يدخل الحساب مرحلة المراجعة.', onboardingProgress: 'تقدّم الطلب', onboardingLockedTitle: 'المزايا المقفلة حتى التوثيق', onboardingLockedBody: 'الطلبات والعروض والمنتجات والرسائل وكل الإجراءات الأساسية تفتح فقط بعد اعتماد التحقق.', onboardingStepApply: '1) أكمل الملف الأساسي', onboardingStepReview: '2) أرسل التحقق للمراجعة', onboardingStepVisibility: '3) افتح التجربة الكاملة بعد التوثيق', onboardingGoSettings: 'إعدادات الملف', onboardingStatusDraft: 'verification_required', onboardingVerificationReady: 'بعد إرسال التحقق ينتقل الحساب مباشرة إلى مرحلة المراجعة.', verificationSubmitAction: 'إرسال التحقق',
   },
   en: {
@@ -200,7 +200,7 @@ const T = {
     verificationTab: 'Verification', verificationTitle: 'Complete business verification', verificationIntro: 'Submit the full verification details and documents here after signup. They are no longer required during initial registration.',
     verificationStatusIncomplete: 'Verification incomplete', verificationStatusComplete: 'Verification submitted for review', verificationStatusLocked: 'Account is currently under review',
     verificationCtaTitle: 'Complete your business verification', verificationCtaBody: 'Submit your registration, factory evidence, and experience details so your application can enter review.', verificationCtaAction: 'Complete verification →',
-    regNumber: 'Company Registration Number *', yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)', businessLicense: 'Business License or Company ID *', factoryPhoto: 'Factory or Warehouse Photo *', replaceFile: 'Replace file', viewCurrentFile: 'View current file', secureStorageNote: 'These files are stored in private storage and are never exposed through public URLs.', verificationSubmitted: 'Verification submitted successfully. Your account is now under review.', verificationMissing: 'Please complete all required verification fields and upload the required documents.', verificationProfileRequired: 'Complete and save the basic company profile before submitting verification.', verificationConfirm: 'Are you sure you want to submit your verification request? This cannot be undone.',
+    regNumber: 'Company Registration Number *', yearsExp: 'Years of Experience *', employees: 'Number of Employees (optional)', businessLicense: 'Business License or Company ID *', factoryPhoto: 'Factory or Warehouse Photo *', replaceFile: 'Replace file', viewCurrentFile: 'View current file', secureStorageNote: 'These files are stored in private storage and are never exposed through public URLs.', verificationSubmitted: 'Verification submitted successfully. Your account is now under review.', verificationMissing: 'Please complete all required verification fields and upload the required documents.', verificationProfileRequired: 'Complete and save the basic company profile before submitting verification.',
     payoutTab: 'Payout', payoutTitle: 'Payout settings', payoutIntro: 'Add your bank details so you are ready to receive future payouts through Maabar.', payoutNote: 'This information is stored securely.', payoutLocked: 'Payout details unlock after your account is approved.', payoutCtaTitle: 'Complete your payout details', payoutCtaBody: 'Your account is approved, but your bank payout details are still incomplete.', payoutCtaAction: 'Add payout details →', payoutSaved: 'Payout details saved', beneficiaryName: 'Beneficiary Name', bankName: 'Bank Name', bankAccountNumber: 'Bank Account Number', swiftCode: 'SWIFT / BIC', preferredCurrency: 'Preferred Currency', branchNameOptional: 'Branch Name (optional)', ibanOptional: 'IBAN (optional)', savePayout: 'Save payout details', onboardingTitle: 'Your account is still in the supplier application stage', onboardingBody: 'This is the supplier dashboard, but core actions are still locked. Complete your company profile and submit verification so the account can enter review.', onboardingProgress: 'Application progress', onboardingLockedTitle: 'Locked until verification is approved', onboardingLockedBody: 'Products, offers, messages, trader requests, and every core supplier action unlock only after verification is approved.', onboardingStepApply: '1) Complete the basic profile', onboardingStepReview: '2) Submit verification for review', onboardingStepVisibility: '3) Unlock the full supplier experience after verification', onboardingGoSettings: 'Profile settings', onboardingStatusDraft: 'verification_required', onboardingVerificationReady: 'Once you submit verification, the account moves directly into review.', verificationSubmitAction: 'Submit verification',
   },
   zh: {
@@ -240,7 +240,7 @@ const T = {
     verificationTab: '认证', verificationTitle: '完成企业认证', verificationIntro: '注册后在这里补充完整认证资料和文件，初始注册不再要求一次填完。',
     verificationStatusIncomplete: '认证未完成', verificationStatusComplete: '认证资料已提交审核', verificationStatusLocked: '账户正在审核中',
     verificationCtaTitle: '请完成企业认证', verificationCtaBody: '请提交注册资料、工厂证明和经验信息，审核流程才会开始。', verificationCtaAction: '去完成认证 →',
-    regNumber: '公司注册号 *', yearsExp: '从业年限 *', employees: '员工人数（可选）', businessLicense: '营业执照或企业身份证明 *', factoryPhoto: '工厂或仓库照片 *', replaceFile: '更换文件', viewCurrentFile: '查看当前文件', secureStorageNote: '这些文件保存在私有存储中，不会通过公开链接暴露。', verificationSubmitted: '认证资料已提交，账户当前处于审核中。', verificationMissing: '请填写所有必填认证信息并上传所需文件。', verificationProfileRequired: '请先完成并保存基础公司资料，再提交认证。', verificationConfirm: '确定要提交认证申请吗？提交后无法撤回。',
+    regNumber: '公司注册号 *', yearsExp: '从业年限 *', employees: '员工人数（可选）', businessLicense: '营业执照或企业身份证明 *', factoryPhoto: '工厂或仓库照片 *', replaceFile: '更换文件', viewCurrentFile: '查看当前文件', secureStorageNote: '这些文件保存在私有存储中，不会通过公开链接暴露。', verificationSubmitted: '认证资料已提交，账户当前处于审核中。', verificationMissing: '请填写所有必填认证信息并上传所需文件。', verificationProfileRequired: '请先完成并保存基础公司资料，再提交认证。',
     payoutTab: '收款', payoutTitle: '收款设置', payoutIntro: '请补充您的银行信息，以便未来通过 Maabar 接收款项。', payoutNote: '这些信息会被安全保存。', payoutLocked: '账户审核通过后才可填写收款资料。', payoutCtaTitle: '请完成收款资料', payoutCtaBody: '您的账户已通过审核，但银行收款资料仍未填写完整。', payoutCtaAction: '去填写收款资料 →', payoutSaved: '收款信息已保存', beneficiaryName: '收款人姓名', bankName: '银行名称', bankAccountNumber: '银行账号', swiftCode: 'SWIFT / BIC', preferredCurrency: '首选货币', branchNameOptional: '分行名称（可选）', ibanOptional: 'IBAN（可选）', savePayout: '保存收款信息', onboardingTitle: '您的账户仍处于供应商申请阶段', onboardingBody: '这里已经是供应商控制台，但核心操作仍然锁定。请先完善公司资料并提交认证，让账户进入审核阶段。', onboardingProgress: '申请进度', onboardingLockedTitle: '认证通过前保持锁定', onboardingLockedBody: '产品、报价、消息、采购需求以及所有核心供应商操作，都要在认证通过后才会开放。', onboardingStepApply: '1) 完成基础资料', onboardingStepReview: '2) 提交认证进入审核', onboardingStepVisibility: '3) 认证通过后解锁完整供应商体验', onboardingGoSettings: '资料设置', onboardingStatusDraft: 'verification_required', onboardingVerificationReady: '提交认证后，账户会直接进入审核阶段。', verificationSubmitAction: '提交认证',
   },
 };
@@ -1681,7 +1681,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setEditingProduct(null);
       setProductComposerStep('edit');
       setEditProductComposerStep('edit');
-      const draft = sessionStorage.getItem('maabar_product_draft');
+      const draft = localStorage.getItem('maabar_product_draft');
       if (draft) {
         try { setProduct(normalizeProductDraftMedia(JSON.parse(draft))); } catch { setProduct(emptyProduct); }
       } else {
@@ -1697,48 +1697,63 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   
      useEffect(() => {
     if (!profile) return;
-    const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
-    if (hasDraft) return;
-    setSettings(buildSettingsState(profile, displayCurrency || 'USD'));
-    setVerification(buildVerificationState(profile));
-    setPayout(buildPayoutState(profile));
-  }, [profile, displayCurrency, verificationDraftKey]);
-
-  useEffect(() => {
-    if (!verificationDraftKey) return;
-
-    const rawDraft = sessionStorage.getItem(verificationDraftKey);
-    if (!rawDraft) {
+    
+    console.log('[Verification] Loading data, verificationDraftKey:', verificationDraftKey);
+    
+    // دائمًا نحمّل الأساس من profile
+    const baseSettings = buildSettingsState(profile, displayCurrency || 'USD');
+    const baseVerification = buildVerificationState(profile);
+    const basePayout = buildPayoutState(profile);
+    
+    const hasDraft = verificationDraftKey ? Boolean(localStorage.getItem(verificationDraftKey)) : false;
+    console.log('[Verification] Has draft in localStorage:', hasDraft);
+    
+    if (hasDraft) {
+      try {
+        const rawDraft = localStorage.getItem(verificationDraftKey);
+        const parsed = JSON.parse(rawDraft);
+        console.log('[Verification] Parsed draft, step:', parsed?.step, 'settings keys:', Object.keys(parsed.settings || {}), 'verification keys:', Object.keys(parsed.verification || {}));
+        
+        // الدمج: الدرفت يغلب الأساسي
+        const mergedSettings = { ...baseSettings, ...parsed.settings };
+        const mergedVerification = { ...baseVerification, ...parsed.verification };
+        
+        setSettings(mergedSettings);
+        setVerification({
+          ...mergedVerification,
+          factory_images: normalizeVerificationMedia(parsed.verification.factory_images || []).slice(0, VERIFICATION_IMAGE_LIMIT),
+          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos || []).slice(0, VERIFICATION_VIDEO_LIMIT),
+        });
+        setPayout(basePayout);
+        const loadedStep = Math.min(3, Math.max(1, Number(parsed?.step) || 1));
+        console.log('[Verification] Loaded step from draft:', loadedStep, 'parsed step:', parsed?.step);
+        setVerificationStep(loadedStep);
+        setDraftSavedAt(parsed?.savedAt || '');
+        
+        console.log('[Verification] Data loaded successfully from draft');
+      } catch (error) {
+        console.error('[Verification] Error loading draft:', error);
+        localStorage.removeItem(verificationDraftKey);
+        setSettings(baseSettings);
+        setVerification(baseVerification);
+        setPayout(basePayout);
+        setVerificationStep(1);
+      }
+    } else {
+      console.log('[Verification] No draft found, loading base data from profile');
+      setSettings(baseSettings);
+      setVerification(baseVerification);
+      setPayout(basePayout);
       setVerificationStep(1);
-      setDraftSavedAt('');
-      return;
     }
-
-    try {
-      const parsed = JSON.parse(rawDraft);
-      if (parsed?.settings) {
-        setSettings((prev) => ({ ...prev, ...parsed.settings }));
-      }
-      if (parsed?.verification) {
-        setVerification((prev) => ({
-          ...prev,
-          ...parsed.verification,
-          factory_images: normalizeVerificationMedia(parsed.verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
-          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
-        }));
-      }
-      setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
-      setDraftSavedAt(parsed?.savedAt || '');
-    } catch {
-      sessionStorage.removeItem(verificationDraftKey);
-    }
-  }, [verificationDraftKey]);
+  }, [profile, displayCurrency, verificationDraftKey]);
 
   useEffect(() => {
     if (!verificationDraftKey || isVerificationLocked) return;
 
     const savedAt = new Date().toISOString();
-    sessionStorage.setItem(verificationDraftKey, JSON.stringify({
+    console.log('[Verification] Saving draft to localStorage, step=', verificationStep, 'key=', verificationDraftKey, 'settings keys:', Object.keys(settings), 'verification keys:', Object.keys(verification));
+    localStorage.setItem(verificationDraftKey, JSON.stringify({
       settings,
       verification: {
         ...verification,
@@ -1756,7 +1771,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
     if (activeTab === 'add-product' && !editingProduct) {
-      sessionStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
+      localStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
     }
   }, [product, activeTab, editingProduct]);
 
@@ -1989,7 +2004,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const clearVerificationDraft = () => {
-    if (verificationDraftKey) sessionStorage.removeItem(verificationDraftKey);
+    if (verificationDraftKey) localStorage.removeItem(verificationDraftKey);
     setDraftSavedAt('');
   };
 
@@ -2112,13 +2127,16 @@ setVerification(prev => ({
   };
 
   const saveVerification = async () => {
+    console.log('[Verification] saveVerification called, step=', verificationStep, 'hasVerificationBasics=', verificationProgress.hasVerificationBasics, 'isUnderReviewStage=', supplierState.isUnderReviewStage);
     if (isVerificationLocked) {
+      console.log('[Verification] Verification locked, skipping');
       return;
     }
 
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
+      console.log('[Verification] Missing profile fields, forcing step 1');
       setVerificationStep(1);
       return;
     }
@@ -2126,14 +2144,36 @@ setVerification(prev => ({
     if (!verificationProgress.hasVerificationBasics) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
+      console.log('[Verification] Missing verification basics, forcing step 2');
       setVerificationStep(2);
       return;
     }
 
     if (verificationStep !== 3) {
-      setVerificationSaved(false);
-      setVerificationMsg(t.verificationReviewRequired);
-      setVerificationStep(3);
+      // Only move to step 3 if user explicitly clicked "Next" in step 2
+      // Don't auto-advance based on verificationProgress.hasVerificationBasics
+      if (verificationStep === 2 && verificationProgress.hasVerificationBasics) {
+        setVerificationSaved(false);
+        setVerificationMsg(t.verificationReviewRequired);
+        console.log('[Verification] Moving to step 3 for final review');
+        setVerificationStep(3);
+        return;
+      }
+      // If we're in step 1 or step 2 without basics, show appropriate message
+      if (verificationStep === 1) {
+        setVerificationMsg(t.verificationProfileRequired);
+        return;
+      }
+      if (verificationStep === 2) {
+        setVerificationMsg(t.verificationMissing);
+        return;
+      }
+      return;
+    }
+
+    // منع الإرسال إذا كان الطلب مُرسلاً أو معتمداً
+    if (supplierState.isUnderReviewStage || supplierState.isApprovedStage) {
+      setVerificationMsg(isAr ? 'الطلب مُرسل بالفعل' : 'Already submitted');
       return;
     }
 
@@ -2169,10 +2209,7 @@ setVerification(prev => ({
     let submittedStatus = profile?.status;
 
     if (!supplierState.isApprovedStage) {
-      if (!window.confirm(t.verificationConfirm)) {
-        setSavingVerification(false);
-        return;
-      }
+      console.log('[Verification] Calling submit_supplier_verification RPC');
       const { data: submitResult, error: submitError } = await sb.rpc('submit_supplier_verification');
       if (submitError) {
         setSavingVerification(false);
@@ -2227,6 +2264,7 @@ setVerification(prev => ({
 
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
+    console.log('[Verification] Submission successful, staying on step 3');
     setVerificationStep(3);
     setActiveTab('overview');
     if (dashboardUiStateKey) sessionStorage.removeItem(dashboardUiStateKey);
@@ -2316,21 +2354,16 @@ setVerification(prev => ({
     setSettings(buildSettingsState(mergedProfile, payload.preferred_display_currency || 'USD'));
     setSettingsSavedAt(savedAt);
 
-    const shouldAdvanceIntoVerification = !supplierState.isUnderReviewStage
-      && !supplierState.isApprovedStage
-      && (navigateToVerification || typeof nextVerificationStep === 'number');
-
-    if (shouldAdvanceIntoVerification) {
+    if (navigateToVerification || typeof nextVerificationStep === 'number') {
       setVerificationSaved(true);
-      setActiveTab('verification');
-      setSettingsMsgType('success');
-      setSettingsMsg(t.settingsSaved);
+      setVerificationMsg(isAr ? 'تم حفظ ملف الشركة. الآن أرفق مستندات التحقق ثم أكمل الإرسال النهائي.' : lang === 'zh' ? '公司资料已保存。现在请上传认证文件，然后完成最终提交。' : 'Company profile saved. Now add your verification files, then complete the final submission.');
+      if (navigateToVerification) {
+        setActiveTab('verification');
+      }
       if (typeof nextVerificationStep === 'number') {
         const targetStep = Math.min(3, Math.max(1, nextVerificationStep));
-        setTimeout(() => {
-          setSettingsMsg('');
-          setVerificationStep(targetStep);
-        }, 1500);
+        console.log('[Verification] saveSettings advancing to step', targetStep);
+        setVerificationStep(targetStep);
       }
     }
 
@@ -2390,6 +2423,7 @@ setVerification(prev => ({
     let query = sb.from('requests').select('*, profiles!requests_buyer_id_fkey(full_name, company_name)').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data, error } = await query;
+    console.log('loadRequests result:', data?.length, 'error:', error);
     if (error) {
       setRequests([]);
       setLoadingRequests(false);
@@ -2606,7 +2640,7 @@ setVerification(prev => ({
       setProductSaveMsg(isAr ? 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.' : lang === 'zh' ? '保存产品时出错，请重试。' : 'Error saving product. Please try again.');
       return;
     }
-    sessionStorage.removeItem('maabar_product_draft');
+    localStorage.removeItem('maabar_product_draft');
     setProduct(emptyProduct);
     setProductComposerStep('edit');
     setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح' : lang === 'zh' ? '产品添加成功' : 'Product added successfully'));
@@ -2917,7 +2951,9 @@ setVerification(prev => ({
   const openVerificationFlow = () => {
     setActiveTab('verification');
     if (!isVerificationLocked) {
-      setVerificationStep(verificationProgress.firstIncompleteStep);
+      const targetStep = Math.min(verificationProgress.firstIncompleteStep, 2);
+      console.log('[Verification] openVerificationFlow setting step to', targetStep, 'firstIncompleteStep=', verificationProgress.firstIncompleteStep);
+      setVerificationStep(targetStep);
     }
   };
 
@@ -3173,6 +3209,7 @@ setVerification(prev => ({
                   </p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={openVerificationFlow} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{t.verificationCtaAction}</button>
+                    <button onClick={() => setActiveTab('settings')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'تعديل الملف' : lang === 'zh' ? '编辑资料' : 'Edit profile'}</button>
                   </div>
                 </div>
               )}
@@ -4353,6 +4390,7 @@ setVerification(prev => ({
                               && verificationImages.length > 0;
                             if (!isStepReady) { setVerificationSaved(false); setVerificationMsg(t.verificationMissing); return; }
                             setVerificationMsg('');
+                            console.log('[Verification] Next button clicked, moving to step 3');
                             setVerificationStep(3);
                           }}>
                             {isAr ? 'التالي: المراجعة النهائية ←' : lang === 'zh' ? '下一步：最终确认 →' : 'Next: Final review →'}
@@ -4367,6 +4405,9 @@ setVerification(prev => ({
                     {/* ── STEP 3 ── */}
                     {verificationStep === 3 && (
                       <div>
+                        <h3 style={{ fontSize: 24, fontWeight: 600, color: VF_C.ink, marginBottom: 24, textAlign: isAr ? 'right' : 'left', fontFamily: 'Tajawal, sans-serif', letterSpacing: -0.3 }}>
+                          {isAr ? 'المراجعة النهائية - تأكد من البيانات قبل الإرسال' : lang === 'zh' ? '最终确认 - 提交前请核对信息' : 'Final Review - Verify details before submission'}
+                        </h3>
                         <div className="vf-fu" style={{ animationDelay: '0s', background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
                           {[
                             [isAr ? 'اسم الشركة'       : lang === 'zh' ? '公司名称'   : 'Company',       settings.company_name || '—'],
@@ -4387,10 +4428,17 @@ setVerification(prev => ({
                           ))}
                         </div>
                         <div className="vf-fu" style={{ animationDelay: '0.1s', display: 'grid', gap: 10 }}>
-                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { await saveVerification(); if (verificationSaved) setShowVfSuccess(true); }}>
+                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { 
+                            const message = isAr ? 'هل أنت متأكد من إرسال طلب التحقق؟ بعد الإرسال، ستتم مراجعة طلبك من قبل فريق مَعبر ولن تتمكن من تعديل البيانات.' 
+                                                 : lang === 'zh' ? '您确定要提交认证申请吗？提交后，您的申请将由 Maabar 团队审核，无法再修改数据。' 
+                                                 : 'Are you sure you want to submit the verification request? After submission, your application will be reviewed by Maabar team and you cannot edit data.';
+                            if (!window.confirm(message)) return;
+                            await saveVerification(); 
+                            if (verificationSaved) setShowVfSuccess(true); 
+                          }}>
                             {savingVerification
                               ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '提交中...' : 'Submitting...')
-                              : (isAr ? 'إرسال طلب التحقق ←' : lang === 'zh' ? '提交认证申请 →' : 'Submit verification request →')}
+                              : (isAr ? '⚠️ أرسل طلب التحقق الآن (لا يمكن التراجع) ←' : lang === 'zh' ? '⚠️ 立即提交认证（无法撤回） →' : '⚠️ Submit verification now (cannot be undone) →')}
                           </button>
                           <button className="vf-btn-ghost" onClick={() => setVerificationStep(2)}>
                             {isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}
