@@ -2318,14 +2318,12 @@ setVerification(prev => ({
     setSettings(buildSettingsState(mergedProfile, payload.preferred_display_currency || 'USD'));
     setSettingsSavedAt(savedAt);
 
-    const shouldAdvanceIntoVerification = !supplierState.isUnderReviewStage
-      && !supplierState.isApprovedStage
-      && (navigateToVerification || typeof nextVerificationStep === 'number');
-
-    if (shouldAdvanceIntoVerification) {
+    if (navigateToVerification || typeof nextVerificationStep === 'number') {
       setVerificationSaved(true);
       setVerificationMsg(isAr ? 'تم حفظ ملف الشركة. الآن أرفق مستندات التحقق ثم أكمل الإرسال النهائي.' : lang === 'zh' ? '公司资料已保存。现在请上传认证文件，然后完成最终提交。' : 'Company profile saved. Now add your verification files, then complete the final submission.');
-      setActiveTab('verification');
+      if (navigateToVerification) {
+        setActiveTab('verification');
+      }
       if (typeof nextVerificationStep === 'number') {
         setVerificationStep(Math.min(3, Math.max(1, nextVerificationStep)));
       }
@@ -2914,6 +2912,10 @@ setVerification(prev => ({
         : t.savePayout;
   const openVerificationFlow = () => {
     setActiveTab('verification');
+    if (!isVerificationLocked) {
+      const targetStep = Math.min(verificationProgress.firstIncompleteStep, 2);
+      setVerificationStep(targetStep);
+    }
   };
 
   return (
