@@ -1330,6 +1330,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSavedAt, setSettingsSavedAt] = useState('');
   const [settingsError, setSettingsError] = useState('');
+  const [settingsMsg, setSettingsMsg] = useState('');
+  const [settingsMsgType, setSettingsMsgType] = useState(''); // 'success' or 'error'
   const [savingVerification, setSavingVerification] = useState(false);
   const [verificationSaved, setVerificationSaved] = useState(false);
   const [verificationMsg, setVerificationMsg] = useState('');
@@ -2099,6 +2101,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const saveSettings = async ({ nextVerificationStep = null, navigateToVerification = false } = {}) => {
+    // Clear any previous message
+    setSettingsMsg('');
+    setSettingsMsgType('');
+
     const missingApplicationFields = [
       ['company_name', isAr ? 'اسم الشركة' : lang === 'zh' ? '公司名称' : 'Company name'],
       ['city', t.city],
@@ -2107,11 +2113,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     ].filter(([key]) => !String(settings?.[key] || '').trim());
 
     if (missingApplicationFields.length > 0) {
-      setSettingsError(isAr
+      const errorMsg = isAr
         ? 'أكمل الحقول الأساسية المطلوبة أولاً: اسم الشركة، المدينة، الدولة، والرابط التجاري.'
         : lang === 'zh'
           ? '请先完成基础必填项：公司名称、城市、国家和贸易链接。'
-          : 'Please complete the required basics first: company name, city, country, and trade link.');
+          : 'Please complete the required basics first: company name, city, country, and trade link.';
+      setSettingsError(errorMsg);
+      setSettingsMsg(errorMsg);
+      setSettingsMsgType('error');
       return false;
     }
 
@@ -2129,7 +2138,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSavingSettings(false);
 
     if (error) {
-      setSettingsError(isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.');
+      const errorMsg = isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.';
+      setSettingsError(errorMsg);
+      setSettingsMsg(errorMsg);
+      setSettingsMsgType('error');
       return false;
     }
 
@@ -2143,7 +2155,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setProfile?.(mergedProfile);
     setSettings(buildSettingsState(mergedProfile, payload.preferred_display_currency || 'USD'));
     setSettingsSavedAt(savedAt);
-    setSettingsMsg(isAr ? 'تم حفظ البيانات بنجاح ✓' : lang === 'zh' ? '保存成功 ✓' : 'Saved successfully ✓');
+    const successMsg = isAr ? 'تم حفظ البيانات بنجاح ✓' : lang === 'zh' ? '保存成功 ✓' : 'Saved successfully ✓';
+    setSettingsMsg(successMsg);
+    setSettingsMsgType('success');
+    // Clear message after 4 seconds
+    setTimeout(() => {
+      setSettingsMsg('');
+      setSettingsMsgType('');
+    }, 4000);
 
     const shouldAdvanceIntoVerification = !supplierState.isUnderReviewStage
       && !supplierState.isApprovedStage
@@ -3947,6 +3966,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           {settingsSecondaryButtonLabel}
                         </button>
                       </div>
+                      {settingsMsg && (
+                        <div style={{
+                          marginTop: 12,
+                          padding: '10px 16px',
+                          borderRadius: 6,
+                          fontSize: 13,
+                          color: settingsMsgType === 'success' ? '#1a6b3c' : '#b91c1c',
+                          background: settingsMsgType === 'success' ? '#f0fdf4' : '#fef2f2',
+                          border: `1px solid ${settingsMsgType === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                        }}>
+                          {settingsMsg}
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -4334,6 +4366,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <button onClick={saveSettings} disabled={savingSettings} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46 }}>
                   {settingsPrimaryButtonLabel}
                 </button>
+                {settingsMsg && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: '10px 16px',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    color: settingsMsgType === 'success' ? '#1a6b3c' : '#b91c1c',
+                    background: settingsMsgType === 'success' ? '#f0fdf4' : '#fef2f2',
+                    border: `1px solid ${settingsMsgType === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                  }}>
+                    {settingsMsg}
+                  </div>
+                )}
               </div>
             </div>
           )}
