@@ -1940,6 +1940,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
 
+    // Ensure required verification fields are present before DB update
+    if (!verification.reg_number?.trim() || !verification.years_experience || !verification.license_photo?.trim()) {
+      setVerificationSaved(false);
+      setVerificationMsg(t.verificationMissing);
+      setVerificationStep(2);
+      return;
+    }
+
+    if (verificationImages.length === 0) {
+      setVerificationSaved(false);
+      setVerificationMsg(t.verificationMissing);
+      setVerificationStep(2);
+      return;
+    }
+
     setSavingVerification(true);
     setVerificationSaved(false);
     setVerificationMsg('');
@@ -1955,6 +1970,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       factory_videos: verificationVideos,
     };
 
+    // 1. DB update must succeed before RPC call
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
