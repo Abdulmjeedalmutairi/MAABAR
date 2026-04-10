@@ -2457,43 +2457,42 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!profile) return;
+    
+    // دائمًا نحمّل الأساس من profile
+    const baseSettings = buildSettingsState(profile, displayCurrency || 'USD');
+    const baseVerification = buildVerificationState(profile);
+    const basePayout = buildPayoutState(profile);
+    
     const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
-    if (hasDraft) return;
-    setSettings(buildSettingsState(profile, displayCurrency || 'USD'));
-    setVerification(buildVerificationState(profile));
-    setPayout(buildPayoutState(profile));
-  }, [profile, displayCurrency, verificationDraftKey]);
-
-  useEffect(() => {
-    if (!verificationDraftKey) return;
-
-    const rawDraft = sessionStorage.getItem(verificationDraftKey);
-    if (!rawDraft) {
-      setVerificationStep(1);
-      setDraftSavedAt('');
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(rawDraft);
-      if (parsed?.settings) {
-        setSettings((prev) => ({ ...prev, ...parsed.settings }));
-      }
-      if (parsed?.verification) {
-        setVerification((prev) => ({
-          ...prev,
+    if (hasDraft) {
+      try {
+        const rawDraft = sessionStorage.getItem(verificationDraftKey);
+        const parsed = JSON.parse(rawDraft);
+        // الدمج: الدرفت يغلب الأساسي
+        setSettings({ ...baseSettings, ...parsed.settings });
+        setVerification({
+          ...baseVerification,
           ...parsed.verification,
-          factory_images: normalizeVerificationMedia(parsed.verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
-          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
-        }));
+          factory_images: normalizeVerificationMedia(parsed.verification.factory_images || []).slice(0, VERIFICATION_IMAGE_LIMIT),
+          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos || []).slice(0, VERIFICATION_VIDEO_LIMIT),
+        });
+        setPayout(basePayout);
+        setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
+        setDraftSavedAt(parsed?.savedAt || '');
+      } catch {
+        sessionStorage.removeItem(verificationDraftKey);
+        setSettings(baseSettings);
+        setVerification(baseVerification);
+        setPayout(basePayout);
+        setVerificationStep(1);
       }
-
-      setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
-      setDraftSavedAt(parsed?.savedAt || '');
-    } catch {
-      sessionStorage.removeItem(verificationDraftKey);
+    } else {
+      setSettings(baseSettings);
+      setVerification(baseVerification);
+      setPayout(basePayout);
+      setVerificationStep(1);
     }
-  }, [verificationDraftKey]);
+  }, [profile, displayCurrency, verificationDraftKey]);
 
   useEffect(() => {
     if (!verificationDraftKey || isVerificationLocked) return;
@@ -2506,7 +2505,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         factory_images: normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
         factory_videos: normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
       },
-      step: Math.min(verificationStep, 2),
+      step: verificationStep,
       savedAt,
     }));
     setDraftSavedAt(savedAt);
@@ -2885,6 +2884,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setVerificationMsg(t.verificationReviewRequired);
 
       setVerificationStep(3);
+      return;
+    }
+
+    // منع الإرسال إذا كان الطلب مُرسلاً أو معتمداً
+    if (supplierState.isUnderReviewStage || supplierState.isApprovedStage) {
+      setVerificationMsg(isAr ? 'الطلب مُرسل بالفعل' : 'Already submitted');
       return;
     }
 
@@ -3740,10 +3745,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         : t.savePayout;
   const openVerificationFlow = () => {
     setActiveTab('verification');
-    if (!isVerificationLocked) {
-
-      setVerificationStep(verificationProgress.firstIncompleteStep);
-    }
   };
 
   return (
