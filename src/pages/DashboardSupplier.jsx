@@ -1698,21 +1698,29 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
      useEffect(() => {
     if (!profile) return;
     
+    console.log('[Verification] Loading data, verificationDraftKey:', verificationDraftKey);
+    
     // دائمًا نحمّل الأساس من profile
     const baseSettings = buildSettingsState(profile, displayCurrency || 'USD');
     const baseVerification = buildVerificationState(profile);
     const basePayout = buildPayoutState(profile);
     
     const hasDraft = verificationDraftKey ? Boolean(localStorage.getItem(verificationDraftKey)) : false;
+    console.log('[Verification] Has draft in localStorage:', hasDraft);
+    
     if (hasDraft) {
       try {
         const rawDraft = localStorage.getItem(verificationDraftKey);
         const parsed = JSON.parse(rawDraft);
+        console.log('[Verification] Parsed draft, step:', parsed?.step, 'settings keys:', Object.keys(parsed.settings || {}), 'verification keys:', Object.keys(parsed.verification || {}));
+        
         // الدمج: الدرفت يغلب الأساسي
-        setSettings({ ...baseSettings, ...parsed.settings });
+        const mergedSettings = { ...baseSettings, ...parsed.settings };
+        const mergedVerification = { ...baseVerification, ...parsed.verification };
+        
+        setSettings(mergedSettings);
         setVerification({
-          ...baseVerification,
-          ...parsed.verification,
+          ...mergedVerification,
           factory_images: normalizeVerificationMedia(parsed.verification.factory_images || []).slice(0, VERIFICATION_IMAGE_LIMIT),
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos || []).slice(0, VERIFICATION_VIDEO_LIMIT),
         });
@@ -1721,7 +1729,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         console.log('[Verification] Loaded step from draft:', loadedStep, 'parsed step:', parsed?.step);
         setVerificationStep(loadedStep);
         setDraftSavedAt(parsed?.savedAt || '');
-      } catch {
+        
+        console.log('[Verification] Data loaded successfully from draft');
+      } catch (error) {
+        console.error('[Verification] Error loading draft:', error);
         localStorage.removeItem(verificationDraftKey);
         setSettings(baseSettings);
         setVerification(baseVerification);
@@ -1729,6 +1740,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         setVerificationStep(1);
       }
     } else {
+      console.log('[Verification] No draft found, loading base data from profile');
       setSettings(baseSettings);
       setVerification(baseVerification);
       setPayout(basePayout);
@@ -1740,7 +1752,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!verificationDraftKey || isVerificationLocked) return;
 
     const savedAt = new Date().toISOString();
-    console.log('[Verification] Saving draft to localStorage, step=', verificationStep, 'key=', verificationDraftKey);
+    console.log('[Verification] Saving draft to localStorage, step=', verificationStep, 'key=', verificationDraftKey, 'settings keys:', Object.keys(settings), 'verification keys:', Object.keys(verification));
     localStorage.setItem(verificationDraftKey, JSON.stringify({
       settings,
       verification: {
@@ -2138,10 +2150,24 @@ setVerification(prev => ({
     }
 
     if (verificationStep !== 3) {
-      setVerificationSaved(false);
-      setVerificationMsg(t.verificationReviewRequired);
-      console.log('[Verification] Verification basics complete, moving to step 3 for review');
-      setVerificationStep(3);
+      // Only move to step 3 if user explicitly clicked "Next" in step 2
+      // Don't auto-advance based on verificationProgress.hasVerificationBasics
+      if (verificationStep === 2 && verificationProgress.hasVerificationBasics) {
+        setVerificationSaved(false);
+        setVerificationMsg(t.verificationReviewRequired);
+        console.log('[Verification] Moving to step 3 for final review');
+        setVerificationStep(3);
+        return;
+      }
+      // If we're in step 1 or step 2 without basics, show appropriate message
+      if (verificationStep === 1) {
+        setVerificationMsg(t.verificationProfileRequired);
+        return;
+      }
+      if (verificationStep === 2) {
+        setVerificationMsg(t.verificationMissing);
+        return;
+      }
       return;
     }
 
