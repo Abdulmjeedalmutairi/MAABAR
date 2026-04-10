@@ -1635,7 +1635,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
-  const verificationInitialized = useRef(false);
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
@@ -1682,7 +1681,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setEditingProduct(null);
       setProductComposerStep('edit');
       setEditProductComposerStep('edit');
-      const draft = localStorage.getItem('maabar_product_draft');
+      const draft = sessionStorage.getItem('maabar_product_draft');
       if (draft) {
         try { setProduct(normalizeProductDraftMedia(JSON.parse(draft))); } catch { setProduct(emptyProduct); }
       } else {
@@ -1698,66 +1697,47 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   
      useEffect(() => {
     if (!profile) return;
-    
-    console.log('[Verification] Loading data, verificationDraftKey:', verificationDraftKey);
-    
-    // دائمًا نحمّل الأساس من profile
-    const baseSettings = buildSettingsState(profile, displayCurrency || 'USD');
-    const baseVerification = buildVerificationState(profile);
-    const basePayout = buildPayoutState(profile);
-    
-    verificationInitialized.current = false;
-
     const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
-    console.log('[Verification] Has draft in sessionStorage:', hasDraft);
-
-    if (hasDraft) {
-      try {
-        const rawDraft = sessionStorage.getItem(verificationDraftKey);
-        const parsed = JSON.parse(rawDraft);
-        console.log('[Verification] Parsed draft, step:', parsed?.step, 'settings keys:', Object.keys(parsed.settings || {}), 'verification keys:', Object.keys(parsed.verification || {}));
-
-        // الدمج: الدرفت يغلب الأساسي
-        const mergedSettings = { ...baseSettings, ...parsed.settings };
-        const mergedVerification = { ...baseVerification, ...parsed.verification };
-
-        setSettings(mergedSettings);
-        setVerification({
-          ...mergedVerification,
-          factory_images: normalizeVerificationMedia(parsed.verification.factory_images || []).slice(0, VERIFICATION_IMAGE_LIMIT),
-          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos || []).slice(0, VERIFICATION_VIDEO_LIMIT),
-        });
-        setPayout(basePayout);
-        const loadedStep = Math.min(3, Math.max(1, Number(parsed?.step) || 1));
-        console.log('[Verification] Loaded step from draft:', loadedStep, 'parsed step:', parsed?.step);
-        setVerificationStep(loadedStep);
-        setDraftSavedAt(parsed?.savedAt || '');
-
-        console.log('[Verification] Data loaded successfully from draft');
-      } catch (error) {
-        console.error('[Verification] Error loading draft:', error);
-        sessionStorage.removeItem(verificationDraftKey);
-        setSettings(baseSettings);
-        setVerification(baseVerification);
-        setPayout(basePayout);
-        setVerificationStep(1);
-      }
-    } else {
-      console.log('[Verification] No draft found, loading base data from profile');
-      setSettings(baseSettings);
-      setVerification(baseVerification);
-      setPayout(basePayout);
-      setVerificationStep(1);
-    }
-    verificationInitialized.current = true;
+    if (hasDraft) return;
+    setSettings(buildSettingsState(profile, displayCurrency || 'USD'));
+    setVerification(buildVerificationState(profile));
+    setPayout(buildPayoutState(profile));
   }, [profile, displayCurrency, verificationDraftKey]);
+
+  (() => {
+    if (!verificationDraftKey) return;
+
+    const rawDraft = sessionStorage.getItem(verificationDraftKey);
+    if (!rawDraft) {
+      setVerificationStep(1);
+      setDraftSavedAt('');
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rawDraft);
+      if (parsed?.settings) {
+        setSettings((prev) => ({ ...prev, ...parsed.settings }));
+      }
+      if (parsed?.verification) {
+        setVerification((prev) => ({
+          ...prev,
+          ...puseEffectarsed.verification,
+          factory_images: normalizeVerificationMedia(parsed.verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
+          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
+        }));
+      }
+      setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
+      setDraftSavedAt(parsed?.savedAt || '');
+    } catch {
+      sessionStorage.removeItem(verificationDraftKey);
+    }
+  }, [verificationDraftKey]);
 
   useEffect(() => {
     if (!verificationDraftKey || isVerificationLocked) return;
-    if (!verificationInitialized.current) return;
 
     const savedAt = new Date().toISOString();
-    console.log('[Verification] Saving draft to sessionStorage, step=', verificationStep, 'key=', verificationDraftKey, 'settings keys:', Object.keys(settings), 'verification keys:', Object.keys(verification));
     sessionStorage.setItem(verificationDraftKey, JSON.stringify({
       settings,
       verification: {
@@ -1776,7 +1756,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
     if (activeTab === 'add-product' && !editingProduct) {
-      localStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
+      sessionStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
     }
   }, [product, activeTab, editingProduct]);
 
@@ -2132,16 +2112,13 @@ setVerification(prev => ({
   };
 
   const saveVerification = async () => {
-    console.log('[Verification] saveVerification called, step=', verificationStep, 'hasVerificationBasics=', verificationProgress.hasVerificationBasics, 'isUnderReviewStage=', supplierState.isUnderReviewStage);
     if (isVerificationLocked) {
-      console.log('[Verification] Verification locked, skipping');
       return;
     }
 
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
-      console.log('[Verification] Missing profile fields, forcing step 1');
       setVerificationStep(1);
       return;
     }
@@ -2149,36 +2126,14 @@ setVerification(prev => ({
     if (!verificationProgress.hasVerificationBasics) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
-      console.log('[Verification] Missing verification basics, forcing step 2');
       setVerificationStep(2);
       return;
     }
 
     if (verificationStep !== 3) {
-      // Only move to step 3 if user explicitly clicked "Next" in step 2
-      // Don't auto-advance based on verificationProgress.hasVerificationBasics
-      if (verificationStep === 2 && verificationProgress.hasVerificationBasics) {
-        setVerificationSaved(false);
-        setVerificationMsg(t.verificationReviewRequired);
-        console.log('[Verification] Moving to step 3 for final review');
-        setVerificationStep(3);
-        return;
-      }
-      // If we're in step 1 or step 2 without basics, show appropriate message
-      if (verificationStep === 1) {
-        setVerificationMsg(t.verificationProfileRequired);
-        return;
-      }
-      if (verificationStep === 2) {
-        setVerificationMsg(t.verificationMissing);
-        return;
-      }
-      return;
-    }
-
-    // منع الإرسال إذا كان الطلب مُرسلاً أو معتمداً
-    if (supplierState.isUnderReviewStage || supplierState.isApprovedStage) {
-      setVerificationMsg(isAr ? 'الطلب مُرسل بالفعل' : 'Already submitted');
+      setVerificationSaved(false);
+      setVerificationMsg(t.verificationReviewRequired);
+      setVerificationStep(3);
       return;
     }
 
@@ -2214,7 +2169,6 @@ setVerification(prev => ({
     let submittedStatus = profile?.status;
 
     if (!supplierState.isApprovedStage) {
-      console.log('[Verification] Calling submit_supplier_verification RPC');
       const { data: submitResult, error: submitError } = await sb.rpc('submit_supplier_verification');
       if (submitError) {
         setSavingVerification(false);
@@ -2269,7 +2223,6 @@ setVerification(prev => ({
 
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
-    console.log('[Verification] Submission successful, staying on step 3');
     setVerificationStep(3);
     setActiveTab('overview');
     if (dashboardUiStateKey) sessionStorage.removeItem(dashboardUiStateKey);
@@ -2359,16 +2312,16 @@ setVerification(prev => ({
     setSettings(buildSettingsState(mergedProfile, payload.preferred_display_currency || 'USD'));
     setSettingsSavedAt(savedAt);
 
-    if (navigateToVerification || typeof nextVerificationStep === 'number') {
+    const shouldAdvanceIntoVerification = !supplierState.isUnderReviewStage
+      && !supplierState.isApprovedStage
+      && (navigateToVerification || typeof nextVerificationStep === 'number');
+
+    if (shouldAdvanceIntoVerification) {
       setVerificationSaved(true);
       setVerificationMsg(isAr ? 'تم حفظ ملف الشركة. الآن أرفق مستندات التحقق ثم أكمل الإرسال النهائي.' : lang === 'zh' ? '公司资料已保存。现在请上传认证文件，然后完成最终提交。' : 'Company profile saved. Now add your verification files, then complete the final submission.');
-      if (navigateToVerification) {
-        setActiveTab('verification');
-      }
+      setActiveTab('verification');
       if (typeof nextVerificationStep === 'number') {
-        const targetStep = Math.min(3, Math.max(1, nextVerificationStep));
-        console.log('[Verification] saveSettings advancing to step', targetStep);
-        setVerificationStep(targetStep);
+        setVerificationStep(Math.min(3, Math.max(1, nextVerificationStep)));
       }
     }
 
@@ -2645,7 +2598,7 @@ setVerification(prev => ({
       setProductSaveMsg(isAr ? 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.' : lang === 'zh' ? '保存产品时出错，请重试。' : 'Error saving product. Please try again.');
       return;
     }
-    localStorage.removeItem('maabar_product_draft');
+    sessionStorage.removeItem('maabar_product_draft');
     setProduct(emptyProduct);
     setProductComposerStep('edit');
     setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح' : lang === 'zh' ? '产品添加成功' : 'Product added successfully'));
@@ -2956,9 +2909,7 @@ setVerification(prev => ({
   const openVerificationFlow = () => {
     setActiveTab('verification');
     if (!isVerificationLocked) {
-      const targetStep = Math.min(verificationProgress.firstIncompleteStep, 2);
-      console.log('[Verification] openVerificationFlow setting step to', targetStep, 'firstIncompleteStep=', verificationProgress.firstIncompleteStep);
-      setVerificationStep(targetStep);
+      setVerificationStep(verificationProgress.firstIncompleteStep);
     }
   };
 
@@ -4395,7 +4346,6 @@ setVerification(prev => ({
                               && verificationImages.length > 0;
                             if (!isStepReady) { setVerificationSaved(false); setVerificationMsg(t.verificationMissing); return; }
                             setVerificationMsg('');
-                            console.log('[Verification] Next button clicked, moving to step 3');
                             setVerificationStep(3);
                           }}>
                             {isAr ? 'التالي: المراجعة النهائية ←' : lang === 'zh' ? '下一步：最终确认 →' : 'Next: Final review →'}
@@ -4410,9 +4360,6 @@ setVerification(prev => ({
                     {/* ── STEP 3 ── */}
                     {verificationStep === 3 && (
                       <div>
-                        <h3 style={{ fontSize: 24, fontWeight: 600, color: VF_C.ink, marginBottom: 24, textAlign: isAr ? 'right' : 'left', fontFamily: 'Tajawal, sans-serif', letterSpacing: -0.3 }}>
-                          {isAr ? 'المراجعة النهائية - تأكد من البيانات قبل الإرسال' : lang === 'zh' ? '最终确认 - 提交前请核对信息' : 'Final Review - Verify details before submission'}
-                        </h3>
                         <div className="vf-fu" style={{ animationDelay: '0s', background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
                           {[
                             [isAr ? 'اسم الشركة'       : lang === 'zh' ? '公司名称'   : 'Company',       settings.company_name || '—'],
@@ -4433,17 +4380,10 @@ setVerification(prev => ({
                           ))}
                         </div>
                         <div className="vf-fu" style={{ animationDelay: '0.1s', display: 'grid', gap: 10 }}>
-                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { 
-                            const message = isAr ? 'هل أنت متأكد من إرسال طلب التحقق؟ بعد الإرسال، ستتم مراجعة طلبك من قبل فريق مَعبر ولن تتمكن من تعديل البيانات.' 
-                                                 : lang === 'zh' ? '您确定要提交认证申请吗？提交后，您的申请将由 Maabar 团队审核，无法再修改数据。' 
-                                                 : 'Are you sure you want to submit the verification request? After submission, your application will be reviewed by Maabar team and you cannot edit data.';
-                            if (!window.confirm(message)) return;
-                            await saveVerification(); 
-                            if (verificationSaved) setShowVfSuccess(true); 
-                          }}>
+                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { await saveVerification(); if (verificationSaved) setShowVfSuccess(true); }}>
                             {savingVerification
                               ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '提交中...' : 'Submitting...')
-                              : (isAr ? '⚠️ أرسل طلب التحقق الآن (لا يمكن التراجع) ←' : lang === 'zh' ? '⚠️ 立即提交认证（无法撤回） →' : '⚠️ Submit verification now (cannot be undone) →')}
+                              : (isAr ? 'إرسال طلب التحقق ←' : lang === 'zh' ? '提交认证申请 →' : 'Submit verification request →')}
                           </button>
                           <button className="vf-btn-ghost" onClick={() => setVerificationStep(2)}>
                             {isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}
