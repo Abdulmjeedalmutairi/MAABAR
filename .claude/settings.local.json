@@ -9,7 +9,8 @@
       "Bash(netlify deploy:*)",
       "Bash(supabase:*)",
       "Bash(curl:*)",
-      "Bash(netlify status:*)"
+      "Bash(netlify status:*)",
+      "Bash(git revert:*)"
     ]
   }
 }

@@ -3163,7 +3163,6 @@ setVerification(prev => ({
                   </p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={openVerificationFlow} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{t.verificationCtaAction}</button>
-                    <button onClick={() => setActiveTab('settings')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'تعديل الملف' : lang === 'zh' ? '编辑资料' : 'Edit profile'}</button>
                   </div>
                 </div>
               )}
