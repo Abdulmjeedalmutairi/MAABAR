@@ -276,7 +276,7 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
     isVerificationUnderReviewStatus: status === 'verification_under_review',
     isVerifiedStatus: status === 'verified',
     isApplicationStage: stage === 'application',
-    isUnderReviewStage: stage === 'under_review',
+    isUnderReviewStage: stage === 'under_review' || status === 'verification_under_review',
     isApprovedStage: stage === 'approved',
     isRejectedStage: stage === 'rejected',
     isInactiveStage: stage === 'inactive',
