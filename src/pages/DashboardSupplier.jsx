@@ -1681,7 +1681,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setEditingProduct(null);
       setProductComposerStep('edit');
       setEditProductComposerStep('edit');
-      const draft = sessionStorage.getItem('maabar_product_draft');
+      const draft = localStorage.getItem('maabar_product_draft');
       if (draft) {
         try { setProduct(normalizeProductDraftMedia(JSON.parse(draft))); } catch { setProduct(emptyProduct); }
       } else {
@@ -1703,10 +1703,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const baseVerification = buildVerificationState(profile);
     const basePayout = buildPayoutState(profile);
     
-    const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
+    const hasDraft = verificationDraftKey ? Boolean(localStorage.getItem(verificationDraftKey)) : false;
     if (hasDraft) {
       try {
-        const rawDraft = sessionStorage.getItem(verificationDraftKey);
+        const rawDraft = localStorage.getItem(verificationDraftKey);
         const parsed = JSON.parse(rawDraft);
         // الدمج: الدرفت يغلب الأساسي
         setSettings({ ...baseSettings, ...parsed.settings });
@@ -1720,7 +1720,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
         setDraftSavedAt(parsed?.savedAt || '');
       } catch {
-        sessionStorage.removeItem(verificationDraftKey);
+        localStorage.removeItem(verificationDraftKey);
         setSettings(baseSettings);
         setVerification(baseVerification);
         setPayout(basePayout);
@@ -1738,7 +1738,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!verificationDraftKey || isVerificationLocked) return;
 
     const savedAt = new Date().toISOString();
-    sessionStorage.setItem(verificationDraftKey, JSON.stringify({
+    localStorage.setItem(verificationDraftKey, JSON.stringify({
       settings,
       verification: {
         ...verification,
@@ -1756,7 +1756,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
     if (activeTab === 'add-product' && !editingProduct) {
-      sessionStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
+      localStorage.setItem('maabar_product_draft', JSON.stringify(normalizeProductDraftMedia(product)));
     }
   }, [product, activeTab, editingProduct]);
 
@@ -1989,7 +1989,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const clearVerificationDraft = () => {
-    if (verificationDraftKey) sessionStorage.removeItem(verificationDraftKey);
+    if (verificationDraftKey) localStorage.removeItem(verificationDraftKey);
     setDraftSavedAt('');
   };
 
@@ -2602,7 +2602,7 @@ setVerification(prev => ({
       setProductSaveMsg(isAr ? 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.' : lang === 'zh' ? '保存产品时出错，请重试。' : 'Error saving product. Please try again.');
       return;
     }
-    sessionStorage.removeItem('maabar_product_draft');
+    localStorage.removeItem('maabar_product_draft');
     setProduct(emptyProduct);
     setProductComposerStep('edit');
     setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح' : lang === 'zh' ? '产品添加成功' : 'Product added successfully'));
@@ -4365,6 +4365,9 @@ setVerification(prev => ({
                     {/* ── STEP 3 ── */}
                     {verificationStep === 3 && (
                       <div>
+                        <h3 style={{ fontSize: 24, fontWeight: 600, color: VF_C.ink, marginBottom: 24, textAlign: isAr ? 'right' : 'left', fontFamily: 'Tajawal, sans-serif', letterSpacing: -0.3 }}>
+                          {isAr ? 'المراجعة النهائية - تأكد من البيانات قبل الإرسال' : lang === 'zh' ? '最终确认 - 提交前请核对信息' : 'Final Review - Verify details before submission'}
+                        </h3>
                         <div className="vf-fu" style={{ animationDelay: '0s', background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
                           {[
                             [isAr ? 'اسم الشركة'       : lang === 'zh' ? '公司名称'   : 'Company',       settings.company_name || '—'],
@@ -4385,10 +4388,17 @@ setVerification(prev => ({
                           ))}
                         </div>
                         <div className="vf-fu" style={{ animationDelay: '0.1s', display: 'grid', gap: 10 }}>
-                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { await saveVerification(); if (verificationSaved) setShowVfSuccess(true); }}>
+                          <button className="vf-btn-ink" disabled={savingVerification} onClick={async () => { 
+                            const message = isAr ? 'هل أنت متأكد من إرسال طلب التحقق؟ بعد الإرسال، ستتم مراجعة طلبك من قبل فريق مَعبر ولن تتمكن من تعديل البيانات.' 
+                                                 : lang === 'zh' ? '您确定要提交认证申请吗？提交后，您的申请将由 Maabar 团队审核，无法再修改数据。' 
+                                                 : 'Are you sure you want to submit the verification request? After submission, your application will be reviewed by Maabar team and you cannot edit data.';
+                            if (!window.confirm(message)) return;
+                            await saveVerification(); 
+                            if (verificationSaved) setShowVfSuccess(true); 
+                          }}>
                             {savingVerification
                               ? (isAr ? 'جاري الإرسال...' : lang === 'zh' ? '提交中...' : 'Submitting...')
-                              : (isAr ? 'إرسال طلب التحقق ←' : lang === 'zh' ? '提交认证申请 →' : 'Submit verification request →')}
+                              : (isAr ? '⚠️ أرسل طلب التحقق الآن (لا يمكن التراجع) ←' : lang === 'zh' ? '⚠️ 立即提交认证（无法撤回） →' : '⚠️ Submit verification now (cannot be undone) →')}
                           </button>
                           <button className="vf-btn-ghost" onClick={() => setVerificationStep(2)}>
                             {isAr ? 'رجوع للتعديل' : lang === 'zh' ? '返回修改' : 'Back to edit'}
