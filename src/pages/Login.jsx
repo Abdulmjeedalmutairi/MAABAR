@@ -526,7 +526,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard'
     );
 
-    const { error } = await sb.auth.signUp({
+    const { data, error } = await sb.auth.signUp({
       email: trimValue(email),
       password: pass,
       options: { emailRedirectTo, data: metaData },
@@ -542,6 +542,33 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     if (isSupplier) {
       try {
+        // Profiles insert fallback — only if webhook hasn't already created it
+        if (data?.user?.id) {
+          const { error: profileError } = await sb.from('profiles').insert({
+            id: data.user.id,
+            email: trimValue(email),
+            role: 'supplier',
+            status: 'pending',
+            company_name: trimValue(supCompany),
+            country: trimValue(country),
+            city: trimValue(supCity),
+            whatsapp: trimValue(whatsapp),
+            wechat: trimValue(wechat),
+            trade_link: primaryTradeLink,
+            trade_links: normalizedTradeLinks,
+            speciality: trimValue(speciality),
+            lang: 'en',
+          }).select().single();
+
+          if (profileError && profileError.code !== '23505') {
+            // 23505 = unique violation = webhook already inserted it = OK
+            console.error('[doSignUp] profile insert failed:', profileError);
+            setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
+            setMsgType('error');
+            return;
+          }
+        }
+
         // إشعار الأدمن
         await sendMaabarEmail({
           type: 'admin_new_supplier',
