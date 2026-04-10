@@ -1635,6 +1635,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
+  const verificationInitialized = useRef(false);
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
@@ -1705,19 +1706,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const baseVerification = buildVerificationState(profile);
     const basePayout = buildPayoutState(profile);
     
-    const hasDraft = verificationDraftKey ? Boolean(localStorage.getItem(verificationDraftKey)) : false;
-    console.log('[Verification] Has draft in localStorage:', hasDraft);
-    
+    verificationInitialized.current = false;
+
+    const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
+    console.log('[Verification] Has draft in sessionStorage:', hasDraft);
+
     if (hasDraft) {
       try {
-        const rawDraft = localStorage.getItem(verificationDraftKey);
+        const rawDraft = sessionStorage.getItem(verificationDraftKey);
         const parsed = JSON.parse(rawDraft);
         console.log('[Verification] Parsed draft, step:', parsed?.step, 'settings keys:', Object.keys(parsed.settings || {}), 'verification keys:', Object.keys(parsed.verification || {}));
-        
+
         // الدمج: الدرفت يغلب الأساسي
         const mergedSettings = { ...baseSettings, ...parsed.settings };
         const mergedVerification = { ...baseVerification, ...parsed.verification };
-        
+
         setSettings(mergedSettings);
         setVerification({
           ...mergedVerification,
@@ -1729,11 +1732,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         console.log('[Verification] Loaded step from draft:', loadedStep, 'parsed step:', parsed?.step);
         setVerificationStep(loadedStep);
         setDraftSavedAt(parsed?.savedAt || '');
-        
+
         console.log('[Verification] Data loaded successfully from draft');
       } catch (error) {
         console.error('[Verification] Error loading draft:', error);
-        localStorage.removeItem(verificationDraftKey);
+        sessionStorage.removeItem(verificationDraftKey);
         setSettings(baseSettings);
         setVerification(baseVerification);
         setPayout(basePayout);
@@ -1746,14 +1749,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setPayout(basePayout);
       setVerificationStep(1);
     }
+    verificationInitialized.current = true;
   }, [profile, displayCurrency, verificationDraftKey]);
 
   useEffect(() => {
     if (!verificationDraftKey || isVerificationLocked) return;
+    if (!verificationInitialized.current) return;
 
     const savedAt = new Date().toISOString();
-    console.log('[Verification] Saving draft to localStorage, step=', verificationStep, 'key=', verificationDraftKey, 'settings keys:', Object.keys(settings), 'verification keys:', Object.keys(verification));
-    localStorage.setItem(verificationDraftKey, JSON.stringify({
+    console.log('[Verification] Saving draft to sessionStorage, step=', verificationStep, 'key=', verificationDraftKey, 'settings keys:', Object.keys(settings), 'verification keys:', Object.keys(verification));
+    sessionStorage.setItem(verificationDraftKey, JSON.stringify({
       settings,
       verification: {
         ...verification,
@@ -2004,7 +2009,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const clearVerificationDraft = () => {
-    if (verificationDraftKey) localStorage.removeItem(verificationDraftKey);
+    if (verificationDraftKey) sessionStorage.removeItem(verificationDraftKey);
     setDraftSavedAt('');
   };
 
