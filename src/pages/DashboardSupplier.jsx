@@ -1474,7 +1474,7 @@ function VfStepBadges({ currentState, isAr, lang }) {
 }
 
 /* ─── Main ───────────────────────────────── */
-export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile }) {
+ export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile }) {
   const nav      = useNavigate();
   const location = useLocation();
   const t        = T[lang] || T.zh;
@@ -2034,12 +2034,7 @@ setVerification(prev => ({
   factory_photo: prev.factory_photo || path,
 }));
 
-    setVerification(prev => ({
-      ...prev,
-      factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
-      factory_photo: prev.factory_photo || path,
-    }));
-  };
+   
 
   const uploadVerificationMedia = async (fileList, mediaType) => {
     const files = Array.from(fileList || []);
