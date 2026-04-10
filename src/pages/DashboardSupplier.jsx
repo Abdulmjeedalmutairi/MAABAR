@@ -1636,6 +1636,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
   const saveDraftFirstRunRef = useRef(true);
+  const verificationTextDebounceRef = useRef(null);
+  const verificationTextFirstRunRef = useRef(true);
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
@@ -1756,7 +1758,24 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setDraftSavedAt(savedAt);
   }, [verificationDraftKey, settings, verification, verificationStep, isVerificationLocked]);
 
-  
+  useEffect(() => {
+    if (verificationTextFirstRunRef.current) {
+      verificationTextFirstRunRef.current = false;
+      return;
+    }
+    if (!user || isVerificationLocked) return;
+    clearTimeout(verificationTextDebounceRef.current);
+    verificationTextDebounceRef.current = setTimeout(() => {
+      sb.from('profiles').update({
+        reg_number: normalizeTextInput(verification.reg_number),
+        years_experience: normalizeOptionalInteger(verification.years_experience),
+        num_employees: normalizeOptionalInteger(verification.num_employees),
+      }).eq('id', user.id);
+    }, 800);
+    return () => clearTimeout(verificationTextDebounceRef.current);
+  }, [verification.reg_number, verification.years_experience, verification.num_employees]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
 
   // Save product form draft to sessionStorage on every change
   useEffect(() => {
