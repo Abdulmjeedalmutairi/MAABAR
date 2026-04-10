@@ -125,6 +125,16 @@ export default function AuthCallback({ user, profile, lang }) {
     }
   }, [status, user, profile, nextPath, nav]);
 
+  // Fallback timeout — if profile is still null after 5 seconds, redirect to dashboard anyway
+  useEffect(() => {
+    if (!user || profile) return; // If profile exists, no timeout needed
+    const timeout = setTimeout(() => {
+      // Profile still null after 5 seconds — redirect anyway
+      nav('/dashboard', { replace: true });
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [user, profile, nav]);
+
   const loginTarget = requestedRole === 'supplier' ? '/login/supplier' : '/login';
 
   if (status !== 'error') {
