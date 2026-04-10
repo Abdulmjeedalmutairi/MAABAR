@@ -1650,7 +1650,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!dashboardUiStateKey) return;
-    sessionStorage.setItem(dashboardUiStateKey, JSON.stringify({ activeTab }));
+   if (activeTab !== 'verification' || isVerificationLocked) {
+  sessionStorage.setItem(dashboardUiStateKey, JSON.stringify({ activeTab }));
+}
   }, [dashboardUiStateKey, activeTab]);
 
   useEffect(() => {
@@ -1751,7 +1753,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (isVerificationLocked) return;
-    if (verificationStep > maxAccessibleVerificationStep) {
+    if (verificationStep > maxAccessibleVerificationStep && maxAccessibleVerificationStep === 1) {
       setVerificationStep(maxAccessibleVerificationStep);
     }
   }, [isVerificationLocked, maxAccessibleVerificationStep, verificationStep]);
