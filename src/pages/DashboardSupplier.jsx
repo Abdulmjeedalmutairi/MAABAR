@@ -1717,7 +1717,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos || []).slice(0, VERIFICATION_VIDEO_LIMIT),
         });
         setPayout(basePayout);
-        setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
+        const loadedStep = Math.min(3, Math.max(1, Number(parsed?.step) || 1));
+        console.log('[Verification] Loaded step from draft:', loadedStep, 'parsed step:', parsed?.step);
+        setVerificationStep(loadedStep);
         setDraftSavedAt(parsed?.savedAt || '');
       } catch {
         localStorage.removeItem(verificationDraftKey);
@@ -1738,6 +1740,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!verificationDraftKey || isVerificationLocked) return;
 
     const savedAt = new Date().toISOString();
+    console.log('[Verification] Saving draft to localStorage, step=', verificationStep, 'key=', verificationDraftKey);
     localStorage.setItem(verificationDraftKey, JSON.stringify({
       settings,
       verification: {
@@ -2112,13 +2115,16 @@ setVerification(prev => ({
   };
 
   const saveVerification = async () => {
+    console.log('[Verification] saveVerification called, step=', verificationStep, 'hasVerificationBasics=', verificationProgress.hasVerificationBasics, 'isUnderReviewStage=', supplierState.isUnderReviewStage);
     if (isVerificationLocked) {
+      console.log('[Verification] Verification locked, skipping');
       return;
     }
 
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
+      console.log('[Verification] Missing profile fields, forcing step 1');
       setVerificationStep(1);
       return;
     }
@@ -2126,6 +2132,7 @@ setVerification(prev => ({
     if (!verificationProgress.hasVerificationBasics) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
+      console.log('[Verification] Missing verification basics, forcing step 2');
       setVerificationStep(2);
       return;
     }
@@ -2133,6 +2140,7 @@ setVerification(prev => ({
     if (verificationStep !== 3) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationReviewRequired);
+      console.log('[Verification] Verification basics complete, moving to step 3 for review');
       setVerificationStep(3);
       return;
     }
@@ -2175,6 +2183,7 @@ setVerification(prev => ({
     let submittedStatus = profile?.status;
 
     if (!supplierState.isApprovedStage) {
+      console.log('[Verification] Calling submit_supplier_verification RPC');
       const { data: submitResult, error: submitError } = await sb.rpc('submit_supplier_verification');
       if (submitError) {
         setSavingVerification(false);
@@ -2229,6 +2238,7 @@ setVerification(prev => ({
 
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
+    console.log('[Verification] Submission successful, staying on step 3');
     setVerificationStep(3);
     setActiveTab('overview');
     if (dashboardUiStateKey) sessionStorage.removeItem(dashboardUiStateKey);
@@ -2325,7 +2335,9 @@ setVerification(prev => ({
         setActiveTab('verification');
       }
       if (typeof nextVerificationStep === 'number') {
-        setVerificationStep(Math.min(3, Math.max(1, nextVerificationStep)));
+        const targetStep = Math.min(3, Math.max(1, nextVerificationStep));
+        console.log('[Verification] saveSettings advancing to step', targetStep);
+        setVerificationStep(targetStep);
       }
     }
 
@@ -2914,6 +2926,7 @@ setVerification(prev => ({
     setActiveTab('verification');
     if (!isVerificationLocked) {
       const targetStep = Math.min(verificationProgress.firstIncompleteStep, 2);
+      console.log('[Verification] openVerificationFlow setting step to', targetStep, 'firstIncompleteStep=', verificationProgress.firstIncompleteStep);
       setVerificationStep(targetStep);
     }
   };
@@ -4351,6 +4364,7 @@ setVerification(prev => ({
                               && verificationImages.length > 0;
                             if (!isStepReady) { setVerificationSaved(false); setVerificationMsg(t.verificationMissing); return; }
                             setVerificationMsg('');
+                            console.log('[Verification] Next button clicked, moving to step 3');
                             setVerificationStep(3);
                           }}>
                             {isAr ? 'التالي: المراجعة النهائية ←' : lang === 'zh' ? '下一步：最终确认 →' : 'Next: Final review →'}
