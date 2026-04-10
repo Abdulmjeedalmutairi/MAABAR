@@ -1550,10 +1550,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   }, [verificationDraftKey, settings, verification, verificationStep, isVerificationLocked]);
 
   useEffect(() => {
-    if (isVerificationLocked) return;
     // BUG 2 — Prevent auto‑jump: only block step from exceeding max reachable step,
     // never automatically increase verificationStep.
-    if (verificationStep > maxAccessibleVerificationStep) {
+    // Also prevent auto‑jump back when deleting a photo on step 3 if verification is not locked.
+    if (!isVerificationLocked && verificationStep > maxAccessibleVerificationStep && verificationStep !== 3) {
       console.log('[step-caller-3]', maxAccessibleVerificationStep);
       setVerificationStep(maxAccessibleVerificationStep);
     }
