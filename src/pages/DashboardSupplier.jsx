@@ -1779,7 +1779,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       const reg_number = normalizeTextInput(verification.reg_number);
       const years_experience = normalizeOptionalInteger(verification.years_experience);
       const num_employees = normalizeOptionalInteger(verification.num_employees);
+      console.log('[debounce] before stripEmptyFields:', { reg_number, years_experience, num_employees });
       const debouncePayload = stripEmptyFields({ reg_number, years_experience, num_employees });
+      console.log('[debounce] after stripEmptyFields:', debouncePayload);
       if (Object.keys(debouncePayload).length === 0) return;
       await sb.from('profiles').update(debouncePayload).eq('id', user.id);
       setProfile?.(prev => ({ ...(prev || {}), ...debouncePayload }));
