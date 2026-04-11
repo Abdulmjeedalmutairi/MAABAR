@@ -234,7 +234,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const verificationImages = normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT);
   const verificationVideos = normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT);
   const verificationProgress = getVerificationProgressState({ settings, verification, verificationImages });
-  const supplierState = getSupplierOnboardingState({ ...(profile || {}), ...settings, ...verification, factory_images: verificationImages, factory_videos: verificationVideos, factory_photo: verificationImages[0] || verification.factory_photo || '', ...payout }, user);
+  // Compute stage/lock status from the DB profile only — NOT from local form state.
+  // Merging local settings/verification into this call was causing the form to auto-lock
+  // (show "under review") as soon as the supplier filled in the required fields locally,
+  // because getSupplierResolvedStatus would see status='verification_under_review' (DB) +
+  // isVerificationComplete=true (local form) and resolve to the locked stage before anything
+  // was submitted. Stage transitions must only happen when the DB changes.
+  const supplierState = getSupplierOnboardingState(profile || {}, user);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
