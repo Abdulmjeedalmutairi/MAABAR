@@ -411,8 +411,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         setVerification((prev) => ({
           ...prev,
           ...parsed.verification,
-          factory_images: normalizeVerificationMedia(parsed.verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
-          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
+          factory_images: normalizeVerificationMedia(parsed.verification.factory_images ?? prev.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
+          factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos ?? prev.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
         }));
       }
       setVerificationStep(Math.min(2, Math.max(1, Number(parsed?.step) || 1)));
@@ -433,11 +433,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       const savedAt = new Date().toISOString();
       sessionStorage.setItem(verificationDraftKey, JSON.stringify({
         settings,
-        verification: {
+        verification: stripEmptyFields({
           ...verification,
           factory_images: normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
           factory_videos: normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
-        },
+        }),
         step: verificationStep,
         savedAt,
       }));
