@@ -963,8 +963,8 @@ function buildVerificationState(profile = {}) {
 
   return {
     reg_number: profile.reg_number || '',
-    years_experience: profile.years_experience || '',
-    num_employees: profile.num_employees || '',
+    years_experience: profile.years_experience != null ? String(profile.years_experience) : '',
+    num_employees: profile.num_employees != null ? String(profile.num_employees) : '',
     license_photo: profile.license_photo || '',
     factory_photo: profile.factory_photo || verificationImages[0] || '',
     factory_images: verificationImages,
@@ -1646,6 +1646,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const profileInitRef = useRef(null);
   const verificationTextDebounceRef = useRef(null);
   const verificationTextFirstRunRef = useRef(true);
+  const verificationJustSavedRef = useRef(false);
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
@@ -1661,10 +1662,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!dashboardUiStateKey) return;
-   if (activeTab !== 'verification' || isVerificationLocked) {
-  sessionStorage.setItem(dashboardUiStateKey, JSON.stringify({ activeTab }));
-}
-  }, [dashboardUiStateKey, activeTab]);
+    if (!supplierState.isApplicationStage && !supplierState.isUnderReviewStage) {
+      sessionStorage.setItem(dashboardUiStateKey, JSON.stringify({ activeTab }));
+    }
+  }, [dashboardUiStateKey, activeTab, supplierState.isApplicationStage, supplierState.isUnderReviewStage]);
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(location.search).get('tab');
@@ -1773,15 +1774,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       verificationTextFirstRunRef.current = false;
       return;
     }
+    if (verificationJustSavedRef.current) {
+      verificationJustSavedRef.current = false;
+      return;
+    }
     if (!user || isVerificationLocked) return;
     clearTimeout(verificationTextDebounceRef.current);
     verificationTextDebounceRef.current = setTimeout(async () => {
       const reg_number = normalizeTextInput(verification.reg_number);
       const years_experience = normalizeOptionalInteger(verification.years_experience);
       const num_employees = normalizeOptionalInteger(verification.num_employees);
-      console.log('[debounce] before stripEmptyFields:', { reg_number, years_experience, num_employees });
       const debouncePayload = stripEmptyFields({ reg_number, years_experience, num_employees });
-      console.log('[debounce] after stripEmptyFields:', debouncePayload);
       if (Object.keys(debouncePayload).length === 0) return;
       await sb.from('profiles').update(debouncePayload).eq('id', user.id);
       setProfile?.(prev => ({ ...(prev || {}), ...debouncePayload }));
@@ -2166,21 +2169,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (verificationProgress.missingProfileFields.length > 0) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationProfileRequired);
-      setVerificationStep(1);
       return;
     }
 
     if (!verificationProgress.hasVerificationBasics) {
       setVerificationSaved(false);
       setVerificationMsg(t.verificationMissing);
-      setVerificationStep(2);
-      return;
-    }
-
-    if (verificationStep !== 3) {
-      setVerificationSaved(false);
-      setVerificationMsg(t.verificationReviewRequired);
-      setVerificationStep(3);
       return;
     }
 
@@ -2243,6 +2237,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       ...persistedPayload,
       ...(submittedStatus ? { status: submittedStatus } : {}),
     };
+    verificationJustSavedRef.current = true;
     setProfile?.(mergedProfile);
     setSettings(buildSettingsState(mergedProfile, settings.preferred_display_currency || 'USD'));
     setVerification(buildVerificationState(mergedProfile));
@@ -2277,7 +2272,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
     setVerificationStep(3);
-    setActiveTab('overview');
     if (dashboardUiStateKey) sessionStorage.removeItem(dashboardUiStateKey);
   };
 
