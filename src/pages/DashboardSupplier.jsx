@@ -488,7 +488,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
   }, [product, activeTab, editingProduct]);
 
-  useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeCat]);
+  useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeTab, activeCat]);
 
   const loadStats = async () => {
     const [products, offersData, messages, acceptedOffers, payments, openProductInquiries, managedMatches, samplesResult] = await Promise.all([
