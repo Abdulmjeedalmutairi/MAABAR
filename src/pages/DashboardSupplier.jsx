@@ -1,5 +1,5 @@
 import usePageTitle from '../hooks/usePageTitle';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_URL } from '../supabase';
 import Footer from '../components/Footer';
@@ -1612,7 +1612,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     isAr ? 'المراجعة النهائية' : lang === 'zh' ? '最终确认' : 'Final review',
   ];
   const maxAccessibleVerificationStep = isVerificationLocked ? 3 : verificationProgress.maxReachableStep;
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'overview',     label: t.overview },
     { id: 'verification', label: t.verificationTab, badge: needsVerification ? '!' : null },
     { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
@@ -1626,7 +1626,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
     { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',     label: t.settings },
-  ];
+  ], [lang, t, needsVerification, needsPayoutSetup, stats.pendingSamples, stats.productInquiries, stats.messages, isAr]); // eslint-disable-line react-hooks/exhaustive-deps
   const lockedTabIds = isOnboardingLimited
     ? tabs.filter((tab) => !supplierState.limitedTabs.includes(tab.id)).map((tab) => tab.id)
     : [];
@@ -1636,13 +1636,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
   const logoRef = useRef(null); const factoryRef = useRef(null);
   const saveDraftFirstRunRef = useRef(true);
+  const draftSaveTimerRef = useRef(null);
   const verificationTextDebounceRef = useRef(null);
   const verificationTextFirstRunRef = useRef(true);
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
     loadStats(); loadPendingTracking(); loadRejectedOffers();
-  }, [user]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const knownTabs = tabs.map((tab) => tab.id);
@@ -1676,7 +1677,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (activeTab === 'messages')     loadInbox();
     if (activeTab === 'my-products')  loadMyProducts();
     if (activeTab === 'managed-matches') loadManagedMatches();
-    if (activeTab === 'requests')     loadRequests();
     if (activeTab === 'samples')      loadSamples();
     if (activeTab === 'product-inquiries') loadProductInquiries();
     if (activeTab === 'reviews')      loadMyReviews();
@@ -1694,14 +1694,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   }, [activeTab, isRestrictedSupplierTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    setSettings(prev => ({ ...prev, preferred_display_currency: displayCurrency || 'USD' }));
-  }, [displayCurrency]);
-
-  
-     useEffect(() => {
     if (!profile) return;
     const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
-    if (hasDraft) return;
+    if (hasDraft) {
+      const next = displayCurrency || 'USD';
+      setSettings(prev => prev.preferred_display_currency === next ? prev : { ...prev, preferred_display_currency: next });
+      return;
+    }
     setSettings(buildSettingsState(profile, displayCurrency || 'USD'));
     setVerification(buildVerificationState(profile));
     setPayout(buildPayoutState(profile));
@@ -1743,19 +1742,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
     if (!verificationDraftKey || isVerificationLocked) return;
-
-    const savedAt = new Date().toISOString();
-    sessionStorage.setItem(verificationDraftKey, JSON.stringify({
-      settings,
-      verification: {
-        ...verification,
-        factory_images: normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
-        factory_videos: normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
-      },
-      step: verificationStep,
-      savedAt,
-    }));
-    setDraftSavedAt(savedAt);
+    clearTimeout(draftSaveTimerRef.current);
+    draftSaveTimerRef.current = setTimeout(() => {
+      const savedAt = new Date().toISOString();
+      sessionStorage.setItem(verificationDraftKey, JSON.stringify({
+        settings,
+        verification: {
+          ...verification,
+          factory_images: normalizeVerificationMedia(verification.factory_images).slice(0, VERIFICATION_IMAGE_LIMIT),
+          factory_videos: normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
+        },
+        step: verificationStep,
+        savedAt,
+      }));
+      setDraftSavedAt(savedAt);
+    }, 0);
+    return () => clearTimeout(draftSaveTimerRef.current);
   }, [verificationDraftKey, settings, verification, verificationStep, isVerificationLocked]);
 
   useEffect(() => {
@@ -1766,12 +1768,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!user || isVerificationLocked) return;
     clearTimeout(verificationTextDebounceRef.current);
     verificationTextDebounceRef.current = setTimeout(async () => {
-      await sb.from('profiles').update({
-        reg_number: normalizeTextInput(verification.reg_number),
-        years_experience: normalizeOptionalInteger(verification.years_experience),
-        num_employees: normalizeOptionalInteger(verification.num_employees),
-      }).eq('id', user.id);
-      await refreshProfile();
+      const reg_number = normalizeTextInput(verification.reg_number);
+      const years_experience = normalizeOptionalInteger(verification.years_experience);
+      const num_employees = normalizeOptionalInteger(verification.num_employees);
+      await sb.from('profiles').update({ reg_number, years_experience, num_employees }).eq('id', user.id);
+      setProfile?.(prev => ({ ...(prev || {}), reg_number, years_experience, num_employees }));
     }, 800);
     return () => clearTimeout(verificationTextDebounceRef.current);
   }, [verification.reg_number, verification.years_experience, verification.num_employees]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1788,18 +1789,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeCat]);
 
   const loadStats = async () => {
-    const [products, offersData, messages, acceptedOffers, payments, openProductInquiries] = await Promise.all([
+    const [products, offersData, messages, acceptedOffers, payments, openProductInquiries, managedMatches, samplesResult] = await Promise.all([
       sb.from('products').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('is_active', true),
       sb.from('offers').select('id', { count: 'exact' }).eq('supplier_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
       sb.from('offers').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'accepted'),
       sb.from('payments').select('amount').eq('supplier_id', user.id).eq('status', 'first_paid'),
       sb.from('product_inquiries').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'open'),
+      sb.from('managed_supplier_matches').select('id', { count: 'exact', head: true }).eq('supplier_id', user.id).in('status', ['new', 'viewed', 'quoted', 'under_review']),
+      sb.from('samples').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'pending'),
     ]);
     const totalSales = (payments.data || []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-    const { count: managedMatchesCount } = await sb.from('managed_supplier_matches').select('id', { count: 'exact', head: true }).eq('supplier_id', user.id).in('status', ['new', 'viewed', 'quoted', 'under_review']);
-    const matchingRequests = managedMatchesCount || 0;
-    const { count: pendingSamples } = await sb.from('samples').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'pending');
+    const matchingRequests = managedMatches.count || 0;
+    const pendingSamples = samplesResult.count;
     setStats({
       products: products.count || 0,
       offers: offersData.count || 0,
@@ -2013,11 +2015,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
   };
 
-  const refreshProfile = async () => {
-    const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
-    if (data) setProfile?.(data);
-  };
-
   const clearVerificationDraft = () => {
     if (verificationDraftKey) sessionStorage.removeItem(verificationDraftKey);
     setDraftSavedAt('');
@@ -2051,20 +2048,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (type === 'license') {
       await sb.from('profiles').update({ license_photo: path }).eq('id', user.id);
       setVerification(prev => ({ ...prev, license_photo: path }));
-      await refreshProfile();
+      setProfile?.(prev => ({ ...(prev || {}), license_photo: path }));
       return;
     }
 
+    const nextFactoryImages = [...normalizeVerificationMedia(verification.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT);
+    const nextFactoryPhoto = verification.factory_photo || path;
     await sb.from('profiles').update({
-      factory_images: [...normalizeVerificationMedia(verification.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
-      factory_photo: verification.factory_photo || path,
+      factory_images: nextFactoryImages,
+      factory_photo: nextFactoryPhoto,
     }).eq('id', user.id);
     setVerification(prev => ({
       ...prev,
       factory_images: [...normalizeVerificationMedia(prev.factory_images), path].slice(0, VERIFICATION_IMAGE_LIMIT),
       factory_photo: prev.factory_photo || path,
     }));
-    await refreshProfile();
+    setProfile?.(prev => ({ ...(prev || {}), factory_images: nextFactoryImages, factory_photo: nextFactoryPhoto }));
   };
 
   const uploadVerificationMedia = async (fileList, mediaType) => {
@@ -2126,7 +2125,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       optionalKeys: ['factory_videos'],
       execute: (p) => sb.from('profiles').update(p).eq('id', user.id),
     });
-    await refreshProfile();
+    setProfile?.(prev => ({ ...(prev || {}), factory_images: nextImages, factory_photo: nextFactoryPhoto, factory_videos: nextVideos }));
   };
 
   const removeVerificationMedia = (mediaType, pathToRemove) => {
