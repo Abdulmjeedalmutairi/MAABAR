@@ -548,7 +548,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             id: data.user.id,
             email: trimValue(email),
             role: 'supplier',
-            status: 'pending',
+            status: 'registered',
             company_name: trimValue(supCompany),
             country: trimValue(country),
             city: trimValue(supCity),
