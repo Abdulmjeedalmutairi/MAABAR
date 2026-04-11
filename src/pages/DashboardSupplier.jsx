@@ -162,15 +162,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const dashboardUiStateKey = user?.id ? getSupplierDashboardUiStateKey(user.id) : '';
 
   
-    useEffect(() => {
-
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tab) {
       setActiveTab(tab);
       return;
     }
+    // Application-stage and under-review suppliers are never taken off the
+    // verification tab by a stale sessionStorage entry. The save effect
+    // deliberately skips writing for these stages, so any stored value is
+    // from a prior session and should be ignored.
     if (!dashboardUiStateKey) return;
+    if (supplierState.isApplicationStage || supplierState.isUnderReviewStage) return;
 
     const rawUiState = sessionStorage.getItem(dashboardUiStateKey);
     if (!rawUiState) return;
@@ -181,7 +185,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch {
       sessionStorage.removeItem(dashboardUiStateKey);
     }
-  }, [location.search, dashboardUiStateKey]);
+  }, [location.search, dashboardUiStateKey, supplierState.isApplicationStage, supplierState.isUnderReviewStage]);
 
   const [stats, setStats]                   = useState({ products: 0, offers: 0, messages: 0, productInquiries: 0 });
   const [myOffers, setMyOffers]             = useState([]);
@@ -1632,8 +1636,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         : t.savePayout;
   const openVerificationFlow = () => {
     setActiveTab('verification');
-    if (!isVerificationLocked) {
-      setVerificationStep(Math.min(verificationProgress.firstIncompleteStep, 2));
+    // Only adjust the step when navigating from a different tab.
+    // Never decrease the current step — the supplier may already be further along
+    // (e.g. at step 3 review). Also cap at 2 so we don't skip the review screen.
+    if (!isVerificationLocked && activeTab !== 'verification') {
+      const target = Math.min(verificationProgress.firstIncompleteStep, 2);
+      setVerificationStep(prev => Math.max(prev, target));
     }
   };
 
