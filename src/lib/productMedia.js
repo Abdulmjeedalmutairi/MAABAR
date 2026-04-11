@@ -97,6 +97,20 @@ function localizeSpecValue(key, value, lang = 'en') {
   return text;
 }
 
+export function normalizeProductAttributes(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(attr => attr && typeof attr === 'object')
+    .map(attr => ({
+      name: String(attr.name || '').trim(),
+      values: Array.isArray(attr.values)
+        ? attr.values.map(v => String(v || '').trim()).filter(Boolean)
+        : [],
+    }))
+    .filter(attr => attr.name && attr.values.length > 0)
+    .slice(0, 20);
+}
+
 export function buildProductSpecs(product, lang = 'en') {
   const fields = [
     'spec_material',

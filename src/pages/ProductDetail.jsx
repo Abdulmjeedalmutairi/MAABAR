@@ -635,6 +635,29 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           </div>
         )}
 
+        {/* ─── Custom Attributes ─── */}
+        {Array.isArray(product.attributes) && product.attributes.filter(a => a.name && a.values?.length).length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
+              {isAr ? 'الخصائص' : lang === 'zh' ? '产品属性' : 'Attributes'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {product.attributes.filter(a => a.name && a.values?.length).map((attr, i) => (
+                <div key={i} style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>{attr.name}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {attr.values.map((val, j) => (
+                      <span key={j} style={{ padding: '5px 12px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', fontSize: 12, color: 'var(--text-primary)' }}>
+                        {val}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ─── خيارات المنتج (Variants) ─── */}
         {Array.isArray(product.variants) && product.variants.filter(g => g.name && g.values?.length).length > 0 && (
           <div style={{ marginBottom: 28 }}>

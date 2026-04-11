@@ -5,6 +5,7 @@ import {
   buildProductSpecs,
   getProductGalleryImages,
   normalizeProductDraftMedia,
+  normalizeProductAttributes,
 } from '../../lib/productMedia';
 
 export const emptyProduct = {
@@ -13,6 +14,7 @@ export const emptyProduct = {
   desc_en: '', desc_ar: '',
   image_url: null, gallery_images: [], video_url: null,
   spec_material: '', spec_dimensions: '', spec_unit_weight: '', spec_color_options: '', spec_packaging_details: '', spec_customization: '', spec_lead_time_days: '',
+  attributes: [],
   sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '',
 };
 
@@ -25,6 +27,7 @@ export const PRODUCT_OPTIONAL_DB_FIELDS = [
   'spec_packaging_details',
   'spec_customization',
   'spec_lead_time_days',
+  'attributes',
 ];
 
 export const buildProductWritePayload = (rawProduct, supplierId) => {
@@ -52,6 +55,7 @@ export const buildProductWritePayload = (rawProduct, supplierId) => {
     spec_packaging_details: product.spec_packaging_details || null,
     spec_customization: product.spec_customization || null,
     spec_lead_time_days: product.spec_lead_time_days ? parseInt(product.spec_lead_time_days, 10) : null,
+    attributes: normalizeProductAttributes(product.attributes),
     sample_available: product.sample_available,
     sample_price: product.sample_available ? parseFloat(product.sample_price) : null,
     sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null,
@@ -173,6 +177,65 @@ export function getProductCompletenessItems(product, lang = 'en') {
       done: buildProductSpecs(product).length > 0,
     },
   ];
+}
+
+/* ─── Attribute row sub-component (needs local state for the value input) ─ */
+function AttributeRow({ attr, onChange, onRemove, isAr, lang }) {
+  const [inputVal, setInputVal] = React.useState('');
+  const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+
+  const addValue = () => {
+    const trimmed = inputVal.trim();
+    if (!trimmed || (attr.values || []).includes(trimmed) || (attr.values || []).length >= 20) return;
+    onChange({ ...attr, values: [...(attr.values || []), trimmed] });
+    setInputVal('');
+  };
+
+  const removeValue = (idx) => {
+    const newVals = [...(attr.values || [])];
+    newVals.splice(idx, 1);
+    onChange({ ...attr, values: newVals });
+  };
+
+  return (
+    <div style={{ padding: '14px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
+      <button type="button" onClick={onRemove} style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-disabled)', lineHeight: 1 }}>×</button>
+      <div style={{ marginBottom: 10, paddingRight: 28 }}>
+        <input
+          className="form-input"
+          placeholder={isAr ? 'اسم الخاصية (مثال: اللون)' : lang === 'zh' ? '属性名（如：颜色）' : 'Attribute name (e.g. Color)'}
+          value={attr.name || ''}
+          onChange={e => onChange({ ...attr, name: e.target.value })}
+          style={{ fontSize: 12, fontWeight: 500, ...arFont }}
+        />
+      </div>
+      {(attr.values || []).length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {(attr.values || []).map((val, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '4px 10px', borderRadius: 999, background: 'var(--bg-raised)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}>
+              {val}
+              <button type="button" onClick={() => removeValue(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1, padding: '0 0 0 2px' }}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      {(attr.values || []).length < 20 && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            className="form-input"
+            placeholder={isAr ? 'اكتب قيمة واضغط Enter' : lang === 'zh' ? '输入值后按 Enter' : 'Type a value, press Enter'}
+            value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addValue(); } }}
+            style={{ fontSize: 12, flex: 1, ...arFont }}
+          />
+          <button type="button" onClick={addValue} style={{ fontSize: 11, padding: '0 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+            {isAr ? 'إضافة' : lang === 'zh' ? '添加' : 'Add'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ─── Product Form (defined outside to prevent remount on parent render) ─ */
@@ -383,6 +446,48 @@ export function ProductForm({
       </div>
 
       <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase' }}>
+            {isAr ? 'الخصائص المخصصة' : lang === 'zh' ? '自定义属性' : 'Custom Attributes'}
+          </p>
+          {(data.attributes || []).length < 20 && (
+            <button type="button"
+              onClick={() => setData(prev => ({ ...prev, attributes: [...(prev.attributes || []), { name: '', values: [] }] }))}
+              style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '5px 12px', cursor: 'pointer' }}>
+              {isAr ? '+ إضافة خاصية' : lang === 'zh' ? '+ 添加属性' : '+ Add attribute'}
+            </button>
+          )}
+        </div>
+        {(data.attributes || []).length === 0 && (
+          <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {isAr ? 'أضف خصائص مثل: اللون، الحجم، الجهد الكهربائي…' : lang === 'zh' ? '添加自定义属性，如颜色、尺寸、功率等。' : 'Add custom attributes like Color, Size, Wattage, etc.'}
+          </p>
+        )}
+        {(data.attributes || []).length > 0 && (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {(data.attributes || []).map((attr, attrIdx) => (
+              <AttributeRow
+                key={attrIdx}
+                attr={attr}
+                isAr={isAr}
+                lang={lang}
+                onChange={(updated) => setData(prev => {
+                  const attrs = [...(prev.attributes || [])];
+                  attrs[attrIdx] = updated;
+                  return { ...prev, attributes: attrs };
+                })}
+                onRemove={() => setData(prev => {
+                  const attrs = [...(prev.attributes || [])];
+                  attrs.splice(attrIdx, 1);
+                  return { ...prev, attributes: attrs };
+                })}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 20, padding: '18px 20px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: data.sample_available ? 18 : 0 }}>
           <input type="checkbox" id="sample_toggle" checked={data.sample_available || false} onChange={e => setData(prev => ({ ...prev, sample_available: e.target.checked }))} style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--text-secondary)' }} />
           <label htmlFor="sample_toggle" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer', ...arFont }}>{t.sampleAvailable}</label>
@@ -516,6 +621,25 @@ export function ProductPreviewPanel({ product, onPublish, onBack, t, isAr, savin
                   <div key={spec.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
                     <span style={{ fontSize: 12, color: 'var(--text-disabled)', textTransform: 'capitalize' }}>{spec.label}</span>
                     <span style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right' }}>{spec.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {Array.isArray(product.attributes) && product.attributes.filter(a => a.name && a.values?.length).length > 0 && (
+            <div style={{ padding: '18px 20px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', marginTop: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 2, color: 'var(--text-disabled)', textTransform: 'uppercase', marginBottom: 12 }}>
+                {isAr ? 'الخصائص المخصصة' : lang === 'zh' ? '自定义属性' : 'Custom Attributes'}
+              </p>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {product.attributes.filter(a => a.name && a.values?.length).map((attr, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-disabled)', flexShrink: 0 }}>{attr.name}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: isAr ? 'flex-start' : 'flex-end' }}>
+                      {attr.values.map((val, j) => (
+                        <span key={j} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>{val}</span>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
