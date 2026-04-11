@@ -230,7 +230,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [verificationSaved, setVerificationSaved] = useState(false);
   const [verificationMsg, setVerificationMsg] = useState('');
   const [uploadingVerificationDoc, setUploadingVerificationDoc] = useState({ license: false, images: false, videos: false });
-  const [verificationStep, setVerificationStep] = useState(1);
+  const [verificationStep, _setVerificationStep] = useState(1);
+  const setVerificationStep = (step) => {
+    console.log('setVerificationStep called with:', step);
+    console.trace();
+    _setVerificationStep(step);
+  };
   const [draftSavedAt, setDraftSavedAt] = useState('');
   const [savingPayout, setSavingPayout] = useState(false);
   const [payoutSavedAt, setPayoutSavedAt] = useState('');
