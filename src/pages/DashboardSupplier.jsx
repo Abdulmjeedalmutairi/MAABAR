@@ -161,32 +161,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const verificationDraftKey = user?.id ? getSupplierVerificationDraftKey(user.id) : '';
   const dashboardUiStateKey = user?.id ? getSupplierDashboardUiStateKey(user.id) : '';
 
-  
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    if (tab) {
-      setActiveTab(tab);
-      return;
-    }
-    // Application-stage and under-review suppliers are never taken off the
-    // verification tab by a stale sessionStorage entry. The save effect
-    // deliberately skips writing for these stages, so any stored value is
-    // from a prior session and should be ignored.
-    if (!dashboardUiStateKey) return;
-    if (supplierState.isApplicationStage || supplierState.isUnderReviewStage) return;
-
-    const rawUiState = sessionStorage.getItem(dashboardUiStateKey);
-    if (!rawUiState) return;
-
-    try {
-      const parsed = JSON.parse(rawUiState);
-      if (parsed?.activeTab) setActiveTab(parsed.activeTab);
-    } catch {
-      sessionStorage.removeItem(dashboardUiStateKey);
-    }
-  }, [location.search, dashboardUiStateKey, supplierState.isApplicationStage, supplierState.isUnderReviewStage]);
-
   const [stats, setStats]                   = useState({ products: 0, offers: 0, messages: 0, productInquiries: 0 });
   const [myOffers, setMyOffers]             = useState([]);
   const [myProducts, setMyProducts]         = useState([]);
@@ -261,6 +235,32 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const verificationVideos = normalizeVerificationMedia(verification.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT);
   const verificationProgress = getVerificationProgressState({ settings, verification, verificationImages });
   const supplierState = getSupplierOnboardingState({ ...(profile || {}), ...settings, ...verification, factory_images: verificationImages, factory_videos: verificationVideos, factory_photo: verificationImages[0] || verification.factory_photo || '', ...payout }, user);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+      return;
+    }
+    // Application-stage and under-review suppliers are never taken off the
+    // verification tab by a stale sessionStorage entry. The save effect
+    // deliberately skips writing for these stages, so any stored value is
+    // from a prior session and should be ignored.
+    if (!dashboardUiStateKey) return;
+    if (supplierState.isApplicationStage || supplierState.isUnderReviewStage) return;
+
+    const rawUiState = sessionStorage.getItem(dashboardUiStateKey);
+    if (!rawUiState) return;
+
+    try {
+      const parsed = JSON.parse(rawUiState);
+      if (parsed?.activeTab) setActiveTab(parsed.activeTab);
+    } catch {
+      sessionStorage.removeItem(dashboardUiStateKey);
+    }
+  }, [location.search, dashboardUiStateKey, supplierState.isApplicationStage, supplierState.isUnderReviewStage]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const profileReadiness = getProfileReadiness(settings);
   const isProfileReadyForVerification = profileReadiness.isReadyForVerification;
   const supplierJourneySteps = buildSupplierJourneySteps({ supplierState, profileReadiness, lang });
