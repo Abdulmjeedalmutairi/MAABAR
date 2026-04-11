@@ -1002,6 +1002,12 @@ function normalizeOptionalInteger(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function stripEmptyFields(obj) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== '')
+  );
+}
+
 function buildSettingsPayload(settings = {}, companyDescription = '') {
   const normalizedDescription = normalizeTextInput(companyDescription);
 
@@ -2197,7 +2203,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
-      payload,
+      payload: stripEmptyFields(payload),
       optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'factory_videos'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
