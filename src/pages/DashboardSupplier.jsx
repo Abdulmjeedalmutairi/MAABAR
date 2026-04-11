@@ -1779,8 +1779,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       const reg_number = normalizeTextInput(verification.reg_number);
       const years_experience = normalizeOptionalInteger(verification.years_experience);
       const num_employees = normalizeOptionalInteger(verification.num_employees);
-      await sb.from('profiles').update({ reg_number, years_experience, num_employees }).eq('id', user.id);
-      setProfile?.(prev => ({ ...(prev || {}), reg_number, years_experience, num_employees }));
+      const debouncePayload = stripEmptyFields({ reg_number, years_experience, num_employees });
+      if (Object.keys(debouncePayload).length === 0) return;
+      await sb.from('profiles').update(debouncePayload).eq('id', user.id);
+      setProfile?.(prev => ({ ...(prev || {}), ...debouncePayload }));
     }, 800);
     return () => clearTimeout(verificationTextDebounceRef.current);
   }, [verification.reg_number, verification.years_experience, verification.num_employees]); // eslint-disable-line react-hooks/exhaustive-deps
