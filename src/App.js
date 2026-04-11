@@ -327,17 +327,28 @@ function App() {
         setLoading(false);
       }
     });
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      // TOKEN_REFRESHED / INITIAL_SESSION / USER_UPDATED — just keep the user ref fresh.
+      // Do NOT reset loading or profile: that tears down the whole Router tree and forces
+      // DashboardSupplier to unmount + remount, which re-fires every effect (draft restore,
+      // verification step, etc.) as if the page was freshly loaded.
+      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
+        setUser(session?.user ?? null);
+        return;
+      }
+
       setUser(session?.user ?? null);
-      if (session?.user) {
-        setLoading(true);
-        setProfile(null);
-        setProfileError(false);
-        loadProfile(session.user.id, 1, session.user);
-      } else {
+      if (event === 'SIGNED_OUT' || !session?.user) {
         setProfile(null); setLoading(false);
         if (window._profileChannel) { sb.removeChannel(window._profileChannel); window._profileChannel = null; }
+        return;
       }
+      // SIGNED_IN (new login or cross-tab sync) — full reset is appropriate here
+      // because DashboardSupplier is not mounted yet (user was on login page).
+      setLoading(true);
+      setProfile(null);
+      setProfileError(false);
+      loadProfile(session.user.id, 1, session.user);
     });
     return () => subscription.unsubscribe();
   }, []);
