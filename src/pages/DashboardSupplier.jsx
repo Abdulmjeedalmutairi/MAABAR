@@ -1637,6 +1637,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const logoRef = useRef(null); const factoryRef = useRef(null);
   const saveDraftFirstRunRef = useRef(true);
   const draftSaveTimerRef = useRef(null);
+  const profileInitRef = useRef(null);
   const verificationTextDebounceRef = useRef(null);
   const verificationTextFirstRunRef = useRef(true);
 
@@ -1696,12 +1697,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   useEffect(() => {
     if (!profile) return;
     const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
-    if (hasDraft) {
-      const next = displayCurrency || 'USD';
+    const next = displayCurrency || 'USD';
+    if (hasDraft || profileInitRef.current === profile.id) {
       setSettings(prev => prev.preferred_display_currency === next ? prev : { ...prev, preferred_display_currency: next });
       return;
     }
-    setSettings(buildSettingsState(profile, displayCurrency || 'USD'));
+    profileInitRef.current = profile.id;
+    setSettings(buildSettingsState(profile, next));
     setVerification(buildVerificationState(profile));
     setPayout(buildPayoutState(profile));
   }, [profile, displayCurrency, verificationDraftKey]);
