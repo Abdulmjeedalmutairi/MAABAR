@@ -63,6 +63,245 @@ function getLocaleDisplayCurrency(lang) {
   return 'USD';
 }
 
+function SupplierVerificationLocked({ lang }) {
+  return (
+    <div style={{
+      minHeight: 'var(--app-dvh)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--bg-base)',
+      padding: 24,
+      color: 'var(--text-primary)',
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: 560,
+        borderRadius: 24,
+        border: '1px solid var(--border-subtle)',
+        background: '#FFFFFF',
+        padding: '36px 30px',
+        textAlign: lang === 'ar' ? 'right' : 'left',
+      }}>
+        <p style={{
+          fontSize: 11,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          color: 'var(--text-tertiary)',
+          margin: '0 0 12px',
+        }}>
+          MAABAR SUPPLIER ACCESS
+        </p>
+        <h1 style={{
+          margin: '0 0 12px',
+          fontSize: lang === 'ar' ? 30 : 32,
+          fontWeight: 300,
+          lineHeight: 1.15,
+          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
+        }}>
+          Complete verification to unlock the full supplier experience on Maabar
+        </h1>
+        <p style={{
+          margin: 0,
+          fontSize: 14,
+          lineHeight: 1.8,
+          color: 'var(--text-secondary)',
+          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
+        }}>
+          {lang === 'ar'
+            ? 'يمكنك استخدام لوحة المورد، إعدادات الملف، ومسار التحقق فقط إلى أن يتم توثيق الحساب.'
+            : lang === 'zh'
+              ? '在账户完成验证前，您只能使用供应商控制台、资料设置和认证流程。'
+              : 'Until your account is verified, only the supplier dashboard, profile settings, and verification flow stay open.'}
+        </p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 22 }}>
+          <button
+            onClick={() => window.location.assign('/dashboard')}
+            style={{
+              background: 'var(--text-primary)',
+              color: 'var(--bg-base)',
+              border: 'none',
+              borderRadius: 14,
+              minHeight: 44,
+              padding: '11px 18px',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {lang === 'ar' ? 'العودة إلى لوحة المورد' : lang === 'zh' ? '返回供应商控制台' : 'Back to supplier dashboard'}
+          </button>
+          <button
+            onClick={() => window.location.assign('/dashboard?tab=verification')}
+            style={{
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 14,
+              minHeight: 44,
+              padding: '11px 18px',
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            {lang === 'ar' ? 'افتح التحقق' : lang === 'zh' ? '打开认证流程' : 'Open verification'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardRouter({ loading, user, profile, profileError, setProfileError, setLoading, loadProfile, sharedProps }) {
+  const { lang } = sharedProps;
+  if (loading || (user && !profile && !profileError)) {
+    return <BrandedLoading lang={lang} tone="dashboard" fullscreen />;
+  }
+  if (profileError) return (
+    <div style={{
+      minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg-base)', gap: 16, padding: 24,
+    }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-ar)', textAlign: 'center', lineHeight: 1.8 }}>
+        فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.
+      </p>
+      <button
+        onClick={() => { setProfileError(false); setLoading(true); loadProfile(user?.id, 1, user); }}
+        style={{
+          background: '#1a1a1a', color: '#ffffff',
+          border: 'none', padding: '12px 28px', borderRadius: 6,
+          fontSize: 13, cursor: 'pointer', fontWeight: 500,
+        }}>
+        إعادة المحاولة
+      </button>
+      <button
+        onClick={() => sb.auth.signOut()}
+        style={{
+          background: 'none', color: 'var(--text-disabled)',
+          border: '1px solid var(--border-default)', padding: '10px 24px', borderRadius: 6,
+          fontSize: 12, cursor: 'pointer',
+        }}>
+        تسجيل الخروج
+      </button>
+    </div>
+  );
+  if (!profile) return <DashboardBuyer {...sharedProps} />;
+  if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
+  if (profile.role === 'supplier') {
+    const supplierState = getSupplierOnboardingState(profile, user);
+
+    if (supplierState.isRejectedStage)
+      return (
+        <div style={{
+          minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
+        }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
+            نأسف، لم يتم قبول حسابك.
+          </p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
+            للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
+          </p>
+          <button onClick={() => sb.auth.signOut()} style={{
+            background: 'none', color: 'var(--text-disabled)',
+            border: '1px solid var(--border-default)', padding: '10px 24px',
+            borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
+          }}>
+            تسجيل الخروج
+          </button>
+        </div>
+      );
+
+    if (supplierState.isInactiveStage)
+      return (
+        <div style={{
+          minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
+        }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
+            حساب المورد متوقف مؤقتاً.
+          </p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)', maxWidth: 460, lineHeight: 1.9 }}>
+            إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
+          </p>
+          <button onClick={() => sb.auth.signOut()} style={{
+            background: 'none', color: 'var(--text-disabled)',
+            border: '1px solid var(--border-default)', padding: '10px 24px',
+            borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
+          }}>
+            تسجيل الخروج
+          </button>
+        </div>
+      );
+
+    return <DashboardSupplier {...sharedProps} />;
+  }
+  return <DashboardBuyer {...sharedProps} />;
+}
+
+function AppContent({ lang, profile, user, sharedProps, loading, profileError, setProfileError, setLoading, loadProfile }) {
+  const location = useLocation();
+  const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
+  const isChromelessPage = isAuthCallbackPage;
+  const isLTRPage = isChromelessPage || location.pathname === '/supplier-access';
+  const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
+  const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
+  const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
+
+  if (!isAuthCallbackPage && hasAuthCallbackPayload(location.search, location.hash)) {
+    return <Navigate to={buildAuthCallbackPath(location.search, location.hash)} replace />;
+  }
+
+  const withSupplierVerifiedAccess = (element) => {
+    if (supplierState && !supplierState.canAccessOperationalFeatures) {
+      return <SupplierVerificationLocked lang={lang} />;
+    }
+    return element;
+  };
+
+  return (
+    <div dir={pageDir} className="app-shell">
+      {!isChromelessPage && <Navbar {...sharedProps} />}
+      <Routes>
+        <Route path="/"               element={<Home            {...sharedProps} />} />
+        <Route path="/products"       element={<Products        {...sharedProps} />} />
+        <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
+        <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
+        <Route path="/login"          element={<Login           {...sharedProps} />} />
+        <Route path="/auth/callback"  element={<AuthCallback    {...sharedProps} />} />
+        <Route path="/dashboard"      element={<DashboardRouter loading={loading} user={user} profile={profile} profileError={profileError} setProfileError={setProfileError} setLoading={setLoading} loadProfile={loadProfile} sharedProps={sharedProps} />} />
+        <Route path="/about"          element={<About           {...sharedProps} />} />
+        <Route path="/contact"        element={<Contact         {...sharedProps} />} />
+        <Route path="/support"        element={<Support         {...sharedProps} />} />
+        <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
+        <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
+        <Route path="/supplier-access" element={<SupplierAccess {...sharedProps} />} />
+        <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
+        <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
+        <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
+        <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
+        <Route path="/terms"          element={<Terms           {...sharedProps} />} />
+        <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
+        <Route path="/faq/traders"    element={<FAQTraders      {...sharedProps} />} />
+        <Route path="/faq/suppliers"  element={<FAQSuppliers    {...sharedProps} />} />
+        <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
+        <Route path="/agent"          element={<AgentPanel />} />
+        {/* /apollo route removed — ApolloAgent not available */}
+        <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
+        <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
+        <Route path="*"               element={<NotFound        {...sharedProps} />} />
+      </Routes>
+
+      {!isChromelessPage && (!profile || profile?.role === 'buyer') && (
+        <AIHub lang={lang} user={user} profile={profile} />
+      )}
+    </div>
+  );
+}
+
 function App() {
   useMobileViewport();
 
@@ -226,182 +465,6 @@ function App() {
     window._profileChannel = ch;
   };
 
-  const SupplierVerificationLocked = () => (
-    <div style={{
-      minHeight: 'var(--app-dvh)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--bg-base)',
-      padding: 24,
-      color: 'var(--text-primary)',
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 560,
-        borderRadius: 24,
-        border: '1px solid var(--border-subtle)',
-        background: '#FFFFFF',
-        padding: '36px 30px',
-        textAlign: lang === 'ar' ? 'right' : 'left',
-      }}>
-        <p style={{
-          fontSize: 11,
-          letterSpacing: 2,
-          textTransform: 'uppercase',
-          color: 'var(--text-tertiary)',
-          margin: '0 0 12px',
-        }}>
-          MAABAR SUPPLIER ACCESS
-        </p>
-        <h1 style={{
-          margin: '0 0 12px',
-          fontSize: lang === 'ar' ? 30 : 32,
-          fontWeight: 300,
-          lineHeight: 1.15,
-          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
-        }}>
-          Complete verification to unlock the full supplier experience on Maabar
-        </h1>
-        <p style={{
-          margin: 0,
-          fontSize: 14,
-          lineHeight: 1.8,
-          color: 'var(--text-secondary)',
-          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
-        }}>
-          {lang === 'ar'
-            ? 'يمكنك استخدام لوحة المورد، إعدادات الملف، ومسار التحقق فقط إلى أن يتم توثيق الحساب.'
-            : lang === 'zh'
-              ? '在账户完成验证前，您只能使用供应商控制台、资料设置和认证流程。'
-              : 'Until your account is verified, only the supplier dashboard, profile settings, and verification flow stay open.'}
-        </p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 22 }}>
-          <button
-            onClick={() => window.location.assign('/dashboard')}
-            style={{
-              background: 'var(--text-primary)',
-              color: 'var(--bg-base)',
-              border: 'none',
-              borderRadius: 14,
-              minHeight: 44,
-              padding: '11px 18px',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {lang === 'ar' ? 'العودة إلى لوحة المورد' : lang === 'zh' ? '返回供应商控制台' : 'Back to supplier dashboard'}
-          </button>
-          <button
-            onClick={() => window.location.assign('/dashboard?tab=verification')}
-            style={{
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 14,
-              minHeight: 44,
-              padding: '11px 18px',
-              cursor: 'pointer',
-              fontSize: 12,
-            }}
-          >
-            {lang === 'ar' ? 'افتح التحقق' : lang === 'zh' ? '打开认证流程' : 'Open verification'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const DashboardRouter = () => {
-    if (loading || (user && !profile && !profileError)) {
-      return <BrandedLoading lang={lang} tone="dashboard" fullscreen />;
-    }
-    if (profileError) return (
-      <div style={{
-        minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        background: 'var(--bg-base)', gap: 16, padding: 24,
-      }}>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-ar)', textAlign: 'center', lineHeight: 1.8 }}>
-          فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.
-        </p>
-        <button
-          onClick={() => { setProfileError(false); setLoading(true); loadProfile(user?.id, 1, user); }}
-          style={{
-            background: '#1a1a1a', color: '#ffffff',
-            border: 'none', padding: '12px 28px', borderRadius: 6,
-            fontSize: 13, cursor: 'pointer', fontWeight: 500,
-          }}>
-          إعادة المحاولة
-        </button>
-        <button
-          onClick={() => sb.auth.signOut()}
-          style={{
-            background: 'none', color: 'var(--text-disabled)',
-            border: '1px solid var(--border-default)', padding: '10px 24px', borderRadius: 6,
-            fontSize: 12, cursor: 'pointer',
-          }}>
-          تسجيل الخروج
-        </button>
-      </div>
-    );
-    if (!profile) return <DashboardBuyer {...sharedProps} />;
-    if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
-    if (profile.role === 'supplier') {
-      const supplierState = getSupplierOnboardingState(profile, user);
-
-      if (supplierState.isRejectedStage)
-        return (
-          <div style={{
-            minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
-          }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
-              نأسف، لم يتم قبول حسابك.
-            </p>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
-              للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
-            </p>
-            <button onClick={() => sb.auth.signOut()} style={{
-              background: 'none', color: 'var(--text-disabled)',
-              border: '1px solid var(--border-default)', padding: '10px 24px',
-              borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
-            }}>
-              تسجيل الخروج
-            </button>
-          </div>
-        );
-
-      if (supplierState.isInactiveStage)
-        return (
-          <div style={{
-            minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
-          }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
-              حساب المورد متوقف مؤقتاً.
-            </p>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)', maxWidth: 460, lineHeight: 1.9 }}>
-              إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
-            </p>
-            <button onClick={() => sb.auth.signOut()} style={{
-              background: 'none', color: 'var(--text-disabled)',
-              border: '1px solid var(--border-default)', padding: '10px 24px',
-              borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
-            }}>
-              تسجيل الخروج
-            </button>
-          </div>
-        );
-
-      return <DashboardSupplier {...sharedProps} />;
-    }
-    return <DashboardBuyer {...sharedProps} />;
-  };
-
   const sharedProps = {
     user,
     profile,
@@ -417,71 +480,21 @@ function App() {
   /* ─── Loading screen ─────────────────────────── */
   if (loading) return <BrandedLoading lang={lang} tone="app" fullscreen />;
 
-  function AppContent() {
-    const location = useLocation();
-    const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
-    const isChromelessPage = isAuthCallbackPage;
-    const isLTRPage = isChromelessPage || location.pathname === '/supplier-access';
-    const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
-    const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
-    const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
-
-    if (!isAuthCallbackPage && hasAuthCallbackPayload(location.search, location.hash)) {
-      return <Navigate to={buildAuthCallbackPath(location.search, location.hash)} replace />;
-    }
-
-    const withSupplierVerifiedAccess = (element) => {
-      if (supplierState && !supplierState.canAccessOperationalFeatures) {
-        return <SupplierVerificationLocked />;
-      }
-      return element;
-    };
-
-    return (
-      <div dir={pageDir} className="app-shell">
-        {!isChromelessPage && <Navbar {...sharedProps} />}
-        <Routes>
-          <Route path="/"               element={<Home            {...sharedProps} />} />
-          <Route path="/products"       element={<Products        {...sharedProps} />} />
-          <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
-          <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
-          <Route path="/login"          element={<Login           {...sharedProps} />} />
-          <Route path="/auth/callback"  element={<AuthCallback    {...sharedProps} />} />
-          <Route path="/dashboard"      element={<DashboardRouter />} />
-          <Route path="/about"          element={<About           {...sharedProps} />} />
-          <Route path="/contact"        element={<Contact         {...sharedProps} />} />
-          <Route path="/support"        element={<Support         {...sharedProps} />} />
-          <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
-          <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
-          <Route path="/supplier-access" element={<SupplierAccess {...sharedProps} />} />
-          <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
-          <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
-          <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
-          <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
-          <Route path="/terms"          element={<Terms           {...sharedProps} />} />
-          <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
-          <Route path="/faq/traders"    element={<FAQTraders      {...sharedProps} />} />
-          <Route path="/faq/suppliers"  element={<FAQSuppliers    {...sharedProps} />} />
-          <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
-          <Route path="/agent"          element={<AgentPanel />} />
-          {/* /apollo route removed — ApolloAgent not available */}
-          <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
-          <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
-          <Route path="*"               element={<NotFound        {...sharedProps} />} />
-        </Routes>
-
-        {!isChromelessPage && (!profile || profile?.role === 'buyer') && (
-          <AIHub lang={lang} user={user} profile={profile} />
-        )}
-      </div>
-    );
-  }
-
   /* ─── App ────────────────────────────────────── */
   return (
     <ErrorBoundary lang={lang}>
       <Router>
-        <AppContent />
+        <AppContent
+          lang={lang}
+          profile={profile}
+          user={user}
+          sharedProps={sharedProps}
+          loading={loading}
+          profileError={profileError}
+          setProfileError={setProfileError}
+          setLoading={setLoading}
+          loadProfile={loadProfile}
+        />
       </Router>
     </ErrorBoundary>
   );

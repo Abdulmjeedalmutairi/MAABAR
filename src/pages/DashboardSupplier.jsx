@@ -382,7 +382,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (!profile) return;
     const hasDraft = verificationDraftKey ? Boolean(sessionStorage.getItem(verificationDraftKey)) : false;
     const next = displayCurrency || 'USD';
-    if (hasDraft || profileInitRef.current === profile.id) {
+    if (profileInitRef.current === profile.id) {
       setSettings(prev => prev.preferred_display_currency === next ? prev : { ...prev, preferred_display_currency: next });
       return;
     }
@@ -415,7 +415,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           factory_videos: normalizeVerificationMedia(parsed.verification.factory_videos ?? prev.factory_videos).slice(0, VERIFICATION_VIDEO_LIMIT),
         }));
       }
-      setVerificationStep(Math.min(2, Math.max(1, Number(parsed?.step) || 1)));
+      setVerificationStep(Math.min(3, Math.max(1, Number(parsed?.step) || 1)));
       setDraftSavedAt(parsed?.savedAt || '');
     } catch {
       sessionStorage.removeItem(verificationDraftKey);
