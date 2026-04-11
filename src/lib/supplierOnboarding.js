@@ -141,7 +141,10 @@ export function getSupplierResolvedStatus(profile = {}, sessionUser = null) {
   }
 
   if (LEGACY_REVIEW_STATUSES.includes(rawStatus)) {
-    if (verification.isVerificationComplete) return 'verification_under_review';
+    // Never auto-promote legacy statuses to under_review based on field completeness.
+    // The only path to 'verification_under_review' is the explicit submit RPC, which
+    // sets the canonical status in the DB. Legacy 'pending'/'under_review' etc. are
+    // treated as verification_required so the supplier can complete the form and submit.
     if (emailConfirmed === false) return 'registered';
     return application.isApplicationComplete ? 'verification_required' : 'registered';
   }
