@@ -43,9 +43,9 @@ const getTrackingUrl = (company, num) => {
   return urls[company] || `https://t.17track.net/en#nums=${num}`;
 };
 
-const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', paid: 'تم الدفع', ready_to_ship: 'الشحنة جاهزة', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
-const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', paid: 'Paid', ready_to_ship: 'Ready to Ship', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
-const STATUS_STEPS = ['open', 'offers_received', 'closed', 'paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'];
+const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', supplier_confirmed: 'المورد جاهز', paid: 'تم الدفع', ready_to_ship: 'الشحنة جاهزة', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
+const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', supplier_confirmed: 'Supplier Ready', paid: 'Paid', ready_to_ship: 'Ready to Ship', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
+const STATUS_STEPS = ['open', 'offers_received', 'closed', 'supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'];
 
 const CITIES_AR = ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'تبوك', 'أبها', 'القصيم', 'حائل', 'جازان', 'نجران'];
 const CITIES_EN = ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Tabuk', 'Abha', 'Qassim', 'Hail', 'Jazan', 'Najran'];
@@ -886,10 +886,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       body: isAr ? 'معبر يجهّز الـ brief، يراجع الوضوح، ويطابق الموردين المناسبين فقط قبل إظهار أفضل 3 عروض لك هنا.' : 'Maabar is preparing the brief, reviewing clarity, and matching only suitable suppliers before showing your top 3 here.',
                     };
                   }
-                  if (acceptedOffer && !['paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'].includes(r.status)) {
+                  if (acceptedOffer && r.status === 'closed') {
                     return {
-                      title: isAr ? 'الخطوة التالية: راجع العرض المقبول وادفع بأمان داخل مَعبر' : 'Next step: review the accepted offer and pay securely on Maabar',
-                      body: isAr ? 'تم حسم قرار التوريد. الآن أكمل الدفع من نفس الطلب حتى يبقى السجل التجاري واضحاً للطرفين.' : 'Supplier selection is done. Complete checkout from this request so payment and execution stay on one clear record.',
+                      title: isAr ? 'الخطوة التالية: انتظر تأكيد المورد' : 'Next step: waiting for supplier to confirm',
+                      body: isAr ? 'تم قبول العرض — المورد سيراسلك لتأكيد التفاصيل ثم يفتح لك خيار الدفع.' : 'Offer accepted — the supplier will message you to confirm details, then unlock payment.',
+                    };
+                  }
+                  if (acceptedOffer && r.status === 'supplier_confirmed') {
+                    return {
+                      title: isAr ? 'الخطوة التالية: المورد جاهز — ادفع بأمان داخل مَعبر' : 'Next step: supplier is ready — pay securely on Maabar',
+                      body: isAr ? 'تم تأكيد التفاصيل. أكمل الدفع من نفس الطلب حتى يبقى السجل التجاري واضحاً للطرفين.' : 'Details confirmed. Complete checkout from this request so payment and execution stay on one clear record.',
                     };
                   }
                   if (r.status === 'ready_to_ship' && r.payment_second > 0) {
@@ -963,7 +969,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           </button>
                         </>
                       )}
-                      {r.status === 'closed' && (
+                      {['closed', 'supplier_confirmed'].includes(r.status) && (
                         <>
                           <button
                             onClick={() => {
@@ -1238,7 +1244,23 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                             {o.status === 'accepted' && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {!['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
+                                {r.status === 'closed' && (
+                                  <>
+                                    <p style={{ fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5, padding: '4px 0' }}>
+                                      {isAr ? 'في انتظار تأكيد المورد' : lang === 'zh' ? '等待供应商确认' : 'Waiting for supplier confirmation'}
+                                    </p>
+                                    <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
+                                      style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                                      {isAr ? 'تواصل مع المورد' : lang === 'zh' ? '联系供应商' : 'Chat with supplier'}
+                                    </button>
+                                    <button
+                                      onClick={() => setCancelConfirmReq(r)}
+                                      style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
+                                      {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
+                                    </button>
+                                  </>
+                                )}
+                                {r.status === 'supplier_confirmed' && (
                                   <>
                                     <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary"
                                       style={{ padding: '9px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 36 }}>

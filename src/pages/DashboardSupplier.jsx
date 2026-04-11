@@ -2377,10 +2377,53 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     </div>
                   )}
 
-                  {o.status === 'accepted' && !['paid','shipping','delivered','ready_to_ship'].includes(o.requests?.status || '') && (
+                  {/* Step 1: offer accepted, waiting for supplier to confirm details with buyer */}
+                  {o.status === 'accepted' && o.requests?.status === 'closed' && (
+                    <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4, ...arFont }}>
+                        {isAr ? 'راسل التاجر وأكّد التفاصيل' : lang === 'zh' ? '与买家沟通并确认细节' : 'Message the buyer to confirm details'}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 12, ...arFont }}>
+                        {isAr ? 'بعد تأكيد التفاصيل اضغط "جاهز للمتابعة" حتى يتمكن التاجر من الدفع.' : lang === 'zh' ? '确认好细节后，点击"已准备好"按钮，买家才能付款。' : 'Once details are agreed, click "Ready to proceed" so the buyer can pay.'}
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {o.requests?.buyer_id && (
+                          <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 36 }}>
+                            {t.contactTrader}
+                          </button>
+                        )}
+                        <button
+                          className="btn-primary"
+                          style={{ minHeight: 36 }}
+                          onClick={async () => {
+                            await sb.from('requests').update({ status: 'supplier_confirmed' }).eq('id', o.request_id);
+                            await sb.from('notifications').insert({
+                              user_id: o.requests.buyer_id,
+                              type: 'supplier_confirmed',
+                              title_ar: 'المورد جاهز — يمكنك الآن إتمام الدفع',
+                              title_en: 'Supplier is ready — you can now complete payment',
+                              title_zh: '供应商已准备好 — 您现在可以付款',
+                              ref_id: o.request_id,
+                              is_read: false,
+                            });
+                            loadMyOffers();
+                          }}>
+                          {isAr ? 'جاهز للمتابعة' : lang === 'zh' ? '已准备好' : 'Ready to proceed'}
+                        </button>
+                        <button
+                          style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px 14px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 36 }}
+                          onClick={() => cancelOffer(o)}>
+                          {isAr ? 'سحب العرض' : lang === 'zh' ? '撤回报价' : 'Withdraw Offer'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: supplier confirmed, waiting for buyer to pay */}
+                  {o.status === 'accepted' && o.requests?.status === 'supplier_confirmed' && (
                     <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
                       <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 10, ...arFont }}>
-                        {isAr ? 'في انتظار إتمام الدفع من التاجر' : lang === 'zh' ? '等待买家完成付款' : 'Awaiting payment completion'}
+                        {isAr ? 'في انتظار إتمام الدفع من التاجر' : lang === 'zh' ? '等待买家完成付款' : 'Awaiting payment from buyer'}
                       </p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {o.requests?.buyer_id && (
