@@ -347,6 +347,7 @@ export default function Requests({ lang, user, profile }) {
     setSubmitting(true);
 
     // Translate title and description to all 3 languages at write time
+    console.log('[submitNewRequest] calling buildTranslatedRequestFields, effectiveLang:', effectiveLang);
     let translatedFields = {};
     try {
       translatedFields = await buildTranslatedRequestFields({
@@ -355,7 +356,8 @@ export default function Requests({ lang, user, profile }) {
         description: String(newReq.description || '').trim(),
         lang: effectiveLang,
       });
-    } catch {
+    } catch (translationErr) {
+      console.error('[submitNewRequest] buildTranslatedRequestFields threw:', translationErr?.message || translationErr);
       translatedFields = {
         title_ar: titleAr || fallbackTitle,
         title_en: titleEn || fallbackTitle,
