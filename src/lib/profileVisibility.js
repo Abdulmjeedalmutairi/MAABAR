@@ -2,7 +2,7 @@ export async function fetchProfileDirectoryByIds(sb, ids = []) {
   if (!ids.length) return [];
   const { data } = await sb
     .from('profiles')
-    .select('id, full_name, company_name, role, status, avatar_url, city, country, speciality, maabar_supplier_id, trade_link, wechat, whatsapp')
+    .select('id, full_name, company_name, role, status, avatar_url, city, country, speciality, maabar_supplier_id, trade_link, wechat, whatsapp, lang')
     .in('id', ids);
   return data || [];
 }

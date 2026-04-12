@@ -9,6 +9,8 @@ import {
   loadIdeaFlowDraft,
   saveIdeaFlowDraft,
 } from '../lib/ideaToProductFlow';
+import { buildTranslatedRequestFields } from '../lib/requestTranslation';
+import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 
 const SAUDI_REPRESENTATIVE_NAMES = [
   'سلمان', 'فيصل', 'تركي', 'عبدالعزيز', 'سعود', 'نورة', 'العنود', 'الجوهرة', 'ريم', 'لولوة'
@@ -515,13 +517,41 @@ export default function IdeaToProduct({ lang, user, onClose }) {
 
     setSubmitting(true);
     setError('');
+
+    const rawDescription = normalizedDraft.description || result?.request_description || result?.specs || '';
+    const rawTitleAr = normalizedDraft.title_ar || '';
+    const rawTitleEn = normalizedDraft.title_en || '';
+
+    // Translate title and description to all 3 languages at write time
+    let translatedFields = {};
+    try {
+      translatedFields = await buildTranslatedRequestFields({
+        titleAr: rawTitleAr,
+        titleEn: rawTitleEn,
+        description: rawDescription,
+        lang: lang || 'ar',
+      });
+    } catch {
+      translatedFields = {
+        title_ar: rawTitleAr || rawTitleEn,
+        title_en: rawTitleEn || rawTitleAr,
+        title_zh: normalizedDraft.title_zh || rawTitleEn || rawTitleAr,
+        description_ar: rawDescription,
+        description_en: rawDescription,
+        description_zh: rawDescription,
+      };
+    }
+
     const payload = {
       buyer_id: user.id,
-      title_ar: normalizedDraft.title_ar || normalizedDraft.title_en,
-      title_en: normalizedDraft.title_en || normalizedDraft.title_ar,
-      title_zh: normalizedDraft.title_zh || normalizedDraft.title_en || normalizedDraft.title_ar,
+      title_ar: translatedFields.title_ar || rawTitleAr || rawTitleEn,
+      title_en: translatedFields.title_en || rawTitleEn || rawTitleAr,
+      title_zh: translatedFields.title_zh || normalizedDraft.title_zh || rawTitleEn || rawTitleAr,
       quantity: normalizedDraft.quantity || '',
-      description: normalizedDraft.description || result?.request_description || result?.specs || '',
+      description: rawDescription,
+      description_ar: translatedFields.description_ar || null,
+      description_en: translatedFields.description_en || null,
+      description_zh: translatedFields.description_zh || null,
       category: normalizedDraft.category || result?.category || 'other',
       status: 'open',
       budget_per_unit: normalizedDraft.budget_per_unit ? parseFloat(normalizedDraft.budget_per_unit) : null,
@@ -530,7 +560,12 @@ export default function IdeaToProduct({ lang, user, onClose }) {
       reference_image: normalizedDraft.reference_image || normalizedDraft.image_url || null,
     };
 
-    const { data, error: requestError } = await sb.from('requests').insert(payload).select('id').single();
+    const { data, error: requestError } = await runWithOptionalColumns({
+      table: 'requests',
+      payload,
+      optionalKeys: ['description_ar', 'description_en', 'description_zh'],
+      execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('id').single(),
+    });
     setSubmitting(false);
     if (requestError) {
       setError(t.error);

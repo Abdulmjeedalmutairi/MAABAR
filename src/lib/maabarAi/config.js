@@ -61,6 +61,17 @@ export function getDefaultTranslationDirection(appLang = 'ar') {
   return 'zh_to_ar';
 }
 
+/**
+ * Infer translation direction from both parties' languages.
+ * Translates FROM the partner's language TO the current user's language.
+ * Returns 'off' when both speak the same language.
+ */
+export function inferTranslationDirection(myLang = 'ar', partnerLang = null) {
+  if (!partnerLang || myLang === partnerLang) return 'off';
+  const directionId = `${partnerLang}_to_${myLang}`;
+  return TRANSLATION_DIRECTIONS.find((d) => d.id === directionId) ? directionId : 'off';
+}
+
 export function getTranslationDirection(directionId) {
   return TRANSLATION_DIRECTIONS.find((direction) => direction.id === directionId) || TRANSLATION_DIRECTIONS[0];
 }

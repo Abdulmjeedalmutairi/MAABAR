@@ -72,6 +72,7 @@ import {
   ProductPreviewPanel,
 } from '../components/supplier/ProductComposer';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import { buildTranslatedProductFields, translateTextToAllLanguages } from '../lib/requestTranslation';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
@@ -1319,7 +1320,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
     setSaving(true);
     setProductSaveMsg('');
-    const payload = buildProductWritePayload(product, user.id);
+    let translatedFields = {};
+    try {
+      translatedFields = await buildTranslatedProductFields({
+        nameAr: product.name_ar, nameEn: product.name_en, nameZh: product.name_zh,
+        descEn: product.desc_en, descAr: product.desc_ar, lang,
+      });
+    } catch (translationErr) {
+      console.error('addProduct translation error:', translationErr?.message || translationErr);
+    }
+    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id);
     const { error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -1343,7 +1353,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const updateProduct = async () => {
     if (!editingProduct) return;
     setSaving(true);
-    const payload = buildProductWritePayload(editingProduct);
+    let translatedFields = {};
+    try {
+      translatedFields = await buildTranslatedProductFields({
+        nameAr: editingProduct.name_ar, nameEn: editingProduct.name_en, nameZh: editingProduct.name_zh,
+        descEn: editingProduct.desc_en, descAr: editingProduct.desc_ar, lang,
+      });
+    } catch (translationErr) {
+      console.error('updateProduct translation error:', translationErr?.message || translationErr);
+    }
+    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields });
     delete payload.supplier_id;
     const { error } = await runWithOptionalColumns({
       table: 'products',
@@ -1376,6 +1395,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     setSavingEditOffer(true);
+    let noteTranslations = {};
+    if (editOfferForm.note) {
+      try {
+        const noteLangs = await translateTextToAllLanguages(editOfferForm.note, lang || 'zh');
+        noteTranslations = { note_ar: noteLangs.ar, note_en: noteLangs.en, note_zh: noteLangs.zh };
+      } catch (translationErr) {
+        console.error('saveEditOffer translation error:', translationErr?.message || translationErr);
+      }
+    }
     const { error } = await runWithOptionalColumns({
       table: 'offers',
       payload: {
@@ -1386,8 +1414,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         delivery_days: deliveryDays,
         origin: editOfferForm.origin || 'China',
         note: editOfferForm.note,
+        ...noteTranslations,
       },
-      optionalKeys: ['shipping_cost', 'shipping_method', 'origin'],
+      optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh'],
       execute: (nextPayload) => sb.from('offers').update(nextPayload).eq('id', editOfferModal.id),
     });
     setSavingEditOffer(false);

@@ -11,7 +11,7 @@ import {
 export const emptyProduct = {
   name_ar: '', name_en: '', name_zh: '',
   price_from: '', currency: 'USD', category: 'other', moq: '',
-  desc_en: '', desc_ar: '',
+  desc_en: '', desc_ar: '', desc_zh: '',
   image_url: null, gallery_images: [], video_url: null,
   spec_material: '', spec_dimensions: '', spec_unit_weight: '', spec_color_options: '', spec_packaging_details: '', spec_customization: '', spec_lead_time_days: '',
   attributes: [],
@@ -28,6 +28,7 @@ export const PRODUCT_OPTIONAL_DB_FIELDS = [
   'spec_customization',
   'spec_lead_time_days',
   'attributes',
+  'desc_zh',
 ];
 
 export const buildProductWritePayload = (rawProduct, supplierId) => {
@@ -45,6 +46,7 @@ export const buildProductWritePayload = (rawProduct, supplierId) => {
     moq: product.moq,
     desc_en: product.desc_en,
     desc_ar: product.desc_ar || product.desc_en,
+    desc_zh: product.desc_zh || null,
     image_url: product.image_url || null,
     gallery_images: product.gallery_images || [],
     video_url: product.video_url || null,

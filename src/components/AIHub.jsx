@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import IdeaToProduct from './IdeaToProduct';
 import { hasIdeaFlowDraft, shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
+import { buildTranslatedRequestFields } from '../lib/requestTranslation';
+import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 
 /* ─────────────────────────────────────────
    Constants
@@ -186,10 +188,42 @@ function AssistantTool({ lang, user, onClose }) {
   const submitRequest = async () => {
     if (!requestData) return;
     if (!user) { alert(lb.loginAlert); nav('/login'); return; }
-    const { error } = await sb.from('requests').insert({
-      buyer_id: user.id, title_ar: requestData.title_ar,
-      title_en: requestData.title_en, title_zh: requestData.title_en,
-      quantity: requestData.quantity, description: requestData.description, status: 'open',
+
+    let translatedFields = {};
+    try {
+      translatedFields = await buildTranslatedRequestFields({
+        titleAr: requestData.title_ar || '',
+        titleEn: requestData.title_en || '',
+        description: requestData.description || '',
+        lang: chatLang || lang || 'ar',
+      });
+    } catch {
+      translatedFields = {
+        title_ar: requestData.title_ar || requestData.title_en || '',
+        title_en: requestData.title_en || requestData.title_ar || '',
+        title_zh: requestData.title_en || requestData.title_ar || '',
+        description_ar: requestData.description || '',
+        description_en: requestData.description || '',
+        description_zh: requestData.description || '',
+      };
+    }
+
+    const { error } = await runWithOptionalColumns({
+      table: 'requests',
+      payload: {
+        buyer_id: user.id,
+        title_ar: translatedFields.title_ar || requestData.title_ar || '',
+        title_en: translatedFields.title_en || requestData.title_en || '',
+        title_zh: translatedFields.title_zh || requestData.title_en || requestData.title_ar || '',
+        quantity: requestData.quantity,
+        description: requestData.description,
+        description_ar: translatedFields.description_ar || null,
+        description_en: translatedFields.description_en || null,
+        description_zh: translatedFields.description_zh || null,
+        status: 'open',
+      },
+      optionalKeys: ['description_ar', 'description_en', 'description_zh'],
+      execute: (p) => sb.from('requests').insert(p),
     });
     if (error) { alert(lb.error); return; }
     alert(lb.success);

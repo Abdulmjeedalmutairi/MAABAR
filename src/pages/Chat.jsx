@@ -1,11 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb, SUPABASE_ANON_KEY, SUPABASE_FUNCTIONS_URL } from '../supabase';
 import {
-  getDefaultTranslationDirection,
-  getDirectionLabel,
   getTranslationDirection,
-  TRANSLATION_DIRECTIONS,
+  inferTranslationDirection,
 } from '../lib/maabarAi/config';
 import { translateChatMessage } from '../lib/maabarAi/client';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
@@ -91,7 +89,6 @@ export default function Chat({ lang, user, profile }) {
   const [sending, setSending] = useState(false);
   const [translations, setTranslations] = useState({});
   const [translatingIds, setTranslatingIds] = useState(new Set());
-  const [translationDirection, setTranslationDirection] = useState(getDefaultTranslationDirection(lang));
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [chinaTime, setChinaTime] = useState('');
@@ -102,11 +99,8 @@ export default function Chat({ lang, user, profile }) {
   const isAr = lang === 'ar';
   const templates = MSG_TEMPLATES[lang] || MSG_TEMPLATES.ar;
   const t = COPY[lang] || COPY.ar;
+  const translationDirection = useMemo(() => inferTranslationDirection(lang, partner?.lang), [lang, partner?.lang]);
   const selectedDirection = getTranslationDirection(translationDirection);
-
-  useEffect(() => {
-    setTranslationDirection(getDefaultTranslationDirection(lang));
-  }, [lang]);
 
   useEffect(() => {
     const update = () => {
@@ -170,6 +164,29 @@ export default function Chat({ lang, user, profile }) {
     }
   }, [messages, translations]);
 
+  // Load cached translations from DB when messages or direction changes
+  useEffect(() => {
+    if (!user || translationDirection === 'off' || !messages.length) return;
+    const ids = messages
+      .filter((m) => !String(m.id).startsWith('temp-') && m.sender_id !== user.id)
+      .map((m) => m.id);
+    if (!ids.length) return;
+    sb.from('message_translations')
+      .select('message_id, translated_text')
+      .eq('direction', translationDirection)
+      .in('message_id', ids)
+      .then(({ data }) => {
+        if (!data?.length) return;
+        setTranslations((current) => {
+          const next = { ...current };
+          data.forEach((row) => {
+            next[`${translationDirection}:${row.message_id}`] = row.translated_text;
+          });
+          return next;
+        });
+      });
+  }, [messages, translationDirection, user]);
+
   useEffect(() => {
     if (!user || translationDirection === 'off') return;
 
@@ -201,6 +218,16 @@ export default function Chat({ lang, user, profile }) {
           ...current,
           [translationKey]: translated || message.content,
         }));
+        // Persist to DB (fire-and-forget; skip temp- IDs)
+        if (!String(message.id).startsWith('temp-')) {
+          sb.from('message_translations').upsert({
+            message_id: message.id,
+            direction: translationDirection,
+            translated_text: translated || message.content,
+          }, { onConflict: 'message_id,direction' }).then(({ error: persistError }) => {
+            if (persistError) console.error('[Chat] Failed to persist translation:', persistError.message);
+          });
+        }
       } catch (_error) {
         // silent fail — chat should continue without blocking
       }
@@ -400,29 +427,6 @@ export default function Chat({ lang, user, profile }) {
             )}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 6 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 0.4 }}>{t.translationLabel}</span>
-              <select
-                value={translationDirection}
-                onChange={(event) => setTranslationDirection(event.target.value)}
-                style={{
-                  background: 'var(--bg-raised)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 10,
-                  padding: '6px 10px',
-                  fontSize: 16,
-                  outline: 'none',
-                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                }}
-              >
-                {TRANSLATION_DIRECTIONS.map((direction) => (
-                  <option key={direction.id} value={direction.id}>
-                    {getDirectionLabel(direction.id, lang)}
-                  </option>
-                ))}
-              </select>
-            </label>
             {chinaTime && (
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: 0.7 }}>
                 {chinaTime} {t.chinaTime}

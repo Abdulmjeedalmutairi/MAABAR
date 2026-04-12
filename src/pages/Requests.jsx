@@ -11,6 +11,7 @@ import {
 } from '../lib/offerPricing';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { buildManagedBriefRow, generateManagedBriefWithAI } from '../lib/managedSourcing';
+import { buildTranslatedRequestFields, translateTextToAllLanguages } from '../lib/requestTranslation';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -276,65 +277,42 @@ export default function Requests({ lang, user, profile }) {
     if (data) {
       setRequests(data);
       
-      // نترجم عناوين الطلبات إذا لغة المورد مو عربية
+      // Build display translations for suppliers
+      // Prefer pre-translated DB columns; fall back to runtime AI translation only when missing
       if (isSupplier && lang !== 'ar' && data.length > 0) {
-        console.log('Starting translation for', data.length, 'requests, lang:', lang);
         const translations = {};
+        const needsRuntimeTranslation = [];
+
         for (const request of data) {
-          // إذا كانت اللغة zh وكان هناك title_zh، استخدمه مباشرة
-          if (lang === 'zh' && request.title_zh) {
-            translations[request.id] = {
-              ...translations[request.id],
-              title: request.title_zh
-            };
-            continue;
-          }
-          
-          // إذا كانت اللغة en وكان هناك title_en، استخدمه مباشرة
-          if (lang === 'en' && request.title_en) {
-            translations[request.id] = {
-              ...translations[request.id],
-              title: request.title_en
-            };
-            continue;
-          }
-          
-          // إذا لم يكن هناك ترجمة جاهزة، نترجم من أفضل مصدر متاح
-          if (request.title_ar || request.description) {
-            const titleToTranslate = request.title_ar || request.title_en || '';
-            const descToTranslate = request.description || '';
-            const parsedDesc = parseJsonIfNeeded(descToTranslate);
-            
-            if (titleToTranslate) {
-              console.log('Translating title for request', request.id, ':', titleToTranslate.substring(0, 50));
-              // نحدد لغة المصدر: إذا كان title_ar موجودًا نعتبره عربيًا، وإلا نعتبره إنجليزيًا
-              const sourceLang = request.title_ar ? 'ar' : 'en';
-              const translatedTitle = await translateRequestText(
-                titleToTranslate,
-                sourceLang,
-                lang
-              );
-              console.log('Translated title:', translatedTitle.substring(0, 50));
-              translations[request.id] = {
-                ...translations[request.id],
-                title: translatedTitle
-              };
-            }
-            
-            if (parsedDesc) {
-              const translatedDesc = await translateRequestText(
-                parsedDesc,
-                'ar', // نفترض الوصف بالعربية
-                lang
-              );
-              translations[request.id] = {
-                ...translations[request.id],
-                description: translatedDesc
-              };
-            }
+          const preTitle = lang === 'zh' ? request.title_zh : request.title_en;
+          const preDesc  = lang === 'zh' ? request.description_zh : request.description_en;
+
+          if (preTitle) {
+            translations[request.id] = { title: preTitle };
+            if (preDesc) translations[request.id].description = preDesc;
+          } else {
+            // No pre-translated title — queue for runtime translation
+            needsRuntimeTranslation.push(request);
           }
         }
-        console.log('Translation complete, setting', Object.keys(translations).length, 'translations');
+
+        // Runtime translation only for older requests without pre-translated columns
+        for (const request of needsRuntimeTranslation) {
+          const titleToTranslate = request.title_ar || request.title_en || '';
+          const descToTranslate  = parseJsonIfNeeded(request.description || '');
+
+          if (titleToTranslate) {
+            const sourceLang = request.title_ar ? 'ar' : 'en';
+            const translatedTitle = await translateRequestText(titleToTranslate, sourceLang, lang);
+            translations[request.id] = { ...translations[request.id], title: translatedTitle };
+          }
+
+          if (descToTranslate) {
+            const translatedDesc = await translateRequestText(descToTranslate, 'ar', lang);
+            translations[request.id] = { ...translations[request.id], description: translatedDesc };
+          }
+        }
+
         setTranslatedRequests(translations);
       }
     }
@@ -367,13 +345,37 @@ export default function Requests({ lang, user, profile }) {
     }
 
     setSubmitting(true);
+
+    // Translate title and description to all 3 languages at write time
+    let translatedFields = {};
+    try {
+      translatedFields = await buildTranslatedRequestFields({
+        titleAr,
+        titleEn,
+        description: String(newReq.description || '').trim(),
+        lang: effectiveLang,
+      });
+    } catch {
+      translatedFields = {
+        title_ar: titleAr || fallbackTitle,
+        title_en: titleEn || fallbackTitle,
+        title_zh: titleEn || titleAr || fallbackTitle,
+        description_ar: String(newReq.description || '').trim(),
+        description_en: String(newReq.description || '').trim(),
+        description_zh: String(newReq.description || '').trim(),
+      };
+    }
+
     const payload = {
       buyer_id: user.id,
-      title_ar: titleAr || fallbackTitle,
-      title_en: titleEn || fallbackTitle,
-      title_zh: titleEn || titleAr || fallbackTitle,
+      title_ar: translatedFields.title_ar || titleAr || fallbackTitle,
+      title_en: translatedFields.title_en || titleEn || fallbackTitle,
+      title_zh: translatedFields.title_zh || titleEn || titleAr || fallbackTitle,
       quantity,
       description: String(newReq.description || '').trim(),
+      description_ar: translatedFields.description_ar || null,
+      description_en: translatedFields.description_en || null,
+      description_zh: translatedFields.description_zh || null,
       category: newReq.category || 'other',
       status: 'open',
       budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
@@ -386,12 +388,16 @@ export default function Requests({ lang, user, profile }) {
       response_deadline: newReq.response_deadline || null,
     };
 
-    const { data: insertedRequest, error } = await runWithOptionalColumns({
+    console.log('[submitNewRequest] title_zh before insert:', payload.title_zh);
+    const { data: insertedRequest, error, strippedColumns } = await runWithOptionalColumns({
       table: 'requests',
       payload,
-      optionalKeys: ['sourcing_mode', 'managed_status', 'managed_review_state', 'response_deadline'],
+      optionalKeys: ['sourcing_mode', 'managed_status', 'managed_review_state', 'response_deadline', 'description_ar', 'description_en', 'description_zh'],
       execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('*').single(),
     });
+    if (strippedColumns && strippedColumns.length > 0) {
+      console.warn('[submitNewRequest] Columns stripped (not in DB schema yet — run migration):', strippedColumns);
+    }
 
     if (!error && isManagedMode && insertedRequest?.id) {
       try {
@@ -477,6 +483,15 @@ export default function Requests({ lang, user, profile }) {
         return;
       }
 
+      let noteTranslations = {};
+      if (note) {
+        try {
+          const noteLangs = await translateTextToAllLanguages(note, lang || 'zh');
+          noteTranslations = { note_ar: noteLangs.ar, note_en: noteLangs.en, note_zh: noteLangs.zh };
+        } catch (translationErr) {
+          console.error('submitOffer translation error:', translationErr?.message || translationErr);
+        }
+      }
       const { error } = await runWithOptionalColumns({
         table: 'offers',
         payload: {
@@ -489,9 +504,10 @@ export default function Requests({ lang, user, profile }) {
           delivery_days: days,
           origin,
           note: note || null,
+          ...noteTranslations,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method', 'origin'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
