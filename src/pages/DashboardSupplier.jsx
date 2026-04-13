@@ -1977,46 +1977,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
               </div>
 
-              {/* ── Onboarding / verification ── */}
-              {supplierState.isApprovedStage && (
-                <div style={{ marginBottom: 32, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 'var(--radius-xl)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    <div style={{ maxWidth: 720 }}>
-                      <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: '#8ad1a3', marginBottom: 10, fontWeight: 700 }}>
-                        {isAr ? 'تم فتح الوصول الكامل' : lang === 'zh' ? '完整权限已解锁' : 'Full access unlocked'}
-                      </p>
-                      <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 10, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
-                        {isAr ? 'حسابك الآن مورد موثّق على مَعبر' : lang === 'zh' ? '您的账户现在已成为 Maabar 认证供应商' : 'Your account is now a verified supplier on Maabar'}
-                      </h2>
-                      <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16, ...arFont, lineHeight: 1.8 }}>
-                        {isAr
-                          ? 'تمت الموافقة على التحقق وانفتحت الآن الطلبات والرسائل والعروض والمنتجات. ابدأ بما يحقق لك أسرع انطلاقة: إضافة منتج، تصفح الطلبات المناسبة، ثم أكمل إعداد الدفعات إذا كان ناقصاً.'
-                          : lang === 'zh'
-                            ? '您的认证已通过，需求、消息、报价和产品能力现已开放。建议先从最直接的动作开始：添加产品、查看匹配需求，如收款资料未完成再补上。'
-                            : 'Your verification is approved. Requests, messages, offers, and product tools are now open. Start with the highest-leverage next step: add a product, browse matching requests, and finish payout setup if it is still incomplete.'}
-                      </p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <button onClick={() => setActiveTab('add-product')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'أضف أول منتج' : lang === 'zh' ? '添加第一个产品' : 'Add your first product'}</button>
-                        <button onClick={() => setActiveTab('requests')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{isAr ? 'تصفح الطلبات' : lang === 'zh' ? '查看需求' : 'Browse requests'}</button>
-                        {needsPayoutSetup && (
-                          <button onClick={() => setActiveTab('payout')} className="btn-outline" style={{ fontSize: 11, minHeight: 34 }}>{t.payoutCtaAction}</button>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ minWidth: 220, maxWidth: 280, flex: '1 1 220px' }}>
-                      <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8, ...arFont }}>{isAr ? 'حالة الحساب' : lang === 'zh' ? '账户状态' : 'Account status'}</p>
-                        <p style={{ fontSize: 22, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>{isAr ? 'موثّق' : lang === 'zh' ? '已验证' : 'Verified'}</p>
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, ...arFont }}>
-                          {supplierMaabarId
-                            ? `${isAr ? 'معرّف المورد:' : lang === 'zh' ? '供应商编号：' : 'Supplier ID:'} ${supplierMaabarId}`
-                            : (isAr ? 'يمكنك الآن البدء مباشرة من الإجراءات السريعة أدناه.' : lang === 'zh' ? '现在可以直接从下方快捷操作开始。' : 'You can start directly from the quick actions below.')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
               {needsVerification && (
                 <div style={{ marginBottom: 32, padding: '20px 24px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-lg)' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
