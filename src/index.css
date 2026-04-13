@@ -2261,7 +2261,14 @@ input:-webkit-autofill:active {
     padding: 10px var(--space-4);
     padding-bottom: max(10px, calc(10px + var(--safe-bottom)));
   }
-  .notif-panel { width: calc(100vw - var(--space-6)); right: var(--space-3); top: 52px; }
+  .notif-panel {
+    position: fixed !important;
+    top: var(--page-top-offset) !important;
+    left: var(--space-3) !important;
+    right: var(--space-3) !important;
+    width: auto !important;
+    max-height: min(360px, calc(100dvh - var(--page-top-offset) - 16px));
+  }
 
   .sl-hero { padding: var(--space-10) var(--space-5); }
   .sl-title { font-size: 30px; }
