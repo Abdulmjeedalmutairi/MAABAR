@@ -1659,7 +1659,19 @@ footer {
   margin-inline-start: auto;
 }
 
-.chat-wrap { min-height: var(--app-dvh); height: var(--app-dvh); padding-top: var(--page-top-offset); background: var(--bg-base); display: flex; flex-direction: column; }
+.chat-wrap {
+  min-height: var(--app-dvh);
+  height: var(--app-dvh);
+  padding-top: var(--page-top-offset);
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+}
 
 .chat-header {
   padding: var(--space-4) var(--space-6);
@@ -1680,9 +1692,6 @@ footer {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  max-width: 660px;
-  width: 100%;
-  margin: 0 auto;
 }
 
 .chat-bubble {
@@ -2249,14 +2258,15 @@ input:-webkit-autofill:active {
     height: calc(100dvh - var(--page-top-offset));
     min-height: calc(100svh - var(--page-top-offset));
     max-height: calc(100dvh - var(--page-top-offset));
+    max-width: none;
+    margin: 0;
+    border-left: none;
+    border-right: none;
     padding-top: 0;
     z-index: 20;
   }
   .chat-header { padding: var(--space-3) var(--space-4); }
-  .chat-body {
-    padding: var(--space-3) var(--space-4);
-    max-width: none;
-  }
+  .chat-body { padding: var(--space-3) var(--space-4); }
   .chat-footer {
     padding: 10px var(--space-4);
     padding-bottom: max(10px, calc(10px + var(--safe-bottom)));
