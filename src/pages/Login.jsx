@@ -687,7 +687,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       { title: '٤. نظام الدفع المرحلي', body: 'تتيح مَعبر ثلاثة خيارات: ٣٠٪ مقدماً، أو ٥٠٪، أو ١٠٠٪. الدفعة الأولى تُمثّل التزام التاجر. الدفعة الثانية تُسدَّد بعد إشعار "الشحنة جاهزة".' },
       { title: '٥. العمولة', body: 'تأخذ مَعبر 0% عمولة على الصفقة.' },
       { title: '٦. سياسة المشاكل والإرجاع', body: 'إذا وصلت البضاعة تالفة أو مختلفة عن الوصف، يُفتح نزاع خلال ٤٨ ساعة. مَعبر تبتّ خلال ٧ أيام عمل.' },
-      { title: '٧. الخصوصية وحماية البيانات', body: 'تلتزم مَعبر بنظام حماية البيانات الشخصية السعودي (PDPL). لا نبيع بيانات المستخدمين لأي طرف ثالث.' },
+      { title: '٧. الخصوصية وحماية البيانات', body: 'تلتزم مَعبر بنظام حماية البيانات الشخصية السعودي (PDPL). نحن نجمع البيانات الضرورية فقط لتشغيل المنصة ولا نشاركها إلا في الحالات المحددة في سياسة الخصوصية الكاملة. يحق لك الاطلاع على بياناتك وتصحيحها وحذفها.' },
       { title: '٨. الاختصاص القضائي', body: 'تخضع هذه الشروط لأنظمة المملكة العربية السعودية.' },
     ],
     en: [
@@ -697,7 +697,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       { title: '4. Staged Payment System', body: 'Maabar supports three payment options: 30% upfront, 50% upfront, or 100% upfront. The first installment represents commitment, and the second installment is paid after the supplier marks the shipment as ready.' },
       { title: '5. Commission', body: 'Maabar charges 0% commission on the transaction.' },
       { title: '6. Issues and Returns', body: 'If goods arrive damaged or materially different from the description, a dispute may be opened within 48 hours. Maabar reviews the case within 7 business days.' },
-      { title: '7. Privacy and Data Protection', body: 'Maabar complies with Saudi PDPL requirements and does not sell user data to any third party.' },
+      { title: '7. Privacy and Data Protection', body: 'Maabar complies with the Saudi Personal Data Protection Law (PDPL). We collect only the data necessary to operate the platform and share it only in cases specified in the full privacy policy. You have the right to access, correct, and delete your data.' },
       { title: '8. Governing Law', body: 'These terms are governed by the laws of the Kingdom of Saudi Arabia.' },
     ],
     zh: [
@@ -707,7 +707,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出"货物已准备好"通知后支付。' },
       { title: '5. 平台佣金', body: 'Maabar 对交易收取 0% 佣金。' },
       { title: '6. 问题与退货', body: '如货物损坏或与描述存在重大差异，可在 48 小时内发起争议。Maabar 会在 7 个工作日内完成审查。' },
-      { title: '7. 隐私与数据保护', body: 'Maabar 遵守沙特 PDPL 要求，不会向任何第三方出售用户数据。' },
+      { title: '7. 隐私与数据保护', body: 'Maabar 遵守沙特个人数据保护法（PDPL）。我们仅收集运营平台所需的数据，并仅在完整隐私政策规定的情况下共享数据。您有权访问、更正和删除您的数据。' },
       { title: '8. 适用法律', body: '本条款受沙特阿拉伯王国法律管辖。' },
     ],
   };
