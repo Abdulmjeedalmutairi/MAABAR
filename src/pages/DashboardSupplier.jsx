@@ -3489,17 +3489,37 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         {[
           [isAr ? 'التاجر' : lang === 'zh' ? '采购商' : 'Buyer', selectedRequest.profiles?.full_name || selectedRequest.profiles?.company_name || '—'],
           [isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity', selectedRequest.quantity || '—'],
-          [isAr ? 'التصنيف' : lang === 'zh' ? '分类' : 'Category', selectedRequest.category || '—'],
+          [isAr ? 'التصنيف' : lang === 'zh' ? '分类' : 'Category', cats.find(c => c.val === selectedRequest.category)?.label || selectedRequest.category || '—'],
           [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit ? `${selectedRequest.budget_per_unit} SAR` : '—'],
           [isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan', selectedRequest.payment_plan ? (lang === 'zh' ? `${selectedRequest.payment_plan}% 定金，${100 - selectedRequest.payment_plan}% 发货前` : `${selectedRequest.payment_plan}%`) : '—'],
-          [isAr ? 'العينة' : lang === 'zh' ? '样品' : 'Sample', selectedRequest.sample_requirement || '—'],
-          [isAr ? 'الوصف' : lang === 'zh' ? '描述' : 'Description', selectedRequest.description || '—'],
+          [isAr ? 'العينة' : lang === 'zh' ? '样品' : 'Sample', selectedRequest.sample_requirement ? (isAr ? (selectedRequest.sample_requirement === 'required' ? 'إلزامية' : selectedRequest.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة') : lang === 'zh' ? (selectedRequest.sample_requirement === 'required' ? '必须提供' : selectedRequest.sample_requirement === 'preferred' ? '建议提供' : '无需样品') : (selectedRequest.sample_requirement === 'required' ? 'Required' : selectedRequest.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed')) : '—'],
         ].map(([label, value]) => (
           <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             <span style={{ fontSize: 12, color: 'var(--text-disabled)', flexShrink: 0 }}>{label}</span>
             <span style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right', ...arFont }}>{value}</span>
           </div>
         ))}
+        {/* Description row — rendered separately to handle Arabic-only fallback for ZH suppliers */}
+        {(() => {
+          const descLabel = isAr ? 'الوصف' : lang === 'zh' ? '描述' : 'Description';
+          const zhFallback = lang === 'zh' && !selectedRequest.description_zh && !selectedRequest.description_en && !!(selectedRequest.description_ar || selectedRequest.description);
+          const descText = isAr
+            ? (selectedRequest.description_ar || selectedRequest.description || '—')
+            : lang === 'zh'
+              ? (selectedRequest.description_zh || selectedRequest.description_en || selectedRequest.description_ar || selectedRequest.description || '—')
+              : (selectedRequest.description_en || selectedRequest.description || '—');
+          return (
+            <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-disabled)', flexShrink: 0 }}>{descLabel}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: isAr ? 'left' : 'right', direction: zhFallback ? 'rtl' : 'inherit', ...arFont }}>{descText}</span>
+              </div>
+              {zhFallback && (
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'right', margin: '4px 0 0', fontFamily: 'var(--font-ar)' }}>暂无中文翻译</p>
+              )}
+            </div>
+          );
+        })()}
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
         <button className="btn-dark-sm" onClick={() => { setSelectedRequest(null); toggleOfferForm(selectedRequest.id); }} style={{ flex: 1, minHeight: 44 }}>
