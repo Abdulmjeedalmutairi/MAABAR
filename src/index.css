@@ -2321,6 +2321,12 @@ input:-webkit-autofill:active {
   .dash-header-pad { padding: 16px 16px 0; }
 }
 
+/* ── Desktop tab row base (display toggled by media queries) ── */
+.desktop-tab-row {
+  overflow-x: auto;
+  gap: 0;
+}
+
 /* ── Mobile bottom navigation ── */
 .supplier-bottom-nav {
   display: none;
@@ -2329,6 +2335,7 @@ input:-webkit-autofill:active {
   .supplier-bottom-nav {
     display: flex;
     position: fixed;
+    top: unset;
     bottom: 0;
     left: 0;
     right: 0;

@@ -1725,7 +1725,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         </div>
 
         {/* Desktop: full flat tab row */}
-        <div className="desktop-tab-row" style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
+        <div className="desktop-tab-row">
           {tabs.map(tab => {
             const tabLocked = lockedTabIds.includes(tab.id);
             return (
