@@ -177,6 +177,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [managedOfferDrafts, setManagedOfferDrafts] = useState({});
   const [activeTab, setActiveTab]           = useState('overview');
   const [activeCat, setActiveCat]           = useState('all');
+  const [activeBottomTab, setActiveBottomTab] = useState('home');
+  const [moreMenuOpen, setMoreMenuOpen]     = useState(false);
+  const [requestStatusFilter, setRequestStatusFilter] = useState('all');
+  const [productStatusFilter, setProductStatusFilter] = useState('all');
+  const [messageFilter, setMessageFilter]   = useState('all');
   const [loadingOffers, setLoadingOffers]   = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
@@ -347,6 +352,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setActiveTab(supplierState.isApplicationStage ? 'verification' : 'overview');
     }
   }, [activeTab, supplierState.isApplicationStage, tabs]);
+
+  // Keep bottom nav in sync when activeTab is set programmatically
+  useEffect(() => {
+    if (['overview'].includes(activeTab)) setActiveBottomTab('home');
+    else if (['requests', 'managed-matches'].includes(activeTab)) setActiveBottomTab('requests');
+    else if (['my-products', 'add-product'].includes(activeTab)) setActiveBottomTab('products');
+    else if (['messages'].includes(activeTab)) setActiveBottomTab('messages');
+  }, [activeTab]);
 
   useEffect(() => {
     if (!dashboardUiStateKey) return;
@@ -983,7 +996,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
-      optionalKeys: ['preferred_display_currency', 'payout_beneficiary_name', 'payout_account_number', 'payout_branch_name', 'payout_iban'],
+      optionalKeys: ['preferred_display_currency', 'payout_beneficiary_name', 'payout_account_number', 'payout_bank_address', 'payout_branch_name'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
     setSavingPayout(false);
@@ -1622,9 +1635,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const fmtDate = (d) => {
     if (!d) return '';
     const diff = Math.floor((Date.now() - new Date(d)) / 1000);
-    if (diff < 3600)  return isAr ? Math.floor(diff / 60) + ' د'  : lang === 'zh' ? Math.floor(diff / 60) + '分' : Math.floor(diff / 60) + 'm';
-    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' س' : lang === 'zh' ? Math.floor(diff / 3600) + '小时' : Math.floor(diff / 3600) + 'h';
-    return isAr ? Math.floor(diff / 86400) + ' ي' : lang === 'zh' ? Math.floor(diff / 86400) + '天' : Math.floor(diff / 86400) + 'd';
+    if (diff < 3600)  return isAr ? Math.floor(diff / 60) + ' د'  : lang === 'zh' ? Math.floor(diff / 60) + '分钟前' : Math.floor(diff / 60) + 'm';
+    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' س' : lang === 'zh' ? Math.floor(diff / 3600) + '小时前' : Math.floor(diff / 3600) + 'h';
+    return isAr ? Math.floor(diff / 86400) + ' ي' : lang === 'zh' ? Math.floor(diff / 86400) + '天前' : Math.floor(diff / 86400) + 'd';
   };
 
   const name = profile?.company_name || profile?.full_name || user?.email?.split('@')[0];
@@ -1711,7 +1724,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
         </div>
 
-        <div style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
+        {/* Desktop: full flat tab row */}
+        <div className="desktop-tab-row" style={{ display: 'flex', overflowX: 'auto', gap: 0 }}>
           {tabs.map(tab => {
             const tabLocked = lockedTabIds.includes(tab.id);
             return (
@@ -1732,12 +1746,63 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </span>
                 )}
                 {tab.badge && (
-                  <span style={{ position: 'absolute', top: 6, right: 2, background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: 8, fontWeight: 700, borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.badge}</span>
+                  <span style={{ position: 'absolute', top: 6, right: 2, background: 'rgba(224,70,70,0.10)', border: '1px solid rgba(224,70,70,0.28)', color: '#e04646', fontSize: 8, fontWeight: 700, borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.badge}</span>
                 )}
               </button>
             );
           })}
         </div>
+
+        {/* Mobile: contextual sub-tabs driven by active bottom tab */}
+        {(() => {
+          const subTabStyle = (active) => ({
+            padding: '10px 16px', background: 'none', border: 'none',
+            borderBottom: active ? '1px solid var(--text-primary)' : '1px solid transparent',
+            color: active ? 'var(--text-primary)' : 'var(--text-disabled)',
+            fontSize: 11, cursor: 'pointer', transition: 'all 0.2s',
+            ...arFont, letterSpacing: lang === 'zh' ? 0 : 1.4,
+            textTransform: lang === 'zh' ? 'none' : 'uppercase',
+            whiteSpace: 'nowrap', minHeight: 44,
+          });
+          if (activeBottomTab === 'requests') return (
+            <div className="mobile-sub-tabs">
+              {[
+                { id: 'all',        label: isAr ? 'الكل' : lang === 'zh' ? '全部' : 'All' },
+                { id: 'open',       label: isAr ? 'مفتوح' : lang === 'zh' ? '开放中' : 'Open' },
+                { id: 'closed',     label: isAr ? 'مغلق' : lang === 'zh' ? '已关闭' : 'Closed' },
+                { id: 'high_value', label: isAr ? 'قيمة عالية' : lang === 'zh' ? '高价值' : 'High Value' },
+              ].map(s => (
+                <button key={s.id} style={subTabStyle(requestStatusFilter === s.id)} onClick={() => setRequestStatusFilter(s.id)}>{s.label}</button>
+              ))}
+            </div>
+          );
+          if (activeBottomTab === 'products') return (
+            <div className="mobile-sub-tabs">
+              {[
+                { id: 'all',    label: isAr ? 'الكل' : lang === 'zh' ? '全部' : 'All' },
+                { id: 'active', label: isAr ? 'نشط' : lang === 'zh' ? '上架' : 'Active' },
+                { id: 'draft',  label: isAr ? 'موقوف' : lang === 'zh' ? '下架' : 'Draft' },
+              ].map(s => (
+                <button key={s.id} style={subTabStyle(productStatusFilter === s.id)} onClick={() => { setProductStatusFilter(s.id); setActiveTab('my-products'); }}>{s.label}</button>
+              ))}
+              <button style={subTabStyle(activeTab === 'add-product')} onClick={() => setActiveTab('add-product')}>
+                {isAr ? '+ إضافة' : lang === 'zh' ? '+ 添加产品' : '+ Add Product'}
+              </button>
+            </div>
+          );
+          if (activeBottomTab === 'messages') return (
+            <div className="mobile-sub-tabs">
+              {[
+                { id: 'all',    label: isAr ? 'الكل' : lang === 'zh' ? '全部' : 'All' },
+                { id: 'unread', label: isAr ? 'غير مقروء' : lang === 'zh' ? '未读' : 'Unread' },
+                { id: 'archived', label: isAr ? 'مؤرشف' : lang === 'zh' ? '已归档' : 'Archived' },
+              ].map(s => (
+                <button key={s.id} style={subTabStyle(messageFilter === s.id)} onClick={() => setMessageFilter(s.id)}>{s.label}</button>
+              ))}
+            </div>
+          );
+          return null;
+        })()}
       </div>
 
       {/* ══════════════════════════════════════
@@ -1755,7 +1820,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 background: 'var(--bg-subtle)',
               }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
-                  MAABAR SUPPLIER ACCESS
+                  {isAr ? 'صلاحيات المورد' : lang === 'zh' ? '供应商权限' : 'MAABAR SUPPLIER ACCESS'}
                 </p>
                 <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
                   {verificationLockMessage}
@@ -1872,6 +1937,46 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </>
               ) : (
                 <>
+              {/* ── Supplier identity card ── */}
+              <div className="supplier-identity-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h2 style={{ fontSize: isAr ? 22 : 24, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, ...arFont, letterSpacing: isAr ? 0 : -0.3 }}>
+                      {settings.company_name || profile?.company_name || name}
+                    </h2>
+                    {(settings.city || settings.country) && (
+                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, ...arFont }}>
+                        {[settings.city, settings.country].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                      {supplierMaabarId && (
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '3px 10px', fontFamily: 'var(--font-sans)', letterSpacing: 0.5 }}>
+                          {supplierMaabarId}
+                        </span>
+                      )}
+                      {supplierState.isApprovedStage && (
+                        <span style={{ fontSize: 11, color: '#5a9a72', background: 'rgba(80,180,120,0.10)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 999, padding: '3px 10px', fontWeight: 600, ...arFont }}>
+                          {isAr ? '✓ مورد موثّق' : lang === 'zh' ? '✓ 认证供应商' : '✓ Verified'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
+                    {[
+                      { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', value: stats.products ?? '—' },
+                      { label: isAr ? 'العروض' : lang === 'zh' ? '报价' : 'Offers', value: stats.offers ?? '—' },
+                      { label: isAr ? 'التقييم' : lang === 'zh' ? '评分' : 'Rating', value: profile?.rating ? `${profile.rating}` : '—' },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ textAlign: 'center' }}>
+                        <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</p>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 2, letterSpacing: 0.5, textTransform: lang === 'zh' ? 'none' : 'uppercase', ...arFont }}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* ── Onboarding / verification ── */}
               {supplierState.isApprovedStage && (
                 <div style={{ marginBottom: 32, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 'var(--radius-xl)' }}>
@@ -1996,7 +2101,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     onClick={() => setActiveTab('offers')}
                   />
                   <StatCard
-                    label={isAr ? 'طلبات ظاهرة مناسبة' : lang === 'zh' ? '匹配的可见需求' : 'Matching Visible Requests'}
+                    label={isAr ? 'طلبات المشترين المفتوحة' : lang === 'zh' ? '买家的开放需求' : 'Open Buyer Requests'}
                     value={stats.matchingRequests || '—'}
                     onClick={() => setActiveTab('managed-matches')}
                     highlight={(stats.matchingRequests || 0) > 0}
@@ -2007,7 +2112,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <div style={{ marginBottom: 40 }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>{t.quickActions}</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-                  <QuickAction title={isAr ? 'الطلبات المطابقة لك' : lang === 'zh' ? '匹配给您的需求' : 'Matched requests for you'} onClick={() => setActiveTab('managed-matches')} primary isAr={isAr} />
+                  <QuickAction title={isAr ? 'طلبات المشترين المفتوحة' : lang === 'zh' ? '买家的开放需求' : 'Open buyer requests'} onClick={() => setActiveTab('managed-matches')} primary isAr={isAr} />
                   <QuickAction title={t.myProducts}     onClick={() => setActiveTab('my-products')} isAr={isAr} />
                   <QuickAction title={t.addNewProduct}  onClick={() => setActiveTab('add-product')} isAr={isAr} />
                 </div>
@@ -2097,7 +2202,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {(r.budget_per_unit || r.payment_plan || r.sample_requirement) && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
                           {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${r.budget_per_unit} SAR` : lang === 'zh' ? `预算参考：${r.budget_per_unit} SAR` : `Budget hint: ${r.budget_per_unit} SAR`}</span>}
-                          {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}%` : `Payment plan: ${r.payment_plan}%`}</span>}
+                          {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}% 定金，${100 - r.payment_plan}% 发货前` : `Payment plan: ${r.payment_plan}%`}</span>}
                           {r.sample_requirement && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `العينة: ${r.sample_requirement === 'required' ? 'إلزامية' : r.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة'}` : lang === 'zh' ? `样品：${r.sample_requirement === 'required' ? '必须提供' : r.sample_requirement === 'preferred' ? '建议提供' : '无需样品'}` : `Sample: ${r.sample_requirement === 'required' ? 'Required' : r.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed'}`}</span>}
                         </div>
                       )}
@@ -2328,12 +2433,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8, marginBottom: 14 }}>
                     <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                       <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'سعر الوحدة' : lang === 'zh' ? '单价' : 'Unit Price'}</p>
-                      <p style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{o.price} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{lang === 'zh' ? '美元' : 'USD'}</span></p>
+                      <p style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{parseFloat(o.price || 0).toFixed(2)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{lang === 'zh' ? '美元' : 'USD'}</span></p>
                     </div>
                     <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                       <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
                       <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                        {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} ${lang === 'zh' ? '美元' : 'USD'}` : (isAr ? 'غير محدد' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
+                        {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} ${lang === 'zh' ? ' 美元' : 'USD'}` : (isAr ? 'غير محدد' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
                       </p>
                       {getOfferShippingMethod(o) && (
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{getOfferShippingMethod(o)}</p>
@@ -2341,8 +2446,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     </div>
                     <div style={{ padding: '12px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
                       <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
-                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{lang === 'zh' ? '美元' : 'USD'}</span></p>
-                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{isAr ? `MOQ: ${o.moq} · ${o.delivery_days} يوم` : lang === 'zh' ? `最小起订量: ${o.moq} · ${o.delivery_days} 天` : `MOQ: ${o.moq} · ${o.delivery_days} days`}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}</p>
+                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{lang === 'zh' ? ' 美元' : 'USD'}</span></p>
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{isAr ? `MOQ: ${o.moq} · ${o.delivery_days} يوم` : lang === 'zh' ? `最小起订量：${o.moq} 件 · 交期：${o.delivery_days} 天` : `MOQ: ${o.moq} · ${o.delivery_days} days`}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}</p>
                     </div>
                   </div>
 
@@ -2361,7 +2466,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       )}
                       {o.requests?.payment_plan && (
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'خطة الدفع: ' : lang === 'zh' ? '付款计划：' : 'Payment plan: '}</span>{o.requests.payment_plan}%
+                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'خطة الدفع: ' : lang === 'zh' ? '付款计划：' : 'Payment plan: '}</span>{lang === 'zh' ? `${o.requests.payment_plan}% 定金，${100 - o.requests.payment_plan}% 发货前` : `${o.requests.payment_plan}%`}
                         </p>
                       )}
                       <p style={{ fontSize: 12 }}>
@@ -3231,21 +3336,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <label className={`form-label${isAr ? ' ar' : ''}`}>{t.swiftCode}</label>
                       <input className="form-input" value={payout.swift_code} onChange={e => setPayout(prev => ({ ...prev, swift_code: e.target.value }))} dir="ltr" />
                     </div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label className={`form-label${isAr ? ' ar' : ''}`}>{t.bankAddress}</label>
+                      <input className="form-input" value={payout.payout_bank_address} onChange={e => setPayout(prev => ({ ...prev, payout_bank_address: e.target.value }))} />
+                    </div>
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>{t.preferredCurrency}</label>
                       <select className="form-input" value={payout.preferred_display_currency || 'USD'} onChange={e => setPayout(prev => ({ ...prev, preferred_display_currency: e.target.value }))}>
                         {DISPLAY_CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className={`form-label${isAr ? ' ar' : ''}`}>{t.branchNameOptional}</label>
-                      <input className="form-input" value={payout.payout_branch_name} onChange={e => setPayout(prev => ({ ...prev, payout_branch_name: e.target.value }))} />
-                    </div>
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label className={`form-label${isAr ? ' ar' : ''}`}>{t.ibanOptional}</label>
-                      <input className="form-input" value={payout.payout_iban} onChange={e => setPayout(prev => ({ ...prev, payout_iban: e.target.value }))} dir="ltr" />
-                    </div>
                   </div>
+
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 14, marginBottom: 4, lineHeight: 1.7, ...arFont }}>
+                    {t.payoutReassurance}
+                  </p>
 
                   <button onClick={savePayout} disabled={savingPayout} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46, marginTop: 10 }}>
                     {payoutButtonLabel}
@@ -3264,7 +3369,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {isAr
                           ? `تم حفظ بيانات الدفعات بنجاح${resolvedPayoutSavedAt ? ` · آخر حفظ ${formatDraftSavedAt(resolvedPayoutSavedAt, lang)}` : ''}`
                           : lang === 'zh'
-                            ? `收款资料已成功保存${resolvedPayoutSavedAt ? ` · 最近保存：${formatDraftSavedAt(resolvedPayoutSavedAt, lang)}` : ''}`
+                            ? `收款资料已成功保存${resolvedPayoutSavedAt ? ` · 最后保存时间：${formatDraftSavedAt(resolvedPayoutSavedAt, lang)}` : ''}`
                             : `Payout details saved successfully${resolvedPayoutSavedAt ? ` · Last saved ${formatDraftSavedAt(resolvedPayoutSavedAt, lang)}` : ''}`}
                       </p>
                     ) : isPayoutDirty ? (
@@ -3286,7 +3391,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760 }}>
                 <div style={{ padding: '22px 24px', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 2.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>{isAr ? 'رحلة الانضمام' : lang === 'zh' ? '入驻流程' : 'Onboarding journey'}</p>
+                  <p style={{ fontSize: 10, letterSpacing: 2.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>{isAr ? 'رحلة الانضمام' : lang === 'zh' ? '供应商资料' : 'Onboarding journey'}</p>
                   <h3 style={{ fontSize: 22, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 10, ...arFont }}>{verificationStatusHeadline}</h3>
                   <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 16, ...arFont }}>{verificationStatusBody}</p>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -3374,7 +3479,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
                   <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'تفاصيل تجارية' : lang === 'zh' ? '商业资料' : 'Commercial details'}</p>
                   <div className="form-grid">
-                    {[[isAr ? 'الحد الأدنى لقيمة الطلب (SAR)' : lang === 'zh' ? '最低起订金额（SAR）' : 'Minimum order value (SAR)', 'min_order_value', 'number'], [isAr ? 'دعم التخصيص / OEM / ODM' : lang === 'zh' ? '定制支持 / OEM / ODM' : 'Customization support', 'customization_support'], [isAr ? 'الأسواق التي تصدّرون إليها' : lang === 'zh' ? '出口市场' : 'Export markets', 'export_markets'], [t.tradeLink, 'trade_link', 'url', true], [isAr ? 'عملة العرض المفضلة' : lang === 'zh' ? '首选显示货币' : 'Preferred Display Currency', 'preferred_display_currency', 'display_currency']].map(([label, key, type, required]) => (
+                    {[[isAr ? 'الحد الأدنى لقيمة الطلب (SAR)' : lang === 'zh' ? '最低起订金额（USD）' : 'Minimum order value (SAR)', 'min_order_value', 'number'], [isAr ? 'دعم التخصيص / OEM / ODM' : lang === 'zh' ? '定制支持 / OEM / ODM' : 'Customization support', 'customization_support'], [isAr ? 'الأسواق التي تصدّرون إليها' : lang === 'zh' ? '出口市场' : 'Export markets', 'export_markets'], [t.tradeLink, 'trade_link', 'url', true], [isAr ? 'عملة العرض المفضلة' : lang === 'zh' ? '首选显示货币' : 'Preferred Display Currency', 'preferred_display_currency', 'display_currency']].map(([label, key, type, required]) => (
                       <div key={key} className="form-group">
                         <label className={`form-label${isAr ? ' ar' : ''}`}>{label}{required ? ' *' : ''}</label>
                         {type === 'display_currency'
@@ -3426,7 +3531,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           [isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity', selectedRequest.quantity || '—'],
           [isAr ? 'التصنيف' : lang === 'zh' ? '分类' : 'Category', selectedRequest.category || '—'],
           [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit ? `${selectedRequest.budget_per_unit} SAR` : '—'],
-          [isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan', selectedRequest.payment_plan ? `${selectedRequest.payment_plan}%` : '—'],
+          [isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan', selectedRequest.payment_plan ? (lang === 'zh' ? `${selectedRequest.payment_plan}% 定金，${100 - selectedRequest.payment_plan}% 发货前` : `${selectedRequest.payment_plan}%`) : '—'],
           [isAr ? 'العينة' : lang === 'zh' ? '样品' : 'Sample', selectedRequest.sample_requirement || '—'],
           [isAr ? 'الوصف' : lang === 'zh' ? '描述' : 'Description', selectedRequest.description || '—'],
         ].map(([label, value]) => (
@@ -3541,6 +3646,91 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══════════════════════════════════════
+          MOBILE BOTTOM NAVIGATION
+      ══════════════════════════════════════ */}
+      <nav className="supplier-bottom-nav" dir={isAr ? 'rtl' : 'ltr'}>
+        {[
+          {
+            id: 'home',
+            icon: '⌂',
+            label: isAr ? 'الرئيسية' : lang === 'zh' ? '主页' : 'Home',
+            onClick: () => setActiveTab('overview'),
+          },
+          {
+            id: 'requests',
+            icon: '◈',
+            label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests',
+            onClick: () => setActiveTab('requests'),
+          },
+          {
+            id: 'products',
+            icon: '▦',
+            label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products',
+            onClick: () => setActiveTab('my-products'),
+          },
+          {
+            id: 'messages',
+            icon: '◉',
+            label: isAr ? 'الرسائل' : lang === 'zh' ? '消息' : 'Messages',
+            badge: stats.messages > 0 ? stats.messages : null,
+            onClick: () => setActiveTab('messages'),
+          },
+          {
+            id: 'more',
+            icon: '⋯',
+            label: isAr ? 'المزيد' : lang === 'zh' ? '更多' : 'More',
+            badge: (needsVerification || needsPayoutSetup) ? '!' : null,
+            onClick: () => setMoreMenuOpen(true),
+          },
+        ].map(item => (
+          <button
+            key={item.id}
+            className={`supplier-bottom-nav-item${activeBottomTab === item.id ? ' active' : ''}`}
+            onClick={item.onClick}
+          >
+            {item.badge && <span className="nav-badge">{item.badge}</span>}
+            <span className="nav-icon">{item.icon}</span>
+            <span className={`nav-label${isAr ? ' ar' : ''}`}>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ══════════════════════════════════════
+          MORE MENU (mobile slide-up sheet)
+      ══════════════════════════════════════ */}
+      {moreMenuOpen && (
+        <>
+          <div className="more-menu-overlay" onClick={() => setMoreMenuOpen(false)} />
+          <div className="more-menu-sheet" dir={isAr ? 'rtl' : 'ltr'}>
+            <div className="more-menu-handle" />
+            {[
+              { id: 'offers',             label: isAr ? 'عروضي' : lang === 'zh' ? '我的报价' : 'My Offers',          badge: null },
+              { id: 'payout',             label: isAr ? 'المدفوعات' : lang === 'zh' ? '收款设置' : 'Payments',       badge: needsPayoutSetup ? '!' : null },
+              { id: 'verification',       label: isAr ? 'التحقق' : lang === 'zh' ? '企业认证' : 'Verification',      badge: needsVerification ? '!' : null },
+              { id: 'product-inquiries',  label: isAr ? 'استفسارات المنتجات' : lang === 'zh' ? '产品咨询' : 'Product Inquiries', badge: stats.productInquiries > 0 ? stats.productInquiries : null },
+              { id: 'reviews',            label: isAr ? 'تقييماتي' : lang === 'zh' ? '我的评价' : 'Reviews',         badge: null },
+              { id: 'samples',            label: isAr ? 'العينات' : lang === 'zh' ? '样品管理' : 'Samples',          badge: stats.pendingSamples > 0 ? stats.pendingSamples : null },
+              { id: 'settings',           label: isAr ? 'الإعدادات' : lang === 'zh' ? '账户设置' : 'Settings',       badge: null },
+            ].map(item => {
+              const locked = lockedTabIds.includes(item.id);
+              return (
+                <button
+                  key={item.id}
+                  className={`more-menu-item${locked ? ' locked' : ''}`}
+                  style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', textAlign: isAr ? 'right' : 'left' }}
+                  onClick={() => { if (!locked) { setActiveTab(item.id); setMoreMenuOpen(false); } }}
+                >
+                  <span>{item.label}{locked && <span style={{ marginInlineStart: 8, fontSize: 10, color: 'var(--text-disabled)' }}>{isAr ? 'مقفل' : lang === 'zh' ? '锁定' : 'Locked'}</span>}</span>
+                  {item.badge && <span className="item-badge">{item.badge}</span>}
+                  {!item.badge && !locked && <span style={{ color: 'var(--text-disabled)', fontSize: 16 }}>{isAr ? '←' : '→'}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <Footer lang={lang} />

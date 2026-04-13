@@ -144,9 +144,9 @@ export function buildPayoutState(profile = {}) {
     bank_name: profile.bank_name || '',
     payout_account_number: profile.payout_account_number || '',
     swift_code: profile.swift_code || '',
+    payout_bank_address: profile.payout_bank_address || '',
     preferred_display_currency: profile.preferred_display_currency || 'USD',
     payout_branch_name: profile.payout_branch_name || '',
-    payout_iban: profile.payout_iban || '',
   };
 }
 
@@ -207,9 +207,9 @@ export function buildPayoutPayload(payout = {}) {
     bank_name: normalizeTextInput(payout.bank_name),
     payout_account_number: normalizeTextInput(payout.payout_account_number),
     swift_code: normalizeTextInput(payout.swift_code),
+    payout_bank_address: normalizeTextInput(payout.payout_bank_address) || null,
     preferred_display_currency: normalizeTextInput(payout.preferred_display_currency || 'USD') || 'USD',
     payout_branch_name: normalizeTextInput(payout.payout_branch_name) || null,
-    payout_iban: normalizeTextInput(payout.payout_iban) || null,
   };
 }
 
@@ -219,7 +219,7 @@ export function hasPersistedSupplierSettings(profile = {}) {
 }
 
 export function hasPersistedSupplierPayout(profile = {}) {
-  return ['payout_beneficiary_name', 'bank_name', 'payout_account_number', 'swift_code', 'payout_branch_name', 'payout_iban']
+  return ['payout_beneficiary_name', 'bank_name', 'payout_account_number', 'swift_code', 'payout_bank_address', 'payout_branch_name']
     .some((key) => Boolean(String(profile?.[key] || '').trim()));
 }
 
@@ -227,7 +227,7 @@ export function buildSettingsSaveFeedback({ lang = 'en', status = 'idle', savedA
   const isAr = lang === 'ar';
   const isZh = lang === 'zh';
   const formattedSavedAt = savedAt ? formatDraftSavedAt(savedAt, lang) : '';
-  const meta = formattedSavedAt ? (isAr ? `آخر حفظ: ${formattedSavedAt}` : isZh ? `最近保存：${formattedSavedAt}` : `Last saved: ${formattedSavedAt}`) : '';
+  const meta = formattedSavedAt ? (isAr ? `آخر حفظ: ${formattedSavedAt}` : isZh ? `最后保存时间：${formattedSavedAt}` : `Last saved: ${formattedSavedAt}`) : '';
 
   if (status === 'saving') {
     return {
@@ -265,19 +265,15 @@ export function buildSettingsSaveFeedback({ lang = 'en', status = 'idle', savedA
     };
   }
 
-  return {
-    tone: 'neutral',
-    title: isAr ? 'ملف الشركة الحالي' : isZh ? '当前公司资料' : 'Current company profile',
-    body: isAr ? 'أي قيمة تراها هنا هي النسخة الحالية من ملف الشركة. عند التعديل سيظهر لك بوضوح أنها غير محفوظة.' : isZh ? '这里显示的是当前公司资料。只要有新修改，界面会明确提示尚未保存。' : 'These fields reflect the current company profile. As soon as you change anything, the UI will tell you it is no longer saved yet.',
-    meta,
-  };
+  // idle — return empty title so SaveFeedbackCard renders nothing on initial load
+  return { tone: 'neutral', title: '', body: '', meta: '' };
 }
 
 export function buildPayoutSaveFeedback({ lang = 'en', status = 'idle', savedAt = '', errorMessage = '' }) {
   const isAr = lang === 'ar';
   const isZh = lang === 'zh';
   const formattedSavedAt = savedAt ? formatDraftSavedAt(savedAt, lang) : '';
-  const meta = formattedSavedAt ? (isAr ? `آخر حفظ: ${formattedSavedAt}` : isZh ? `最近保存：${formattedSavedAt}` : `Last saved: ${formattedSavedAt}`) : '';
+  const meta = formattedSavedAt ? (isAr ? `آخر حفظ: ${formattedSavedAt}` : isZh ? `最后保存时间：${formattedSavedAt}` : `Last saved: ${formattedSavedAt}`) : '';
 
   if (status === 'saving') {
     return {
@@ -315,12 +311,8 @@ export function buildPayoutSaveFeedback({ lang = 'en', status = 'idle', savedAt 
     };
   }
 
-  return {
-    tone: 'neutral',
-    title: isAr ? 'بيانات الدفعات الحالية' : isZh ? '当前收款资料' : 'Current payout details',
-    body: isAr ? 'هذا النموذج يعرض النسخة الحالية من بيانات الاستلام، وأي تعديل جديد سيظهر مباشرة كحالة غير محفوظة.' : isZh ? '此表单显示当前收款资料。只要有新的修改，界面会立即提示尚未保存。' : 'This form shows the current payout record. As soon as you change anything, the UI will mark it as not saved yet.',
-    meta,
-  };
+  // idle — return empty title so SaveFeedbackCard renders nothing on initial load
+  return { tone: 'neutral', title: '', body: '', meta: '' };
 }
 
 export function getSupplierVerificationDraftKey(userId) {
@@ -352,12 +344,30 @@ export function formatDraftSavedAt(value, lang = 'en') {
 
   try {
     const date = new Date(value);
-    const locale = lang === 'ar' ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-GB';
-    return date.toLocaleString(locale, {
-      hour: '2-digit',
-      minute: '2-digit',
+    if (lang === 'zh') {
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+    if (lang === 'ar') {
+      return date.toLocaleString('ar-SA', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+    return date.toLocaleString('en-GB', {
       day: '2-digit',
       month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   } catch {
     return '';

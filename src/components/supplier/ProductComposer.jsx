@@ -327,8 +327,9 @@ export function ProductForm({
                   </button>
                 </>
               : <>
-                  <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>+ {t.uploadVideo}</p>
-                  <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.6 }}>{t.videoLimitHint} · {t.maxVideo}</p>
+                  <p style={{ fontSize: 9, color: 'var(--text-disabled)', opacity: 0.7 }}>
+                    {lang === 'zh' ? `${t.videoLimitHint}，${t.maxVideo}` : `${t.videoLimitHint} · ${t.maxVideo}`}
+                  </p>
                 </>}
           </div>
         </div>
