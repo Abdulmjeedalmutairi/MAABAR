@@ -267,138 +267,166 @@ ${hasConfirmUrl ? `
 </div>`, { lang }) });
   },
 
-  offer_accepted: (d) => ({
-    subject: `تم قبول عرضك — ${d.requestTitle || ''}`,
-    html: wrap(`
-<div class="bd">
-<p class="gr">Offer Accepted</p>
-<p class="tg">أهلاً ${d.name || ''}،</p>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">تم قبول عرضك على طلب <strong style="color:rgba(0,0,0,0.88);">${d.requestTitle || ''}</strong>. انتقل للوحة التحكم لمتابعة الطلب وانتظار الدفع.</p>
-<div class="bw"><a href="https://maabar.io/dashboard" class="bt">عرض الطلب ←</a></div>
-</div>`),
-  }),
+  // ── Supplier-bound: ZH · EN ─────────────────────────────────────────────────
 
-  offer_rejected: (d) => ({
-    subject: `تم اختيار عرض آخر — ${d.requestTitle || ''}`,
-    html: wrap(`
+  offer_accepted: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `您的报价已被接受 — ${d.requestTitle || ''}`, eyebrow: 'Offer Accepted', title: '您的报价已被接受', body: `买方已接受您对「${d.requestTitle || ''}」的报价，付款即将到账。请登录查看订单详情。`, cta: '查看订单 →' },
+      en: { subject: `Your offer was accepted — ${d.requestTitle || ''}`, eyebrow: 'Offer Accepted', title: 'Your offer was accepted', body: `Your offer on "${d.requestTitle || ''}" has been accepted. The buyer will process payment shortly. Log in to track the order.`, cta: 'View order →' },
+    } as any)[lang] || { subject: `Your offer was accepted — ${d.requestTitle || ''}`, eyebrow: 'Offer Accepted', title: 'Your offer was accepted', body: `Your offer on "${d.requestTitle || ''}" has been accepted.`, cta: 'View order →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Offer Not Selected</p>
-<p class="tg">أهلاً ${d.name || ''}،</p>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">نشكرك على مشاركتك. للأسف تم اختيار عرض آخر على طلب <strong style="color:rgba(0,0,0,0.88);">${d.requestTitle || ''}</strong>. استمر في تقديم عروضك على الطلبات الجديدة.</p>
-<div class="bw"><a href="https://maabar.io/dashboard" class="bt">تصفح الطلبات ←</a></div>
-</div>`),
-  }),
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
-  payment_received_supplier: (d) => ({
-    subject: `وصلت دفعتك — ${d.requestTitle || ''}`,
-    html: wrap(`
+  offer_rejected: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `该需求已选择其他供应商 — ${d.requestTitle || ''}`, eyebrow: 'Offer Not Selected', title: '已选择其他供应商', body: `感谢您对「${d.requestTitle || ''}」的报价，买方本次选择了其他供应商。请继续参与更多采购需求。`, cta: '浏览需求 →' },
+      en: { subject: `Another offer was selected — ${d.requestTitle || ''}`, eyebrow: 'Offer Not Selected', title: 'Another offer was selected', body: `Thank you for your offer on "${d.requestTitle || ''}". The buyer selected another supplier this time. Keep submitting offers on new requests.`, cta: 'Browse requests →' },
+    } as any)[lang] || { subject: `Another offer was selected — ${d.requestTitle || ''}`, eyebrow: 'Offer Not Selected', title: 'Another offer was selected', body: `The buyer selected another supplier for "${d.requestTitle || ''}".`, cta: 'Browse requests →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Payment Received</p>
-<p class="tg">أهلاً ${d.name || ''}،</p>
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  payment_received_supplier: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `已收到付款 — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: '已收到付款，请开始生产', body: `「${d.requestTitle || ''}」的 ${d.amount || '-'} USD 付款已确认，请立即开始生产并在发货时添加跟踪号。`, cta: '跟进订单 →' },
+      en: { subject: `Payment received — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: 'Payment confirmed — begin production', body: `Payment of ${d.amount || '-'} USD for "${d.requestTitle || ''}" has been confirmed. Please begin production and add a tracking number when you ship.`, cta: 'Track order →' },
+    } as any)[lang] || { subject: `Payment received — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: 'Payment confirmed', body: `Payment for "${d.requestTitle || ''}" confirmed. Begin production.`, cta: 'Track order →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  new_sample: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `新样品申请 — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: '收到新样品申请', body: `买方申请了 ${d.quantity || '-'} 件「${d.productName || ''}」样品，预估总价：${d.totalPrice || '-'} SAR。请登录审核申请。`, cta: '审核申请 →' },
+      en: { subject: `New sample request — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: 'You received a sample request', body: `A buyer requested ${d.quantity || '-'} sample(s) of "${d.productName || ''}". Estimated total: ${d.totalPrice || '-'} SAR. Log in to review.`, cta: 'Review request →' },
+    } as any)[lang] || { subject: `New sample request — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: 'New sample request', body: `Sample request for "${d.productName || ''}".`, cta: 'Review request →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  // ── Buyer-bound: AR · EN ─────────────────────────────────────────────────────
+
+  new_offer: (d) => {
+    const lang = d.lang || 'ar';
+    const shippingVal = d.shippingCost === null || d.shippingCost === undefined || d.shippingCost === ''
+      ? (lang === 'ar' ? 'مشمول أو غير محدد' : 'Included or unspecified')
+      : `${d.shippingCost} USD`;
+    const t = ({
+      ar: { subject: `عرض سعر جديد على طلبك — ${d.requestTitle || ''}`, eyebrow: 'New Offer Received', title: 'وصلك عرض جديد', reqLabel: 'الطلب', supplierLabel: 'المورد', priceLabel: 'سعر الوحدة', shippingLabel: 'الشحن', totalLabel: 'الإجمالي التقديري', deliveryLabel: 'مدة التسليم', dayUnit: 'يوم', cta: 'مراجعة العرض ←' },
+      en: { subject: `New offer on your request — ${d.requestTitle || ''}`, eyebrow: 'New Offer Received', title: 'You received a new offer', reqLabel: 'Request', supplierLabel: 'Supplier', priceLabel: 'Unit price', shippingLabel: 'Shipping', totalLabel: 'Est. total', deliveryLabel: 'Delivery', dayUnit: 'days', cta: 'Review offer →' },
+    } as any)[lang] || { subject: `New offer — ${d.requestTitle || ''}`, eyebrow: 'New Offer Received', title: 'New offer received', reqLabel: 'Request', supplierLabel: 'Supplier', priceLabel: 'Price', shippingLabel: 'Shipping', totalLabel: 'Total', deliveryLabel: 'Delivery', dayUnit: 'days', cta: 'Review offer →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
 <div class="ib">
-<p class="il">تفاصيل الدفعة</p>
-<div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
-<div class="ir"><span class="ik">المبلغ</span><span class="iv">${d.amount || '-'} SAR</span></div>
+<div class="ir"><span class="ik">${t.reqLabel}</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">${t.supplierLabel}</span><span class="iv">${d.supplierName || '-'}</span></div>
+<div class="ir"><span class="ik">${t.priceLabel}</span><span class="iv">${d.price || '-'} USD</span></div>
+<div class="ir"><span class="ik">${t.shippingLabel}</span><span class="iv">${shippingVal}</span></div>
+<div class="ir"><span class="ik">${t.totalLabel}</span><span class="iv">${d.estimatedTotal || d.price || '-'} USD</span></div>
+<div class="ir"><span class="ik">${t.deliveryLabel}</span><span class="iv">${d.deliveryDays || '-'} ${t.dayUnit}</span></div>
 </div>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">ابدأ التجهيز الآن وأضف رقم التتبع عند الشحن.</p>
-<div class="bw"><a href="https://maabar.io/dashboard" class="bt">متابعة الطلب ←</a></div>
-</div>`),
-  }),
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
-  new_offer: (d) => ({
-    subject: `عرض سعر جديد على طلبك — ${d.requestTitle || ''}`,
-    html: wrap(`
-<div class="bd">
-<p class="gr">New Offer Received</p>
-<p class="tg">أهلاً ${d.name || ''}،</p>
-<div class="ib">
-<p class="il">تفاصيل العرض</p>
-<div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
-<div class="ir"><span class="ik">المورد</span><span class="iv">${d.supplierName || '-'}</span></div>
-<div class="ir"><span class="ik">سعر الوحدة</span><span class="iv">${d.price || '-'} USD</span></div>
-<div class="ir"><span class="ik">الشحن</span><span class="iv">${d.shippingCost === null || d.shippingCost === undefined || d.shippingCost === '' ? 'غير محدد بشكل منفصل' : `${d.shippingCost} USD`}</span></div>
-${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</span><span class="iv">${d.shippingMethod}</span></div>` : ''}
-<div class="ir"><span class="ik">الإجمالي التقديري</span><span class="iv">${d.estimatedTotal || d.price || '-'} USD</span></div>
-<div class="ir"><span class="ik">مدة التسليم</span><span class="iv">${d.deliveryDays || '-'} يوم</span></div>
-</div>
-<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">مراجعة العروض ←</a></div>
-</div>`),
-  }),
+  // ── Dual-recipient: AR · EN · ZH (handler resolves role) ────────────────────
 
-  new_message: (d) => ({
-    subject: `رسالة جديدة من ${d.senderName || 'Maabar'}`,
-    html: wrap(`
+  new_message: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `رسالة جديدة من ${d.senderName || 'Maabar'}`, eyebrow: 'New Message', title: 'لديك رسالة جديدة', senderLabel: 'المرسل', previewLabel: 'المعاينة', cta: 'فتح المحادثة ←' },
+      en: { subject: `New message from ${d.senderName || 'Maabar'}`, eyebrow: 'New Message', title: 'You have a new message', senderLabel: 'From', previewLabel: 'Preview', cta: 'Open chat →' },
+      zh: { subject: `${d.senderName || 'Maabar'} 发来新消息`, eyebrow: 'New Message', title: '您有一条新消息', senderLabel: '发件人', previewLabel: '预览', cta: '打开对话 →' },
+    } as any)[lang] || { subject: `New message from ${d.senderName || 'Maabar'}`, eyebrow: 'New Message', title: 'New message', senderLabel: 'From', previewLabel: 'Preview', cta: 'Open chat →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">New Message</p>
-<p class="tg">لديك رسالة جديدة</p>
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
 <div class="ib">
-<div class="ir"><span class="ik">المرسل</span><span class="iv">${d.senderName || '-'}</span></div>
-<div class="ir"><span class="ik">المعاينة</span><span class="iv">${d.preview || '-'}</span></div>
+<div class="ir"><span class="ik">${t.senderLabel}</span><span class="iv">${d.senderName || '-'}</span></div>
+<div class="ir"><span class="ik">${t.previewLabel}</span><span class="iv">${d.preview || '-'}</span></div>
 </div>
-<div class="bw"><a href="https://maabar.io/chat/${d.senderId || ''}" class="bt">فتح المحادثة ←</a></div>
-</div>`),
-  }),
+<div class="bw"><a href="https://maabar.io/chat/${d.senderId || ''}" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
-  new_sample: (d) => ({
-    subject: `طلب عينة جديد — ${d.productName || ''}`,
-    html: wrap(`
-<div class="bd">
-<p class="gr">New Sample Request</p>
-<p class="tg">طلب عينة جديد</p>
-<div class="ib">
-<div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
-<div class="ir"><span class="ik">الكمية</span><span class="iv">${d.quantity || '-'}</span></div>
-<div class="ir"><span class="ik">الإجمالي التقريبي</span><span class="iv">${d.totalPrice || '-'} SAR</span></div>
-</div>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">قام تاجر بطلب عينة من منتجك. راجع الطلب من لوحة المورد.</p>
-<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">مراجعة الطلب ←</a></div>
-</div>`),
-  }),
+  // ── Buyer-bound (continued): AR · EN ────────────────────────────────────────
 
-  sample_approved: (d) => ({
-    subject: `تمت الموافقة على طلب العينة — ${d.productName || ''}`,
-    html: wrap(`
+  sample_approved: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `تمت الموافقة على طلب العينة — ${d.productName || ''}`, eyebrow: 'Sample Approved', title: 'تمت الموافقة على طلب العينة', body: `وافق المورد على طلب العينة لمنتج «${d.productName || ''}». تواصل معه عبر المحادثة لترتيب التفاصيل.`, cta: 'عرض طلبات العينات ←' },
+      en: { subject: `Sample request approved — ${d.productName || ''}`, eyebrow: 'Sample Approved', title: 'Your sample request was approved', body: `The supplier approved your sample request for "${d.productName || ''}". Contact them via chat to arrange the details.`, cta: 'View sample requests →' },
+    } as any)[lang] || { subject: `Sample approved — ${d.productName || ''}`, eyebrow: 'Sample Approved', title: 'Sample approved', body: `Your sample request for "${d.productName || ''}" was approved.`, cta: 'View sample requests →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Sample Approved</p>
-<p class="tg">تمت الموافقة على طلب العينة</p>
-<div class="ib">
-<div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
-<div class="ir"><span class="ik">الإجمالي</span><span class="iv">${d.totalPrice || '-'} SAR</span></div>
-</div>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">وافق المورد على طلب العينة. يمكنك الآن متابعة التفاصيل مع المورد داخل المحادثة.</p>
-<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">عرض طلبات العينات ←</a></div>
-</div>`),
-  }),
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
-  sample_rejected: (d) => ({
-    subject: `تم رفض طلب العينة — ${d.productName || ''}`,
-    html: wrap(`
+  sample_rejected: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `تم رفض طلب العينة — ${d.productName || ''}`, eyebrow: 'Sample Declined', title: 'تم رفض طلب العينة', body: `رفض المورد طلب العينة لمنتج «${d.productName || ''}». تواصل معه عبر المحادثة لمعرفة البدائل.`, cta: 'عرض طلبات العينات ←' },
+      en: { subject: `Sample request declined — ${d.productName || ''}`, eyebrow: 'Sample Declined', title: 'Your sample request was declined', body: `The supplier declined your sample request for "${d.productName || ''}". Contact them via chat for alternatives.`, cta: 'View sample requests →' },
+    } as any)[lang] || { subject: `Sample declined — ${d.productName || ''}`, eyebrow: 'Sample Declined', title: 'Sample declined', body: `Your sample request for "${d.productName || ''}" was declined.`, cta: 'View sample requests →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Sample Rejected</p>
-<p class="tg">تم رفض طلب العينة</p>
-<div class="ib">
-<div class="ir"><span class="ik">المنتج</span><span class="iv">${d.productName || '-'}</span></div>
-</div>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">قام المورد برفض طلب العينة. يمكنك التواصل معه داخل مَعبر لمعرفة البدائل.</p>
-<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">عرض طلبات العينات ←</a></div>
-</div>`),
-  }),
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=samples" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
-  payment_confirmation_buyer: (d) => ({
-    subject: `تم استلام دفعتك — ${d.requestTitle || ''}`,
-    html: wrap(`
+  payment_confirmation_buyer: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `تأكيد الدفع — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'تم استلام دفعتك', reqLabel: 'الطلب', amountLabel: 'المبلغ المدفوع', body: 'تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.', cta: 'متابعة الطلب ←' },
+      en: { subject: `Payment confirmed — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'Your payment was received', reqLabel: 'Request', amountLabel: 'Amount paid', body: 'Your payment has been received. The supplier will begin production shortly and you will be notified when your order ships.', cta: 'Track order →' },
+    } as any)[lang] || { subject: `Payment confirmed — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'Payment confirmed', reqLabel: 'Request', amountLabel: 'Amount', body: 'Your payment has been received.', cta: 'Track order →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Payment Confirmed</p>
-<p class="tg">أهلاً${d.name ? ' ' + d.name : ''}،</p>
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
 <div class="ib">
-<p class="il">تفاصيل الدفعة</p>
-<div class="ir"><span class="ik">الطلب</span><span class="iv">${d.requestTitle || '-'}</span></div>
-<div class="ir"><span class="ik">المبلغ المدفوع</span><span class="iv">${d.amount || '-'} SAR</span></div>
+<div class="ir"><span class="ik">${t.reqLabel}</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">${t.amountLabel}</span><span class="iv">${d.amount || '-'} SAR</span></div>
 </div>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.</p>
-<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">متابعة الطلب ←</a></div>
-</div>`),
-  }),
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
   supplier_rejected: (d) => ({
     subject: 'بخصوص طلب انضمامك في مَعبر',
@@ -410,34 +438,38 @@ ${d.shippingMethod ? `<div class="ir"><span class="ik">طريقة الشحن</sp
 </div>`),
   }),
 
-  shipment_tracking: (d) => ({
-    subject: `طلبك في الطريق — رقم التتبع: ${d.trackingNumber || ''}`,
-    html: wrap(`
+  shipment_tracking: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `طلبك في الطريق — ${d.trackingNumber || ''}`, eyebrow: 'Shipment Dispatched', title: 'طلبك في الطريق', carrierLabel: 'شركة الشحن', trackingLabel: 'رقم التتبع', cta: 'متابعة الطلب ←' },
+      en: { subject: `Your order has shipped — ${d.trackingNumber || ''}`, eyebrow: 'Shipment Dispatched', title: 'Your order is on the way', carrierLabel: 'Carrier', trackingLabel: 'Tracking number', cta: 'Track order →' },
+    } as any)[lang] || { subject: `Shipped — ${d.trackingNumber || ''}`, eyebrow: 'Shipment Dispatched', title: 'Order shipped', carrierLabel: 'Carrier', trackingLabel: 'Tracking', cta: 'Track order →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Shipment Dispatched</p>
-<p class="tg">طلبك في الطريق</p>
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
 <div class="ib">
-<p class="il">تفاصيل الشحن</p>
-<div class="ir"><span class="ik">شركة الشحن</span><span class="iv">${d.shippingCompany || '-'}</span></div>
-<div class="ir"><span class="ik">رقم التتبع</span><span class="iv">${d.trackingNumber || '-'}</span></div>
+<div class="ir"><span class="ik">${t.carrierLabel}</span><span class="iv">${d.shippingCompany || '-'}</span></div>
+<div class="ir"><span class="ik">${t.trackingLabel}</span><span class="iv">${d.trackingNumber || '-'}</span></div>
 </div>
-<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">متابعة الطلب ←</a></div>
-</div>`),
-  }),
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
-  payout_initiated: (d) => ({
-    subject: 'تم تأكيد استلام بضاعتك — مَعبر',
-    html: wrap(`
+  payout_initiated: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: '收货已确认 — 款项即将转账', eyebrow: 'Payout Initiated', title: '款项即将转账', body: `买方已确认收货，您的 ${d.amount || '-'} SAR 款项将在 24 小时内通过已登记的付款方式转账。`, cta: '查看控制台 →' },
+      en: { subject: 'Delivery confirmed — payout on the way', eyebrow: 'Payout Initiated', title: 'Your payout is on the way', body: `The buyer confirmed delivery. Your payout of ${d.amount || '-'} SAR will be transferred within 24 hours via your registered payment method.`, cta: 'View dashboard →' },
+    } as any)[lang] || { subject: 'Payout initiated', eyebrow: 'Payout Initiated', title: 'Payout on the way', body: `Your payout of ${d.amount || '-'} SAR will be transferred within 24 hours.`, cta: 'View dashboard →' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Payout Initiated</p>
-<p class="tg">أهلاً ${d.name || ''}،</p>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 16px;">أكّد التاجر استلام الشحنة. سيتم تحويل مبلغك خلال <strong style="color:rgba(0,0,0,0.88);">24 ساعة</strong> عبر طريقة الدفع المسجلة.</p>
-<div class="ib">
-<div class="ir"><span class="ik">المبلغ</span><span class="iv">${d.amount || '-'} SAR</span></div>
-</div>
-<div class="bw"><a href="https://maabar.io/dashboard" class="bt">عرض لوحة التحكم ←</a></div>
-</div>`),
-  }),
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 
   custom_marketing: (d) => {
     const infoRows = Array.isArray(d.infoRows) ? d.infoRows : [];
@@ -560,6 +592,53 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 </div>`, { lang }),
     };
   },
+
+  // ── Previously missing templates ─────────────────────────────────────────────
+
+  product_inquiry: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `新产品询价 — ${d.productName || ''}`, eyebrow: 'New Product Inquiry', title: '收到新产品询价', body: `买方提交了关于「${d.productName || ''}」的询价，请登录查看并回复。`, cta: '查看询价 →' },
+      en: { subject: `New product inquiry — ${d.productName || ''}`, eyebrow: 'New Product Inquiry', title: 'You received a product inquiry', body: `A buyer submitted an inquiry about "${d.productName || ''}". Log in to view and respond.`, cta: 'View inquiry →' },
+    } as any)[lang] || { subject: `New inquiry — ${d.productName || ''}`, eyebrow: 'New Product Inquiry', title: 'New inquiry', body: `Inquiry received for "${d.productName || ''}".`, cta: 'View inquiry →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=product-inquiries" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  product_inquiry_reply: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `رد على استفسارك — ${d.productName || ''}`, eyebrow: 'Inquiry Reply', title: 'المورد رد على استفسارك', body: `ردّ المورد على استفسارك حول «${d.productName || ''}». سجّل دخولك لعرض الرد الكامل.`, cta: 'عرض الرد ←' },
+      en: { subject: `Reply to your inquiry — ${d.productName || ''}`, eyebrow: 'Inquiry Reply', title: 'The supplier replied to your inquiry', body: `The supplier replied to your inquiry about "${d.productName || ''}". Log in to view the full reply.`, cta: 'View reply →' },
+    } as any)[lang] || { subject: `Inquiry reply — ${d.productName || ''}`, eyebrow: 'Inquiry Reply', title: 'Supplier replied', body: `Reply received for "${d.productName || ''}".`, cta: 'View reply →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=product-inquiries" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  supplier_more_info_required: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: '需要补充资料 — Maabar 供应商申请', eyebrow: 'Action Required', title: '您的申请需要补充资料', body: '我们需要更多信息来处理您的供应商申请。请登录供应商控制台，完成所需资料后重新提交。', cta: '前往控制台 →' },
+      en: { subject: 'Action required — Maabar supplier application', eyebrow: 'Action Required', title: 'We need a few more details', body: 'We need additional information to process your supplier application. Please log in to your dashboard and complete the required details.', cta: 'Go to dashboard →' },
+    } as any)[lang] || { subject: 'Action required — Maabar supplier application', eyebrow: 'Action Required', title: 'Additional details needed', body: 'Please log in and complete the required information.', cta: 'Go to dashboard →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=verification" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
 };
 
 // ─── Send helper ─────────────────────────────────────────────────────────────
@@ -582,6 +661,16 @@ function normalizeLang(value: any) {
   if (lang.startsWith('en')) return 'en';
   if (lang.startsWith('zh') || lang.startsWith('cn')) return 'zh';
   return '';
+}
+
+// Supplier emails: ZH or EN only — never Arabic
+function toSupplierLang(lang: string): string {
+  return lang === 'zh' ? 'zh' : 'en';
+}
+
+// Buyer emails: AR or EN only — never Chinese
+function toBuyerLang(lang: string): string {
+  return lang === 'ar' ? 'ar' : 'en';
 }
 
 async function resolveEmailContext(to: string, data: any = {}) {
@@ -637,11 +726,9 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null, head
   }
 
   const email = user.email;
-  // BUG 1 — Verification email sent in Arabic to Chinese suppliers
-  // If user is registering as a supplier, default to 'en' regardless of user_metadata.lang
-  const userLang = user.user_metadata?.lang || 'ar';
   const userRole = user.user_metadata?.role || user.app_metadata?.role;
-  const lang = userRole === 'supplier' ? 'en' : userLang;
+  const rawLang = normalizeLang(user.user_metadata?.lang || '') || (userRole === 'supplier' ? 'en' : 'ar');
+  const lang = userRole === 'supplier' ? toSupplierLang(rawLang) : toBuyerLang(rawLang);
   const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
   const token = email_data.token_hash;
   const redirectTo = email_data.redirect_to || 'https://maabar.io/auth/callback';
@@ -749,9 +836,14 @@ serve(async (req) => {
     if (!factory) return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
 
     const emailContext = await resolveEmailContext(to, data || {});
+    const rawLang = normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar';
+    const recipientRole = emailContext.profileRow?.role || '';
+    const resolvedLang = recipientRole === 'supplier' ? toSupplierLang(rawLang)
+                       : recipientRole === 'buyer'    ? toBuyerLang(rawLang)
+                       : rawLang;
     const payload = {
       ...(data || {}),
-      lang: normalizeLang(data?.lang || data?.language || emailContext.lang) || 'ar',
+      lang: resolvedLang,
       maabarSupplierId: data?.maabarSupplierId || emailContext.profileRow?.maabar_supplier_id || '',
     };
     const tpl = await factory(payload);

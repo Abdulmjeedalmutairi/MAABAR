@@ -429,6 +429,12 @@ function App() {
     if (profileRow) {
       setProfile(profileRow);
       setProfileError(false);
+      // Sync language: if DB has a saved preference, restore it; otherwise write the current UI lang
+      if (profileRow.lang && ['ar', 'en', 'zh'].includes(profileRow.lang)) {
+        setLang(profileRow.lang);
+      } else {
+        sb.from('profiles').update({ lang }).eq('id', id).catch(() => {});
+      }
       await maybeNotifyAdminOfConfirmedSupplier(profileRow, sessionUser);
       // Send trader welcome email once after email confirmation — deduplicated via ref + notifications table
       if (profileRow?.role === 'buyer' && profileRow?.status === 'active' && !welcomeEmailSentRef.current) {
@@ -476,11 +482,18 @@ function App() {
     window._profileChannel = ch;
   };
 
+  const handleSetLang = (newLang) => {
+    setLang(newLang);
+    if (user?.id) {
+      sb.from('profiles').update({ lang: newLang }).eq('id', user.id).catch(() => {});
+    }
+  };
+
   const sharedProps = {
     user,
     profile,
     lang,
-    setLang,
+    setLang: handleSetLang,
     setUser,
     setProfile,
     displayCurrency,
