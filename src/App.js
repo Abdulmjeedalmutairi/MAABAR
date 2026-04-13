@@ -307,7 +307,10 @@ function App() {
 
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [lang, setLang] = useState('ar');
+  const [lang, setLang] = useState(() => {
+    const stored = localStorage.getItem('maabar_lang');
+    return stored && ['ar', 'en', 'zh'].includes(stored) ? stored : 'ar';
+  });
   const [displayCurrency, setDisplayCurrency] = useState('SAR');
   const [exchangeRates, setExchangeRates] = useState(() => getCachedDisplayRates());
   const [loading, setLoading] = useState(true);
@@ -484,6 +487,7 @@ function App() {
 
   const handleSetLang = (newLang) => {
     setLang(newLang);
+    localStorage.setItem('maabar_lang', newLang);
     if (user?.id) {
       sb.from('profiles').update({ lang: newLang }).eq('id', user.id).catch(() => {});
     }
