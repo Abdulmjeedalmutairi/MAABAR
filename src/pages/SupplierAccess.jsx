@@ -187,7 +187,7 @@ export default function SupplierAccess({ user, profile, lang = 'zh' }) {
                 { v: fmt(timeLeft.seconds), l: 'SEC' },
               ].map(({ v, l }) => (
                 <div key={l} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 'clamp(28px, 7vw, 40px)', fontWeight: 800, lineHeight: 1, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{v}</span>
+                  <span style={{ fontSize: 'clamp(28px, 7vw, 40px)', fontWeight: 800, lineHeight: 1, color: 'var(--text-primary)', letterSpacing: '-0.02em', fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}>{v}</span>
                   <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: '0.1em' }}>{l}</span>
                 </div>
               ))}

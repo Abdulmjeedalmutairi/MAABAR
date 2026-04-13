@@ -48,7 +48,7 @@ export default function Contact({ lang }) {
 
           <button onClick={() => nav('/support')} style={{ ...styles.supportBtn, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
-              <p style={{ fontSize: 11, letterSpacing: 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.support}</p>
+              <p style={{ fontSize: 11, letterSpacing: isAr ? 0 : 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.support}</p>
               <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>{t.supportBtn}</p>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{t.supportSub}</p>
             </div>
@@ -56,13 +56,13 @@ export default function Contact({ lang }) {
 
           <a href="https://wa.me/966504248942" style={styles.btn}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
-              <p style={{ fontSize: 11, letterSpacing: 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.wa}</p>
+              <p style={{ fontSize: 11, letterSpacing: isAr ? 0 : 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.wa}</p>
               <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>+966 50 424 8942</p>
             </div>
           </a>
           <a href="mailto:support@maabar.io" style={styles.btn}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
-              <p style={{ fontSize: 11, letterSpacing: 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.email}</p>
+              <p style={{ fontSize: 11, letterSpacing: isAr ? 0 : 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.email}</p>
               <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>support@maabar.io</p>
             </div>
           </a>

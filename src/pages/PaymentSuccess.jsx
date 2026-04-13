@@ -566,7 +566,7 @@ export default function PaymentSuccess({ lang, user }) {
       </div>
 
       <footer style={{ background: '#FFFFFF', padding: '32px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.07)' }}>
-        <div style={{ fontFamily: 'var(--font-ar)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 1 }}>
+        <div style={{ fontFamily: 'var(--font-ar)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0 }}>
           مَعبر <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, opacity: 0.5 }}>| MAABAR</span>
         </div>
         <p style={{ color: 'var(--text-disabled)', fontSize: 11, letterSpacing: 1 }}>{t.copy}</p>

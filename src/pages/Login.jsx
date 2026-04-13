@@ -1041,7 +1041,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     border: '1px solid var(--border-subtle)',
                     background: 'var(--bg-subtle)',
                   }}>
-                    <p style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    <p style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: isAr ? 0 : 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {supplierSignupContent.contactTitle}
                     </p>
                     <div style={{ display: 'flex', gap: 14 }}>
@@ -1230,7 +1230,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
           }}>
             <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: lang === 'zh' ? 0 : 1, color: 'rgba(0,0,0,0.88)', fontFamily: termsFont, margin: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: isAr || lang === 'zh' ? 0 : 1, color: 'rgba(0,0,0,0.88)', fontFamily: termsFont, margin: 0 }}>
                 {isAr ? 'الشروط والأحكام' : lang === 'zh' ? '条款与条件' : 'Terms & Conditions'}
               </p>
               <button onClick={() => setShowTerms(false)} style={{ background: 'none', border: 'none', color: 'rgba(0,0,0,0.45)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>

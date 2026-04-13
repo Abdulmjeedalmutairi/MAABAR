@@ -89,7 +89,7 @@ function StatCard({ label, value, onClick, highlight }) {
       <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16, fontWeight: 500 }}>
         {label}
       </p>
-      <p style={{ fontSize: 44, fontWeight: 300, color: highlight ? 'var(--text-primary)' : 'var(--text-secondary)', lineHeight: 1, letterSpacing: -1.5 }}>
+      <p style={{ fontSize: 44, fontWeight: 300, color: highlight ? 'var(--text-primary)' : 'var(--text-secondary)', lineHeight: 1, letterSpacing: -1.5, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}>
         {value}
       </p>
     </div>
@@ -1274,7 +1274,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                   </>
                                 )}
                                 {r.status === 'paid' && (
-                                  <p style={{ fontSize: 10, letterSpacing: 1, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                                  <p style={{ fontSize: 10, letterSpacing: isAr ? 0 : 1, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                                     {isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Paid — Awaiting preparation'}
                                   </p>
                                 )}
