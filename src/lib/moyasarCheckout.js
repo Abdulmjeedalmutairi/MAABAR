@@ -54,11 +54,11 @@ export function buildMoyasarAmountMinorUnits(amount) {
 
 export function buildMoyasarCallbackUrl(checkoutStateKey) {
   if (typeof window === 'undefined') {
-    return 'https://maabar.io/payment/success';
+    return 'https://maabar.io/payment-success';
   }
-  
+
   const baseUrl = window.location.origin;
-  return `${baseUrl}/payment/success?checkout=${encodeURIComponent(checkoutStateKey)}`;
+  return `${baseUrl}/payment-success?stateKey=${encodeURIComponent(checkoutStateKey)}`;
 }
 
 export async function initiateMoyasarPayment(paymentData) {
