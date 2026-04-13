@@ -68,32 +68,32 @@ const TRANSLATIONS = {
   },
   zh: {
     badge: '创始供应商计划',
-    title: '沙特市场正等待着。<br />成为第一批进入者。',
-    subtitle: '我们正在筛选经过验证的供应商，以早期进入沙特市场 — 立即上传您的产品，从第一天起即可上线。',
+    title: '沙特市场正在等待您的加入。<br />成为首批进入沙特市场的中国供应商。',
+    subtitle: '我们正在严格筛选优质供应商，优先进入沙特市场 — 立即上传您的产品，从第一天起即可上线。',
     countdownLabel: '早期注册即将截止',
     alreadyApproved: '已经批准了？登录',
     whatYouGet: '您将获得',
     benefits: [
       {
         title: '0% 佣金',
-        desc: '任何交易均不收取费用。创始供应商零分成。',
+        desc: '创始供应商享受 0% 佣金，永久有效。',
       },
       {
         title: '直接对接沙特买家',
         desc: '沙特每年从中国进口 1000 亿美元。Maabar 直接为您对接。',
       },
       {
-        title: '优先展示',
+        title: '搜索结果优先展示',
         desc: '您的产品将在搜索结果和分类列表中优先显示，从发布之日起。',
       },
       {
-        title: '创始供应商徽章',
+        title: '创始供应商专属标识',
         desc: '永久显示在您的主页上，从第一天起就建立与沙特商家的信任。',
       },
     ],
     howItWorks: '流程怎么走',
     steps: [
-      '提交您的申请',
+      '立即申请成为创始供应商',
       '获批准成为创始供应商',
       '上传您的产品并完善个人资料',
       '您的产品在发布日上线',
@@ -127,7 +127,8 @@ export default function SupplierAccess({ user, profile, lang = 'zh' }) {
 
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRouteRaw = supplierState ? getSupplierPrimaryRoute(profile, user) : '/login/supplier';
-  const supplierPrimaryRoute = supplierPrimaryRouteRaw + (supplierPrimaryRouteRaw.includes('?') ? `&lang=${currentLang}` : `?lang=${currentLang}`);
+  const routeLang = supplierState ? currentLang : 'zh';
+  const supplierPrimaryRoute = supplierPrimaryRouteRaw + (supplierPrimaryRouteRaw.includes('?') ? `&lang=${routeLang}` : `?lang=${routeLang}`);
   const hasExistingSupplierAccount = Boolean(user && profile?.role === 'supplier');
 
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
@@ -140,11 +141,11 @@ export default function SupplierAccess({ user, profile, lang = 'zh' }) {
   }, [supplierState, t]);
 
   const goToApply = () => {
-    if (user && profile?.role === 'supplier') {
-      nav(supplierPrimaryRoute);
-    } else {
-      nav(`/login/supplier?lang=${currentLang}&mode=signup`);
+    let url = supplierPrimaryRoute;
+    if (!user && supplierPrimaryRouteRaw === '/login/supplier') {
+      url += (url.includes('?') ? '&' : '?') + 'mode=signup';
     }
+    nav(url);
   };
   const goToSignIn = () => nav(`/login/supplier?lang=${currentLang}`);
 
