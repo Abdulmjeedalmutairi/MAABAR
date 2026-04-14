@@ -105,6 +105,20 @@ ${rendered}
 </html>`;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatReceiptDate(iso: string): string {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh',
+    });
+  } catch { return '-'; }
+}
+
 // ─── Templates ───────────────────────────────────────────────────────────────
 const templates: Record<string, (d: any) => any> = {
 
@@ -301,14 +315,20 @@ ${hasConfirmUrl ? `
 
   payment_received_supplier: (d) => {
     const lang = d.lang || 'en';
+    const dateStr = formatReceiptDate(d.paidAt || '');
     const t = ({
-      zh: { subject: `已收到付款 — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: '已收到付款，请开始生产', body: `「${d.requestTitle || ''}」的 ${d.amount || '-'} USD 付款已确认，请立即开始生产并在发货时添加跟踪号。`, cta: '跟进订单 →' },
-      en: { subject: `Payment received — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: 'Payment confirmed — begin production', body: `Payment of ${d.amount || '-'} USD for "${d.requestTitle || ''}" has been confirmed. Please begin production and add a tracking number when you ship.`, cta: 'Track order →' },
-    } as any)[lang] || { subject: `Payment received — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: 'Payment confirmed', body: `Payment for "${d.requestTitle || ''}" confirmed. Begin production.`, cta: 'Track order →' };
+      zh: { subject: `已收到付款 — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: '已收到付款，请开始生产', body: `「${d.requestTitle || ''}」的 ${d.amount || '-'} USD 付款已确认，请立即开始生产并在发货时添加跟踪号。`, dateLabel: '付款时间', cta: '跟进订单 →' },
+      en: { subject: `Payment received — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: 'Payment confirmed — begin production', body: `Payment of ${d.amount || '-'} USD for "${d.requestTitle || ''}" has been confirmed. Please begin production and add a tracking number when you ship.`, dateLabel: 'Payment date', cta: 'Track order →' },
+    } as any)[lang] || { subject: `Payment received — ${d.requestTitle || ''}`, eyebrow: 'Payment Received', title: 'Payment confirmed', body: `Payment for "${d.requestTitle || ''}" confirmed. Begin production.`, dateLabel: 'Date', cta: 'Track order →' };
     return { subject: t.subject, html: wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
+<div class="ib">
+<div class="ir"><span class="ik">${lang === 'zh' ? '需求' : 'Request'}</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">${lang === 'zh' ? '金额' : 'Amount'}</span><span class="iv">${d.amount || '-'} USD</span></div>
+${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span class="iv">${dateStr}</span></div>` : ''}
+</div>
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
 <div class="bw"><a href="https://maabar.io/dashboard" class="bt">${t.cta}</a></div>
 </div>`, { lang }) };
@@ -411,10 +431,11 @@ ${hasConfirmUrl ? `
 
   payment_confirmation_buyer: (d) => {
     const lang = d.lang || 'ar';
+    const dateStr = formatReceiptDate(d.paidAt || '');
     const t = ({
-      ar: { subject: `تأكيد الدفع — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'تم استلام دفعتك', reqLabel: 'الطلب', amountLabel: 'المبلغ المدفوع', body: 'تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.', cta: 'متابعة الطلب ←' },
-      en: { subject: `Payment confirmed — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'Your payment was received', reqLabel: 'Request', amountLabel: 'Amount paid', body: 'Your payment has been received. The supplier will begin production shortly and you will be notified when your order ships.', cta: 'Track order →' },
-    } as any)[lang] || { subject: `Payment confirmed — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'Payment confirmed', reqLabel: 'Request', amountLabel: 'Amount', body: 'Your payment has been received.', cta: 'Track order →' };
+      ar: { subject: `تأكيد الدفع — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'تم استلام دفعتك', reqLabel: 'الطلب', amountLabel: 'المبلغ المدفوع', dateLabel: 'تاريخ الدفع', body: 'تم استلام دفعتك بنجاح. المورد سيبدأ التجهيز وسنعلمك عند شحن طلبك.', cta: 'متابعة الطلب ←' },
+      en: { subject: `Payment confirmed — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'Your payment was received', reqLabel: 'Request', amountLabel: 'Amount paid', dateLabel: 'Payment date', body: 'Your payment has been received. The supplier will begin production shortly and you will be notified when your order ships.', cta: 'Track order →' },
+    } as any)[lang] || { subject: `Payment confirmed — ${d.requestTitle || ''}`, eyebrow: 'Payment Confirmed', title: 'Payment confirmed', reqLabel: 'Request', amountLabel: 'Amount', dateLabel: 'Date', body: 'Your payment has been received.', cta: 'Track order →' };
     return { subject: t.subject, html: wrap(`
 <div class="bd">
 <p class="gr">${t.eyebrow}</p>
@@ -422,6 +443,7 @@ ${hasConfirmUrl ? `
 <div class="ib">
 <div class="ir"><span class="ik">${t.reqLabel}</span><span class="iv">${d.requestTitle || '-'}</span></div>
 <div class="ir"><span class="ik">${t.amountLabel}</span><span class="iv">${d.amount || '-'} SAR</span></div>
+${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span class="iv">${dateStr}</span></div>` : ''}
 </div>
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>

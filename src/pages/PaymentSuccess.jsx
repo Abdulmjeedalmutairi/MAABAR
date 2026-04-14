@@ -350,7 +350,7 @@ export default function PaymentSuccess({ lang, user }) {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
                 body: JSON.stringify({
                   type: 'payment_received_supplier',
-                  data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPaymentAmount, name: 'Supplier', lang },
+                  data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPaymentAmount, name: 'Supplier', lang, paidAt: new Date().toISOString() },
                 }),
               });
             } catch (emailError) {
@@ -375,7 +375,7 @@ export default function PaymentSuccess({ lang, user }) {
                   body: JSON.stringify({
                     type: 'payment_confirmation_buyer',
                     to: user.email,
-                    data: { requestTitle: reqTitle, amount: firstPaymentAmount, name: '', lang },
+                    data: { requestTitle: reqTitle, amount: firstPaymentAmount, name: '', lang, paidAt: new Date().toISOString() },
                   }),
                 });
               }
