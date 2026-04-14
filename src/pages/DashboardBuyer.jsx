@@ -499,10 +499,15 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const focusedRequestId = new URLSearchParams(location.search).get('request');
 
   // Review modal
-  const [reviewModal, setReviewModal]       = useState(null);
-  const [reviewRating, setReviewRating]     = useState(0);
-  const [reviewComment, setReviewComment]   = useState('');
+  const [reviewModal, setReviewModal]           = useState(null);
+  const [reviewRating, setReviewRating]         = useState(0);
+  const [reviewComment, setReviewComment]       = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [submittedReviewIds, setSubmittedReviewIds] = useState(new Set());
+
+  // Active orders for overview (supplier_confirmed → arrived)
+  const [activeOrders, setActiveOrders]         = useState([]);
+  const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
 
   // Edit/Delete request
   const [editReqModal, setEditReqModal]   = useState(null);
@@ -526,15 +531,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     if (!user) { nav('/login/buyer'); return; }
     loadStats();
     loadPendingActions();
+    loadActiveOrders();
 
     // Realtime — refresh when offers/requests change
     const channel = sb.channel(`buyer-dash-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
-        loadStats(); loadPendingActions();
+        loadStats(); loadPendingActions(); loadActiveOrders();
         if (activeTab === 'requests') loadMyRequests();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `buyer_id=eq.${user.id}` }, () => {
-        loadStats(); loadPendingActions();
+        loadStats(); loadPendingActions(); loadActiveOrders();
         if (activeTab === 'requests') loadMyRequests();
       })
       .subscribe();
@@ -542,6 +548,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   }, [user]);
 
   useEffect(() => {
+    if (activeTab === 'overview') loadActiveOrders();
     if (activeTab === 'requests') loadMyRequests();
     if (activeTab === 'messages') loadInbox();
     if (activeTab === 'product-inquiries') loadProductInquiries();
@@ -597,6 +604,29 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     const { data: msgs } = await sb.from('messages').select('id').eq('receiver_id', user.id).eq('is_read', false);
     if (msgs?.length > 0) actions.push({ type: 'messages', count: msgs.length });
     setPendingActions(actions);
+  };
+
+  const loadActiveOrders = async () => {
+    setLoadingActiveOrders(true);
+    const ACTIVE_STATUSES = ['supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived'];
+    const { data: reqs } = await sb
+      .from('requests')
+      .select('*')
+      .eq('buyer_id', user.id)
+      .in('status', ACTIVE_STATUSES)
+      .order('updated_at', { ascending: false })
+      .limit(5);
+    if (reqs && reqs.length > 0) {
+      const withOffers = await Promise.all(reqs.map(async (r) => {
+        const { data: offers } = await sb.from('offers').select('*').eq('request_id', r.id);
+        const withProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
+        return { ...r, offers: withProfiles || [] };
+      }));
+      setActiveOrders(withOffers);
+    } else {
+      setActiveOrders([]);
+    }
+    setLoadingActiveOrders(false);
   };
 
   const loadMyRequests = async () => {
@@ -910,6 +940,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       await sb.from('profiles').update({ rating: avg, reviews_count: reviews.length }).eq('id', reviewModal.supplierId);
     }
     setSubmittingReview(false);
+    setSubmittedReviewIds(prev => new Set([...prev, reviewModal.requestId]));
     setReviewModal(null);
     alert(isAr ? 'شكراً على تقييمك!' : 'Thank you for your review!');
   };
@@ -1112,10 +1143,65 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         key={i}
                         action={action}
                         isAr={isAr}
-                        onGo={() => setActiveTab(action.type === 'messages' ? 'messages' : 'requests')}
+                        onGo={() => {
+                          if (action.type === 'messages') { setActiveTab('messages'); return; }
+                          if (action.request?.id) {
+                            nav(`/dashboard?tab=requests&request=${action.request.id}`, { replace: true });
+                          } else {
+                            setActiveTab('requests');
+                          }
+                        }}
                       />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Active orders mini-cards */}
+              {(loadingActiveOrders || activeOrders.length > 0) && (
+                <div style={{ marginBottom: 40 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', fontWeight: 500 }}>
+                      {isAr ? 'طلبات نشطة' : 'Active Orders'}
+                    </p>
+                    {activeOrders.length > 0 && (
+                      <button onClick={() => setActiveTab('requests')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', padding: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'عرض الكل' : 'View all'}
+                      </button>
+                    )}
+                  </div>
+                  {loadingActiveOrders && (
+                    <div style={{ height: 80, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }} />
+                  )}
+                  {!loadingActiveOrders && activeOrders.slice(0, 3).map((r, idx) => {
+                    const acceptedOffer = r.offers?.find(o => o.status === 'accepted');
+                    return (
+                      <div key={r.id} onClick={() => nav(`/dashboard?tab=requests&request=${r.id}`, { replace: true })}
+                        style={{ borderTop: idx === 0 ? '1px solid var(--border-subtle)' : 'none', borderBottom: '1px solid var(--border-subtle)', padding: '16px 0', cursor: 'pointer', transition: 'opacity 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.72'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                        {/* Title + status badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.3, flex: 1, minWidth: 0 }}>
+                            {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
+                          </p>
+                          <span style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)', flexShrink: 0 }}>
+                            {isAr ? (STATUS_AR[r.status] || r.status) : (STATUS_EN[r.status] || r.status)}
+                          </span>
+                        </div>
+                        {/* Supplier name */}
+                        {acceptedOffer?.profiles?.company_name && (
+                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {acceptedOffer.profiles.company_name}
+                          </p>
+                        )}
+                        {/* Timeline */}
+                        <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />
+                        {/* Payment plan badges */}
+                        {acceptedOffer && <PaymentPlanRow request={r} offer={acceptedOffer} isAr={isAr} />}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1234,8 +1320,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     {isAr ? 'لا توجد طلبات في هذا التصنيف' : 'No requests in this filter'}
                   </div>
                 );
-                return filteredRequests;
-              })()?.map?.((r, idx) => {
+                return filteredRequests.map((r, idx) => {
                 const managed = isManagedRequest(r);
                 const pendingOffers = r.offers.filter(o => o.status === 'pending');
                 const acceptedOffer = r.offers.find(o => o.status === 'accepted');
@@ -1679,10 +1764,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                             <p style={{ fontSize: 12, color: '#5a9a72', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {isAr ? 'تم التسليم ✓' : 'Delivered ✓'}
                             </p>
-                            <button onClick={() => setReviewModal({ supplierId: o.supplier_id, requestId: r.id, supplierName: o.profiles?.company_name || '' })}
-                              style={btnOutline}>
-                              {isAr ? 'قيّم المورد' : 'Rate Supplier'}
-                            </button>
+                            {!submittedReviewIds.has(r.id) && (
+                              <button onClick={() => setReviewModal({ supplierId: o.supplier_id, requestId: r.id, supplierName: o.profiles?.company_name || '' })}
+                                style={btnOutline}>
+                                {isAr ? 'قيّم المورد' : 'Rate Supplier'}
+                              </button>
+                            )}
                             <button onClick={() => nav(`/supplier/${o.supplier_id}`)} style={btnOutline}>
                               {isAr ? 'ملف المورد' : 'Supplier Profile'}
                             </button>
@@ -1700,7 +1787,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   )}
                 </div>
               );
-              })}
+              });
+              })()}
             </div>
           )}
 

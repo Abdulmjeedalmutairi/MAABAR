@@ -1108,7 +1108,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const loadMyOffers = async () => {
     setLoadingOffers(true);
-    const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status,quantity,description,payment_plan)').eq('supplier_id', user.id).order('created_at', { ascending: false });
+    const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status,shipping_company,estimated_delivery,quantity,description,payment_plan,category,profiles!requests_buyer_id_fkey(full_name,company_name))').eq('supplier_id', user.id).order('created_at', { ascending: false });
     if (data) setMyOffers(data);
     const { data: payData } = await sb.from('payments').select('request_id').eq('supplier_id', user.id).eq('status', 'completed');
     setCompletedPayments(new Set((payData || []).map(p => p.request_id)));
@@ -1640,9 +1640,119 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     return isAr ? Math.floor(diff / 86400) + ' ي' : lang === 'zh' ? Math.floor(diff / 86400) + '天前' : Math.floor(diff / 86400) + 'd';
   };
 
+  const relativeTime = (dateStr) => {
+    if (!dateStr) return '';
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff < 3600)  return isAr ? `منذ ${Math.floor(diff / 60)} د`   : lang === 'zh' ? `${Math.floor(diff / 60)}分钟前` : `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return isAr ? `منذ ${Math.floor(diff / 3600)} س`  : lang === 'zh' ? `${Math.floor(diff / 3600)}小时前` : `${Math.floor(diff / 3600)}h ago`;
+    const days = Math.floor(diff / 86400);
+    if (days < 30)    return isAr ? `منذ ${days} ي`                      : lang === 'zh' ? `${days}天前` : `${days}d ago`;
+    return isAr ? `منذ ${Math.floor(days / 30)} ش` : lang === 'zh' ? `${Math.floor(days / 30)}个月前` : `${Math.floor(days / 30)}mo ago`;
+  };
+
+  const SUPPLIER_STEP_MAP = {
+    closed: 1, supplier_confirmed: 2,
+    paid: 3, ready_to_ship: 4,
+    shipping: 4, arrived: 5, delivered: 6,
+  };
+  const SUPPLIER_STEPS_AR = ['قدّمت العرض', 'العرض قُبل', 'تأكيد الجاهزية', 'الإنتاج', 'الشحن', 'مكتمل'];
+  const SUPPLIER_STEPS_EN = ['Offer Sent', 'Accepted', 'Ready', 'Production', 'Shipping', 'Done'];
+  const SUPPLIER_STEPS_ZH = ['报价已提交', '已接受', '确认就绪', '生产中', '运输中', '已完成'];
+
+  const SupplierStatusTimeline = ({ step }) => {
+    const steps = lang === 'zh' ? SUPPLIER_STEPS_ZH : isAr ? SUPPLIER_STEPS_AR : SUPPLIER_STEPS_EN;
+    const SAGE = '#2D6A4F';
+    return (
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
+        {steps.map((label, i) => {
+          const done    = i < step;
+          const current = i === step;
+          const future  = i > step;
+          const dotColor   = done ? SAGE : current ? 'var(--text-primary)' : 'rgba(0,0,0,0.10)';
+          const leftLine   = i <= step ? SAGE : 'rgba(0,0,0,0.08)';
+          const rightLine  = i < step  ? SAGE : 'rgba(0,0,0,0.08)';
+          return (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 46 }}>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                {i > 0 && <div style={{ flex: 1, height: 1, background: leftLine }} />}
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0,
+                  ...(current ? { boxShadow: `0 0 0 3px rgba(0,0,0,0.10), 0 0 0 5px rgba(0,0,0,0.04)` } : {}),
+                }} />
+                {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: rightLine }} />}
+              </div>
+              <p style={{
+                fontSize: 9, marginTop: 5, textAlign: 'center', whiteSpace: 'nowrap',
+                color: future ? 'var(--text-disabled)' : done ? SAGE : 'var(--text-primary)',
+                fontWeight: current ? 600 : done ? 500 : 400,
+                fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)',
+              }}>{label}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const SupplierPaymentPills = ({ requestStatus, paymentPlan }) => {
+    const plan = paymentPlan || 50;
+    const rest = 100 - plan;
+    const tf = "'Tajawal', sans-serif";
+
+    // State helpers
+    const inst1State = (() => {
+      if (['paid','ready_to_ship','shipping','arrived','delivered'].includes(requestStatus)) return 'black';
+      return 'amber'; // closed, supplier_confirmed
+    })();
+    const inst2State = (() => {
+      if (['arrived','delivered'].includes(requestStatus)) return 'black';
+      if (requestStatus === 'shipping') return 'amber';
+      return 'grey'; // closed, supplier_confirmed, paid, ready_to_ship
+    })();
+
+    const PILL_STYLES = {
+      black: { background: 'var(--text-primary)', color: 'var(--bg-base)',           border: '1px solid var(--text-primary)' },
+      amber: { background: 'transparent',         color: '#8B6914',                  border: '1px solid rgba(139,105,20,0.40)' },
+      grey:  { background: 'transparent',         color: 'var(--text-tertiary)',      border: '1px solid var(--border-subtle)' },
+    };
+
+    const stateLabel = (state) => {
+      if (state === 'black') return isAr ? 'محوّلة لك'         : lang === 'zh' ? '已转账'     : 'Transferred';
+      if (state === 'amber') return isAr ? 'في انتظار التاجر'  : lang === 'zh' ? '等待买家'   : 'Awaiting Buyer';
+      return                         isAr ? 'بعد الشحن'        : lang === 'zh' ? '发货后'     : 'After Shipping';
+    };
+
+    const Pill = ({ pct, state, suffix }) => (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        fontSize: 10, padding: '3px 10px', borderRadius: 20,
+        fontFamily: isAr ? tf : 'var(--font-sans)',
+        letterSpacing: isAr ? 0 : 0.3,
+        ...PILL_STYLES[state],
+      }}>
+        <span style={{ fontVariantNumeric: 'lining-nums' }}>{pct}٪</span>
+        <span style={{ opacity: 0.55 }}>{suffix}</span>
+        <span>·</span>
+        <span>{stateLabel(state)}</span>
+      </span>
+    );
+
+    const suffix1 = isAr ? 'مقدم'      : lang === 'zh' ? '定金'   : 'upfront';
+    const suffix2 = isAr ? 'عند الشحن' : lang === 'zh' ? '发货后' : 'on ship';
+
+    return (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+        <Pill pct={plan} state={inst1State} suffix={suffix1} />
+        <Pill pct={rest} state={inst2State} suffix={suffix2} />
+      </div>
+    );
+  };
+
   const name = profile?.company_name || profile?.full_name || user?.email?.split('@')[0];
   const supplierMaabarId = getSupplierMaabarId(profile || {});
   const pendingCount = pendingTracking.length + rejectedOffers.length;
+  const closedOffers = myOffers.filter(o => o.status === 'accepted' && o.requests?.status === 'closed');
+  const paidOffers   = myOffers.filter(o => o.status === 'accepted' && o.requests?.status === 'paid');
 
   const arFont = { fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const section = { animation: 'fadeIn 0.35s ease' };
@@ -2006,33 +2116,37 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
                     {t.needsAttention} ({pendingCount})
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {pendingTracking.map((o, i) => (
-                      <div key={i} onClick={() => setActiveTab('offers')} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'all 0.15s', gap: 12 }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; e.currentTarget.style.borderColor = 'var(--border-muted)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}>
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3, ...arFont }}>{t.acceptedOffer}</p>
-                          <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{getTitle(o.requests)}</p>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {o.requests?.buyer_id && (
-                            <button
-                              className="btn-outline"
-                              style={{ minHeight: 32, padding: '6px 12px', fontSize: 10 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                nav(`/chat/${o.requests.buyer_id}`);
-                              }}>
-                              {t.contactTrader}
-                            </button>
-                          )}
-                          <span style={{ color: 'var(--text-disabled)', fontSize: 14 }}>→</span>
-                        </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {closedOffers.map((o, i) => (
+                      <div key={`closed-${i}`}
+                        onClick={() => { setActiveTab('offers'); setTimeout(() => document.getElementById(`offer-${o.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150); }}
+                        style={{ background: 'rgba(45,106,79,0.06)', border: '1px solid rgba(45,106,79,0.22)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', cursor: 'pointer', transition: 'opacity 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.78'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: '#2D6A4F', marginBottom: 3, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {isAr ? 'عرضك قُبل — أكّد جاهزيتك' : lang === 'zh' ? '报价已通过 — 请确认就绪' : 'Offer accepted — confirm readiness'}
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {getTitle(o.requests)} · <span style={{ fontVariantNumeric: 'lining-nums' }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} USD</span>
+                        </p>
+                      </div>
+                    ))}
+                    {paidOffers.map((o, i) => (
+                      <div key={`paid-${i}`}
+                        onClick={() => { setActiveTab('offers'); setTimeout(() => document.getElementById(`offer-${o.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150); }}
+                        style={{ background: 'rgba(139,105,20,0.06)', border: '1px solid rgba(139,105,20,0.22)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', cursor: 'pointer', transition: 'opacity 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.78'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: '#8B6914', marginBottom: 3, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {isAr ? 'الدفعة الأولى وصلت — ابدأ الإنتاج' : lang === 'zh' ? '首付款已到账 — 开始生产' : 'First payment received — start production'}
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {getTitle(o.requests)} · <span style={{ fontVariantNumeric: 'lining-nums' }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} USD</span>
+                        </p>
                       </div>
                     ))}
                     {rejectedOffers.map((o, i) => (
-                      <div key={i} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div key={`rej-${i}`} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <p style={{ fontSize: 13, color: '#a07070', ...arFont }}>{t.offerRejected}: {getTitle(o.requests)}</p>
                         <button onClick={() => dismissRejected(o.id)} className="btn-outline" style={{ padding: '5px 12px', fontSize: 10, minHeight: 30 }}>{isAr ? 'تجاهل' : lang === 'zh' ? '忽略' : 'Dismiss'}</button>
                       </div>
@@ -2349,16 +2463,134 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
               )}
 
-              {!loadingOffers && myOffers.map((o, idx) => (
-                <div key={o.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', ...arFont }}>{getTitle(o.requests)}</h3>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'accepted' ? 'rgba(58,122,82,0.3)' : o.status === 'rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: o.status === 'accepted' ? '#5a9a72' : o.status === 'rejected' ? '#a07070' : 'var(--text-disabled)' }}>
-                        {OFFER_STATUS[lang]?.[o.status] || o.status}
-                      </span>
-                      {o.status === 'pending' && (
-                        <>
+              {!loadingOffers && myOffers.map((o, idx) => {
+                const reqStatus  = o.requests?.status || '';
+                const isAccepted = o.status === 'accepted';
+                const isPending  = o.status === 'pending';
+                const step       = isAccepted ? (SUPPLIER_STEP_MAP[reqStatus] ?? 0) : 0;
+                const isComplete = completedPayments.has(o.request_id);
+                const buyerName  = o.requests?.profiles?.company_name || o.requests?.profiles?.full_name || '—';
+                const category   = o.requests?.category;
+                const total      = getOfferEstimatedTotal(o, o.requests);
+                const isShipping = ['shipping', 'arrived', 'delivered'].includes(reqStatus);
+                return (
+                  <div key={o.id} id={`offer-${o.id}`} style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
+
+                    {/* ── Section 1: category tag + time, then title ── */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 8, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {category && (
+                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>
+                            {category}
+                          </span>
+                        )}
+                        {o.created_at && (
+                          <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{relativeTime(o.created_at)}</span>
+                        )}
+                      </div>
+                      {!isAccepted && (
+                        <span style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: o.status === 'rejected' ? '#a07070' : 'var(--text-disabled)' }}>
+                          {OFFER_STATUS[lang]?.[o.status] || o.status}
+                        </span>
+                      )}
+                    </div>
+                    <h3 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', lineHeight: 1.4 }}>{getTitle(o.requests)}</h3>
+
+                    {/* ── Section 2: buyer name + verified badge (accepted only) ── */}
+                    {isAccepted && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>{buyerName}</span>
+                        <span style={{ fontSize: 10, color: '#2D6A4F', background: 'rgba(45,106,79,0.08)', border: '1px solid rgba(45,106,79,0.22)', borderRadius: 999, padding: '2px 8px', fontWeight: 600, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {isAr ? 'موثّق' : lang === 'zh' ? '认证' : 'Verified'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* ── 6-step status timeline (accepted only) ── */}
+                    {isAccepted && <SupplierStatusTimeline step={step} />}
+
+                    {/* ── Payment pills (accepted only) ── */}
+                    {isAccepted && <SupplierPaymentPills requestStatus={reqStatus} paymentPlan={o.requests?.payment_plan} />}
+
+                    {/* ── Price grid ── */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginBottom: 14 }}>
+                      <div style={{ padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'سعر الوحدة' : lang === 'zh' ? '单价' : 'Unit Price'}</p>
+                        <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1, fontVariantNumeric: 'lining-nums' }}>
+                          {parseFloat(o.price || 0).toFixed(2)} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                        </p>
+                        {hasOfferShippingCost(o) && (
+                          <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>
+                            {isAr ? 'شحن: ' : lang === 'zh' ? '运费：' : 'Ship: '}<span style={{ fontVariantNumeric: 'lining-nums' }}>{getOfferShippingCost(o).toFixed(2)}</span>
+                          </p>
+                        )}
+                      </div>
+                      {isAccepted && o.requests?.quantity && (
+                        <div style={{ padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                          <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity'}</p>
+                          <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1, fontVariantNumeric: 'lining-nums' }}>{o.requests.quantity}</p>
+                        </div>
+                      )}
+                      <div style={{ padding: '10px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Est. Total'}</p>
+                        <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1, fontVariantNumeric: 'lining-nums' }}>
+                          {total.toFixed(2)} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                        </p>
+                        {o.moq && <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>MOQ {o.moq} · {o.delivery_days}{isAr ? ' يوم' : lang === 'zh' ? ' 天' : 'd'}{o.origin ? ` · ${o.origin}` : ''}</p>}
+                      </div>
+                    </div>
+
+                    {/* ── Section 5: payment plan (accepted only) ── */}
+                    {isAccepted && o.requests?.payment_plan && (
+                      <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 3 }}>{isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan'}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-primary)', fontVariantNumeric: 'lining-nums', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {isAr
+                            ? `${o.requests.payment_plan}٪ مقدم + ${100 - o.requests.payment_plan}٪ عند الشحن`
+                            : lang === 'zh'
+                              ? `${o.requests.payment_plan}% 定金 + ${100 - o.requests.payment_plan}% 发货前`
+                              : `${o.requests.payment_plan}% upfront + ${100 - o.requests.payment_plan}% on shipping`}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ── Section 6: shipment details (shipping / arrived / delivered only) ── */}
+                    {isAccepted && isShipping && o.requests?.tracking_number && (
+                      <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
+                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                          {isAr ? 'تفاصيل الشحنة' : lang === 'zh' ? '物流信息' : 'Shipment'}
+                        </p>
+                        {o.requests?.shipping_company && (
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                            {isAr ? 'شركة الشحن: ' : lang === 'zh' ? '承运商：' : 'Carrier: '}{o.requests.shipping_company}
+                          </p>
+                        )}
+                        <p style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>
+                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'رقم التتبع: ' : lang === 'zh' ? '追踪号：' : 'Tracking: '}</span>
+                          {o.requests.tracking_number}
+                        </p>
+                        {(() => {
+                          const etaDate = o.requests?.estimated_delivery
+                            ? new Date(o.requests.estimated_delivery)
+                            : o.delivery_days && o.updated_at
+                              ? (() => { const d = new Date(o.updated_at); d.setDate(d.getDate() + Number(o.delivery_days)); return d; })()
+                              : null;
+                          return etaDate ? (
+                            <p style={{ fontSize: 11, color: 'var(--text-disabled)', fontVariantNumeric: 'lining-nums' }}>
+                              {isAr ? 'التسليم المتوقع: ' : lang === 'zh' ? '预计到达：' : 'ETA: '}
+                              {etaDate.toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}
+                            </p>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+
+                    {/* ── Action area ── */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                      {/* Pending offer: edit / cancel / delete */}
+                      {isPending && (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <button
                             onClick={() => {
                               setEditOfferModal(o);
@@ -2373,203 +2605,130 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                               });
                             }}
                             className="btn-outline"
-                            style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
+                            style={{ padding: '5px 12px', fontSize: 11, minHeight: 32 }}>
                             {t.edit}
                           </button>
-                          <button
-                            onClick={() => cancelOffer(o)}
-                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                          <button onClick={() => cancelOffer(o)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 32 }}>
                             {isAr ? 'إلغاء العرض' : lang === 'zh' ? '取消报价' : 'Cancel Offer'}
                           </button>
-                          <button
-                            onClick={() => deleteOffer(o)}
-                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                          <button onClick={() => deleteOffer(o)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 32 }}>
                             {t.delete}
                           </button>
-                        </>
+                        </div>
                       )}
+
+                      {/* Section 7a: accepted (closed) — supplier confirms readiness */}
+                      {isAccepted && reqStatus === 'closed' && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button
+                            className="btn-primary"
+                            style={{ minHeight: 40, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', fontSize: 13 }}
+                            onClick={async () => {
+                              await sb.from('requests').update({ status: 'supplier_confirmed' }).eq('id', o.request_id);
+                              await sb.from('notifications').insert({
+                                user_id: o.requests.buyer_id,
+                                type: 'supplier_confirmed',
+                                title_ar: 'المورد جاهز — يمكنك الآن إتمام الدفع',
+                                title_en: 'Supplier is ready — you can now complete payment',
+                                title_zh: '供应商已准备好 — 您现在可以付款',
+                                ref_id: o.request_id,
+                                is_read: false,
+                              });
+                              loadMyOffers();
+                            }}>
+                            {isAr ? 'جاهز للمتابعة — أبلغ التاجر' : lang === 'zh' ? '已就绪 — 通知买家' : 'Ready — notify buyer'}
+                          </button>
+                          {o.requests?.buyer_id && (
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 40, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                              {t.contactTrader}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Section 7a: supplier_confirmed — waiting for buyer first payment */}
+                      {isAccepted && reqStatus === 'supplier_confirmed' && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', flex: 1 }}>
+                            {isAr ? 'في انتظار دفع التاجر' : lang === 'zh' ? '等待买家付款' : 'Awaiting buyer payment'}
+                          </p>
+                          {o.requests?.buyer_id && (
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                              {t.contactTrader}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Section 7b: paid — first payment received, add tracking */}
+                      {isAccepted && reqStatus === 'paid' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <div style={{ padding: '14px 16px', background: 'rgba(45,106,79,0.05)', border: '1px solid rgba(45,106,79,0.20)', borderRadius: 'var(--radius-lg)' }}>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: '#2D6A4F', marginBottom: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                              {isAr ? 'جاهز للشحن — أضف رقم التتبع' : lang === 'zh' ? '准备发货 — 添加追踪号' : 'Ready to ship — add tracking number'}
+                            </p>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <select
+                                value={shippingCompany}
+                                onChange={e => setShippingCompany(e.target.value)}
+                                style={{ padding: '8px 12px', fontSize: 12, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)', cursor: 'pointer', outline: 'none', minHeight: 38 }}>
+                                {['DHL','FedEx','Aramex','UPS','SMSA', isAr ? 'أخرى' : lang === 'zh' ? '其他' : 'Other'].map(c => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                              <input className="form-input" style={{ flex: 1, minWidth: 120 }} placeholder={t.trackingNum} value={trackingInputs[o.request_id] || ''} onChange={e => setTrackingInputs(prev => ({ ...prev, [o.request_id]: e.target.value }))} dir="ltr" />
+                              <button className="btn-dark-sm" onClick={() => submitTracking(o.request_id, o.requests?.buyer_id, o.delivery_days)} style={{ minHeight: 38 }}>{t.send}</button>
+                            </div>
+                          </div>
+                          {o.requests?.buyer_id && (
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, alignSelf: 'flex-start', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                              {t.contactTrader}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Section 7b: ready_to_ship — tracking not yet submitted */}
+                      {isAccepted && reqStatus === 'ready_to_ship' && !o.requests?.tracking_number && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <select
+                            value={shippingCompany}
+                            onChange={e => setShippingCompany(e.target.value)}
+                            style={{ padding: '8px 12px', fontSize: 12, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)', cursor: 'pointer', outline: 'none', minHeight: 38 }}>
+                            {['DHL','FedEx','Aramex','UPS','SMSA', isAr ? 'أخرى' : lang === 'zh' ? '其他' : 'Other'].map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                          <input className="form-input" style={{ flex: 1, minWidth: 120 }} placeholder={t.trackingNum} value={trackingInputs[o.request_id] || ''} onChange={e => setTrackingInputs(prev => ({ ...prev, [o.request_id]: e.target.value }))} dir="ltr" />
+                          <button className="btn-dark-sm" onClick={() => submitTracking(o.request_id, o.requests?.buyer_id, o.delivery_days)} style={{ minHeight: 38 }}>{t.send}</button>
+                        </div>
+                      )}
+
+                      {/* Section 7c: shipping — awaiting second payment */}
+                      {isAccepted && reqStatus === 'shipping' && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <p style={{ fontSize: 12, color: '#8B6914', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', flex: 1 }}>
+                            {isAr ? 'في انتظار دفعة التاجر الثانية' : lang === 'zh' ? '等待买家支付尾款' : 'Awaiting second payment from buyer'}
+                          </p>
+                          {o.requests?.buyer_id && (
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                              {t.contactTrader}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Section 7d: arrived / delivered — order complete, no button */}
+                      {isAccepted && ['arrived', 'delivered'].includes(reqStatus) && (
+                        <p style={{ fontSize: 13, color: '#2D6A4F', fontWeight: 600, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          {isAr ? '✓ الطلب مكتمل — تم تحويل كامل المبلغ' : lang === 'zh' ? '✓ 订单已完成 — 全款已转账' : '✓ Order complete — full amount transferred'}
+                        </p>
+                      )}
+
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8, marginBottom: 14 }}>
-                    <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'سعر الوحدة' : lang === 'zh' ? '单价' : 'Unit Price'}</p>
-                      <p style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{parseFloat(o.price || 0).toFixed(2)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{lang === 'zh' ? '美元' : 'USD'}</span></p>
-                    </div>
-                    <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
-                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                        {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} ${lang === 'zh' ? ' 美元' : 'USD'}` : (isAr ? 'غير محدد' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
-                      </p>
-                      {getOfferShippingMethod(o) && (
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{getOfferShippingMethod(o)}</p>
-                      )}
-                    </div>
-                    <div style={{ padding: '12px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
-                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
-                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{lang === 'zh' ? ' 美元' : 'USD'}</span></p>
-                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>{isAr ? `MOQ: ${o.moq} · ${o.delivery_days} يوم` : lang === 'zh' ? `最小起订量：${o.moq} 件 · 交期：${o.delivery_days} 天` : `MOQ: ${o.moq} · ${o.delivery_days} days`}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}</p>
-                    </div>
-                  </div>
-
-                  {/* Accepted offer: full order details */}
-                  {o.status === 'accepted' && (
-                    <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {o.requests?.quantity && (
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', ...arFont }}>
-                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'الكمية: ' : lang === 'zh' ? '数量：' : 'Qty: '}</span>{o.requests.quantity}
-                        </p>
-                      )}
-                      {o.requests?.description && (
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', ...arFont }}>
-                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'المواصفات: ' : lang === 'zh' ? '规格：' : 'Specs: '}</span>{o.requests.description}
-                        </p>
-                      )}
-                      {o.requests?.payment_plan && (
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'خطة الدفع: ' : lang === 'zh' ? '付款计划：' : 'Payment plan: '}</span>{lang === 'zh' ? `${o.requests.payment_plan}% 定金，${100 - o.requests.payment_plan}% 发货前` : `${o.requests.payment_plan}%`}
-                        </p>
-                      )}
-                      <p style={{ fontSize: 12 }}>
-                        <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'حالة الدفع: ' : lang === 'zh' ? '付款状态：' : 'Payment: '}</span>
-                        <span style={{ color: ['paid','ready_to_ship','shipping','arrived','delivered'].includes(o.requests?.status) ? '#5a9a72' : '#a07070' }}>
-                          {['paid','ready_to_ship','shipping','arrived','delivered'].includes(o.requests?.status)
-                            ? (isAr ? 'تم الدفع' : lang === 'zh' ? '已付款' : 'Paid')
-                            : (isAr ? 'في انتظار الدفع' : lang === 'zh' ? '待付款' : 'Pending')}
-                        </span>
-                      </p>
-                      {o.updated_at && (
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
-                          {isAr ? 'تاريخ القبول: ' : lang === 'zh' ? '接受日期：' : 'Accepted: '}{new Date(o.updated_at).toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* "Shipment Ready" button — when offer accepted and request paid */}
-                  {o.status === 'accepted' && o.requests?.status === 'paid' && (
-                    <div style={{ marginBottom: 14 }}>
-                      <button
-                        className="btn-primary"
-                        style={{ padding: '11px 24px', fontSize: 12, minHeight: 42, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
-                        onClick={async () => {
-                          await sb.from('requests')
-                            .update({ status: 'ready_to_ship' })
-                            .eq('id', o.request_id);
-                          await sb.from('notifications').insert({
-                            user_id: o.requests.buyer_id,
-                            type: 'ready_to_ship',
-                            title_ar: 'شحنتك جاهزة — ادفع الدفعة الثانية لإتمام الشحن',
-                            title_en: 'Your shipment is ready — Pay the second installment to ship',
-                            title_zh: '您的货物已准备好 — 支付尾款以完成发货',
-                            ref_id: o.request_id,
-                            is_read: false,
-                          });
-                          loadMyOffers();
-                        }}>
-                        {isAr ? 'الشحنة جاهزة' : lang === 'zh' ? '货物已备好' : 'Shipment Ready'}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Step 1: offer accepted, waiting for supplier to confirm details with buyer */}
-                  {o.status === 'accepted' && o.requests?.status === 'closed' && (
-                    <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4, ...arFont }}>
-                        {isAr ? 'راسل التاجر وأكّد التفاصيل' : lang === 'zh' ? '与买家沟通并确认细节' : 'Message the buyer to confirm details'}
-                      </p>
-                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 12, ...arFont }}>
-                        {isAr ? 'بعد تأكيد التفاصيل اضغط "جاهز للمتابعة" حتى يتمكن التاجر من الدفع.' : lang === 'zh' ? '确认好细节后，点击"已准备好"按钮，买家才能付款。' : 'Once details are agreed, click "Ready to proceed" so the buyer can pay.'}
-                      </p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {o.requests?.buyer_id && (
-                          <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 36 }}>
-                            {t.contactTrader}
-                          </button>
-                        )}
-                        <button
-                          className="btn-primary"
-                          style={{ minHeight: 36 }}
-                          onClick={async () => {
-                            await sb.from('requests').update({ status: 'supplier_confirmed' }).eq('id', o.request_id);
-                            await sb.from('notifications').insert({
-                              user_id: o.requests.buyer_id,
-                              type: 'supplier_confirmed',
-                              title_ar: 'المورد جاهز — يمكنك الآن إتمام الدفع',
-                              title_en: 'Supplier is ready — you can now complete payment',
-                              title_zh: '供应商已准备好 — 您现在可以付款',
-                              ref_id: o.request_id,
-                              is_read: false,
-                            });
-                            loadMyOffers();
-                          }}>
-                          {isAr ? 'جاهز للمتابعة' : lang === 'zh' ? '已准备好' : 'Ready to proceed'}
-                        </button>
-                        <button
-                          style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px 14px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 36 }}
-                          onClick={() => cancelOffer(o)}>
-                          {isAr ? 'سحب العرض' : lang === 'zh' ? '撤回报价' : 'Withdraw Offer'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step 2: supplier confirmed, waiting for buyer to pay */}
-                  {o.status === 'accepted' && o.requests?.status === 'supplier_confirmed' && (
-                    <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-                      <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 10, ...arFont }}>
-                        {isAr ? 'في انتظار إتمام الدفع من التاجر' : lang === 'zh' ? '等待买家完成付款' : 'Awaiting payment from buyer'}
-                      </p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {o.requests?.buyer_id && (
-                          <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 36 }}>
-                            {t.contactTrader}
-                          </button>
-                        )}
-                        <button
-                          style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px 14px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 36 }}
-                          onClick={() => cancelOffer(o)}>
-                          {isAr ? 'سحب العرض' : lang === 'zh' ? '撤回报价' : 'Withdraw Offer'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {o.status === 'accepted' && completedPayments.has(o.request_id) && (
-                    <div style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--bg-raised)', border: '1px solid var(--border-muted)', borderRadius: 'var(--radius-lg)' }}>
-                      <p style={{ fontSize: 13, marginBottom: 10, color: 'var(--text-secondary)', ...arFont }}>{t.trackingPrompt}</p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <select
-                          value={shippingCompany}
-                          onChange={e => setShippingCompany(e.target.value)}
-                          style={{
-                            padding: '10px 12px', fontSize: 13,
-                            border: '1px solid var(--border-subtle)',
-                            background: 'var(--bg-subtle)',
-                            color: 'var(--text-secondary)',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: 'pointer', outline: 'none', minHeight: 40,
-                          }}>
-                          {['DHL','FedEx','Aramex','UPS','SMSA',isAr ? 'أخرى' : lang === 'zh' ? '其他' : 'Other'].map(c => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                        </select>
-                        <input className="form-input" style={{ flex: 1, minWidth: 140 }} placeholder={t.trackingNum} value={trackingInputs[o.request_id] || ''} onChange={e => setTrackingInputs(prev => ({ ...prev, [o.request_id]: e.target.value }))} dir="ltr" />
-                        <button className="btn-dark-sm" onClick={() => submitTracking(o.request_id, o.requests?.buyer_id, o.delivery_days)} style={{ minHeight: 40 }}>{t.send}</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {o.requests?.tracking_number && (
-                    <p style={{ fontSize: 12, marginBottom: 12, padding: '8px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)' }}>
-                      {t.tracking} <strong style={{ color: 'var(--text-primary)' }}>{o.requests.tracking_number}</strong>
-                    </p>
-                  )}
-
-                  {o.status === 'accepted' && o.requests?.buyer_id && (
-                    <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38 }}>{t.contactTrader}</button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
