@@ -1579,7 +1579,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               shippingMethod,
               estimatedTotal,
               deliveryDays: days,
-              lang,
             },
           }),
         });
@@ -1618,7 +1617,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             name: 'Trader',
             trackingNumber: num,
             shippingCompany,
-            lang,
           },
         }),
       });

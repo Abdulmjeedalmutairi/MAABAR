@@ -569,28 +569,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }
         }
 
-        // إشعار الأدمن
-        await sendMaabarEmail({
-          type: 'admin_new_supplier',
-          data: {
-            companyName: trimValue(supCompany),
-            email: trimValue(email),
-            whatsapp: trimValue(whatsapp),
-            wechat: trimValue(wechat),
-            tradeLink: primaryTradeLink,
-            tradeLinks: normalizedTradeLinks,
-            country: trimValue(country),
-            city: trimValue(supCity),
-            speciality: trimValue(speciality),
-          },
-        });
-        // BUG 3 — No confirmation email to supplier after registration
+        // Admin is notified by App.js (maybeNotifyAdminOfConfirmedSupplier) after email confirmation — no duplicate needed here
         await sendMaabarEmail({
           type: 'supplier_application_received',
           data: {
             email: trimValue(email),
             companyName: trimValue(supCompany),
-            lang: 'en',
+            lang: lang === 'zh' ? 'zh' : 'en',
           },
         });
       } catch (emailError) {

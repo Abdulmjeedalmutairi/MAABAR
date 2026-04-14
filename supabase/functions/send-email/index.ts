@@ -450,15 +450,19 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>`, { lang }) };
   },
 
-  supplier_rejected: (d) => ({
-    subject: 'بخصوص طلب انضمامك في مَعبر',
-    html: wrap(`
+  supplier_rejected: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: '关于您的 Maabar 供应商申请', eyebrow: 'Application Status', title: `${d.name || ''}，您好`, body: '感谢您申请加入 Maabar 平台。遗憾的是，我们目前无法批准您的申请。如有疑问，请联系我们：', contact: 'hello@maabar.io' },
+      en: { subject: 'Regarding your Maabar supplier application', eyebrow: 'Application Status', title: `Hello ${d.name || ''},`, body: 'Thank you for your interest in joining the Maabar platform. Unfortunately, we are unable to approve your application at this time. For any questions, please contact us at:', contact: 'hello@maabar.io' },
+    } as any)[lang] || { subject: 'Regarding your Maabar supplier application', eyebrow: 'Application Status', title: `Hello ${d.name || ''},`, body: 'Thank you for your interest in joining the Maabar platform. Unfortunately, we are unable to approve your application at this time. For any questions, please contact us at:', contact: 'hello@maabar.io' };
+    return { subject: t.subject, html: wrap(`
 <div class="bd">
-<p class="gr">Application Status</p>
-<p class="tg">أهلاً ${d.name || ''}،</p>
-<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">نشكرك على اهتمامك بالانضمام لمنصة مَعبر. للأسف، لم نتمكن من قبول طلبك في الوقت الحالي. للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style="color:rgba(0,0,0,0.55);">hello@maabar.io</a></p>
-</div>`),
-  }),
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0;">${t.body} <a href="mailto:hello@maabar.io" style="color:rgba(0,0,0,0.55);">${t.contact}</a></p>
+</div>`, { lang }) };
+  },
 
   shipment_tracking: (d) => {
     const lang = d.lang || 'ar';
