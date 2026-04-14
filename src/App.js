@@ -432,10 +432,21 @@ function App() {
     if (profileRow) {
       setProfile(profileRow);
       setProfileError(false);
-      // Sync language: if DB has a saved preference, restore it; otherwise write the current UI lang
-      if (profileRow.lang && ['ar', 'en', 'zh'].includes(profileRow.lang)) {
+      // Sync language: localStorage is the source of truth (user's last explicit choice).
+      // Only fall back to DB value if localStorage has nothing.
+      const storedLang = localStorage.getItem('maabar_lang');
+      const hasLocalLang = storedLang && ['ar', 'en', 'zh'].includes(storedLang);
+      if (hasLocalLang) {
+        // Trust localStorage; sync DB if it's out of date
+        if (profileRow.lang !== storedLang) {
+          sb.from('profiles').update({ lang: storedLang }).eq('id', id).catch(() => {});
+        }
+      } else if (profileRow.lang && ['ar', 'en', 'zh'].includes(profileRow.lang)) {
+        // No localStorage value — restore from DB and persist locally
         setLang(profileRow.lang);
+        localStorage.setItem('maabar_lang', profileRow.lang);
       } else {
+        // Neither has a value — write current UI lang to DB
         sb.from('profiles').update({ lang }).eq('id', id).catch(() => {});
       }
       await maybeNotifyAdminOfConfirmedSupplier(profileRow, sessionUser);
