@@ -304,44 +304,58 @@ export default function Checkout({ lang, user, profile }) {
       setApplePayAvailable(true);
     }
 
+    // Patch customElements.define once so repeated Moyasar.init() calls
+    // (triggered by re-renders) don't throw "already used with this registry".
+    if (!window.__moyasarCustomElementsPatch) {
+      window.__moyasarCustomElementsPatch = true;
+      const _origDefine = customElements.define.bind(customElements);
+      customElements.define = function (name, constructor, options) {
+        if (customElements.get(name)) return;
+        return _origDefine(name, constructor, options);
+      };
+    }
+
+    // Inject CSS once — persist across re-renders, never remove.
+    if (!document.getElementById('maabar-moyasar-css')) {
+      const link = document.createElement('link');
+      link.id = 'maabar-moyasar-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.7/dist/moyasar.css';
+      document.head.appendChild(link);
+    }
+
+    if (!document.getElementById('maabar-moyasar-overrides')) {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'maabar-moyasar-overrides';
+      styleEl.textContent = `
+        div#mysr { font-family: 'Tajawal', sans-serif !important; background: #faf9f7 !important; border: 1px solid #e8e5de !important; border-radius: 12px !important; padding: 20px 18px !important; box-shadow: none !important; }
+        div#mysr input, div#mysr select { font-family: 'Tajawal', sans-serif !important; background: transparent !important; border: none !important; border-bottom: 1px solid #e8e5de !important; border-radius: 0 !important; box-shadow: none !important; outline: none !important; padding: 8px 2px !important; color: #1a1814 !important; }
+        div#mysr input:focus, div#mysr select:focus { border-bottom-color: #1a1814 !important; box-shadow: none !important; }
+        div#mysr label, div#mysr .label { font-family: 'Tajawal', sans-serif !important; color: #b0ab9e !important; font-size: 12px !important; }
+        div#mysr button[type="submit"], div#mysr .bg-primary { background: #1a1814 !important; color: #fff !important; border-radius: 10px !important; font-family: 'Tajawal', sans-serif !important; border: none !important; box-shadow: none !important; }
+        div#mysr button[type="submit"]:hover, div#mysr .bg-primary:hover { background: #2d2a24 !important; }
+        div#mysr .shadow-input { box-shadow: none !important; border: none !important; border-bottom: 1px solid #e8e5de !important; }
+      `;
+      document.head.appendChild(styleEl);
+    }
+
+    // If script already executed (window.Moyasar present), mark ready and stop.
     if (window.Moyasar?.init) {
       setMoyasarFormReady(true);
       return;
     }
 
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.7/dist/moyasar.umd.min.js';
-    script.async = true;
-    script.onload = () => setMoyasarFormReady(true);
-    script.onerror = () => setPayError(isAr ? 'تعذر تحميل نموذج الدفع حالياً' : lang === 'zh' ? '当前无法加载付款表单' : 'Unable to load the payment form right now');
-    document.body.appendChild(script);
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.7/dist/moyasar.css';
-    document.head.appendChild(link);
-
-    const styleEl = document.createElement('style');
-    styleEl.id = 'maabar-moyasar-overrides';
-    styleEl.textContent = `
-      div#mysr { font-family: 'Tajawal', sans-serif !important; background: #faf9f7 !important; border: 1px solid #e8e5de !important; border-radius: 12px !important; padding: 20px 18px !important; box-shadow: none !important; }
-      div#mysr input, div#mysr select { font-family: 'Tajawal', sans-serif !important; background: transparent !important; border: none !important; border-bottom: 1px solid #e8e5de !important; border-radius: 0 !important; box-shadow: none !important; outline: none !important; padding: 8px 2px !important; color: #1a1814 !important; }
-      div#mysr input:focus, div#mysr select:focus { border-bottom-color: #1a1814 !important; box-shadow: none !important; }
-      div#mysr label, div#mysr .label { font-family: 'Tajawal', sans-serif !important; color: #b0ab9e !important; font-size: 12px !important; }
-      div#mysr button[type="submit"], div#mysr .bg-primary { background: #1a1814 !important; color: #fff !important; border-radius: 10px !important; font-family: 'Tajawal', sans-serif !important; border: none !important; box-shadow: none !important; }
-      div#mysr button[type="submit"]:hover, div#mysr .bg-primary:hover { background: #2d2a24 !important; }
-      div#mysr .shadow-input { box-shadow: none !important; border: none !important; border-bottom: 1px solid #e8e5de !important; }
-    `;
-    if (!document.getElementById('maabar-moyasar-overrides')) {
-      document.head.appendChild(styleEl);
+    // Inject script once — persist across re-renders, never remove.
+    if (!document.getElementById('maabar-moyasar-script')) {
+      const script = document.createElement('script');
+      script.id = 'maabar-moyasar-script';
+      script.src = 'https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.7/dist/moyasar.umd.min.js';
+      script.async = true;
+      script.onload = () => setMoyasarFormReady(true);
+      script.onerror = () => setPayError(isAr ? 'تعذر تحميل نموذج الدفع حالياً' : lang === 'zh' ? '当前无法加载付款表单' : 'Unable to load the payment form right now');
+      document.body.appendChild(script);
     }
-
-    return () => {
-      if (document.body.contains(script)) document.body.removeChild(script);
-      if (document.head.contains(link)) document.head.removeChild(link);
-      const existing = document.getElementById('maabar-moyasar-overrides');
-      if (existing) existing.remove();
-    };
+    // No cleanup — script/CSS/style are intentionally persistent for the page lifetime.
   }, [nav, offer, request, user, paymentGatewayReady, isAr, lang]);
 
   useEffect(() => {
