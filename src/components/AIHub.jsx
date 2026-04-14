@@ -983,6 +983,48 @@ export default function AIHub({ lang, user, profile }) {
   const isAr = lang === 'ar';
   const tools = TOOLS[lang] || TOOLS.ar;
 
+  // ── Draggable FAB ─────────────────────────
+  const [dragPos, setDragPos] = useState(null); // null = use default bottom-right CSS
+  const dragState = useRef(null); // { startX, startY, startLeft, startTop }
+  const didDragRef = useRef(false);
+
+  const onFabPointerDown = (e) => {
+    // Only drag on the FAB container, not child buttons (handled separately)
+    if (e.button !== undefined && e.button !== 0) return;
+    const el = menuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+    };
+    didDragRef.current = false;
+    el.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const onFabPointerMove = (e) => {
+    if (!dragState.current) return;
+    const dx = e.clientX - dragState.current.startX;
+    const dy = e.clientY - dragState.current.startY;
+    if (!didDragRef.current && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+    didDragRef.current = true;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const el = menuRef.current;
+    const w = el ? el.offsetWidth : 44;
+    const h = el ? el.offsetHeight : 44;
+    const newLeft = Math.max(8, Math.min(vw - w - 8, dragState.current.startLeft + dx));
+    const newTop = Math.max(8, Math.min(vh - h - 8, dragState.current.startTop + dy));
+    setDragPos({ x: newLeft, y: newTop });
+  };
+
+  const onFabPointerUp = () => {
+    dragState.current = null;
+  };
+
   // close menu on outside click
   useEffect(() => {
     const handler = (e) => {
@@ -1039,8 +1081,10 @@ export default function AIHub({ lang, user, profile }) {
       }
     : {
         position: 'fixed',
-        bottom: panelBottom,
-        right: 24,
+        bottom: dragPos ? undefined : panelBottom,
+        top: dragPos ? Math.max(8, dragPos.y - 420) : undefined,
+        right: dragPos ? undefined : 24,
+        left: dragPos ? dragPos.x : undefined,
         zIndex: 1500,
         width: 380,
         maxHeight: '82vh',
@@ -1058,7 +1102,16 @@ export default function AIHub({ lang, user, profile }) {
   return (
     <>
       {/* ── FAB Button ───────────────────────── */}
-      <div ref={menuRef} style={{ position: 'fixed', bottom: `max(24px, calc(24px + var(--safe-bottom, 0px)))`, right: 24, zIndex: 1600 }}>
+      <div
+        ref={menuRef}
+        onPointerDown={onFabPointerDown}
+        onPointerMove={onFabPointerMove}
+        onPointerUp={onFabPointerUp}
+        style={dragPos
+          ? { position: 'fixed', top: dragPos.y, left: dragPos.x, zIndex: 1600, touchAction: 'none', userSelect: 'none' }
+          : { position: 'fixed', bottom: `max(24px, calc(24px + var(--safe-bottom, 0px)))`, right: 24, zIndex: 1600, touchAction: 'none', userSelect: 'none' }
+        }
+      >
 
         {/* Menu */}
         {menuOpen && (
@@ -1098,7 +1151,7 @@ export default function AIHub({ lang, user, profile }) {
         )}
 
         {/* Main button */}
-        <button onClick={() => { setMenuOpen(!menuOpen); if (activeTool) setActiveTool(null); }} style={{
+        <button onClick={() => { if (didDragRef.current) { didDragRef.current = false; return; } setMenuOpen(!menuOpen); if (activeTool) setActiveTool(null); }} style={{
           width: 44, height: 44,
           background: 'var(--bg-raised)',
           border: '1px solid var(--border-default)',
