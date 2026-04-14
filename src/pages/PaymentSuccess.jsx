@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { sb } from '../supabase';
+import { sb, SUPABASE_ANON_KEY } from '../supabase';
 import { getOfferEstimatedTotal, getOfferShippingMethod } from '../lib/offerPricing';
 import {
   buildSupplierTrustSignals,
@@ -260,6 +260,7 @@ export default function PaymentSuccess({ lang, user }) {
       try {
         const { data: verifyData, error: verifyError } = await sb.functions.invoke('verify-moyasar-payment', {
           body: { paymentId: paymentIdFromQuery },
+          headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
         });
 
         if (verifyError) throw verifyError;
