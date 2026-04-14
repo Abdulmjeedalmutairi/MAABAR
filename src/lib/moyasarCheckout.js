@@ -1,4 +1,4 @@
-const PENDING_CHECKOUT_PREFIX = 'maabar:moyasar:pending:';
+const PENDING_CHECKOUT_PREFIX = 'maabar-moyasar-pending-';
 
 export function savePendingMoyasarCheckout(checkoutData) {
   if (typeof window === 'undefined' || !window.localStorage) {

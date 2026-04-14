@@ -169,7 +169,8 @@ export default function PaymentSuccess({ lang, user }) {
   const paymentIdFromQuery = String(params.get('id') || '').trim();
   const paymentStatusFromQuery = String(params.get('status') || '').trim().toLowerCase();
   const paymentMessageFromQuery = String(params.get('message') || '').trim();
-  const stateKey = String(params.get('stateKey') || '').trim();
+  const rawStateKey = String(params.get('stateKey') || '').trim();
+  const stateKey = rawStateKey ? (() => { try { return decodeURIComponent(rawStateKey); } catch { return rawStateKey; } })() : '';
   const pendingContext = loadPendingMoyasarCheckout(stateKey);
   const initialState = location.state || pendingContext || {};
   const processedRef = useRef(false);
