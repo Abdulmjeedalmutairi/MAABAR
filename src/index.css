@@ -2874,14 +2874,16 @@ input:-webkit-autofill:active {
   .db-bottom-nav {
     display: flex;
     position: fixed;
+    top: unset;
     bottom: 0;
     left: 0;
     right: 0;
+    height: auto;
+    min-height: 56px;
     z-index: 200;
     background: var(--bg-raised);
     border-top: 1px solid var(--border-subtle);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    min-height: 56px;
     align-items: stretch;
   }
   .db-desktop-tabs {
@@ -2897,4 +2899,9 @@ input:-webkit-autofill:active {
   .db-main-wrap {
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
+}
+@media (min-width: 769px) {
+  .db-desktop-tabs { display: flex !important; }
+  .db-bottom-nav   { display: none !important; }
+  .db-mobile-subtabs { display: none !important; }
 }

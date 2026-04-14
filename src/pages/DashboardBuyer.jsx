@@ -1034,7 +1034,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         </p>
 
         {/* Tabs */}
-        <div className="db-desktop-tabs" style={{ display: 'flex', gap: 0 }}>
+        <div className="db-desktop-tabs" style={{ gap: 0 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               padding: '10px 20px',
