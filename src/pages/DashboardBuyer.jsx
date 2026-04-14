@@ -96,6 +96,338 @@ function StatCard({ label, value, onClick, highlight }) {
   );
 }
 
+/* ─── relativeTime ───────────────────────── */
+function relativeTime(dateStr, isAr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hrs  = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  if (isAr) {
+    if (mins < 1)  return 'الآن';
+    if (mins < 60) return `منذ ${mins} د`;
+    if (hrs < 24)  return `منذ ${hrs} س`;
+    if (days < 30) return `منذ ${days} يوم`;
+    return new Date(dateStr).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+  }
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hrs < 24)  return `${hrs}h ago`;
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/* ─── StatusTimeline ─────────────────────── */
+const TIMELINE_STEPS = [
+  { key: 'posted',    ar: 'رفع الطلب',     en: 'Posted'     },
+  { key: 'accepted',  ar: 'قبول العرض',    en: 'Accepted'   },
+  { key: 'paid',      ar: 'الدفعة الأولى', en: '1st Payment' },
+  { key: 'producing', ar: 'الإنتاج',       en: 'Production' },
+  { key: 'shipping',  ar: 'الشحن',         en: 'Shipping'   },
+  { key: 'received',  ar: 'الاستلام',      en: 'Received'   },
+];
+
+function timelineIndexFromStatus(status) {
+  const map = {
+    open: 0, offers_received: 0,
+    closed: 1, supplier_confirmed: 1,
+    paid: 2,
+    ready_to_ship: 3,
+    shipping: 4,
+    arrived: 5, delivered: 5,
+  };
+  return map[status] ?? 0;
+}
+
+function StatusTimeline({ status, isAr }) {
+  const current = timelineIndexFromStatus(status);
+  return (
+    <div style={{ overflowX: 'auto', margin: '12px 0 4px', paddingBottom: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 360, position: 'relative' }}>
+        {/* connector track */}
+        <div style={{ position: 'absolute', top: 7, left: 7, right: 7, height: 1, background: 'var(--border-subtle)', zIndex: 0 }} />
+        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(90,154,114,0.55)', width: `calc(${(current / (TIMELINE_STEPS.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
+        {TIMELINE_STEPS.map((step, i) => {
+          const done    = i < current;
+          const active  = i === current;
+          const future  = i > current;
+          return (
+            <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: '50%', marginBottom: 6, flexShrink: 0,
+                background: done ? 'rgba(90,154,114,0.7)' : active ? 'var(--text-primary)' : 'var(--bg-raised)',
+                border: active ? '2px solid var(--text-primary)' : done ? '2px solid rgba(90,154,114,0.7)' : '2px solid var(--border-default)',
+                boxShadow: active ? '0 0 0 3px rgba(26,24,20,0.12)' : 'none',
+                transition: 'all 0.3s',
+              }} />
+              <p style={{
+                fontSize: 9, lineHeight: 1.3, textAlign: 'center',
+                color: done ? 'rgba(90,154,114,0.9)' : active ? 'var(--text-primary)' : 'var(--text-disabled)',
+                fontWeight: active ? 600 : 400,
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                whiteSpace: 'nowrap',
+              }}>
+                {isAr ? step.ar : step.en}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── PaymentBadge ───────────────────────── */
+function PaymentBadge({ label, amount, currency, badgeState, isAr }) {
+  const colors = {
+    paid:    { bg: 'rgba(90,154,114,0.07)', border: 'rgba(90,154,114,0.3)',  text: '#5a9a72' },
+    due:     { bg: 'rgba(180,120,30,0.07)', border: 'rgba(180,120,30,0.3)',  text: '#b4781e' },
+    pending: { bg: 'var(--bg-subtle)',       border: 'var(--border-subtle)',   text: 'var(--text-disabled)' },
+  };
+  const c = colors[badgeState] || colors.pending;
+  return (
+    <div style={{ padding: '7px 12px', borderRadius: 'var(--radius-md)', border: `1px solid ${c.border}`, background: c.bg, minWidth: 104 }}>
+      <p style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: c.text, marginBottom: 4, fontWeight: 600 }}>{label}</p>
+      <p style={{ fontSize: 16, fontWeight: 300, color: c.text, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}>
+        {amount > 0 ? Number(amount).toFixed(0) : '—'}
+        <span style={{ fontSize: 9, marginInlineStart: 3, color: 'var(--text-disabled)' }}>{currency}</span>
+      </p>
+      {badgeState === 'paid'    && <p style={{ fontSize: 9, color: c.text, marginTop: 3 }}>✓ {isAr ? 'مدفوع' : 'Paid'}</p>}
+      {badgeState === 'due'     && <p style={{ fontSize: 9, color: c.text, marginTop: 3 }}>{isAr ? 'مطلوبة الآن' : 'Due now'}</p>}
+      {badgeState === 'pending' && <p style={{ fontSize: 9, color: 'var(--text-disabled)', marginTop: 3 }}>{isAr ? 'بعد الشحن' : 'After shipping'}</p>}
+    </div>
+  );
+}
+
+/* ─── PaymentPlanRow ─────────────────────── */
+function PaymentPlanRow({ request, offer, isAr }) {
+  if (!offer) return null;
+  const showFrom = ['closed','supplier_confirmed','paid','ready_to_ship','shipping','arrived','delivered'];
+  if (!showFrom.includes(request.status)) return null;
+
+  const subtotal  = (offer.price || 0) * (Number(request.quantity) || 1);
+  const shipping  = parseFloat(offer.shipping_cost) || 0;
+  const total     = subtotal + shipping;
+  const pct       = request.payment_pct > 0 ? request.payment_pct : 30;
+  const firstAmt  = request.amount       > 0 ? request.amount       : parseFloat((total * pct / 100).toFixed(2));
+  const secondAmt = request.payment_second > 0 ? request.payment_second : parseFloat((total * (100 - pct) / 100).toFixed(2));
+  const currency  = offer.currency || 'USD';
+
+  const isPaidFirst  = ['paid','ready_to_ship','shipping','arrived','delivered'].includes(request.status);
+  const isPaidSecond = ['shipping','arrived','delivered'].includes(request.status) || !!request.payment_second_paid;
+  const isDueSecond  = request.status === 'ready_to_ship';
+
+  return (
+    <div style={{ display: 'flex', gap: 8, margin: '10px 0', flexWrap: 'wrap' }}>
+      <PaymentBadge
+        label={isAr ? `دفعة أولى · ${pct}%` : `1st · ${pct}%`}
+        amount={firstAmt}
+        currency={currency}
+        badgeState={isPaidFirst ? 'paid' : 'pending'}
+        isAr={isAr}
+      />
+      <PaymentBadge
+        label={isAr ? `دفعة ثانية · ${100 - pct}%` : `2nd · ${100 - pct}%`}
+        amount={secondAmt}
+        currency={currency}
+        badgeState={isPaidSecond ? 'paid' : isDueSecond ? 'due' : 'pending'}
+        isAr={isAr}
+      />
+    </div>
+  );
+}
+
+/* ─── TrackingCard ───────────────────────── */
+function TrackingCard({ request, isAr }) {
+  if (!request.tracking_number) return null;
+  const trackUrl = (() => {
+    const n = request.tracking_number;
+    const urls = { DHL: `https://www.dhl.com/track?tracking-id=${n}`, FedEx: `https://www.fedex.com/tracking?tracknumbers=${n}`, Aramex: `https://www.aramex.com/track/${n}`, UPS: `https://www.ups.com/track?tracknum=${n}`, SMSA: `https://www.smsaexpress.com/track?awbno=${n}` };
+    return urls[request.shipping_company] || `https://t.17track.net/en#nums=${n}`;
+  })();
+  return (
+    <div style={{ margin: '10px 0', padding: '10px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          {request.shipping_company && (
+            <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 0.5, display: 'block', marginBottom: 2 }}>{request.shipping_company}</span>
+          )}
+          <span style={{ fontSize: 13, color: 'var(--text-primary)', fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}>
+            {request.tracking_number}
+          </span>
+          {request.estimated_delivery && (
+            <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>
+              {isAr ? 'وصول متوقع: ' : 'ETA: '}
+              {new Date(request.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' })}
+            </p>
+          )}
+        </div>
+        <a href={trackUrl} target="_blank" rel="noreferrer"
+          style={{ fontSize: 10, color: 'var(--text-secondary)', letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'none', border: '1px solid var(--border-subtle)', padding: '5px 10px', borderRadius: 'var(--radius-md)', flexShrink: 0 }}>
+          {isAr ? 'تتبع ←' : 'Track →'}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/* ─── PendingBanner ──────────────────────── */
+function PendingBanner({ action, isAr, onGo }) {
+  const styles = {
+    supplier_confirmed: { border: 'rgba(90,154,114,0.35)',  bg: 'rgba(90,154,114,0.05)',  dot: '#5a9a72' },
+    ready_to_ship:      { border: 'rgba(180,120,30,0.35)',  bg: 'rgba(180,120,30,0.05)',  dot: '#b4781e' },
+    arrived:            { border: 'rgba(60,100,180,0.35)',  bg: 'rgba(60,100,180,0.04)',  dot: '#4a6bbf' },
+    offers:             { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
+    managed_shortlist:  { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
+    messages:           { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
+    payment_sent:       { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
+    delivery:           { border: 'rgba(60,100,180,0.35)',  bg: 'rgba(60,100,180,0.04)',  dot: '#4a6bbf' },
+  };
+  const s = styles[action.type] || styles.offers;
+  const title = (() => {
+    if (action.type === 'supplier_confirmed') return isAr ? `المورد جاهز — ادفع الآن · ${action.request?.title_ar || action.request?.title_en}` : `Supplier ready — pay now · ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'ready_to_ship')      return isAr ? `الشحنة جاهزة — ادفع الدفعة الثانية · ${action.request?.title_ar || action.request?.title_en}` : `Shipment ready — pay 2nd installment · ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'arrived')            return isAr ? `وصل الطلب — أكد الاستلام · ${action.request?.title_ar || action.request?.title_en}` : `Order arrived — confirm delivery · ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'offers')             return isAr ? `${action.count} عرض ينتظرك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'managed_shortlist')  return isAr ? `العروض المختارة جاهزة — ${action.request?.title_ar || action.request?.title_en}` : `Selected offers ready — ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'payment_sent')       return isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation';
+    if (action.type === 'delivery')           return isAr ? `تأكيد الاستلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'messages')           return isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`;
+    return '';
+  })();
+  return (
+    <div onClick={onGo} style={{
+      background: s.bg, border: `1px solid ${s.border}`,
+      borderRadius: 'var(--radius-lg)', padding: '12px 16px',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      cursor: 'pointer', transition: 'opacity 0.15s', gap: 10,
+    }}
+      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{title}</p>
+      </div>
+      <span style={{ color: 'var(--text-disabled)', fontSize: 14, flexShrink: 0 }}>{isAr ? '←' : '→'}</span>
+    </div>
+  );
+}
+
+/* ─── TopSubTabs ─────────────────────────── */
+function TopSubTabs({ tabs, active, onSelect, isAr }) {
+  return (
+    <div className="db-mobile-subtabs" style={{ gap: 6, marginBottom: 16, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onSelect(t.id)} style={{
+          padding: '5px 13px', borderRadius: 999,
+          border: `1px solid ${active === t.id ? 'var(--text-primary)' : 'var(--border-subtle)'}`,
+          background: active === t.id ? 'var(--text-primary)' : 'none',
+          color: active === t.id ? 'var(--bg-base)' : 'var(--text-secondary)',
+          fontSize: 12, cursor: 'pointer',
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+          transition: 'all 0.15s',
+        }}>
+          {t.label}
+          {t.badge != null && t.badge > 0 && (
+            <span style={{ marginInlineStart: 5, fontSize: 10, opacity: 0.75 }}>{t.badge}</span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─── MobileBottomNav ────────────────────── */
+function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, setMoreOpen }) {
+  const moreActive = ['samples','product-inquiries','settings'].includes(activeTab);
+  const items = [
+    { id: 'overview',  label: isAr ? 'الرئيسية' : 'Home'     },
+    { id: 'requests',  label: isAr ? 'طلباتي'   : 'Requests' },
+    { id: 'new',       label: isAr ? 'اطلب'     : 'New RFQ'  },
+    { id: 'messages',  label: isAr ? 'الرسائل'  : 'Messages', badge: stats.messages > 0 ? stats.messages : null },
+    { id: 'more',      label: isAr ? 'المزيد'   : 'More' },
+  ];
+  return (
+    <nav className="db-bottom-nav" dir={isAr ? 'rtl' : 'ltr'}>
+      {moreOpen && (
+        <div onClick={() => setMoreOpen(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 198, background: 'rgba(0,0,0,0.3)',
+        }} />
+      )}
+      {moreOpen && (
+        <div style={{
+          position: 'fixed', bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+          left: 0, right: 0, zIndex: 199,
+          background: 'var(--bg-overlay)',
+          border: '1px solid var(--border-muted)',
+          borderBottom: 'none',
+          borderRadius: '16px 16px 0 0',
+          padding: '16px 20px 8px',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+          animation: 'slideUp 0.2s ease',
+        }}>
+          {[
+            { id: 'samples',           label: isAr ? 'العينات' : 'Samples' },
+            { id: 'product-inquiries', label: isAr ? 'استفسارات المنتجات' : 'Product Inquiries' },
+            { id: 'settings',          label: isAr ? 'الإعدادات' : 'Settings' },
+          ].map((item, i, arr) => (
+            <button key={item.id} onClick={() => { setActiveTab(item.id); setMoreOpen(false); }}
+              style={{
+                display: 'block', width: '100%',
+                textAlign: isAr ? 'right' : 'left',
+                padding: '13px 0', background: 'none', border: 'none',
+                borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                color: activeTab === item.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontSize: 15, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                cursor: 'pointer', fontWeight: activeTab === item.id ? 600 : 400,
+              }}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {items.map(item => {
+        const isActive = item.id === 'more' ? moreActive : item.id === 'new' ? false : activeTab === item.id;
+        return (
+          <button key={item.id}
+            onClick={() => {
+              if (item.id === 'new')  { nav('/requests'); return; }
+              if (item.id === 'more') { setMoreOpen(o => !o); return; }
+              setActiveTab(item.id);
+              setMoreOpen(false);
+            }}
+            style={{
+              flex: 1, padding: '10px 4px 6px',
+              background: 'none', border: 'none',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              cursor: 'pointer', position: 'relative',
+              color: isActive ? 'var(--text-primary)' : 'var(--text-disabled)',
+              transition: 'color 0.15s',
+            }}>
+            {item.badge && (
+              <span style={{
+                position: 'absolute', top: 6, insetInlineEnd: '18%',
+                width: 14, height: 14, borderRadius: '50%',
+                background: '#c0392b', color: '#fff',
+                fontSize: 8, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{item.badge > 9 ? '9+' : item.badge}</span>
+            )}
+            <span style={{
+              fontSize: 10, letterSpacing: 0.5,
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+              fontWeight: isActive ? 600 : 400,
+            }}>
+              {item.label}
+            </span>
+            {isActive && <div style={{ width: 16, height: 2, background: 'var(--text-primary)', borderRadius: 1, marginTop: 1 }} />}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 /* ─── Quick Action ───────────────────────── */
 function QuickAction({ title, sub, onClick, primary, isAr }) {
   return (
@@ -180,6 +512,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   // Cancel request confirmation
   const [cancelConfirmReq, setCancelConfirmReq] = useState(null);
 
+  // Sub-filters (mobile)
+  const [reqSubFilter, setReqSubFilter] = useState('all');
+  const [msgSubFilter, setMsgSubFilter] = useState('all');
+  const [moreOpen, setMoreOpen]         = useState(false);
+
   // Settings
   const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '', preferred_display_currency: displayCurrency || 'USD' });
   const [savingSettings, setSavingSettings] = useState(false);
@@ -226,12 +563,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   }, [displayCurrency]);
 
   const loadStats = async () => {
+    const { data: myReqIds } = await sb.from('requests').select('id').eq('buyer_id', user.id);
+    const ids = myReqIds?.map(r => r.id) || [];
     const [requests, messages, offers, productInquiries] = await Promise.all([
       sb.from('requests').select('id', { count: 'exact' }).eq('buyer_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
-      sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending').in('request_id',
-        (await sb.from('requests').select('id').eq('buyer_id', user.id)).data?.map(r=>r.id) || []
-      ),
+      ids.length > 0
+        ? sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending').in('request_id', ids)
+        : Promise.resolve({ count: 0 }),
       sb.from('product_inquiries').select('id', { count: 'exact' }).eq('buyer_id', user.id),
     ]);
     setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0, productInquiries: productInquiries.count || 0 });
@@ -248,9 +587,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         } else if (pending.length > 0) {
           actions.push({ type: 'offers', request: r, count: pending.length });
         }
+        if (r.status === 'supplier_confirmed') actions.push({ type: 'supplier_confirmed', request: r });
         if (r.status === 'paid')          actions.push({ type: 'payment_sent', request: r });
         if (r.status === 'ready_to_ship') actions.push({ type: 'ready_to_ship', request: r });
         if (r.status === 'shipping')      actions.push({ type: 'delivery', request: r });
+        if (r.status === 'arrived')       actions.push({ type: 'arrived', request: r });
       });
     }
     const { data: msgs } = await sb.from('messages').select('id').eq('receiver_id', user.id).eq('is_read', false);
@@ -526,8 +867,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     // Send payout email to supplier
     try {
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
-      const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
       await fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
@@ -695,7 +1034,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         </p>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0 }}>
+        <div className="db-desktop-tabs" style={{ display: 'flex', gap: 0 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               padding: '10px 20px',
@@ -733,67 +1072,52 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       {/* ══════════════════════════════════════
           CONTENT
       ══════════════════════════════════════ */}
-      <div style={{ background: 'var(--bg-base)', minHeight: 'calc(var(--app-dvh) - 280px)' }}>
+      <div className="db-main-wrap" style={{ background: 'var(--bg-base)', minHeight: 'calc(var(--app-dvh) - 280px)' }}>
         <div className="dash-content">
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
 
-              {/* Pending actions */}
+              {/* Stats strip */}
+              <div style={{ display: 'flex', gap: 0, marginBottom: 28, borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                {[
+                  { label: isAr ? 'تحتاج إجراء' : 'Needs Action', value: pendingActions.filter(a => ['supplier_confirmed','arrived','ready_to_ship','offers'].includes(a.type)).length, red: true, onClick: () => setActiveTab('requests') },
+                  { label: isAr ? 'طلبات نشطة' : 'Active', value: stats.requests, onClick: () => setActiveTab('requests') },
+                  { label: isAr ? 'رسائل جديدة' : 'Messages', value: stats.messages, onClick: () => setActiveTab('messages') },
+                ].map((s, i) => (
+                  <div key={i} onClick={s.onClick} style={{
+                    flex: 1, padding: '18px 20px', cursor: 'pointer',
+                    background: 'var(--bg-subtle)',
+                    borderRight: i < 2 ? '1px solid var(--border-subtle)' : 'none',
+                    transition: 'background 0.15s',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-raised)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-subtle)'}>
+                    <p style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8, fontWeight: 500 }}>{s.label}</p>
+                    <p style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? '#c0392b' : 'var(--text-primary)' }}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pending action banners */}
               {pendingActions.length > 0 && (
                 <div style={{ marginBottom: 40 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, fontWeight: 500 }}>
                     {isAr ? `يحتاج انتباهك (${pendingActions.length})` : `Needs Attention (${pendingActions.length})`}
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {pendingActions.map((action, i) => (
-                      <div key={i} onClick={() => setActiveTab(['messages'].includes(action.type) ? 'messages' : 'requests')} style={{
-                        background: 'var(--bg-subtle)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-lg)',
-                        padding: '14px 20px',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        cursor: 'pointer', transition: 'all 0.15s', gap: 12,
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; e.currentTarget.style.borderColor = 'var(--border-muted)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}>
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                            {action.type === 'offers'       && (isAr ? `${action.count} عرض ينتظر مراجعتك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`)}
-                            {action.type === 'managed_shortlist' && (isAr ? `العروض المختارة لك جاهزة — ${action.request?.title_ar || action.request?.title_en}` : `Selected offers are ready — ${action.request?.title_en || action.request?.title_ar}`)}
-                            {action.type === 'payment_sent'   && (isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation')}
-                            {action.type === 'ready_to_ship'  && (isAr ? `شحنتك جاهزة — ادفع الدفعة الثانية` : `Shipment ready — Pay second installment`)}
-                            {action.type === 'delivery'     && (isAr ? `تأكيد استلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`)}
-                            {action.type === 'messages'     && (isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`)}
-                          </p>
-                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>
-                            {action.type === 'offers'       && (isAr ? 'قارن العروض واختر الأفضل' : 'Compare and choose the best')}
-                            {action.type === 'managed_shortlist' && (isAr ? 'راجع العروض المختارة لك من نفس الطلب' : 'Review the selected offers inside the same request')}
-                            {action.type === 'payment_sent'   && (isAr ? 'المورد يجهز شحنتك' : 'Supplier is preparing your order')}
-                            {action.type === 'ready_to_ship'  && (isAr ? 'اضغط للدفع وإتمام الشحن' : 'Tap to pay and complete shipping')}
-                            {action.type === 'delivery'     && (isAr ? 'الطلب وصل — أكد الاستلام' : 'Order arrived — confirm receipt')}
-                            {action.type === 'messages'     && (isAr ? 'اضغط للاطلاع' : 'Tap to view')}
-                          </p>
-                        </div>
-                        <span style={{ color: 'var(--text-disabled)', fontSize: 14 }}>{isAr ? '←' : '→'}</span>
-                      </div>
+                      <PendingBanner
+                        key={i}
+                        action={action}
+                        isAr={isAr}
+                        onGo={() => setActiveTab(action.type === 'messages' ? 'messages' : 'requests')}
+                      />
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Stats */}
-              <div style={{ marginBottom: 40 }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
-                  {isAr ? 'الإحصائيات' : 'Overview'}
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-                  <StatCard label={isAr ? 'طلبات مرفوعة' : 'Requests Posted'}  value={stats.requests} onClick={() => setActiveTab('requests')} />
-                  <StatCard label={isAr ? 'عروض مستلمة'  : 'Offers Received'}  value={stats.offers}   onClick={() => setActiveTab('requests')} highlight={stats.offers > 0} />
-                  <StatCard label={isAr ? 'رسائل جديدة'  : 'New Messages'}     value={stats.messages} onClick={() => setActiveTab('messages')} highlight={stats.messages > 0} />
-                </div>
-              </div>
 
               {/* Quick actions */}
               <div style={{ marginBottom: 40 }}>
@@ -826,7 +1150,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 32 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
                 <h2 style={{
                   fontSize: isAr ? 28 : 34, fontWeight: 300,
                   fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
@@ -839,6 +1163,43 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   {isAr ? '+ طلب جديد' : '+ New Request'}
                 </button>
               </div>
+
+              {/* Stats mini-strip */}
+              {!loadingRequests && myRequests.length > 0 && (() => {
+                const needsAct = myRequests.filter(r => {
+                  const hasPendingOffers = r.offers?.some(o => o.status === 'pending');
+                  return hasPendingOffers || ['supplier_confirmed','arrived'].includes(r.status);
+                }).length;
+                const activeCount    = myRequests.filter(r => !['open','offers_received','delivered'].includes(r.status)).length;
+                const completedCount = myRequests.filter(r => r.status === 'delivered').length;
+                return (
+                  <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                    {[
+                      { label: isAr ? 'تحتاج إجراء' : 'Action needed', value: needsAct, red: true },
+                      { label: isAr ? 'نشطة' : 'Active', value: activeCount },
+                      { label: isAr ? 'مكتملة' : 'Completed', value: completedCount },
+                    ].map((s, i) => (
+                      <div key={i} style={{ flex: 1, padding: '12px 14px', background: 'var(--bg-subtle)', borderRight: i < 2 ? '1px solid var(--border-subtle)' : 'none' }}>
+                        <p style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 5, fontWeight: 500 }}>{s.label}</p>
+                        <p style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? '#c0392b' : 'var(--text-secondary)' }}>{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Mobile sub-filter tabs */}
+              <TopSubTabs
+                isAr={isAr}
+                active={reqSubFilter}
+                onSelect={setReqSubFilter}
+                tabs={[
+                  { id: 'all',       label: isAr ? 'الكل'    : 'All'       },
+                  { id: 'open',      label: isAr ? 'مفتوحة'  : 'Open',     badge: myRequests.filter(r => ['open','offers_received'].includes(r.status)).length || null },
+                  { id: 'active',    label: isAr ? 'نشطة'    : 'Active'    },
+                  { id: 'completed', label: isAr ? 'مكتملة'  : 'Done'      },
+                ]}
+              />
 
               {/* Loading skeleton */}
               {loadingRequests && [1, 2].map(i => (
@@ -861,7 +1222,20 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               )}
 
               {/* Requests list */}
-              {!loadingRequests && myRequests.map((r, idx) => {
+              {!loadingRequests && (() => {
+                const filteredRequests = myRequests.filter(r => {
+                  if (reqSubFilter === 'open')      return ['open','offers_received'].includes(r.status);
+                  if (reqSubFilter === 'active')    return !['open','offers_received','delivered'].includes(r.status);
+                  if (reqSubFilter === 'completed') return r.status === 'delivered';
+                  return true;
+                });
+                if (filteredRequests.length === 0 && myRequests.length > 0) return (
+                  <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-disabled)', fontSize: 13, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'لا توجد طلبات في هذا التصنيف' : 'No requests in this filter'}
+                  </div>
+                );
+                return filteredRequests;
+              })()?.map?.((r, idx) => {
                 const managed = isManagedRequest(r);
                 const pendingOffers = r.offers.filter(o => o.status === 'pending');
                 const acceptedOffer = r.offers.find(o => o.status === 'accepted');
@@ -934,114 +1308,110 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 return (
                 <div key={r.id} data-request-id={r.id} style={{
                   borderTop: '1px solid var(--border-subtle)',
-                  padding: '28px 0',
+                  padding: '24px 0',
                   animation: `fadeIn 0.35s ease ${idx * 0.04}s both`,
                   scrollMarginTop: 110,
                   background: isFocusedRequest ? 'var(--bg-subtle)' : 'transparent',
                   boxShadow: isFocusedRequest ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : 'none',
                   borderRadius: isFocusedRequest ? 'var(--radius-lg)' : 0,
                 }}>
-                  {/* Title + status */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
-                    <h3 style={{
-                      fontSize: 17, fontWeight: 500,
-                      fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                      color: 'var(--text-primary)',
-                    }}>
-                      {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
-                    </h3>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
-                        {managed ? (isAr ? 'طلب مُدار' : 'Managed request') : (isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status)}
-                      </span>
-                      {r.status === 'open' && (
-                        <>
-                          <button
-                            onClick={() => { setEditReqModal(r); setEditReqForm({ title_ar: r.title_ar || '', title_en: r.title_en || '', desc_ar: r.desc_ar || '', quantity: r.quantity || '' }); }}
-                            className="btn-outline"
-                            style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
-                            {isAr ? 'تعديل' : 'Edit'}
-                          </button>
-                          <button
-                            onClick={() => deleteRequest(r)}
-                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
-                            {isAr ? 'حذف' : 'Delete'}
-                          </button>
-                        </>
-                      )}
-                      {['closed', 'supplier_confirmed'].includes(r.status) && (
-                        <>
-                          <button
-                            onClick={() => {
-                              const accepted = r.offers.find(o => o.status === 'accepted');
-                              if (accepted) nav(`/chat/${accepted.supplier_id}`);
-                            }}
-                            className="btn-outline"
-                            style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
-                            {isAr ? 'محادثة المورد' : 'Chat with Supplier'}
-                          </button>
-                          <button
-                            onClick={() => setCancelConfirmReq(r)}
-                            style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
-                            {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
-                          </button>
-                        </>
-                      )}
-                      {['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
-                        <a href={`mailto:support@maabar.io?subject=${encodeURIComponent((isAr ? 'مشكلة في طلب: ' : 'Issue with order: ') + (r.title_ar || r.title_en || r.id))}&body=${encodeURIComponent((isAr ? 'رقم الطلب: ' : 'Order ID: ') + r.id)}`}
-                          style={{ fontSize: 11, color: '#a07070', textDecoration: 'none', border: '1px solid rgba(138,58,58,0.25)', padding: '3px 10px', borderRadius: 'var(--radius-md)', display: 'inline-block', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          {isAr ? '⚠ إبلاغ عن مشكلة' : '⚠ Report Issue'}
-                        </a>
-                      )}
+                  {/* ── Card header: category tag + title + time ── */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {(r.category_ar || r.category_en || r.category) && (
+                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 999 }}>
+                            {isAr ? (r.category_ar || r.category) : (r.category_en || r.category)}
+                          </span>
+                        )}
+                        {managed && (
+                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 999 }}>
+                            {isAr ? 'طلب مُدار' : 'Managed'}
+                          </span>
+                        )}
+                        <span style={{ fontSize: 10, color: 'var(--text-disabled)', marginInlineStart: 'auto' }}>
+                          {relativeTime(r.created_at, isAr)}
+                        </span>
+                      </div>
+                      <h3 style={{ fontSize: 16, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                        {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
+                      </h3>
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'الكمية: ' : 'Qty: '}{r.quantity || '—'}
+                        {!managed && (
+                          <span style={{ marginInlineStart: 10 }}>
+                            {isAr ? STATUS_AR[r.status] || r.status : STATUS_EN[r.status] || r.status}
+                          </span>
+                        )}
+                      </p>
                     </div>
+                    {/* Edit/Delete for open requests */}
+                    {r.status === 'open' && (
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button onClick={() => { setEditReqModal(r); setEditReqForm({ title_ar: r.title_ar || '', title_en: r.title_en || '', desc_ar: r.desc_ar || '', quantity: r.quantity || '' }); }}
+                          className="btn-outline" style={{ padding: '3px 8px', fontSize: 10, minHeight: 24 }}>
+                          {isAr ? 'تعديل' : 'Edit'}
+                        </button>
+                        <button onClick={() => deleteRequest(r)}
+                          style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                          {isAr ? 'حذف' : 'Delete'}
+                        </button>
+                      </div>
+                    )}
+                    {['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
+                      <a href={`mailto:support@maabar.io?subject=${encodeURIComponent((isAr ? 'مشكلة في طلب: ' : 'Issue with order: ') + (r.title_ar || r.title_en || r.id))}&body=${encodeURIComponent((isAr ? 'رقم الطلب: ' : 'Order ID: ') + r.id)}`}
+                        style={{ fontSize: 10, color: '#a07070', textDecoration: 'none', border: '1px solid rgba(138,58,58,0.25)', padding: '3px 8px', borderRadius: 'var(--radius-md)', flexShrink: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'إبلاغ' : 'Report'}
+                      </a>
+                    )}
                   </div>
 
-                  {!managed && <StatusBar status={r.shipping_status || r.status} isAr={isAr} />}
-
-                  {nextStepCopy && (
-                    <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
-                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {nextStepCopy.title}
-                      </p>
-                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {nextStepCopy.body}
-                      </p>
+                  {/* ── Supplier strip (when accepted offer) ── */}
+                  {!managed && acceptedOffer && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0 2px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
+                        {acceptedOffer.profiles?.company_name || '—'}
+                      </span>
+                      {isSupplierPubliclyVisible(acceptedOffer.profiles?.status) && (
+                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                          ✓ {isAr ? 'موثّق' : 'Verified'}
+                        </span>
+                      )}
+                      {getSupplierMaabarId(acceptedOffer.profiles || {}) && (
+                        <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
+                          · {getSupplierMaabarId(acceptedOffer.profiles)}
+                        </span>
+                      )}
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-                    <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                      {isAr ? 'الكمية' : 'Qty'}: {r.quantity || '—'}
-                    </span>
-                    <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                      {managed ? (isAr ? 'طلب مُدار' : 'Managed request') : `${isAr ? 'العروض' : 'Offers'}: ${r.offers.length}`}
-                    </span>
-                    {managed && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                        {isAr ? 'العروض المختارة لك' : 'Selected offers for you'}: {(r.managedShortlist || []).length}
-                      </span>
-                    )}
-                    {!managed && lowestOfferTotal !== null && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
-                        {isAr ? 'أفضل إجمالي' : 'Best total'}: {lowestOfferTotal.toFixed(2)} USD
-                      </span>
-                    )}
-                    {!managed && fastestOffer?.delivery_days && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
-                        {isAr ? 'أسرع تجهيز' : 'Fastest lead time'}: {fastestOffer.delivery_days}{isAr ? ' يوم' : lang === 'zh' ? ' 天' : 'd'}
-                      </span>
-                    )}
-                    {!managed && acceptedOffer?.profiles?.company_name && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                        {isAr ? 'المورد المختار' : 'Selected supplier'}: {acceptedOffer.profiles.company_name}
-                      </span>
-                    )}
-                    {isFocusedRequest && (
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
-                        {isAr ? 'آخر طلب تم إنشاؤه' : 'Recently created request'}
-                      </span>
-                    )}
-                  </div>
+                  {/* ── Status timeline ── */}
+                  {!managed && <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />}
+
+                  {/* ── Payment plan row ── */}
+                  {!managed && acceptedOffer && (
+                    <PaymentPlanRow request={r} offer={acceptedOffer} isAr={isAr} />
+                  )}
+
+                  {/* ── Tracking card ── */}
+                  {!managed && <TrackingCard request={r} isAr={isAr} />}
+
+                  {/* Managed next-step banner (kept for managed only) */}
+                  {managed && (() => {
+                    const hasShortlist = (r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready';
+                    const title = hasShortlist
+                      ? (isAr ? 'الخطوة التالية: راجع العروض المختارة لك' : 'Next step: review your selected offers')
+                      : (isAr ? 'الطلب الآن داخل المسار المُدار' : 'This request is now inside the managed flow');
+                    const body = hasShortlist
+                      ? (isAr ? 'اختر العرض المناسب، اطلب تفاوضاً، أو اطلب من معبر إعادة البحث.' : 'Choose the right offer, request negotiation, or ask Maabar to search again.')
+                      : (isAr ? 'معبر يجهّز الـ brief ويطابق الموردين المناسبين قبل إظهار أفضل 3 عروض لك.' : 'Maabar is matching suitable suppliers before showing your top 3 here.');
+                    return (
+                      <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{title}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{body}</p>
+                      </div>
+                    );
+                  })()}
 
                   {managed && (
                     <ManagedBuyerRequestPanel
@@ -1054,58 +1424,25 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     />
                   )}
 
-                  {/* Tracking */}
-                  {!managed && r.tracking_number && (
-                    <div style={{
-                      marginBottom: 16, padding: '10px 16px',
-                      background: 'var(--bg-raised)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r.estimated_delivery ? 6 : 0 }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          {r.shipping_company && (
-                            <span style={{ marginInlineEnd: 6, fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{r.shipping_company} ·</span>
-                          )}
-                          {isAr ? 'رقم التتبع: ' : 'Tracking: '}
-                          <strong style={{ color: 'var(--text-primary)' }}>{r.tracking_number}</strong>
-                        </span>
-                        <a href={getTrackingUrl(r.shipping_company, r.tracking_number)} target="_blank" rel="noreferrer" style={{
-                          fontSize: 10, color: 'var(--text-secondary)',
-                          letterSpacing: 1.5, textTransform: 'uppercase',
-                          textDecoration: 'none', transition: 'color 0.15s',
-                        }}>
-                          {isAr ? 'تتبع ←' : 'Track →'}
-                        </a>
-                      </div>
-                      {r.estimated_delivery && (
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 4 }}>
-                          {isAr ? 'التسليم المتوقع: ' : 'Expected delivery: '}
-                          {new Date(r.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Offers grid */}
-                  {!managed && r.offers.length > 0 && (
+                  {/* ── Compare offers grid (pending offers only, or all when comparing) ── */}
+                  {!managed && pendingOffers.length > 0 && (
                     <div>
-                      {r.offers.length > 1 && (
+                      {pendingOffers.length > 1 && (
                         <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
-                          {isAr ? `${r.offers.length} عروض — قارن واختر` : `${r.offers.length} Offers — Compare & Choose`}
+                          {isAr ? `${pendingOffers.length} عروض — قارن واختر` : `${pendingOffers.length} Offers — Compare & Choose`}
                         </p>
                       )}
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: `repeat(${Math.min(r.offers.length, 3)}, 1fr)`,
+                        gridTemplateColumns: `repeat(${Math.min(pendingOffers.length, 3)}, 1fr)`,
                         gap: 1,
                         background: 'var(--border-subtle)',
                         borderRadius: 'var(--radius-lg)',
                         overflow: 'hidden',
                       }}>
-                        {r.offers.map(o => {
+                        {pendingOffers.map(o => {
                           const offerEstimatedTotal = getOfferEstimatedTotal(o, r);
-                          const lowestOfferTotal = Math.min(...r.offers.map(x => getOfferEstimatedTotal(x, r)));
+                          const lowestOfferTotal = Math.min(...pendingOffers.map(x => getOfferEstimatedTotal(x, r)));
 
                           return (
                           <div key={o.id} style={{
@@ -1220,131 +1557,25 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                               );
                             })()}
 
-                            {o.status === 'pending' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} className="btn-primary"
-                                  style={{ padding: '8px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
-                                  {isAr ? 'قبول' : lang === 'zh' ? '接受报价' : 'Accept'}
-                                </button>
-                                <button
-                                  onClick={() => rejectOffer(o.id, o.supplier_id, r.id)}
-                                  style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '7px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
-                                  {isAr ? 'رفض' : lang === 'zh' ? '拒绝' : 'Reject'}
-                                </button>
-                                <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline"
-                                  style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
-                                  {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Supplier Profile'}
-                                </button>
-                                <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
-                                  style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
-                                  {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
-                                </button>
-                              </div>
-                            )}
-
-                            {o.status === 'accepted' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {r.status === 'closed' && (
-                                  <>
-                                    <p style={{ fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5, padding: '4px 0' }}>
-                                      {isAr ? 'في انتظار تأكيد المورد' : lang === 'zh' ? '等待供应商确认' : 'Waiting for supplier confirmation'}
-                                    </p>
-                                    <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
-                                      style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                      {isAr ? 'تواصل مع المورد' : lang === 'zh' ? '联系供应商' : 'Chat with supplier'}
-                                    </button>
-                                    <button
-                                      onClick={() => setCancelConfirmReq(r)}
-                                      style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
-                                      {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
-                                    </button>
-                                  </>
-                                )}
-                                {r.status === 'supplier_confirmed' && (
-                                  <>
-                                    <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary"
-                                      style={{ padding: '9px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 36 }}>
-                                      {isAr ? 'ادفع الآن' : 'Pay Now'}
-                                    </button>
-                                    <button
-                                      onClick={() => setCancelConfirmReq(r)}
-                                      style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
-                                      {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
-                                    </button>
-                                  </>
-                                )}
-                                {r.status === 'paid' && (
-                                  <p style={{ fontSize: 10, letterSpacing: isAr ? 0 : 1, color: 'var(--text-disabled)', textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                    {isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Paid — Awaiting preparation'}
-                                  </p>
-                                )}
-                                {r.status === 'ready_to_ship' && (
-                                  <div style={{ padding: '12px 12px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-md)' }}>
-                                    <p style={{ fontSize: 11, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>
-                                      {isAr ? 'شحنتك جاهزة — ادفع الدفعة الثانية لإتمام الشحن' : 'Shipment ready — Pay second installment to ship'}
-                                    </p>
-                                    {r.payment_second > 0 && (
-                                      <button
-                                        className="btn-primary"
-                                        style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
-                                        onClick={() => nav('/checkout', { state: { offer: o, request: r, isSecondPayment: true } })}>
-                                        {isAr ? `ادفع ${r.payment_second} ${o.currency || 'USD'}` : `Pay ${r.payment_second} ${o.currency || 'USD'}`}
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                                {r.status === 'shipping' && (
-                                  <>
-                                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                      {isAr ? 'في الطريق' : 'On the way'}
-                                    </p>
-                                    <button onClick={async () => {
-                                      await sb.from('requests').update({ status: 'arrived', shipping_status: 'arrived' }).eq('id', r.id);
-                                      loadMyRequests();
-                                    }} className="btn-outline"
-                                      style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                      {isAr ? 'وصلت السعودية' : 'Arrived in KSA'}
-                                    </button>
-                                  </>
-                                )}
-                                {r.status === 'arrived' && (
-                                  <>
-                                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                      {isAr ? 'وصلت — أكد الاستلام' : 'Arrived — Confirm receipt'}
-                                    </p>
-                                    <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-primary"
-                                      style={{ padding: '8px', fontSize: 11, width: '100%', minHeight: 34 }}>
-                                      {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
-                                    </button>
-                                  </>
-                                )}
-                                {r.status === 'delivered' && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    <p style={{ fontSize: 10, letterSpacing: 1, color: '#5a9a72', textAlign: 'center' }}>
-                                      {isAr ? 'تم التسليم ✓' : lang === 'zh' ? '已交付 ✓' : 'Delivered ✓'}
-                                    </p>
-                                    <button onClick={() => setReviewModal({ supplierId: o.supplier_id, requestId: r.id, supplierName: o.profiles?.company_name || '' })}
-                                      className="btn-outline" style={{ padding: '6px', fontSize: 10, width: '100%', minHeight: 28 }}>
-                                      {isAr ? 'قيّم المورد' : lang === 'zh' ? '评价供应商' : 'Rate Supplier'}
-                                    </button>
-                                  </div>
-                                )}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 2 }}>
-                                  <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline" style={{ padding: '7px', fontSize: 10, minHeight: 32 }}>
-                                    {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Profile'}
-                                  </button>
-                                  <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline" style={{ padding: '7px', fontSize: 10, minHeight: 32 }}>
-                                    {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {o.status === 'rejected' && (
-                              <p style={{ fontSize: 10, letterSpacing: 1, color: '#a07070', textAlign: 'center' }}>
-                                {isAr ? 'مرفوض' : 'Rejected'}
-                              </p>
-                            )}
+                            {/* Pending offer action buttons */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                              <button onClick={() => acceptOffer(o.id, o.supplier_id, r.id)} className="btn-primary"
+                                style={{ padding: '8px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
+                                {isAr ? 'قبول' : lang === 'zh' ? '接受报价' : 'Accept'}
+                              </button>
+                              <button onClick={() => rejectOffer(o.id, o.supplier_id, r.id)}
+                                style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '7px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
+                                {isAr ? 'رفض' : lang === 'zh' ? '拒绝' : 'Reject'}
+                              </button>
+                              <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline"
+                                style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
+                                {isAr ? 'ملف المورد' : lang === 'zh' ? '供应商主页' : 'Supplier Profile'}
+                              </button>
+                              <button onClick={() => nav(`/chat/${o.supplier_id}`)} className="btn-outline"
+                                style={{ padding: '7px', fontSize: 11, letterSpacing: 1, width: '100%', minHeight: 34 }}>
+                                {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
+                              </button>
+                            </div>
                           </div>
                           );
                         })}
@@ -1352,14 +1583,124 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     </div>
                   )}
 
+                  {/* ── Status-driven action area (accepted offer) ── */}
+                  {!managed && acceptedOffer && (() => {
+                    const o = acceptedOffer;
+                    const subtotal  = (o.price || 0) * (Number(r.quantity) || 1);
+                    const shipping  = parseFloat(o.shipping_cost) || 0;
+                    const total     = subtotal + shipping;
+                    const pct       = r.payment_pct > 0 ? r.payment_pct : 30;
+                    const firstAmt  = r.amount > 0 ? r.amount : parseFloat((total * pct / 100).toFixed(2));
+                    const secondAmt = r.payment_second > 0 ? r.payment_second : parseFloat((total * (100 - pct) / 100).toFixed(2));
+                    const currency  = o.currency || 'USD';
+
+                    const btnPrimary = { padding: '11px 18px', fontSize: 13, minHeight: 44, width: '100%', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.5 };
+                    const btnOutline = { ...btnPrimary, background: 'none', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: 'var(--radius-md)' };
+                    const btnDanger  = { ...btnPrimary, background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', cursor: 'pointer', borderRadius: 'var(--radius-md)' };
+
+                    return (
+                      <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 0', borderTop: '1px solid var(--border-subtle)' }}>
+
+                        {r.status === 'closed' && (
+                          <>
+                            <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', marginBottom: 4 }}>
+                              {isAr ? 'في انتظار تأكيد المورد' : 'Waiting for supplier confirmation'}
+                            </p>
+                            <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={btnOutline}>
+                              {isAr ? 'تواصل مع المورد' : 'Chat with Supplier'}
+                            </button>
+                            <button onClick={() => setCancelConfirmReq(r)} style={btnDanger}>
+                              {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
+                            </button>
+                          </>
+                        )}
+
+                        {r.status === 'supplier_confirmed' && (
+                          <>
+                            <button onClick={() => nav('/checkout', { state: { offer: o, request: r } })} className="btn-primary" style={btnPrimary}>
+                              {isAr ? `ادفع الدفعة الأولى — ${firstAmt} ${currency}` : `Pay 1st Installment — ${firstAmt} ${currency}`}
+                            </button>
+                            <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={btnOutline}>
+                              {isAr ? 'تواصل مع المورد' : 'Chat with Supplier'}
+                            </button>
+                            <button onClick={() => setCancelConfirmReq(r)} style={btnDanger}>
+                              {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
+                            </button>
+                          </>
+                        )}
+
+                        {r.status === 'paid' && (
+                          <>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', padding: '4px 0' }}>
+                              {isAr ? 'في انتظار الإنتاج — المورد يجهّز شحنتك' : 'Awaiting production — supplier is preparing your order'}
+                            </p>
+                            <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={btnOutline}>
+                              {isAr ? 'تواصل مع المورد' : 'Chat with Supplier'}
+                            </button>
+                          </>
+                        )}
+
+                        {r.status === 'ready_to_ship' && secondAmt > 0 && (
+                          <>
+                            <button onClick={() => nav('/checkout', { state: { offer: o, request: r, isSecondPayment: true } })} className="btn-primary" style={btnPrimary}>
+                              {isAr ? `ادفع الدفعة الثانية — ${secondAmt} ${currency}` : `Pay 2nd Installment — ${secondAmt} ${currency}`}
+                            </button>
+                            <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={btnOutline}>
+                              {isAr ? 'تواصل مع المورد' : 'Chat with Supplier'}
+                            </button>
+                          </>
+                        )}
+
+                        {r.status === 'shipping' && (
+                          <>
+                            {secondAmt > 0 && (
+                              <button onClick={() => nav('/checkout', { state: { offer: o, request: r, isSecondPayment: true } })} className="btn-primary" style={btnPrimary}>
+                                {isAr ? `ادفع الدفعة الثانية — ${secondAmt} ${currency}` : `Pay 2nd Installment — ${secondAmt} ${currency}`}
+                              </button>
+                            )}
+                            <button onClick={async () => { await sb.from('requests').update({ status: 'arrived', shipping_status: 'arrived' }).eq('id', r.id); loadMyRequests(); }} style={btnOutline}>
+                              {isAr ? 'استلمت الشحنة' : 'Shipment Received'}
+                            </button>
+                            <button onClick={() => nav(`/chat/${o.supplier_id}`)} style={btnOutline}>
+                              {isAr ? 'تواصل مع المورد' : 'Chat with Supplier'}
+                            </button>
+                          </>
+                        )}
+
+                        {r.status === 'arrived' && (
+                          <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-primary"
+                            style={{ ...btnPrimary, background: 'rgba(58,122,82,0.9)', borderColor: 'transparent' }}>
+                            {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
+                          </button>
+                        )}
+
+                        {r.status === 'delivered' && (
+                          <>
+                            <p style={{ fontSize: 12, color: '#5a9a72', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                              {isAr ? 'تم التسليم ✓' : 'Delivered ✓'}
+                            </p>
+                            <button onClick={() => setReviewModal({ supplierId: o.supplier_id, requestId: r.id, supplierName: o.profiles?.company_name || '' })}
+                              style={btnOutline}>
+                              {isAr ? 'قيّم المورد' : 'Rate Supplier'}
+                            </button>
+                            <button onClick={() => nav(`/supplier/${o.supplier_id}`)} style={btnOutline}>
+                              {isAr ? 'ملف المورد' : 'Supplier Profile'}
+                            </button>
+                          </>
+                        )}
+
+                      </div>
+                    );
+                  })()}
+
                   {!managed && r.offers.length === 0 && (
-                    <p style={{ color: 'var(--text-disabled)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    <p style={{ color: 'var(--text-disabled)', fontSize: 12, marginTop: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {isAr ? 'لا توجد عروض بعد' : 'No offers yet'}
                     </p>
                   )}
                 </div>
               );
-              })}
+              })()}
             </div>
           )}
 
@@ -1570,9 +1911,19 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           {activeTab === 'messages' && (
             <div style={section}>
               <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
-              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 20, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
                 {isAr ? 'الرسائل' : 'Messages'}
               </h2>
+
+              <TopSubTabs
+                isAr={isAr}
+                active={msgSubFilter}
+                onSelect={setMsgSubFilter}
+                tabs={[
+                  { id: 'all',    label: isAr ? 'الكل'        : 'All'    },
+                  { id: 'unread', label: isAr ? 'غير مقروءة' : 'Unread', badge: inbox.filter(m => !m.is_read).length || null },
+                ]}
+              />
 
               {inbox.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border-subtle)' }}>
@@ -1580,7 +1931,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     {isAr ? 'ما عندك رسائل بعد' : 'No messages yet'}
                   </p>
                 </div>
-              ) : inbox.map((m, idx) => {
+              ) : inbox.filter(m => msgSubFilter === 'unread' ? !m.is_read : true).map((m, idx) => {
                 const senderName = m.profiles?.company_name || m.profiles?.full_name || '—';
                 return (
                   <div key={m.id} onClick={() => nav(`/chat/${m.sender_id}`)} style={{
@@ -1858,6 +2209,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           </div>
         </div>
       )}
+
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={(tab) => { setActiveTab(tab); setMoreOpen(false); }}
+        nav={nav}
+        isAr={isAr}
+        stats={stats}
+        moreOpen={moreOpen}
+        setMoreOpen={setMoreOpen}
+      />
 
       <Footer lang={lang} />
     </div>

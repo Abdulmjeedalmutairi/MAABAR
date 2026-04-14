@@ -2856,3 +2856,45 @@ input:-webkit-autofill:active {
     width: 100%;
   }
 }
+
+/* ── Dashboard responsive layout ─────────── */
+.db-bottom-nav {
+  display: none;
+}
+.db-mobile-subtabs {
+  display: none;
+}
+.db-req-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .db-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--bg-raised);
+    border-top: 1px solid var(--border-subtle);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    min-height: 56px;
+    align-items: stretch;
+  }
+  .db-desktop-tabs {
+    display: none !important;
+  }
+  .db-req-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .db-mobile-subtabs {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .db-main-wrap {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
