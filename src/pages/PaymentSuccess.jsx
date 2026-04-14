@@ -306,6 +306,8 @@ export default function PaymentSuccess({ lang, user }) {
               amount_first: 0,
               amount_second: firstPaymentAmount,
               payment_pct: request.payment_pct,
+              maabar_fee: 0,
+              supplier_amount: parseFloat((firstPaymentAmount * 0.96).toFixed(2)),
               status: 'second_paid',
               moyasar_id: verifiedPayment.id,
             }).select('id,status,moyasar_id').single();
