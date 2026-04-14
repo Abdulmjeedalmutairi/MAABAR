@@ -1,6 +1,6 @@
 export function getMoyasarPublishableKey() {
   // Get publishable key from environment variable
-  return process.env.REACT_APP_MOYASAR_PUBLISHABLE_KEY || '';
+  return process.env.REACT_APP_MOYASAR_PUBLISHABLE_KEY || 'pk_test_gYDMsvJ8sAetQWtBXfzGPMz6B1kiu38TJYTJu5Rn';
 }
 
 export function isMoyasarConfigured(publishableKey) {
