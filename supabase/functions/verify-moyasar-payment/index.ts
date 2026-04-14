@@ -12,7 +12,7 @@ function corsHeaders(req: Request) {
   };
 }
 
-const MOYASAR_SECRET_KEY = Deno.env.get('APP_MOYASAR_SECRET_KEY') || Deno.env.get('MOYASAR_SECRET_KEY') || '';
+const MOYASAR_SECRET_KEY = Deno.env.get('APP_MOYASAR_SECRET_KEY') || Deno.env.get('MOYASAR_SECRET_KEY') || Deno.env.get('Moyasar') || '';
 
 function json(body: unknown, status = 200, req: Request) {
   return new Response(JSON.stringify(body), {
