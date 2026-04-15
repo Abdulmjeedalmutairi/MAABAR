@@ -24,6 +24,10 @@ import {
 } from './lib/authRedirects';
 
 // Pages
+import ComingSoon from './pages/ComingSoon';
+import BuyerRegister from './pages/BuyerRegister';
+import BuyerWaiting from './pages/BuyerWaiting';
+import PreviewAccess from './pages/PreviewAccess';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
@@ -187,6 +191,11 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
   );
   if (!profile) return <DashboardBuyer {...sharedProps} />;
   if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
+  if (profile.role === 'buyer') {
+    const LAUNCH_DATE = new Date('2026-05-01T00:00:00+03:00');
+    if (new Date() < LAUNCH_DATE) return <BuyerWaiting {...sharedProps} />;
+    return <DashboardBuyer {...sharedProps} />;
+  }
   if (profile.role === 'supplier') {
     const supplierState = getSupplierOnboardingState(profile, user);
 
@@ -246,8 +255,11 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
 function AppContent({ lang, profile, user, sharedProps, loading, profileError, setProfileError, setLoading, loadProfile }) {
   const location = useLocation();
   const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
-  const isChromelessPage = isAuthCallbackPage;
-  const isLTRPage = isChromelessPage || location.pathname === '/supplier-access';
+  const isChromelessPage = isAuthCallbackPage
+    || location.pathname === '/'
+    || location.pathname === '/buyer'
+    || location.pathname === '/preview';
+  const isLTRPage = isAuthCallbackPage || location.pathname === '/supplier-access';
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
@@ -267,7 +279,9 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     <div dir={pageDir} className="app-shell">
       {!isChromelessPage && <Navbar {...sharedProps} />}
       <Routes>
-        <Route path="/"               element={<Home            {...sharedProps} />} />
+        <Route path="/"               element={<ComingSoon />} />
+        <Route path="/buyer"          element={<BuyerRegister   user={user} />} />
+        <Route path="/preview"        element={<PreviewAccess   {...sharedProps} />} />
         <Route path="/products"       element={<Products        {...sharedProps} />} />
         <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
         <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
