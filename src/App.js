@@ -25,6 +25,7 @@ import {
 
 // Pages
 import Home from './pages/Home';
+import ComingSoon from './pages/ComingSoon';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
@@ -246,7 +247,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
 function AppContent({ lang, profile, user, sharedProps, loading, profileError, setProfileError, setLoading, loadProfile }) {
   const location = useLocation();
   const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
-  const isChromelessPage = isAuthCallbackPage;
+  const isChromelessPage = isAuthCallbackPage || location.pathname === '/';
   const isLTRPage = isChromelessPage || location.pathname === '/supplier-access';
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
@@ -267,7 +268,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     <div dir={pageDir} className="app-shell">
       {!isChromelessPage && <Navbar {...sharedProps} />}
       <Routes>
-        <Route path="/"               element={<Home            {...sharedProps} />} />
+        <Route path="/"               element={<ComingSoon      {...sharedProps} />} />
         <Route path="/products"       element={<Products        {...sharedProps} />} />
         <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
         <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
