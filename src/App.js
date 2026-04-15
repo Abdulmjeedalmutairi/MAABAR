@@ -440,7 +440,7 @@ function App() {
       if (hasLocalLang) {
         // Trust localStorage; sync DB if it's out of date
         if (profileRow.lang !== storedLang) {
-          sb.from('profiles').update({ lang: storedLang }).eq('id', id).catch(() => {});
+          sb.from('profiles').update({ lang: storedLang }).eq('id', id).then(() => {}).catch(() => {});
         }
       } else if (profileRow.lang && ['ar', 'en', 'zh'].includes(profileRow.lang)) {
         // No localStorage value — restore from DB and persist locally
@@ -448,7 +448,7 @@ function App() {
         localStorage.setItem('maabar_lang', profileRow.lang);
       } else {
         // Neither has a value — write current UI lang to DB
-        sb.from('profiles').update({ lang }).eq('id', id).catch(() => {});
+        sb.from('profiles').update({ lang }).eq('id', id).then(() => {}).catch(() => {});
       }
       await maybeNotifyAdminOfConfirmedSupplier(profileRow, sessionUser);
       // Send trader welcome email once after email confirmation — deduplicated via ref + notifications table
