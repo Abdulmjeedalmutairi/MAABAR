@@ -30,7 +30,7 @@ const TRANSLATIONS = {
     benefits: [
       {
         title: '0% Commission',
-        desc: 'No fees on any transaction. Zero cuts for founding suppliers.',
+        desc: 'First 20 suppliers: 0% commission for 6 months.',
       },
       {
         title: 'Direct Access to Saudi Buyers',
@@ -76,7 +76,7 @@ const TRANSLATIONS = {
     benefits: [
       {
         title: '0% 佣金',
-        desc: '创始供应商享受 0% 佣金，永久有效。',
+        desc: '前20名供应商：6个月内享受0%佣金。',
       },
       {
         title: '直接对接沙特买家',
