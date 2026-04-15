@@ -8,6 +8,7 @@ export default function Inbox({ lang, user }) {
   const nav = useNavigate();
   const [convs, setConvs] = useState([]);
   const isAr = lang === 'ar';
+  const isZh = lang === 'zh';
 
   useEffect(() => {
     const navEl = document.querySelector('nav');
@@ -60,9 +61,9 @@ export default function Inbox({ lang, user }) {
   const fmtDate = (d) => {
     if (!d) return '';
     const diff = Math.floor((Date.now() - new Date(d)) / 1000);
-    if (diff < 3600) return isAr ? Math.floor(diff / 60) + ' د' : Math.floor(diff / 60) + 'm';
-    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' س' : Math.floor(diff / 3600) + 'h';
-    return isAr ? Math.floor(diff / 86400) + ' ي' : Math.floor(diff / 86400) + 'd';
+    if (diff < 3600) return isAr ? Math.floor(diff / 60) + ' د' : isZh ? Math.floor(diff / 60) + '分钟前' : Math.floor(diff / 60) + 'm';
+    if (diff < 86400) return isAr ? Math.floor(diff / 3600) + ' س' : isZh ? Math.floor(diff / 3600) + '小时前' : Math.floor(diff / 3600) + 'h';
+    return isAr ? Math.floor(diff / 86400) + ' ي' : isZh ? Math.floor(diff / 86400) + '天前' : Math.floor(diff / 86400) + 'd';
   };
 
   return (
@@ -82,13 +83,13 @@ export default function Inbox({ lang, user }) {
         }}
           onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}>
-          {isAr ? 'لوحتي →' : '← Dashboard'}
+          {isAr ? 'لوحتي →' : isZh ? '← 控制台' : '← Dashboard'}
         </button>
         <p style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 16, fontFamily: 'var(--font-body)' }}>
-          {isAr ? 'مَعبر · الرسائل' : 'Maabar · Messages'}
+          {isAr ? 'مَعبر · الرسائل' : isZh ? 'Maabar · 消息' : 'Maabar · Messages'}
         </p>
         <h1 style={{ fontSize: 'clamp(34px, 10vw, 64px)', fontWeight: 300, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1 }}>
-          {isAr ? 'الرسائل' : 'Messages'}
+          {isAr ? 'الرسائل' : isZh ? '消息' : 'Messages'}
         </h1>
       </div>
 
@@ -98,7 +99,7 @@ export default function Inbox({ lang, user }) {
           {convs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: 13, letterSpacing: 1 }}>
-                {isAr ? 'لا توجد رسائل بعد' : 'No messages yet'}
+                {isAr ? 'لا توجد رسائل بعد' : isZh ? '暂无消息' : 'No messages yet'}
               </p>
             </div>
           ) : convs.map((c, idx) => {

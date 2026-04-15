@@ -59,7 +59,6 @@ import useMobileViewport from './hooks/useMobileViewport';
 
 function getLocaleDisplayCurrency(lang) {
   if (lang === 'ar') return 'SAR';
-  if (lang === 'zh') return 'CNY';
   return 'USD';
 }
 
@@ -97,9 +96,9 @@ function SupplierVerificationLocked({ lang }) {
           fontSize: lang === 'ar' ? 30 : 32,
           fontWeight: 300,
           lineHeight: 1.15,
-          fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)',
+          fontFamily: lang === 'ar' ? 'var(--font-ar)' : lang === 'zh' ? 'var(--font-sans)' : 'var(--font-sans)',
         }}>
-          Complete verification to unlock the full supplier experience on Maabar
+          {lang === 'zh' ? '请先完成认证以解锁完整供应商体验' : lang === 'ar' ? 'أكمل التحقق لفتح تجربة المورد الكاملة على مَعبر' : 'Complete verification to unlock the full supplier experience on Maabar'}
         </h1>
         <p style={{
           margin: 0,
@@ -163,8 +162,8 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
       alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg-base)', gap: 16, padding: 24,
     }}>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-ar)', textAlign: 'center', lineHeight: 1.8 }}>
-        فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.
+      <p style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', textAlign: 'center', lineHeight: 1.8 }}>
+        {lang === 'zh' ? '账户数据加载失败，请检查网络后重试。' : lang === 'en' ? 'Failed to load account data. Check your connection and try again.' : 'فشل تحميل بيانات الحساب. تحقق من اتصالك وحاول مجدداً.'}
       </p>
       <button
         onClick={() => { setProfileError(false); setLoading(true); loadProfile(user?.id, 1, user); }}
@@ -173,7 +172,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
           border: 'none', padding: '12px 28px', borderRadius: 6,
           fontSize: 13, cursor: 'pointer', fontWeight: 500,
         }}>
-        إعادة المحاولة
+        {lang === 'zh' ? '重试' : lang === 'en' ? 'Retry' : 'إعادة المحاولة'}
       </button>
       <button
         onClick={() => sb.auth.signOut()}
@@ -182,7 +181,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
           border: '1px solid var(--border-default)', padding: '10px 24px', borderRadius: 6,
           fontSize: 12, cursor: 'pointer',
         }}>
-        تسجيل الخروج
+        {lang === 'zh' ? '退出登录' : lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
       </button>
     </div>
   );
@@ -198,18 +197,19 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
           alignItems: 'center', justifyContent: 'center',
           background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
         }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
-            نأسف، لم يتم قبول حسابك.
+          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.8 }}>
+            {lang === 'zh' ? '很遗憾，您的账户申请未能通过。' : lang === 'en' ? 'Unfortunately, your supplier account was not approved.' : 'نأسف، لم يتم قبول حسابك.'}
           </p>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)' }}>
-            للاستفسار تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {lang === 'zh' ? '如有疑问，请联系我们：' : lang === 'en' ? 'For inquiries, contact us at: ' : 'للاستفسار تواصل معنا على '}
+            <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
           </p>
           <button onClick={() => sb.auth.signOut()} style={{
             background: 'none', color: 'var(--text-disabled)',
             border: '1px solid var(--border-default)', padding: '10px 24px',
             borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
           }}>
-            تسجيل الخروج
+            {lang === 'zh' ? '退出登录' : lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
           </button>
         </div>
       );
@@ -221,18 +221,19 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
           alignItems: 'center', justifyContent: 'center',
           background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
         }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: 'var(--font-ar)', lineHeight: 1.8 }}>
-            حساب المورد متوقف مؤقتاً.
+          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.8 }}>
+            {lang === 'zh' ? '供应商账户已被暂停。' : lang === 'en' ? 'Your supplier account has been temporarily suspended.' : 'حساب المورد متوقف مؤقتاً.'}
           </p>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: 'var(--font-ar)', maxWidth: 460, lineHeight: 1.9 }}>
-            إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', maxWidth: 460, lineHeight: 1.9 }}>
+            {lang === 'zh' ? '如需说明或重新激活，请通过您注册时使用的邮箱联系我们：' : lang === 'en' ? 'For clarification or reactivation, contact us at: ' : 'إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على '}
+            <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
           </p>
           <button onClick={() => sb.auth.signOut()} style={{
             background: 'none', color: 'var(--text-disabled)',
             border: '1px solid var(--border-default)', padding: '10px 24px',
             borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
           }}>
-            تسجيل الخروج
+            {lang === 'zh' ? '退出登录' : lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
           </button>
         </div>
       );

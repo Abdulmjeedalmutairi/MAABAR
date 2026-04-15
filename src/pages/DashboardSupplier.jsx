@@ -2258,7 +2258,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ display: 'flex', gap: 16, color: 'var(--text-disabled)', fontSize: 12, flexWrap: 'wrap' }}>
                         <span>{r.profiles?.full_name || r.profiles?.company_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader')}</span>
                         <span>{r.quantity || '—'}</span>
-                        {r.description && <span>{r.description.substring(0, 55)}…</span>}
+                        {(() => {
+                          const desc = lang === 'zh'
+                            ? (r.description_zh || r.description_en || r.description_ar || r.description)
+                            : lang === 'en'
+                              ? (r.description_en || r.description_ar || r.description)
+                              : (r.description_ar || r.description);
+                          return desc ? <span>{desc.substring(0, 55)}…</span> : null;
+                        })()}
                       </div>
                     </div>
                     <button className="btn-outline" onClick={() => setSelectedRequest(r)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
@@ -2273,7 +2280,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     <div style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderTop: 'none', padding: '18px 22px', marginBottom: 10, borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }}>
                       {(r.budget_per_unit || r.payment_plan || r.sample_requirement) && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-                          {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${r.budget_per_unit} SAR` : lang === 'zh' ? `预算参考：${r.budget_per_unit} SAR` : `Budget hint: ${r.budget_per_unit} SAR`}</span>}
+                          {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${r.budget_per_unit} SAR` : lang === 'zh' ? `预算参考：${r.budget_per_unit} 沙特里亚尔（SAR）` : `Budget hint: ${r.budget_per_unit} SAR (Saudi Riyal)`}</span>}
                           {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}% 定金，${100 - r.payment_plan}% 发货前` : `Payment plan: ${r.payment_plan}%`}</span>}
                           {r.sample_requirement && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `العينة: ${r.sample_requirement === 'required' ? 'إلزامية' : r.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة'}` : lang === 'zh' ? `样品：${r.sample_requirement === 'required' ? '必须提供' : r.sample_requirement === 'preferred' ? '建议提供' : '无需样品'}` : `Sample: ${r.sample_requirement === 'required' ? 'Required' : r.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed'}`}</span>}
                         </div>
@@ -3647,7 +3654,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           [isAr ? 'التاجر' : lang === 'zh' ? '采购商' : 'Buyer', selectedRequest.profiles?.full_name || selectedRequest.profiles?.company_name || '—'],
           [isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity', selectedRequest.quantity || '—'],
           [isAr ? 'التصنيف' : lang === 'zh' ? '分类' : 'Category', cats.find(c => c.val === selectedRequest.category)?.label || selectedRequest.category || '—'],
-          [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit ? `${selectedRequest.budget_per_unit} SAR` : '—'],
+          [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit ? (lang === 'zh' ? `${selectedRequest.budget_per_unit} 沙特里亚尔（SAR）` : lang === 'en' ? `${selectedRequest.budget_per_unit} SAR (Saudi Riyal)` : `${selectedRequest.budget_per_unit} SAR`) : '—'],
           [isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan', selectedRequest.payment_plan ? (lang === 'zh' ? `${selectedRequest.payment_plan}% 定金，${100 - selectedRequest.payment_plan}% 发货前` : `${selectedRequest.payment_plan}%`) : '—'],
           [isAr ? 'العينة' : lang === 'zh' ? '样品' : 'Sample', selectedRequest.sample_requirement ? (isAr ? (selectedRequest.sample_requirement === 'required' ? 'إلزامية' : selectedRequest.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة') : lang === 'zh' ? (selectedRequest.sample_requirement === 'required' ? '必须提供' : selectedRequest.sample_requirement === 'preferred' ? '建议提供' : '无需样品') : (selectedRequest.sample_requirement === 'required' ? 'Required' : selectedRequest.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed')) : '—'],
         ].map(([label, value]) => (

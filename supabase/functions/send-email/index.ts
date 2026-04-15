@@ -30,6 +30,7 @@ function wrap(content, options: any = {}) {
   const irStyle = 'padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.07);font-family:Arial,sans-serif;';
   const ikStyle = 'display:inline-block;min-width:130px;font-size:12px;color:rgba(0,0,0,0.45);vertical-align:top;';
   const ivStyle = 'display:inline-block;font-size:12px;color:rgba(0,0,0,0.88);font-weight:600;vertical-align:top;';
+  const unsubText = locale.lang === 'zh' ? '取消订阅' : locale.lang === 'en' ? 'Unsubscribe' : 'إلغاء الاشتراك';
   const bwStyle = `margin-top:24px;text-align:${locale.align};`;
   const btStyle = 'display:inline-block;background-color:#1a1a1a;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:600;border-radius:10px;';
 
@@ -93,7 +94,7 @@ ${rendered}
 <p style="margin:0;">
 <a href="https://maabar.io" style="color:rgba(0,0,0,0.45);text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
 <a href="mailto:info@maabar.io" style="color:rgba(0,0,0,0.45);text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
-<a href="https://maabar.io/unsubscribe" style="color:rgba(0,0,0,0.25);text-decoration:none;">إلغاء الاشتراك</a>
+<a href="https://maabar.io/unsubscribe" style="color:rgba(0,0,0,0.25);text-decoration:none;">${unsubText}</a>
 </p>
 </td>
 </tr>
@@ -337,8 +338,8 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
   new_sample: (d) => {
     const lang = d.lang || 'en';
     const t = ({
-      zh: { subject: `新样品申请 — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: '收到新样品申请', body: `买方申请了 ${d.quantity || '-'} 件「${d.productName || ''}」样品，预估总价：${d.totalPrice || '-'} SAR。请登录审核申请。`, cta: '审核申请 →' },
-      en: { subject: `New sample request — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: 'You received a sample request', body: `A buyer requested ${d.quantity || '-'} sample(s) of "${d.productName || ''}". Estimated total: ${d.totalPrice || '-'} SAR. Log in to review.`, cta: 'Review request →' },
+      zh: { subject: `新样品申请 — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: '收到新样品申请', body: `买方申请了 ${d.quantity || '-'} 件「${d.productName || ''}」样品，预估总价：${d.totalPrice || '-'} 沙特里亚尔（SAR）。请登录审核申请。`, cta: '审核申请 →' },
+      en: { subject: `New sample request — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: 'You received a sample request', body: `A buyer requested ${d.quantity || '-'} sample(s) of "${d.productName || ''}". Estimated total: ${d.totalPrice || '-'} SAR (Saudi Riyal). Log in to review.`, cta: 'Review request →' },
     } as any)[lang] || { subject: `New sample request — ${d.productName || ''}`, eyebrow: 'New Sample Request', title: 'New sample request', body: `Sample request for "${d.productName || ''}".`, cta: 'Review request →' };
     return { subject: t.subject, html: wrap(`
 <div class="bd">
@@ -485,8 +486,8 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
   payout_initiated: (d) => {
     const lang = d.lang || 'en';
     const t = ({
-      zh: { subject: '收货已确认 — 款项即将转账', eyebrow: 'Payout Initiated', title: '款项即将转账', body: `买方已确认收货，您的 ${d.amount || '-'} SAR 款项将在 24 小时内通过已登记的付款方式转账。`, cta: '查看控制台 →' },
-      en: { subject: 'Delivery confirmed — payout on the way', eyebrow: 'Payout Initiated', title: 'Your payout is on the way', body: `The buyer confirmed delivery. Your payout of ${d.amount || '-'} SAR will be transferred within 24 hours via your registered payment method.`, cta: 'View dashboard →' },
+      zh: { subject: '收货已确认 — 款项即将转账', eyebrow: 'Payout Initiated', title: '款项即将转账', body: `买方已确认收货，您的 ${d.amount || '-'} 沙特里亚尔（SAR）款项将在 24 小时内通过已登记的付款方式转账。`, cta: '查看控制台 →' },
+      en: { subject: 'Delivery confirmed — payout on the way', eyebrow: 'Payout Initiated', title: 'Your payout is on the way', body: `The buyer confirmed delivery. Your payout of ${d.amount || '-'} SAR (Saudi Riyal) will be transferred within 24 hours via your registered payment method.`, cta: 'View dashboard →' },
     } as any)[lang] || { subject: 'Payout initiated', eyebrow: 'Payout Initiated', title: 'Payout on the way', body: `Your payout of ${d.amount || '-'} SAR will be transferred within 24 hours.`, cta: 'View dashboard →' };
     return { subject: t.subject, html: wrap(`
 <div class="bd">
