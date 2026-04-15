@@ -1,41 +1,33 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
-import Navbar from '../components/Navbar';
-import DashboardBuyer from './DashboardBuyer';
 
+const PASSWORD    = 'Abdul@1234';
 const STORAGE_KEY = 'maabar_preview';
-const PASSWORD = 'Abdul@1234';
 
-export default function PreviewAccess(sharedProps) {
-  const [unlocked, setUnlocked] = useState(
-    () => sessionStorage.getItem(STORAGE_KEY) === '1'
-  );
-  const [input, setInput] = useState('');
-  const [error, setError] = useState(false);
+export default function PreviewAccess() {
+  const navigate = useNavigate();
+  const [input, setInput]   = useState('');
+  const [error, setError]   = useState(false);
 
   useEffect(() => {
     document.title = 'Preview | Maabar';
-  }, []);
+    // Already unlocked in this session — go straight to dashboard.
+    if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input === PASSWORD) {
       sessionStorage.setItem(STORAGE_KEY, '1');
-      setUnlocked(true);
+      navigate('/dashboard', { replace: true });
     } else {
       setError(true);
       setInput('');
     }
   };
-
-  if (unlocked) {
-    return (
-      <>
-        <Navbar {...sharedProps} />
-        <DashboardBuyer {...sharedProps} />
-      </>
-    );
-  }
 
   return (
     <div style={{
@@ -98,7 +90,13 @@ export default function PreviewAccess(sharedProps) {
         />
 
         {error && (
-          <p style={{ margin: 0, fontSize: 12, color: '#e53e3e', textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
+          <p style={{
+            margin: 0,
+            fontSize: 12,
+            color: '#e53e3e',
+            textAlign: 'center',
+            fontFamily: 'var(--font-sans)',
+          }}>
             Incorrect password
           </p>
         )}

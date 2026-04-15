@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { sb } from '../supabase';
-import BrandLogo from '../components/BrandLogo';
 
-const LAUNCH = new Date('2026-05-01T00:00:00+03:00').getTime();
-const FOUNDER_LIMIT = 20;
+const LAUNCH      = new Date('2026-05-01T00:00:00+03:00').getTime();
+const FOUNDER_CAP = 20;
 
+// ─── Fonts ──────────────────────────────────────────────────────────────────
+const AR  = "'Tajawal', sans-serif";       // all Arabic text
+const EN  = "'Cormorant Garamond', Georgia, serif"; // English + numbers
+
+// ─── Colours ────────────────────────────────────────────────────────────────
+const BG        = '#f5f3ef';
+const INK       = '#1a1814';
+const MUTED     = '#6b6560';
+const FAINT     = '#b0ab9e';
+const BORDER    = '#e8e5de';
+const GREEN     = '#27725a';
+const AMBER_INK = '#8B6914';
+
+// ─── Countdown hook ─────────────────────────────────────────────────────────
 function useCountdown() {
   const [diff, setDiff] = useState(() => Math.max(0, LAUNCH - Date.now()));
   useEffect(() => {
@@ -20,120 +33,147 @@ function useCountdown() {
   };
 }
 
-const T = {
-  ar: {
-    founderBadge: 'دائرة المؤسسين · Founding Circle',
-    founderTitle: 'مبروك، أنت من المؤسسين',
-    founderSub: 'أنت من أوائل 20 تاجر انضموا إلى مَعبر. هذه المزايا محجوزة لك بشكل دائم.',
-    perk1: 'شارة المؤسس — دائمة على حسابك',
-    perk2: 'عمولة 0% للأبد',
-    perk3: 'خدمة الطلب المُدار مجاناً لأول 3 طلبات',
-    regularTitle: 'انتهت مقاعد المؤسسين',
-    regularSub: 'مقاعد دائرة المؤسسين (أول 20 تاجر) قد امتلأت. لا يزال بإمكانك الاستفادة من المزايا التالية عند الإطلاق:',
-    benefit1: 'عمولة 0% دائماً',
-    benefit2: 'خدمة الطلب المُدار مجاناً لأول طلب',
-    countdown: 'الإطلاق في',
-    days: 'أيام',
-    hours: 'ساعات',
-    min: 'دقيقة',
-    sec: 'ثانية',
-    signOut: 'تسجيل الخروج',
-  },
-  en: {
-    founderBadge: 'Founding Circle · دائرة المؤسسين',
-    founderTitle: 'Congratulations — you are a founder',
-    founderSub: 'You are among the first 20 traders to join Maabar. These benefits are permanently reserved for you.',
-    perk1: 'Founding badge — permanent on your account',
-    perk2: '0% commission forever',
-    perk3: 'Managed Order Service free for your first 3 orders',
-    regularTitle: 'Founding spots are full',
-    regularSub: 'The Founding Circle (first 20 traders) is closed. You still have access to the following benefits at launch:',
-    benefit1: '0% commission always',
-    benefit2: 'Managed Order Service free for your first order',
-    countdown: 'Launching in',
-    days: 'Days',
-    hours: 'Hours',
-    min: 'Min',
-    sec: 'Sec',
-    signOut: 'Sign Out',
-  },
-  zh: {
-    founderBadge: '创始圈 · Founding Circle',
-    founderTitle: '恭喜，您是创始会员',
-    founderSub: '您是最早加入迈巴尔的20位商户之一，以下权益将永久保留。',
-    perk1: '创始徽章 — 永久显示在您的账户',
-    perk2: '永久0%佣金',
-    perk3: '前3笔订单免费享受托管订单服务',
-    regularTitle: '创始名额已满',
-    regularSub: '创始圈（前20位）名额已关闭。您仍可在正式上线时享受以下权益：',
-    benefit1: '永久0%佣金',
-    benefit2: '首笔订单免费托管订单服务',
-    countdown: '距正式上线',
-    days: '天',
-    hours: '小时',
-    min: '分',
-    sec: '秒',
-    signOut: '退出登录',
-  },
-};
-
-function CountdownRow({ d, h, m, s, t, isRtl }) {
-  const items = [
-    { v: d, l: t.days },
-    { v: h, l: t.hours },
-    { v: m, l: t.min },
-    { v: s, l: t.sec },
-  ];
+// ─── Section label with extending line ──────────────────────────────────────
+function SectionLabel({ text }) {
   return (
-    <div>
-      <p style={{
-        margin: '0 0 14px',
-        fontSize: 11,
-        letterSpacing: '0.12em',
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{
+        fontFamily: EN,
+        fontSize: 10,
+        letterSpacing: '1.2px',
         textTransform: 'uppercase',
-        color: 'var(--text-tertiary)',
-        fontFamily: 'var(--font-sans)',
+        color: FAINT,
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
       }}>
-        {t.countdown}
-      </p>
-      <div style={{ display: 'flex', gap: 12 }}>
-        {items.map(({ v, l }) => (
-          <div key={l} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 64,
-              height: 64,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 12,
-              fontSize: 26,
-              fontWeight: 300,
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--text-primary)',
-              fontVariantNumeric: 'tabular-nums',
-              background: '#FFFFFF',
-            }}>
-              {String(v).padStart(2, '0')}
-            </div>
-            <span style={{
-              fontSize: 9,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--text-tertiary)',
-              fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-            }}>
-              {l}
-            </span>
-          </div>
-        ))}
-      </div>
+        {text}
+      </span>
+      <div style={{ flex: 1, height: 1, background: BORDER }} />
     </div>
   );
 }
 
-export default function BuyerWaiting({ user, profile, lang }) {
-  const [isFounder, setIsFounder] = useState(null); // null = loading
+// ─── Small dot ──────────────────────────────────────────────────────────────
+function Dot({ color }) {
+  return (
+    <div style={{
+      width: 5,
+      height: 5,
+      borderRadius: '50%',
+      background: color,
+      flexShrink: 0,
+    }} />
+  );
+}
+
+// ─── Countdown row ──────────────────────────────────────────────────────────
+function Countdown({ d, h, m, s }) {
+  const boxes = [
+    { v: d, l: 'DAYS' },
+    { v: h, l: 'HRS'  },
+    { v: m, l: 'MIN'  },
+    { v: s, l: 'SEC'  },
+  ];
+  return (
+    <div style={{ direction: 'ltr', display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+      {boxes.map(({ v, l }, i) => (
+        <React.Fragment key={l}>
+          {i > 0 && (
+            <span style={{
+              fontFamily: EN,
+              fontSize: 26,
+              fontWeight: 300,
+              color: '#d4cfc6',
+              lineHeight: '48px',
+              userSelect: 'none',
+            }}>
+              :
+            </span>
+          )}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <div style={{
+              background: '#faf9f7',
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              padding: 8,
+              minWidth: 52,
+              textAlign: 'center',
+            }}>
+              <span style={{
+                fontFamily: EN,
+                fontSize: 34,
+                fontWeight: 300,
+                color: INK,
+                fontVariantNumeric: 'lining-nums',
+                lineHeight: 1,
+                display: 'block',
+              }}>
+                {String(v).padStart(2, '0')}
+              </span>
+            </div>
+            <span style={{
+              fontFamily: EN,
+              fontSize: 9,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              color: FAINT,
+            }}>
+              {l}
+            </span>
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+// ─── Perk row (founder perks box) ───────────────────────────────────────────
+// boldText is the substring to bold; rest is the remainder of the sentence.
+function PerkRow({ boldNum, boldAr, rest }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ paddingTop: 5, flexShrink: 0 }}>
+        <Dot color={GREEN} />
+      </div>
+      <p style={{ margin: 0, fontSize: 13, color: MUTED, fontFamily: AR, letterSpacing: 0, lineHeight: 1.7 }}>
+        {boldNum && (
+          <span style={{ fontWeight: 700, color: INK, fontFamily: EN, fontVariantNumeric: 'lining-nums' }}>
+            {boldNum}
+          </span>
+        )}
+        {boldAr && (
+          <span style={{ fontWeight: 700, color: INK, fontFamily: AR, letterSpacing: 0 }}>
+            {boldAr}
+          </span>
+        )}
+        {rest && <span> {rest}</span>}
+      </p>
+    </div>
+  );
+}
+
+// ─── Simple perk row (regular state) ────────────────────────────────────────
+function SimplePerkRow({ text }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ paddingTop: 5, flexShrink: 0 }}>
+        <Dot color={GREEN} />
+      </div>
+      <p style={{ margin: 0, fontSize: 13, color: MUTED, fontFamily: AR, letterSpacing: 0, lineHeight: 1.7 }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+export default function BuyerWaiting({ user }) {
+  const [isFounder, setIsFounder] = useState(null);
   const { d, h, m, s } = useCountdown();
 
   useEffect(() => {
@@ -142,229 +182,282 @@ export default function BuyerWaiting({ user, profile, lang }) {
       .select('id')
       .eq('role', 'buyer')
       .order('created_at', { ascending: true })
-      .limit(FOUNDER_LIMIT)
+      .limit(FOUNDER_CAP)
       .then(({ data }) => {
         setIsFounder(data ? data.some(r => r.id === user.id) : false);
       })
       .catch(() => setIsFounder(false));
   }, [user?.id]);
 
-  // If past launch date, render nothing — DashboardBuyer shows instead.
+  // After launch, render nothing so DashboardBuyer shows.
   if (Date.now() >= LAUNCH) return null;
 
-  const t = T[lang] || T.ar;
-  const isRtl = lang === 'ar';
-
   if (isFounder === null) {
-    // Minimal loading state
     return (
       <div style={{
-        minHeight: 'var(--app-dvh)',
-        background: 'var(--bg-base)',
+        minHeight: '100dvh',
+        background: BG,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <div style={{ width: 32, height: 32, border: '2px solid var(--border-subtle)', borderTopColor: 'var(--text-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          border: `2px solid ${BORDER}`,
+          borderTopColor: INK,
+          animation: 'spin 0.8s linear infinite',
+        }} />
       </div>
     );
   }
 
   return (
     <div
-      dir={isRtl ? 'rtl' : 'ltr'}
+      dir="rtl"
       style={{
-        minHeight: 'var(--app-dvh)',
-        background: 'var(--bg-base)',
+        minHeight: '100dvh',
+        background: BG,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '40px 20px 56px',
+        padding: '48px 20px 64px',
       }}
     >
-      <div style={{ width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 28 }}>
-
-        {/* Logo */}
-        <div style={{ marginBottom: 4 }}>
-          <BrandLogo size="md" />
-        </div>
+      <div style={{ width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {isFounder ? (
-          /* ── FOUNDER STATE ── */
+          /* ══════════════════════════════════════════
+             FOUNDER STATE
+          ══════════════════════════════════════════ */
           <>
-            {/* Badge */}
-            <div style={{ display: 'inline-flex', alignSelf: 'flex-start' }}>
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '6px 14px',
-                border: '1px solid var(--text-primary)',
-                borderRadius: 100,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-sans)',
-                background: '#FFFFFF',
-              }}>
-                <span style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: 'var(--text-primary)',
-                  flexShrink: 0,
-                }} />
-                {t.founderBadge}
-              </span>
-            </div>
-
-            {/* Heading */}
-            <div>
-              <h1 style={{
-                margin: '0 0 10px',
-                fontSize: 28,
-                fontWeight: 300,
-                lineHeight: 1.2,
-                color: 'var(--text-primary)',
-                fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-              }}>
-                {t.founderTitle}
-              </h1>
-              <p style={{
-                margin: 0,
-                fontSize: 14,
-                lineHeight: 1.8,
-                color: 'var(--text-secondary)',
-                fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-              }}>
-                {t.founderSub}
-              </p>
-            </div>
-
-            {/* Perks */}
+            {/* Cream emblem card */}
             <div style={{
-              background: '#FFFFFF',
-              border: '1px solid var(--border-subtle)',
+              alignSelf: 'center',
+              background: '#ede8dc',
+              border: '1px solid #d8d0be',
               borderRadius: 18,
-              padding: '22px 20px',
+              padding: '14px 28px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 14,
+              alignItems: 'center',
+              gap: 6,
             }}>
-              {[t.perk1, t.perk2, t.perk3].map((perk, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{
-                    flexShrink: 0,
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    background: 'var(--bg-base)',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-sans)',
-                    marginTop: 1,
-                  }}>
-                    {i + 1}
-                  </div>
-                  <span style={{
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: 'var(--text-primary)',
-                    fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-                  }}>
-                    {perk}
-                  </span>
-                </div>
-              ))}
+              <span style={{
+                fontFamily: EN,
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: FAINT,
+              }}>
+                Founding Circle
+              </span>
+              <span style={{
+                fontFamily: AR,
+                fontSize: 17,
+                fontWeight: 700,
+                color: INK,
+                letterSpacing: 0,
+                lineHeight: 1.3,
+              }}>
+                نادي المؤسسين
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Dot color={GREEN} />
+                <span style={{
+                  fontFamily: AR,
+                  fontSize: 11,
+                  color: GREEN,
+                  letterSpacing: 0,
+                }}>
+                  عضو مؤسس
+                </span>
+              </div>
             </div>
 
-            {/* Countdown */}
-            <CountdownRow d={d} h={h} m={m} s={s} t={t} isRtl={isRtl} />
-          </>
-        ) : (
-          /* ── REGULAR STATE ── */
-          <>
-            {/* Heading */}
-            <div>
-              <h1 style={{
-                margin: '0 0 10px',
-                fontSize: 26,
-                fontWeight: 300,
-                lineHeight: 1.2,
-                color: 'var(--text-primary)',
-                fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-              }}>
-                {t.regularTitle}
-              </h1>
+            {/* Congrats text */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <p style={{
                 margin: 0,
-                fontSize: 14,
-                lineHeight: 1.8,
-                color: 'var(--text-secondary)',
-                fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
+                fontFamily: AR,
+                fontSize: 16,
+                fontWeight: 700,
+                color: INK,
+                letterSpacing: 0,
+                lineHeight: 1.5,
               }}>
-                {t.regularSub}
+                تهانينا — تم قبولك في نادي المؤسسين
+              </p>
+              <p style={{
+                margin: 0,
+                fontFamily: AR,
+                fontSize: 13,
+                color: MUTED,
+                letterSpacing: 0,
+                lineHeight: 1.8,
+              }}>
+                أنت من أوائل 20 تاجر في معبر. مزاياك مفعّلة فور الإطلاق.
               </p>
             </div>
 
-            {/* Benefits */}
+            {/* Section label: مزاياك */}
+            <SectionLabel text="مزاياك" />
+
+            {/* Perks box */}
             <div style={{
-              display: 'flex',
-              gap: 12,
-              flexWrap: 'wrap',
+              border: `1px solid ${BORDER}`,
+              borderRadius: 12,
+              overflow: 'hidden',
             }}>
-              {[t.benefit1, t.benefit2].map((b, i) => (
-                <div key={i} style={{
-                  flex: '1 1 200px',
-                  background: '#FFFFFF',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 14,
-                  padding: '18px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
+              {/* Header */}
+              <div style={{
+                background: INK,
+                padding: '10px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <span style={{
+                  fontFamily: AR,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  letterSpacing: 0,
                 }}>
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    background: 'var(--bg-base)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <rect x="2" y="6" width="12" height="9" rx="2" stroke="var(--text-tertiary)" strokeWidth="1.2" />
-                      <path d="M5 6V4.5a3 3 0 0 1 6 0V6" stroke="var(--text-tertiary)" strokeWidth="1.2" strokeLinecap="round" />
-                      <path d="M8 10v1.5" stroke="var(--text-tertiary)" strokeWidth="1.2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <span style={{
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    color: 'var(--text-primary)',
-                    fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-                  }}>
-                    {b}
-                  </span>
-                </div>
-              ))}
+                  نادي المؤسسين
+                </span>
+                <span style={{
+                  fontFamily: EN,
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.45)',
+                }}>
+                  تُفعَّل عند الإطلاق
+                </span>
+              </div>
+              {/* Body */}
+              <div style={{
+                background: BG,
+                padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}>
+                <PerkRow boldNum="0%" boldAr=" عمولة" rest="لمدة سنة كاملة" />
+                <PerkRow boldAr="خدمة الطلب المُدار" rest="مجاناً لـ 6 أشهر" />
+                <PerkRow boldAr="أولوية الظهور" rest="أمام الموردين" />
+              </div>
             </div>
 
+            {/* Section label: الإطلاق خلال */}
+            <SectionLabel text="الإطلاق خلال" />
+
             {/* Countdown */}
-            <CountdownRow d={d} h={h} m={m} s={s} t={t} isRtl={isRtl} />
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Countdown d={d} h={h} m={m} s={s} />
+            </div>
+          </>
+        ) : (
+          /* ══════════════════════════════════════════
+             REGULAR STATE
+          ══════════════════════════════════════════ */
+          <>
+            {/* Amber box */}
+            <div style={{
+              background: '#fdf6e3',
+              border: '1px solid rgba(139,105,20,0.2)',
+              borderRadius: 14,
+              padding: '18px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Dot color={AMBER_INK} />
+                <span style={{
+                  fontFamily: AR,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: AMBER_INK,
+                  letterSpacing: 0,
+                }}>
+                  للأسف
+                </span>
+              </div>
+              <p style={{
+                margin: 0,
+                fontFamily: AR,
+                fontSize: 15,
+                fontWeight: 700,
+                color: INK,
+                letterSpacing: 0,
+                lineHeight: 1.5,
+              }}>
+                انتهت مقاعد نادي المؤسسين
+              </p>
+              <p style={{
+                margin: 0,
+                fontFamily: AR,
+                fontSize: 13,
+                color: MUTED,
+                letterSpacing: 0,
+                lineHeight: 1.8,
+              }}>
+                الـ 20 مقعد امتلأت — لكنك سجّلت مبكراً وهذا لم يمرّ دون أن نلاحظه.
+              </p>
+            </div>
+
+            {/* Green gift box */}
+            <div style={{
+              background: '#f0f7f4',
+              border: '1px solid rgba(39,114,90,0.2)',
+              borderRadius: 14,
+              padding: '18px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Dot color={GREEN} />
+                <span style={{
+                  fontFamily: AR,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: GREEN,
+                  letterSpacing: 0,
+                }}>
+                  هديتك من معبر
+                </span>
+              </div>
+              <p style={{
+                margin: 0,
+                fontFamily: AR,
+                fontSize: 15,
+                fontWeight: 700,
+                color: INK,
+                letterSpacing: 0,
+                lineHeight: 1.5,
+              }}>
+                ما ستحصل عليه مع معبر
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                <SimplePerkRow text="0% عمولة — معبر لا يأخذ من التاجر شيئاً" />
+                <SimplePerkRow text="خدمة الطلب المُدار مجاناً لأول طلب لك" />
+              </div>
+            </div>
+
+            {/* Section label: الإطلاق خلال */}
+            <SectionLabel text="الإطلاق خلال" />
+
+            {/* Countdown */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Countdown d={d} h={h} m={m} s={s} />
+            </div>
           </>
         )}
 
         {/* Sign out */}
-        <div>
+        <div style={{ textAlign: 'center', paddingTop: 8 }}>
           <button
             onClick={() => sb.auth.signOut()}
             style={{
@@ -372,15 +465,16 @@ export default function BuyerWaiting({ user, profile, lang }) {
               border: 'none',
               padding: 0,
               fontSize: 12,
-              color: 'var(--text-disabled)',
+              color: FAINT,
               cursor: 'pointer',
-              fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
-              textDecoration: 'underline',
+              fontFamily: AR,
+              letterSpacing: 0,
             }}
           >
-            {t.signOut}
+            تسجيل الخروج
           </button>
         </div>
+
       </div>
     </div>
   );
