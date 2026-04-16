@@ -3044,3 +3044,11 @@ input:-webkit-autofill:active {
   .db-bottom-nav   { display: none !important; }
   .db-mobile-subtabs { display: none !important; }
 }
+
+/* ── Supplier profile page (/supplier/:id) ── */
+.sp-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+}

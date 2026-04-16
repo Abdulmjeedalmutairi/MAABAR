@@ -3750,6 +3750,67 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </p>
                 </div>
 
+                {/* ── Card 7: Certifications ── */}
+                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                    {isAr ? 'شهادات الجودة' : lang === 'zh' ? '质量认证' : 'Quality Certifications'}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+                    {(settings.certifications || []).map((cert, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: 8, flex: 1 }}>
+                          <input
+                            className="settings-input"
+                            placeholder={isAr ? 'اسم الشهادة (مثال: ISO 9001)' : 'Cert name (e.g. ISO 9001)'}
+                            style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }}
+                            value={cert.name || ''}
+                            onChange={e => {
+                              const updated = [...(settings.certifications || [])];
+                              updated[i] = { ...updated[i], name: e.target.value };
+                              setSettings({ ...settings, certifications: updated });
+                            }}
+                          />
+                          <input
+                            className="settings-input"
+                            placeholder={isAr ? 'الجهة المانحة' : 'Issuing body'}
+                            style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }}
+                            value={cert.issuer || ''}
+                            onChange={e => {
+                              const updated = [...(settings.certifications || [])];
+                              updated[i] = { ...updated[i], issuer: e.target.value };
+                              setSettings({ ...settings, certifications: updated });
+                            }}
+                          />
+                          <input
+                            className="settings-input"
+                            placeholder={isAr ? 'صالحة حتى' : 'Valid until'}
+                            style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }}
+                            value={cert.valid_until || ''}
+                            onChange={e => {
+                              const updated = [...(settings.certifications || [])];
+                              updated[i] = { ...updated[i], valid_until: e.target.value };
+                              setSettings({ ...settings, certifications: updated });
+                            }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const updated = (settings.certifications || []).filter((_, j) => j !== i);
+                            setSettings({ ...settings, certifications: updated });
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#b0ab9e', cursor: 'pointer', fontSize: 16, padding: '8px 4px', flexShrink: 0, lineHeight: 1 }}>
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setSettings({ ...settings, certifications: [...(settings.certifications || []), { name: '', issuer: '', valid_until: '' }] })}
+                    style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#1a1814', cursor: 'pointer', fontFamily: "'Tajawal', sans-serif", fontWeight: 600, textDecoration: 'underline' }}>
+                    {isAr ? '+ إضافة شهادة' : lang === 'zh' ? '+ 添加认证' : '+ Add certification'}
+                  </button>
+                </div>
+
                 {/* ── Save button ── */}
                 <button
                   onClick={saveSettings}

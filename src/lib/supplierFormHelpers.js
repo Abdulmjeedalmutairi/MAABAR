@@ -117,6 +117,7 @@ export function buildSettingsState(profile = {}, displayCurrency = 'USD') {
     preferred_display_currency: profile.preferred_display_currency || displayCurrency || 'USD',
     avatar_url: profile.avatar_url || '',
     factory_images: Array.isArray(profile.factory_images) ? profile.factory_images : [],
+    certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
   };
 }
 
@@ -196,6 +197,7 @@ export function buildSettingsPayload(settings = {}, companyDescription = '') {
     company_description: normalizedDescription,
     bio_en: normalizedDescription,
     preferred_display_currency: normalizeTextInput(settings.preferred_display_currency || 'USD') || 'USD',
+    certifications: Array.isArray(settings.certifications) ? settings.certifications : [],
   };
 }
 

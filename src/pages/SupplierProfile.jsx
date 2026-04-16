@@ -1,19 +1,33 @@
-import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import { buildDisplayPrice } from '../lib/displayCurrency';
-import { buildProductSpecs, getPrimaryProductImage, getProductGalleryImages } from '../lib/productMedia';
-import {
-  buildSupplierTrustSignals,
-  getSupplierMaabarId,
-  isSupplierPubliclyVisible,
-} from '../lib/supplierOnboarding';
+import { getPrimaryProductImage } from '../lib/productMedia';
+import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
+
+function SectionLabel({ label, isAr }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      <p style={{
+        fontSize: 10,
+        fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif",
+        letterSpacing: isAr ? 0 : '1.2px',
+        textTransform: 'uppercase',
+        color: '#b0ab9e',
+        margin: 0,
+        whiteSpace: 'nowrap',
+      }}>
+        {label}
+      </p>
+      <div style={{ flex: 1, height: 1, background: '#e8e5de' }} />
+    </div>
+  );
+}
 
 export default function SupplierProfile({ lang, user, displayCurrency, exchangeRates }) {
   const { id } = useParams();
@@ -21,7 +35,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const [supplier, setSupplier] = useState(null);
   const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [similarSuppliers, setSimilarSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sampleForms, setSampleForms] = useState({});
   const [sampleData, setSampleData] = useState({});
@@ -29,13 +42,13 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const [calcQty, setCalcQty] = useState('');
   const [calcProduct, setCalcProduct] = useState(null);
   const [calcResult, setCalcResult] = useState(null);
+
   const isAr = lang === 'ar';
-  const supplierTrustSignals = buildSupplierTrustSignals(supplier || {});
   const isReviewedSupplier = isSupplierPubliclyVisible(supplier?.status);
-  const supplierMaabarId = getSupplierMaabarId(supplier || {});
   const companyDescription = supplier?.company_description || supplier?.bio_en || supplier?.bio_ar || supplier?.bio_zh || '';
   const supplierLanguages = Array.isArray(supplier?.languages) ? supplier.languages : [];
   const exportMarkets = Array.isArray(supplier?.export_markets) ? supplier.export_markets : [];
+  const certifications = Array.isArray(supplier?.certifications) ? supplier.certifications : [];
 
   useEffect(() => { loadSupplier(); }, [id, user?.id]);
 
@@ -57,7 +70,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
       setSupplier(null);
       setProducts([]);
       setReviews([]);
-      setSimilarSuppliers([]);
       setLoading(false);
       return;
     }
@@ -68,17 +80,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
       sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
-
-    if (visibleSupplier.speciality) {
-      const { data: sim } = await sb.from('supplier_public_profiles')
-        .select('id,company_name,rating,reviews_count,city,country,avatar_url,status,trade_link,wechat,whatsapp,factory_images,years_experience,maabar_supplier_id,speciality,product_count')
-        .eq('speciality', visibleSupplier.speciality)
-        .neq('id', id)
-        .limit(3);
-      if (sim) setSimilarSuppliers(sim);
-    } else {
-      setSimilarSuppliers([]);
-    }
 
     setProducts(p || []);
     setReviews(r || []);
@@ -150,7 +151,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
 
   const calcPrice = () => {
     if (!calcProduct || !calcQty) return;
-    const qty   = parseFloat(calcQty);
+    const qty = parseFloat(calcQty);
     const price = calcProduct.price_from;
     setCalcResult({
       unitPrice: price,
@@ -161,7 +162,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     });
   };
 
-  // SKELETON
   if (loading) return (
     <div className="profile-wrap">
       <BrandedLoading lang={lang} tone="supplier" />
@@ -176,77 +176,111 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     </div>
   );
 
+  const detailItems = [
+    supplier.business_type ? { label: isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type } : null,
+    supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est.', value: supplier.year_established } : null,
+    (supplier.city || supplier.country) ? { label: isAr ? 'الموقع' : lang === 'zh' ? '所在地' : 'Location', value: [supplier.city, supplier.country].filter(Boolean).join(', ') } : null,
+    supplier.company_address ? { label: isAr ? 'العنوان' : lang === 'zh' ? '地址' : 'Address', value: supplier.company_address } : null,
+    supplierLanguages.length > 0 ? { label: isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages', value: supplierLanguages.join(' · ') } : null,
+    exportMarkets.length > 0 ? { label: isAr ? 'أسواق التصدير' : lang === 'zh' ? '出口市场' : 'Export markets', value: exportMarkets.join(' · ') } : null,
+    supplier.customization_support ? { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制' : 'Customization', value: supplier.customization_support } : null,
+    supplier.trade_link ? { label: isAr ? 'الملف التجاري' : lang === 'zh' ? '贸易主页' : 'Trade profile', value: supplier.trade_link, isLink: true } : null,
+  ].filter(Boolean);
+
   return (
-    <div className="profile-wrap">
+    <div style={{ background: '#f5f3ef', minHeight: '100dvh' }}>
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+      <div className="sp-page">
 
-      {/* HERO */}
-      <div className="profile-hero">
-        <div className="avatar" style={{ width: 64, height: 64, fontSize: 24 }}>
-          {supplier.avatar_url
-            ? <img src={supplier.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : (supplier.company_name || '?')[0]}
-        </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-            <h1 className={`profile-name${isAr ? ' ar' : ''}`} style={{ margin: 0 }}>{supplier.company_name}</h1>
-            {isReviewedSupplier && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                padding: '3px 10px',
-                background: 'var(--bg-subtle)',
-                border: '1px solid rgba(0,0,0,0.10)',
-                borderRadius: 20, fontSize: 11,
-                color: 'var(--text-secondary)',
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 700 }}>✓</span>
-                {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified Supplier'}
-              </div>
-            )}
-          </div>
-
-
-          <p className="profile-meta">
-            <span className="stars">{stars(Math.round(supplier.rating || 0))}</span>
-            {supplier.city ? ` · ${supplier.city}` : ''}
-            {supplier.country ? ` · ${supplier.country}` : ''}
-          </p>
-          {supplierMaabarId && isReviewedSupplier && (
-            <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.4 }}>
-              <span style={{ color: 'var(--text-disabled)' }}>{isAr ? 'معرّف مورد مَعبر' : lang === 'zh' ? 'Maabar 供应商编号' : 'Maabar Supplier ID'}</span>
-              <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
+        {/* ── Hero card ── */}
+        <div style={{ background: '#ede8dc', border: '1px solid #d8d0be', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
+            <div style={{
+              width: 64, height: 64, borderRadius: '50%',
+              background: '#d8d0be', overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, fontSize: 22, color: '#6b6560',
+              fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+            }}>
+              {supplier.avatar_url
+                ? <img src={supplier.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (supplier.company_name || '?')[0]}
             </div>
-          )}
-          <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
-              {products.length} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
-            </span>
-            {products.filter(p => p.sample_available).length > 0 && (
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '2px 10px', borderRadius: 20, border: '1px solid rgba(0,0,0,0.08)' }}>
-                {isAr ? 'عينات متاحة' : lang === 'zh' ? '可提供样品' : 'Samples Available'}
-              </span>
-            )}
-            {supplier.min_order_value && (
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {isAr ? `الحد الأدنى لقيمة الطلب: ${supplier.min_order_value} ريال` : lang === 'zh' ? `最低订单金额：${supplier.min_order_value} SAR` : `Minimum order value: ${supplier.min_order_value} SAR`}
-              </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{
+                fontSize: 18, fontWeight: 600, color: '#1a1814', margin: '0 0 4px',
+                fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif",
+                lineHeight: 1.3,
+              }}>
+                {supplier.company_name}
+              </h1>
+              <p style={{ fontSize: 12, color: '#6b6560', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {[supplier.city, supplier.country].filter(Boolean).join(' · ')}
+                {supplier.year_established ? ` · ${supplier.year_established}` : ''}
+                {supplier.rating > 0 ? ` · ${stars(Math.round(supplier.rating || 0))}` : ''}
+              </p>
+              {isReviewedSupplier && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 8,
+                  padding: '3px 10px', background: 'rgba(45,122,79,0.1)',
+                  border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified Supplier'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+            {[
+              { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
+              { label: isAr ? 'صفقات' : lang === 'zh' ? '成交' : 'Deals', value: supplier.deals_completed || '—' },
+              { label: isAr ? 'أدنى طلب' : lang === 'zh' ? '最低订单' : 'Min order', value: supplier.min_order_value ? `${supplier.min_order_value}$` : '—' },
+              { label: isAr ? 'تأسست' : lang === 'zh' ? '成立' : 'Est.', value: supplier.year_established || '—' },
+            ].map((stat, i) => (
+              <div key={i} style={{
+                padding: '10px 8px', textAlign: 'center',
+                borderRight: i < 3 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                background: '#ede8dc',
+              }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1814', margin: '0 0 2px', fontFamily: "'Cormorant Garamond', serif", fontVariantNumeric: 'lining-nums' }}>
+                  {stat.value}
+                </p>
+                <p style={{ fontSize: 10, color: '#6b6560', margin: 0, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '0.8px', textTransform: 'uppercase' }}>
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => { if (!user) nav('/login'); else nav(`/chat/${supplier.id}`); }}
+              style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 13, fontFamily: "'Tajawal', sans-serif", fontWeight: 600, cursor: 'pointer' }}>
+              {isAr ? 'تواصل مباشر' : lang === 'zh' ? '直接联系' : 'Direct Contact'}
+            </button>
+            {products.some(p => p.sample_available) && (
+              <button
+                onClick={() => document.getElementById('sp-products')?.scrollIntoView({ behavior: 'smooth' })}
+                style={{ background: 'none', color: '#1a1814', border: '1px solid #d8d0be', borderRadius: 8, padding: '10px 20px', fontSize: 13, fontFamily: "'Tajawal', sans-serif", fontWeight: 600, cursor: 'pointer' }}>
+                {isAr ? 'طلب عينة' : lang === 'zh' ? '请求样品' : 'Request Sample'}
+              </button>
             )}
           </div>
         </div>
-      </div>
 
-      {/* BODY */}
-      <div className="profile-body">
-
-        {/* FACTORY IMAGES */}
+        {/* ── Factory images ── */}
         {supplier.factory_images?.length > 0 && (
-          <div style={{ marginBottom: 28 }}>
-            <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12 }}>
-              {isAr ? 'صور المصنع' : lang === 'zh' ? '工厂图片' : 'Factory Images'}
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <SectionLabel label={isAr ? 'صور المصنع' : lang === 'zh' ? '工厂图片' : 'Factory Images'} isAr={isAr} />
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
               {supplier.factory_images.map((img, i) => (
-                <div key={i} style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                <div key={i} style={{ width: 100, height: 72, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e5de', flexShrink: 0 }}>
                   <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
@@ -254,376 +288,251 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         )}
 
-        {/* PROTECTION BADGE */}
-        <div style={{
-          padding: '10px 16px', marginBottom: 24,
-          background: 'var(--bg-subtle)',
-          border: '1px solid rgba(0,0,0,0.08)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: 12, color: 'var(--text-secondary)',
-          textAlign: isAr ? 'right' : 'left',
-          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-        }}>
-          {isAr ? 'للحماية الكاملة — أتمّ صفقتك عبر معبر' : lang === 'zh' ? '获得完整保障 — 通过Maabar完成交易' : 'For full protection — complete your deal on Maabar'}
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-          marginBottom: 28,
-        }}>
-          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
-              {isAr ? 'مراجعة مَعبر' : lang === 'zh' ? 'Maabar 审核' : 'Maabar review'}
-            </p>
-            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isReviewedSupplier
-                ? (isAr ? 'تمت مراجعة هذا المورد وإتاحته للمشترين على المنصة.' : lang === 'zh' ? '该供应商已通过 Maabar 审核并对买家开放。' : 'This supplier has been reviewed by Maabar and is visible to buyers.')
-                : (isAr ? 'الملف ما زال قيد المراجعة.' : lang === 'zh' ? '该供应商资料仍在审核中。' : 'This supplier profile is still under review.')}
-            </p>
-          </div>
-          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
-              {isAr ? 'دلائل الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}
-            </p>
-            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr
-                ? `${supplierTrustSignals.includes('trade_profile_available') ? 'رابط الشركة متوفر' : 'لا يوجد رابط شركة معروض'}${supplierTrustSignals.includes('wechat_available') ? ' · WeChat متاح' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · صور منشأة متاحة' : ''}`
-                : lang === 'zh'
-                  ? `${supplierTrustSignals.includes('trade_profile_available') ? '已提供店铺/官网链接' : '暂未展示店铺链接'}${supplierTrustSignals.includes('wechat_available') ? ' · 支持 WeChat 沟通' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · 提供工厂图片' : ''}`
-                  : `${supplierTrustSignals.includes('trade_profile_available') ? 'trade profile available' : 'no public trade profile shown'}${supplierTrustSignals.includes('wechat_available') ? ' · WeChat available' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · factory photos available' : ''}`}
-            </p>
-          </div>
-          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-            <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
-              {isAr ? 'طريقة العمل' : lang === 'zh' ? '合作方式' : 'Working model'}
-            </p>
-            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? 'التفاوض والاتفاق يتمان عبر معبر، مع حماية أوضح للدفعات والتوثيق.' : lang === 'zh' ? '建议通过 Maabar 完成沟通、报价与交易，以获得更清晰的付款与记录保障。' : 'Use Maabar for communication, quoting, and transaction flow to keep payment and records protected.'}
-            </p>
-          </div>
-        </div>
-
-        {(supplier.company_website || supplier.trade_link || supplier.wechat || supplier.whatsapp) && (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
-            {supplier.company_website && (
-              <a href={supplier.company_website} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-                {isAr ? 'زيارة موقع الشركة' : lang === 'zh' ? '访问公司官网' : 'Visit company website'}
-              </a>
-            )}
-            {supplier.trade_link && (
-              <a href={supplier.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-                {isAr ? 'عرض صفحة المتجر / الملف التجاري' : lang === 'zh' ? '查看店铺 / 贸易主页' : 'View trade profile / storefront'}
-              </a>
-            )}
-            {supplier.wechat && (
-              <span style={{ fontSize: 11, padding: '0 12px', minHeight: 38, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                WeChat: {supplier.wechat}
-              </span>
-            )}
-            {supplier.whatsapp && (
-              <span style={{ fontSize: 11, padding: '0 12px', minHeight: 38, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                WhatsApp: {supplier.whatsapp}
-              </span>
-            )}
-          </div>
-        )}
-
+        {/* ── About ── */}
         {companyDescription && (
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 28, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-            {companyDescription}
-          </p>
-        )}
-
-        {(supplier.business_type || supplier.year_established || supplier.company_address || supplier.customization_support || supplierLanguages.length > 0 || exportMarkets.length > 0) && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 28 }}>
-            {[
-              supplier.business_type ? { label: isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type } : null,
-              supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Year established', value: supplier.year_established } : null,
-              supplier.customization_support ? { label: isAr ? 'دعم التخصيص' : lang === 'zh' ? '定制支持' : 'Customization support', value: supplier.customization_support } : null,
-              supplier.company_address ? { label: isAr ? 'عنوان الشركة' : lang === 'zh' ? '公司地址' : 'Company address', value: supplier.company_address } : null,
-              supplierLanguages.length > 0 ? { label: isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages', value: supplierLanguages.join(' · ') } : null,
-              exportMarkets.length > 0 ? { label: isAr ? 'الأسواق التصديرية' : lang === 'zh' ? '出口市场' : 'Export markets', value: exportMarkets.join(' · ') } : null,
-            ].filter(Boolean).map((item) => (
-              <div key={item.label} style={{ padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>{item.label}</p>
-                <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{item.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* COMPANY STATS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 1, background: 'var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: 28 }}>
-          {[
-            supplier.export_years && { label: isAr ? 'سنوات التصدير' : 'Export Years', val: supplier.export_years },
-            supplier.city && { label: isAr ? 'المدينة' : 'City', val: supplier.city },
-            supplier.country && { label: isAr ? 'الدولة' : 'Country', val: supplier.country },
-            supplier.speciality && { label: isAr ? 'التخصص' : 'Specialty', val: supplier.speciality },
-            supplier.deals_completed && { label: isAr ? 'صفقات مكتملة' : 'Deals', val: supplier.deals_completed },
-            supplier.completion_rate && { label: isAr ? 'نسبة الإتمام' : 'Completion', val: `${supplier.completion_rate}%` },
-            supplier.created_at && { label: isAr ? 'عضو منذ' : 'Member Since', val: new Date(supplier.created_at).getFullYear() },
-          ].filter(Boolean).map((stat, i) => (
-            <div key={i} style={{ background: 'var(--bg-subtle)', padding: '12px 14px' }}>
-              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4, letterSpacing: 1, textTransform: 'uppercase' }}>{stat.label}</p>
-              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{stat.val}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* أزرار التواصل */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 40, flexWrap: 'wrap' }}>
-          <button className="btn-dark-sm"
-            onClick={() => { if (!user) nav('/login'); else nav(`/chat/${supplier.id}`); }}>
-            {isAr ? 'تواصل مباشر' : lang === 'zh' ? '直接联系' : 'Direct Contact'}
-          </button>
-          {products.some(p => p.sample_available) && (
-            <button className="btn-outline" style={{ borderColor: 'rgba(0,0,0,0.15)', color: 'var(--text-secondary)' }}
-              onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
-              {isAr ? 'طلب عينة' : lang === 'zh' ? '请求样品' : 'Request Sample'}
-            </button>
-          )}
-          <button className="btn-outline" onClick={() => nav('/requests')}>
-            {isAr ? 'ارفع طلب' : lang === 'zh' ? '发布需求' : 'Post Request'}
-          </button>
-        </div>
-
-        {/* المنتجات */}
-        <p id="products-section" className="section-label">{isAr ? 'منتجاته' : lang === 'zh' ? '产品列表' : 'Products'}</p>
-
-        {products.length === 0 ? (
-          <p style={{ color: '#6b6b6b' }}>{isAr ? 'لا توجد منتجات بعد' : 'No products yet'}</p>
-        ) : (
-          products.map((p, idx) => (
-            <div key={p.id} style={{ animation: `fadeIn 0.4s ease ${idx * 0.05}s both` }}>
-              {/* صف المنتج */}
-              <div className="product-list-item" onClick={() => nav(`/products/${p.id}`)}>
-                <div className="product-img">
-                  {getPrimaryProductImage(p)
-                    ? <img src={getPrimaryProductImage(p)} alt="" />
-                    : <span style={{ fontSize: 32 }}>📦</span>}
-                </div>
-                <div className="product-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <h3 className={`product-name${isAr ? ' ar' : ''}`}>
-                      {isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar}
-                    </h3>
-                    {getProductGalleryImages(p).length > 1 && (
-                      <span style={{ fontSize: 9, padding: '2px 8px', background: '#EFECE7', borderRadius: 10, color: '#7a7a7a', letterSpacing: 1 }}>{getProductGalleryImages(p).length} IMG</span>
-                    )}
-                    {p.video_url && (
-                      <span style={{ fontSize: 9, padding: '2px 8px', background: '#EFECE7', borderRadius: 10, color: '#7a7a7a', letterSpacing: 1 }}>VIDEO</span>
-                    )}
-                    {p.sample_available && (
-                      <span style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 10, color: '#2d7a4f', letterSpacing: 1 }}>
-                        {isAr ? 'عينة' : 'SAMPLE'}
-                      </span>
-                    )}
-                  </div>
-                  {(() => {
-                    const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
-                    return (
-                      <>
-                        <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>
-                        {price.isConverted && <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>{isAr ? `الأصل: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Source: ${price.formattedSource}`}</p>}
-                      </>
-                    );
-                  })()}
-                  <p className="product-meta">MOQ: {p.moq || '—'}</p>
-                  {buildProductSpecs(p).slice(0, 2).length > 0 && (
-                    <p className="product-meta" style={{ marginTop: 4 }}>
-                      {buildProductSpecs(p).slice(0, 2).map(spec => `${spec.label}: ${spec.value}`).join(' · ')}
-                    </p>
-                  )}
-                </div>
-                <div className="product-btns" onClick={e => e.stopPropagation()}>
-                  <button className="btn-dark-sm" onClick={() => nav(`/products/${p.id}`)}>
-                    {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
-                  </button>
-                  {p.sample_available && (
-                    <button
-                      style={{
-                        background: 'none', border: '1px solid #2d7a4f',
-                        color: '#2d7a4f', padding: '8px 16px', fontSize: 12,
-                        cursor: 'pointer', borderRadius: 3, whiteSpace: 'nowrap',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#2d7a4f'; e.currentTarget.style.color = '#fff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#2d7a4f'; }}
-                      onClick={() => toggleSampleForm(p.id)}>
-                      {isAr ? `عينة — ${fmt(p.sample_price)} SAR` : `Sample — ${fmt(p.sample_price)} SAR`}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* فورم العينة */}
-              {sampleForms[p.id] && (
-                <div style={{
-                  background: 'rgba(45,122,79,0.04)', border: '1px solid rgba(45,122,79,0.2)',
-                  borderTop: 'none', padding: '20px 24px', marginBottom: 14,
-                  borderRadius: '0 0 6px 6px', animation: 'fadeIn 0.3s ease',
-                }}>
-                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                    {isAr
-                      ? `سعر الوحدة: ${fmt(p.sample_price)} ريال + شحن: ${fmt(p.sample_shipping || 0)} ريال · الحد الأقصى: ${p.sample_max_qty || 3} قطع`
-                      : `Unit: ${fmt(p.sample_price)} SAR + Ship: ${fmt(p.sample_shipping || 0)} SAR · Max: ${p.sample_max_qty || 3}`}
-                  </p>
-
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
-                    <div style={{ flex: '0 0 120px' }}>
-                      <label style={{ display: 'block', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 6 }}>
-                        {isAr ? 'الكمية' : 'Quantity'}
-                      </label>
-                      <input
-                        style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', background: 'var(--bg-raised)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', borderRadius: 3 }}
-                        type="number" min="1" max={p.sample_max_qty || 3}
-                        value={sampleData[p.id]?.qty || '1'}
-                        onChange={e => setSampleData(prev => ({ ...prev, [p.id]: { ...prev[p.id], qty: e.target.value } }))}
-                      />
-                    </div>
-                    <div style={{ background: 'var(--bg-hover)', padding: '10px 16px', borderRadius: 3, minWidth: 120 }}>
-                      <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : 'TOTAL'}</p>
-                      <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-en)' }}>
-                        {fmt((parseFloat(p.sample_price || 0) + parseFloat(p.sample_shipping || 0)) * parseInt(sampleData[p.id]?.qty || 1))} SAR
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: 'block', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 6 }}>
-                      {isAr ? 'ملاحظة' : 'Note'}
-                    </label>
-                    <input
-                      style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', background: 'var(--bg-raised)', fontSize: 13, color: 'var(--text-primary)', outline: 'none', borderRadius: 3, boxSizing: 'border-box' }}
-                      value={sampleData[p.id]?.note || ''}
-                      onChange={e => setSampleData(prev => ({ ...prev, [p.id]: { ...prev[p.id], note: e.target.value } }))}
-                      placeholder={isAr ? 'اللون، المواصفات...' : 'Color, specs...'}
-                    />
-                  </div>
-
-                  {p.sample_note && (
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                      💬 {p.sample_note}
-                    </p>
-                  )}
-
-                  {!user && (
-                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 12 }}>
-                      {isAr ? '💡 سيُطلب منك تسجيل الدخول عند الإرسال' : "💡 You'll be asked to sign in when submitting"}
-                    </p>
-                  )}
-
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button
-                      style={{ background: '#2d7a4f', color: '#fff', border: 'none', padding: '10px 20px', fontSize: 12, cursor: 'pointer', borderRadius: 3, transition: 'opacity 0.2s', opacity: sendingSample[p.id] ? 0.5 : 1 }}
-                      onClick={() => submitSample(p)} disabled={sendingSample[p.id]}>
-                      {sendingSample[p.id] ? '...' : isAr ? 'إرسال طلب العينة ←' : 'Send Sample Request →'}
-                    </button>
-                    <button className="btn-outline" onClick={() => toggleSampleForm(p.id)}>
-                      {isAr ? 'إلغاء' : 'Cancel'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* PRICE CALCULATOR */}
-      {products.length > 0 && (
-        <div style={{
-          background: 'var(--bg-raised)',
-          border: '1px solid var(--border-muted)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '20px 24px',
-          marginTop: 24,
-        }}>
-          <p style={{ fontSize: 11, letterSpacing: 2, color: 'var(--text-disabled)', marginBottom: 14, textTransform: 'uppercase' }}>
-            {isAr ? 'احسب سعرك' : 'Calculate Your Price'}
-          </p>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-            <select
-              style={{
-                flex: 1, minWidth: 140, padding: '10px 12px', fontSize: 13,
-                border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)',
-                color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)',
-                outline: 'none', cursor: 'pointer', minHeight: 42,
-              }}
-              value={calcProduct?.id || ''}
-              onChange={e => { setCalcProduct(products.find(p => p.id === e.target.value) || null); setCalcResult(null); }}>
-              <option value="">{isAr ? 'اختر منتج' : 'Select product'}</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id}>
-                  {isAr ? p.name_ar || p.name_en : p.name_en || p.name_ar}
-                </option>
-              ))}
-            </select>
-            <input
-              style={{
-                width: 110, padding: '10px 12px', fontSize: 13,
-                border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)',
-                color: 'var(--text-primary)', borderRadius: 'var(--radius-md)',
-                outline: 'none', minHeight: 42,
-              }}
-              type="number"
-              placeholder={isAr ? 'الكمية' : 'Quantity'}
-              value={calcQty}
-              onChange={e => { setCalcQty(e.target.value); setCalcResult(null); }}
-            />
-            <button
-              className="btn-dark-sm"
-              onClick={calcPrice}
-              style={{ minHeight: 42 }}>
-              {isAr ? 'احسب' : 'Calculate'}
-            </button>
-          </div>
-          {calcResult && (
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-disabled)' }}>
-                  {isAr ? 'سعر الوحدة' : 'Unit Price'}
-                </span>
-                <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-                  {calcResult.unitPrice} {calcResult.currency}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: calcResult.meetsmoq ? 0 : 10 }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                  {isAr ? 'الإجمالي' : 'Total'}
-                </span>
-                <span style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)' }}>
-                  {calcResult.total.toLocaleString()} {calcResult.currency}
-                </span>
-              </div>
-              {!calcResult.meetsmoq && (
-                <p style={{ fontSize: 11, color: '#a08850', padding: '6px 10px', background: 'rgba(122,96,48,0.1)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(122,96,48,0.2)', marginTop: 8 }}>
-                  {isAr ? `الحد الأدنى للطلب: ${calcResult.moq} قطعة` : `Min order: ${calcResult.moq} units`}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-        {/* REVIEWS */}
-        {reviews.length > 0 && (
-          <div style={{ marginTop: 48 }}>
-            <p className="section-label" style={{ marginBottom: 20 }}>
-              {isAr ? 'التقييمات' : lang === 'zh' ? '评价' : 'Reviews'}
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <SectionLabel label={isAr ? 'عن الشركة' : lang === 'zh' ? '公司介绍' : 'About'} isAr={isAr} />
+            <p style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.85, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {companyDescription}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          </div>
+        )}
+
+        {/* ── Company details ── */}
+        {detailItems.length > 0 && (
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <SectionLabel label={isAr ? 'تفاصيل الشركة' : lang === 'zh' ? '公司详情' : 'Company Details'} isAr={isAr} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px 24px' }}>
+              {detailItems.map(item => (
+                <div key={item.label}>
+                  <p style={{ fontSize: 10, fontFamily: "'Cormorant Garamond', serif", letterSpacing: '1px', textTransform: 'uppercase', color: '#b0ab9e', margin: '0 0 3px' }}>
+                    {item.label}
+                  </p>
+                  {item.isLink
+                    ? <a href={item.value} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#1a1814', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', textDecoration: 'underline', wordBreak: 'break-all', display: 'block' }}>{item.value}</a>
+                    : <p style={{ fontSize: 13, color: '#1a1814', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{item.value}</p>
+                  }
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Certifications ── */}
+        {certifications.length > 0 && (
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap' }}>
+                  {isAr ? 'شهادات الجودة' : lang === 'zh' ? '质量认证' : 'Quality Certifications'}
+                </p>
+                <div style={{ flex: 1, height: 1, background: '#e8e5de' }} />
+              </div>
+              {isReviewedSupplier && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20, flexShrink: 0 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
+                  <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {certifications.map((cert, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1814', margin: '0 0 2px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{cert.name}</p>
+                    {cert.issuer && <p style={{ fontSize: 12, color: '#6b6560', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{cert.issuer}</p>}
+                  </div>
+                  {cert.valid_until && (
+                    <p style={{ fontSize: 11, color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap', fontFamily: "'Cormorant Garamond', serif" }}>{cert.valid_until}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Products ── */}
+        <div id="sp-products" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap' }}>
+              {isAr ? 'المنتجات' : lang === 'zh' ? '产品列表' : 'Products'}
+            </p>
+            <div style={{ flex: 1, height: 1, background: '#e8e5de' }} />
+          </div>
+          {products.length === 0 ? (
+            <p style={{ color: '#6b6560', fontSize: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr ? 'لا توجد منتجات بعد' : 'No products yet'}
+            </p>
+          ) : (
+            <div className="product-grid">
+              {products.map((p, idx) => {
+                const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
+                const animation = { animation: `fadeIn 0.4s ease ${idx * 0.04}s both` };
+                return (
+                  <div key={p.id}>
+                    <div className="product-card" style={animation} onClick={() => nav(`/products/${p.id}`)}>
+                      <div className="product-card-img">
+                        {getPrimaryProductImage(p) && (
+                          <img src={getPrimaryProductImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
+                      </div>
+                      <div className="product-card-body">
+                        {isReviewedSupplier && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block', flexShrink: 0 }} />
+                            <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>مورد موثّق</span>
+                          </div>
+                        )}
+                        <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>
+                          {isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar}
+                        </h3>
+                        <p className="product-card-price">{p.price_from ? price.formattedDisplay : '—'}</p>
+                        <button className="product-card-buy" onClick={e => { e.stopPropagation(); nav(`/products/${p.id}`); }}>
+                          اشتر الآن
+                        </button>
+                        {p.sample_available && (
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleSampleForm(p.id); }}
+                            style={{ background: 'none', border: 'none', padding: 0, fontSize: 11, color: '#2d7a4f', cursor: 'pointer', fontFamily: "'Tajawal', sans-serif", textAlign: isAr ? 'right' : 'left', marginTop: 2 }}>
+                            {isAr ? `طلب عينة — ${fmt(p.sample_price)} ر.س` : `Sample — ${fmt(p.sample_price)} SAR`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Sample form */}
+                    {sampleForms[p.id] && (
+                      <div style={{
+                        background: 'rgba(45,122,79,0.04)', border: '1px solid rgba(45,122,79,0.2)',
+                        borderTop: 'none', padding: '20px 16px', marginBottom: 8,
+                        borderRadius: '0 0 8px 8px', animation: 'fadeIn 0.3s ease',
+                      }}>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                          {isAr
+                            ? `سعر الوحدة: ${fmt(p.sample_price)} ريال + شحن: ${fmt(p.sample_shipping || 0)} ريال · الحد الأقصى: ${p.sample_max_qty || 3} قطع`
+                            : `Unit: ${fmt(p.sample_price)} SAR + Ship: ${fmt(p.sample_shipping || 0)} SAR · Max: ${p.sample_max_qty || 3}`}
+                        </p>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
+                          <div style={{ flex: '0 0 110px' }}>
+                            <label style={{ display: 'block', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 6 }}>
+                              {isAr ? 'الكمية' : 'Quantity'}
+                            </label>
+                            <input
+                              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', background: 'var(--bg-raised)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', borderRadius: 3 }}
+                              type="number" min="1" max={p.sample_max_qty || 3}
+                              value={sampleData[p.id]?.qty || '1'}
+                              onChange={e => setSampleData(prev => ({ ...prev, [p.id]: { ...prev[p.id], qty: e.target.value } }))}
+                            />
+                          </div>
+                          <div style={{ background: 'var(--bg-hover)', padding: '10px 14px', borderRadius: 3, minWidth: 110 }}>
+                            <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : 'TOTAL'}</p>
+                            <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-en)' }}>
+                              {fmt((parseFloat(p.sample_price || 0) + parseFloat(p.sample_shipping || 0)) * parseInt(sampleData[p.id]?.qty || 1))} SAR
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 12 }}>
+                          <label style={{ display: 'block', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#7a7a7a', marginBottom: 6 }}>
+                            {isAr ? 'ملاحظة' : 'Note'}
+                          </label>
+                          <input
+                            style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', background: 'var(--bg-raised)', fontSize: 13, color: 'var(--text-primary)', outline: 'none', borderRadius: 3, boxSizing: 'border-box' }}
+                            value={sampleData[p.id]?.note || ''}
+                            onChange={e => setSampleData(prev => ({ ...prev, [p.id]: { ...prev[p.id], note: e.target.value } }))}
+                            placeholder={isAr ? 'اللون، المواصفات...' : 'Color, specs...'}
+                          />
+                        </div>
+                        {p.sample_note && (
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                            {p.sample_note}
+                          </p>
+                        )}
+                        {!user && (
+                          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                            {isAr ? 'سيُطلب منك تسجيل الدخول عند الإرسال' : "You'll be asked to sign in when submitting"}
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button
+                            style={{ background: '#2d7a4f', color: '#fff', border: 'none', padding: '10px 18px', fontSize: 12, cursor: 'pointer', borderRadius: 3, opacity: sendingSample[p.id] ? 0.5 : 1 }}
+                            onClick={() => submitSample(p)} disabled={sendingSample[p.id]}>
+                            {sendingSample[p.id] ? '...' : isAr ? 'إرسال طلب العينة' : 'Send Sample Request'}
+                          </button>
+                          <button
+                            onClick={() => toggleSampleForm(p.id)}
+                            style={{ background: 'none', border: '1px solid #e8e5de', color: '#6b6560', padding: '10px 14px', fontSize: 12, cursor: 'pointer', borderRadius: 3 }}>
+                            {isAr ? 'إلغاء' : 'Cancel'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Price calculator ── */}
+        {products.length > 0 && (
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <SectionLabel label={isAr ? 'احسب سعرك' : lang === 'zh' ? '价格计算' : 'Price Calculator'} isAr={isAr} />
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+              <select
+                style={{ flex: 1, minWidth: 140, padding: '10px 12px', fontSize: 13, border: '1px solid #e8e5de', background: '#faf9f7', color: '#6b6560', borderRadius: 8, outline: 'none', cursor: 'pointer', minHeight: 42, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
+                value={calcProduct?.id || ''}
+                onChange={e => { setCalcProduct(products.find(p => p.id === e.target.value) || null); setCalcResult(null); }}>
+                <option value="">{isAr ? 'اختر منتج' : 'Select product'}</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {isAr ? p.name_ar || p.name_en : p.name_en || p.name_ar}
+                  </option>
+                ))}
+              </select>
+              <input
+                style={{ width: 110, padding: '10px 12px', fontSize: 13, border: '1px solid #e8e5de', background: '#faf9f7', color: '#1a1814', borderRadius: 8, outline: 'none', minHeight: 42 }}
+                type="number"
+                placeholder={isAr ? 'الكمية' : 'Quantity'}
+                value={calcQty}
+                onChange={e => { setCalcQty(e.target.value); setCalcResult(null); }}
+              />
+              <button
+                onClick={calcPrice}
+                style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 13, fontFamily: "'Tajawal', sans-serif", fontWeight: 600, cursor: 'pointer', minHeight: 42 }}>
+                {isAr ? 'احسب' : 'Calculate'}
+              </button>
+            </div>
+            {calcResult && (
+              <div style={{ borderTop: '1px solid #e8e5de', paddingTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: '#b0ab9e' }}>{isAr ? 'سعر الوحدة' : 'Unit Price'}</span>
+                  <span style={{ fontSize: 12, color: '#1a1814', fontFamily: "'Cormorant Garamond', serif", fontVariantNumeric: 'lining-nums' }}>{calcResult.unitPrice} {calcResult.currency}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: calcResult.meetsmoq ? 0 : 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1814', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'الإجمالي' : 'Total'}</span>
+                  <span style={{ fontSize: 20, fontWeight: 300, color: '#1a1814', fontFamily: "'Cormorant Garamond', serif", fontVariantNumeric: 'lining-nums' }}>{calcResult.total.toLocaleString()} {calcResult.currency}</span>
+                </div>
+                {!calcResult.meetsmoq && (
+                  <p style={{ fontSize: 11, color: '#a08850', padding: '6px 10px', background: 'rgba(122,96,48,0.1)', borderRadius: 8, border: '1px solid rgba(122,96,48,0.2)', marginTop: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? `الحد الأدنى للطلب: ${calcResult.moq} قطعة` : `Min order: ${calcResult.moq} units`}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Reviews ── */}
+        {reviews.length > 0 && (
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <SectionLabel label={isAr ? 'التقييمات' : lang === 'zh' ? '评价' : 'Reviews'} isAr={isAr} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {reviews.map((rv, i) => (
-                <div key={rv.id || i} style={{
-                  padding: '16px 20px',
-                  background: 'var(--bg-raised)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-lg)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+                <div key={rv.id || i} style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e8e5de', borderRadius: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: '#6b6560', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {isAr ? 'مشتري موثّق عبر مَعبر' : lang === 'zh' ? '通过 Maabar 成交的买家' : 'Maabar buyer'}
                     </span>
                     <span style={{ color: '#f5a623', fontSize: 13 }}>
@@ -631,15 +540,15 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                     </span>
                   </div>
                   {rv.comment && (
-                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                    <p style={{ fontSize: 13, color: '#6b6560', lineHeight: 1.6, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {rv.comment}
                     </p>
                   )}
                   {(rv.quality_rating || rv.shipping_rating || rv.communication_rating) && (
                     <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
-                      {rv.quality_rating && <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{isAr ? 'الجودة' : 'Quality'}: {rv.quality_rating}/5</span>}
-                      {rv.shipping_rating && <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{isAr ? 'الشحن' : 'Shipping'}: {rv.shipping_rating}/5</span>}
-                      {rv.communication_rating && <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{isAr ? 'التواصل' : 'Comm'}: {rv.communication_rating}/5</span>}
+                      {rv.quality_rating && <span style={{ fontSize: 10, color: '#b0ab9e' }}>{isAr ? 'الجودة' : 'Quality'}: {rv.quality_rating}/5</span>}
+                      {rv.shipping_rating && <span style={{ fontSize: 10, color: '#b0ab9e' }}>{isAr ? 'الشحن' : 'Shipping'}: {rv.shipping_rating}/5</span>}
+                      {rv.communication_rating && <span style={{ fontSize: 10, color: '#b0ab9e' }}>{isAr ? 'التواصل' : 'Comm'}: {rv.communication_rating}/5</span>}
                     </div>
                   )}
                 </div>
@@ -648,93 +557,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         )}
 
-        {/* SIMILAR SUPPLIERS */}
-        {similarSuppliers.length > 0 && (
-          <div style={{ marginTop: 48 }}>
-            <p className="section-label" style={{ marginBottom: 20 }}>
-              {isAr ? 'موردون مشابهون' : lang === 'zh' ? '类似供应商' : 'Similar Suppliers'}
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-              {similarSuppliers.map(s => {
-                const trustSignals = buildSupplierTrustSignals(s);
-                const isReviewed = isSupplierPubliclyVisible(s.status);
-                const similarSupplierId = getSupplierMaabarId(s);
-
-                return (
-                  <div key={s.id} onClick={() => nav(`/supplier/${s.id}`)} style={{
-                    padding: '16px', background: 'var(--bg-raised)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-lg)', cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-raised)'; }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                        {s.avatar_url
-                          ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0]}</span>}
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
-                          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{s.company_name}</p>
-                          {isReviewed && (
-                            <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 999, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
-                              ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
-                            </span>
-                          )}
-                        </div>
-                        {s.rating > 0 && (
-                          <p style={{ fontSize: 11, color: '#f5a623', margin: 0 }}>
-                            {Array.from({ length: 5 }, (_, j) => j < Math.round(s.rating) ? '★' : '☆').join('')}
-                            {s.reviews_count > 0 && <span style={{ color: 'var(--text-disabled)', marginInlineStart: 6 }}>{s.reviews_count}</span>}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {(similarSupplierId || s.city || s.country || s.years_experience) && (
-                      <p style={{ fontSize: 10, color: 'var(--text-disabled)', lineHeight: 1.6, marginBottom: 10 }}>
-                        {similarSupplierId ? `${isAr ? 'المعرّف' : lang === 'zh' ? '编号' : 'ID'}: ${similarSupplierId}` : ''}
-                        {similarSupplierId && (s.city || s.country) ? ' · ' : ''}
-                        {[s.city, s.country].filter(Boolean).join(', ')}
-                        {(similarSupplierId || s.city || s.country) && s.years_experience ? ' · ' : ''}
-                        {s.years_experience ? (isAr ? `${s.years_experience} سنة خبرة` : lang === 'zh' ? `${s.years_experience} 年经验` : `${s.years_experience} years`) : ''}
-                      </p>
-                    )}
-
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-                      {trustSignals.includes('trade_profile_available') && (
-                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
-                          {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
-                        </span>
-                      )}
-                      {trustSignals.includes('wechat_available') && (
-                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
-                          WeChat
-                        </span>
-                      )}
-                      {trustSignals.includes('factory_media_available') && (
-                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                          {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
-                        {isReviewed ? (isAr ? 'تمت مراجعته من مَعبر' : lang === 'zh' ? '已通过 Maabar 审核' : 'Reviewed by Maabar') : (isAr ? 'بروفايل مشابه' : lang === 'zh' ? '相似供应商' : 'Similar supplier')}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-primary)' }}>{isAr ? 'عرض الملف →' : lang === 'zh' ? '查看主页 →' : 'View profile →'}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-      <Footer lang={lang} />
+      </div>
     </div>
   );
 }
