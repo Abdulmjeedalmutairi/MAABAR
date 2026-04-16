@@ -5,11 +5,7 @@ import { sb } from '../supabase';
 import Footer from '../components/Footer';
 import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
-import {
-  buildSupplierTrustSignals,
-  getSupplierMaabarId,
-  isSupplierPubliclyVisible,
-} from '../lib/supplierOnboarding';
+import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { attachSupplierProfiles } from '../lib/profileVisibility';
 
 const CATEGORIES = {
@@ -42,28 +38,18 @@ const CATEGORIES = {
   ],
 };
 
-const TRUST_BADGE_STYLE = {
-  fontSize: 10,
-  padding: '3px 9px',
-  borderRadius: 20,
-  letterSpacing: 0.4,
-  display: 'inline-flex',
-  alignItems: 'center',
-};
-
 /* ─── Skeleton ───────────────────────────── */
-const SkeletonItem = () => (
+const SkeletonCard = () => (
   <div style={{
-    display: 'flex', alignItems: 'center', gap: 16,
-    padding: '16px 0', borderBottom: '1px solid var(--border-subtle)',
+    background: '#faf9f7', border: '1px solid #e8e5de',
+    borderRadius: 12, overflow: 'hidden',
   }}>
-    <div style={{ width: 68, height: 68, borderRadius: 'var(--radius-lg)', background: 'var(--bg-raised)', flexShrink: 0 }} />
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ width: '50%', height: 14, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
-      <div style={{ width: '25%', height: 12, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
-      <div style={{ width: '35%', height: 10, background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)' }} />
+    <div style={{ width: '100%', aspectRatio: '1/1', background: 'var(--bg-raised)' }} />
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ width: '65%', height: 12, background: 'var(--bg-raised)', borderRadius: 4 }} />
+      <div style={{ width: '40%', height: 12, background: 'var(--bg-raised)', borderRadius: 4 }} />
+      <div style={{ width: '100%', height: 36, background: 'var(--bg-raised)', borderRadius: 8, marginTop: 4 }} />
     </div>
-    <div style={{ width: 72, height: 34, background: 'var(--bg-raised)', borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
   </div>
 );
 
@@ -94,12 +80,6 @@ function getProductDisplayName(product, lang) {
   return product.name_en || product.name_zh || product.name_ar;
 }
 
-function getProductSecondaryName(product, lang) {
-  if (lang === 'zh') return product.name_en || product.name_ar || '';
-  if (lang === 'ar') return product.name_zh || product.name_en || '';
-  return product.name_zh || product.name_ar || '';
-}
-
 /* ─── Main ───────────────────────────────── */
 export default function Products({ lang, user, profile, displayCurrency, exchangeRates }) {
   const nav = useNavigate();
@@ -111,7 +91,6 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [capabilityFilters, setCapabilityFilters] = useState({ sample: false, customization: false });
   const isAr = lang === 'ar';
-  const isSupplier = profile?.role === 'supplier';
   const cats = CATEGORIES[lang] || CATEGORIES.ar;
   const uiDisplayCurrency = displayCurrency || (lang === 'ar' ? 'SAR' : lang === 'zh' ? 'CNY' : 'USD');
 
@@ -345,7 +324,11 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           </p>
         )}
 
-        {loading && [1, 2, 3, 4].map(i => <SkeletonItem key={i} />)}
+        {loading && (
+          <div className="product-grid">
+            {[1,2,3,4,5,6,7,8].map(i => <SkeletonCard key={i} />)}
+          </div>
+        )}
 
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
@@ -370,118 +353,64 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           </div>
         )}
 
-        {!loading && filtered.map((p, idx) => {
-          const supplierTrustSignals = buildSupplierTrustSignals(p.profiles || {});
-          const isReviewedSupplier = isSupplierPubliclyVisible(p.profiles?.status);
-          const supplierMaabarId = getSupplierMaabarId(p.profiles || {});
-          const secondaryName = getProductSecondaryName(p, lang);
+        {!loading && (
+          <div className="product-grid">
+            {filtered.map((p, idx) => {
+              const isReviewedSupplier = isSupplierPubliclyVisible(p.profiles?.status);
+              const price = buildDisplayPrice({
+                amount: p.price_from,
+                sourceCurrency: p.currency || 'USD',
+                displayCurrency: uiDisplayCurrency,
+                rates: exchangeRates,
+                lang,
+              });
 
-          return (
-            <div
-              key={p.id}
-              className="product-list-item"
-              style={{ animation: `fadeIn 0.3s ease ${idx * 0.04}s both` }}
-              onClick={() => nav(`/products/${p.id}`)}
-            >
-              <div className="product-img">
-                {getPrimaryProductImage(p)
-                  ? <img src={getPrimaryProductImage(p)} alt="" />
-                  : <span style={{ fontSize: 22, opacity: 0.25 }}>◻</span>}
-              </div>
+              return (
+                <div
+                  key={p.id}
+                  className="product-card"
+                  style={{ animation: `fadeIn 0.3s ease ${idx * 0.04}s both` }}
+                  onClick={() => nav(`/products/${p.id}`)}
+                >
+                  <div className="product-card-img">
+                    {getPrimaryProductImage(p) && (
+                      <img src={getPrimaryProductImage(p)} alt="" />
+                    )}
+                  </div>
 
-              <div className="product-info">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
-                  <h3 className={`product-name${isAr ? ' ar' : ''}`}>
-                    {getProductDisplayName(p, lang)}
-                  </h3>
-                  {isReviewedSupplier && (
-                    <span style={{
-                      ...TRUST_BADGE_STYLE,
-                      background: 'rgba(58,122,82,0.1)',
-                      border: '1px solid rgba(58,122,82,0.2)',
-                      color: '#5a9a72',
-                    }}>
-                      ✓ {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified supplier'}
-                    </span>
-                  )}
+                  <div className="product-card-body">
+                    {isReviewedSupplier && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: '#2d7a4f', flexShrink: 0, display: 'inline-block',
+                        }} />
+                        <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>
+                          مورد موثّق
+                        </span>
+                      </div>
+                    )}
+
+                    <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>
+                      {getProductDisplayName(p, lang)}
+                    </h3>
+
+                    <p className="product-card-price">
+                      {p.price_from ? price.formattedDisplay : '—'}
+                    </p>
+
+                    <button
+                      className="product-card-buy"
+                      onClick={e => { e.stopPropagation(); nav(`/products/${p.id}`); }}
+                    >
+                      اشتر الآن
+                    </button>
+                  </div>
                 </div>
-
-                {secondaryName && secondaryName !== getProductDisplayName(p, lang) && (
-                  <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 6, fontFamily: lang === 'zh' ? 'inherit' : 'var(--font-sans)' }}>
-                    {lang === 'zh'
-                      ? `英文 / 其他名称：${secondaryName}`
-                      : isAr
-                        ? `اسم المصنع / الاسم البديل: ${secondaryName}`
-                        : `Factory / alternate name: ${secondaryName}`}
-                  </p>
-                )}
-
-                {(() => {
-                  const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang });
-                  return <p className="product-price">{p.price_from ? price.formattedDisplay : '—'}</p>;
-                })()}
-
-                <p className="product-meta">
-                  {isAr ? `الحد الأدنى للطلب: ${p.moq || '—'}` : `MOQ: ${p.moq || '—'}`} · {p.profiles?.company_name || '—'}
-                  {(p.profiles?.city || p.profiles?.country) && ` · ${[p.profiles?.city, p.profiles?.country].filter(Boolean).join(', ')}`}
-                </p>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                  {p.sample_available && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: '#2d7a4f' }}>
-                      {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample available'}
-                    </span>
-                  )}
-                  {p.spec_lead_time_days && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)' }}>
-                      {isAr ? `تجهيز ${p.spec_lead_time_days} يوم` : lang === 'zh' ? `交期 ${p.spec_lead_time_days} 天` : `Lead time ${p.spec_lead_time_days}d`}
-                    </span>
-                  )}
-                  {p.spec_customization && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                      {isAr ? 'تخصيص / علامة خاصة' : lang === 'zh' ? '支持 OEM / 定制' : 'OEM / customization'}
-                    </span>
-                  )}
-                  {supplierMaabarId && isReviewedSupplier && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)' }}>
-                      {isAr ? `معرّف المورد ${supplierMaabarId}` : lang === 'zh' ? `供应商编号 ${supplierMaabarId}` : `Supplier ID ${supplierMaabarId}`}
-                    </span>
-                  )}
-                  {supplierTrustSignals.includes('trade_profile_available') && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
-                      {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺/官网链接' : 'Trade link'}
-                    </span>
-                  )}
-                  {supplierTrustSignals.includes('wechat_available') && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
-                      WeChat
-                    </span>
-                  )}
-                  {supplierTrustSignals.includes('factory_media_available') && (
-                    <span style={{ ...TRUST_BADGE_STYLE, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                      {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="product-btns" onClick={e => e.stopPropagation()}>
-                <button
-                  className="btn-dark-sm"
-                  onClick={() => nav(`/products/${p.id}`)}>
-                  {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
-                </button>
-                {!isSupplier && (
-                  <button
-                    className="btn-outline"
-                    onClick={() => nav(`/products/${p.id}`)}>
-                    {isAr ? 'اشترِ الآن' : lang === 'zh' ? '立即购买' : 'Buy Now'}
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Footer lang={lang} />
