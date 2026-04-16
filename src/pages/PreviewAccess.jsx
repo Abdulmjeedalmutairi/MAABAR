@@ -12,8 +12,8 @@ export default function PreviewAccess() {
 
   useEffect(() => {
     document.title = 'Preview | Maabar';
-    // Already unlocked in this session — go straight to dashboard.
-    if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+    // Already unlocked — go straight to dashboard.
+    if (localStorage.getItem(STORAGE_KEY) === '1') {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate]);
@@ -21,7 +21,7 @@ export default function PreviewAccess() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input === PASSWORD) {
-      sessionStorage.setItem(STORAGE_KEY, '1');
+      localStorage.setItem(STORAGE_KEY, '1');
       navigate('/dashboard', { replace: true });
     } else {
       setError(true);

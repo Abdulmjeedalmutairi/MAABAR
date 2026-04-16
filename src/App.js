@@ -190,17 +190,17 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
     </div>
   );
   if (!profile) return <DashboardBuyer {...sharedProps} />;
+  const isPreview = localStorage.getItem('maabar_preview') === '1';
   if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
   if (profile.role === 'buyer') {
     const LAUNCH_DATE = new Date('2026-05-01T00:00:00+03:00');
-    const isPreview   = sessionStorage.getItem('maabar_preview') === '1';
     if (new Date() < LAUNCH_DATE && !isPreview) return <BuyerWaiting {...sharedProps} />;
     return <DashboardBuyer {...sharedProps} />;
   }
   if (profile.role === 'supplier') {
     const supplierState = getSupplierOnboardingState(profile, user);
 
-    if (supplierState.isRejectedStage)
+    if (!isPreview && supplierState.isRejectedStage)
       return (
         <div style={{
           minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
@@ -224,7 +224,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
         </div>
       );
 
-    if (supplierState.isInactiveStage)
+    if (!isPreview && supplierState.isInactiveStage)
       return (
         <div style={{
           minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
