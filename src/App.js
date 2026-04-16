@@ -39,7 +39,6 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Support from './pages/Support';
 import Requests from './pages/Requests';
-import SupplierLanding from './pages/SupplierLanding';
 import SupplierAccess from './pages/SupplierAccess';
 import SupplierProfile from './pages/SupplierProfile';
 import Suppliers from './pages/Suppliers';
@@ -293,7 +292,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/contact"        element={<Contact         {...sharedProps} />} />
         <Route path="/support"        element={<Support         {...sharedProps} />} />
         <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
-        <Route path="/supplier"       element={<SupplierLanding {...sharedProps} />} />
+        <Route path="/supplier"       element={<Navigate to="/supplier-access" replace />} />
         <Route path="/supplier-access" element={<SupplierAccess {...sharedProps} />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
         <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
