@@ -68,6 +68,17 @@ export default function ComingSoon() {
       padding: 24,
     }}>
       <BrandLogo size="xl" />
+      <p style={{
+        margin: 0,
+        fontFamily: "'Cormorant Garamond', serif",
+        fontSize: 13,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        color: '#b0ab9e',
+        textAlign: 'center',
+      }}>
+        Coming Soon
+      </p>
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <Box value={d} label="Days" />
         <Box value={h} label="Hours" />
