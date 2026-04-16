@@ -258,7 +258,9 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
   const isChromelessPage = isAuthCallbackPage
     || location.pathname === '/'
     || location.pathname === '/buyer'
-    || location.pathname === '/preview';
+    || location.pathname === '/preview'
+    || location.pathname === '/login'
+    || location.pathname.startsWith('/login/');
   const isLTRPage = isAuthCallbackPage || location.pathname === '/supplier-access';
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;

@@ -15,6 +15,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const notifRef = useRef(null);
 
   const isAr       = lang === 'ar';
+  const isPreview  = localStorage.getItem('maabar_preview') === '1';
+  const homeRoute  = isPreview ? '/dashboard' : '/';
   const isSupplier = profile?.role === 'supplier';
   const supplierState = isSupplier ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRoute = isSupplier ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
@@ -130,7 +132,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   
   const links = isSupplier
     ? [
-        { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
+        { label: isAr ? 'الرئيسية' : lang === 'zh' ? '首页'  : 'Home',      path: homeRoute },
         ...(supplierState?.canAccessOperationalFeatures
           ? [{ label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests', path: '/dashboard?tab=requests' }]
           : []),
@@ -139,12 +141,12 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       ]
     : isSupplierRegistrationPage
       ? [
-          { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
+          { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: homeRoute },
           { label: isAr ? 'عن مَعبر'  : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
           { label: isAr ? 'تواصل'     : lang === 'zh' ? '联系'  : 'Contact',   path: '/contact' },
         ]
       : [
-          { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: '/' },
+          { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: homeRoute },
           { label: isAr ? 'المنتجات'  : lang === 'zh' ? '产品'  : 'Products',  path: '/products' },
           { label: isAr ? 'الموردون'  : lang === 'zh' ? '供应商' : 'Suppliers', path: '/suppliers' },
           { label: isAr ? 'عن مَعبر'  : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
@@ -174,7 +176,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       <nav className={scrolled ? 'scrolled' : ''}>
 
         {/* Logo */}
-        <BrandLogo as="button" size="sm" align="flex-start" onClick={() => nav('/')} />
+        <BrandLogo as="button" size="sm" align="flex-start" onClick={() => nav(homeRoute)} />
 
         {/* Desktop links */}
         <ul className="nav-links">

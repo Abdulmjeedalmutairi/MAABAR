@@ -44,7 +44,7 @@ const L = {
     founderSub: 'أول 20 تاجر يسجلون يحصلون على:',
     perk1: 'شارة المؤسس — دائمة على حسابك',
     perk2: 'عمولة 0% للأبد',
-    perk3: 'خدمة الطلب المُدار مجاناً لأول 3 طلبات',
+    perk3: 'خدمة الطلب المُدار مجاناً لمدة 6 أشهر',
     spotsLeft: 'المقاعد محدودة',
     countdown: 'الإطلاق في',
     days: 'يوم',
@@ -71,7 +71,7 @@ const L = {
     founderSub: 'First 20 traders to sign up receive:',
     perk1: 'Founding badge — permanent on your account',
     perk2: '0% commission forever',
-    perk3: 'Managed Order Service free for your first 3 orders',
+    perk3: 'Managed Order Service free for 6 months',
     spotsLeft: 'Limited spots',
     countdown: 'Launching in',
     days: 'Days',
@@ -384,101 +384,64 @@ export default function BuyerRegister({ user }) {
 
           {/* Founding Circle box */}
           <div style={{
-            background: 'var(--text-primary)',
-            borderRadius: 20,
-            padding: '28px 24px',
-            color: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 20,
+            border: '1px solid #e8e5de',
+            borderRadius: 14,
+            overflow: 'hidden',
           }}>
-            <div>
-              <p style={{
-                margin: '0 0 4px',
-                fontSize: 10,
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.5)',
-                fontFamily: 'var(--font-sans)',
-              }}>
-                {t.spotsLeft}
-              </p>
-              <h2 style={{
-                margin: '0 0 6px',
-                fontSize: 20,
+            {/* Header */}
+            <div style={{
+              background: '#1a1814',
+              padding: '10px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              direction: 'rtl',
+            }}>
+              <span style={{
+                fontSize: 11,
                 fontWeight: 600,
-                fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
+                color: '#FFFFFF',
+                fontFamily: 'var(--font-ar)',
               }}>
-                {t.founderTitle}
-              </h2>
-              <p style={{
-                margin: 0,
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.7)',
-                fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
+                نادي المؤسسين
+              </span>
+              <span style={{
+                fontSize: 10,
+                color: 'rgba(255,255,255,0.45)',
+                fontFamily: "'Cormorant Garamond', serif",
               }}>
-                {t.founderSub}
-              </p>
+                أول 20 تاجر
+              </span>
             </div>
 
-            {/* Perks */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Body */}
+            <div style={{
+              background: '#f5f3ef',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}>
               {[t.perk1, t.perk2, t.perk3].map((perk, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{
                     flexShrink: 0,
-                    width: 22,
-                    height: 22,
+                    width: 8,
+                    height: 8,
                     borderRadius: '50%',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontFamily: 'var(--font-sans)',
-                    color: 'rgba(255,255,255,0.7)',
-                    marginTop: 1,
-                  }}>
-                    {i + 1}
-                  </div>
+                    background: '#22c55e',
+                    marginTop: 5,
+                  }} />
                   <span style={{
                     fontSize: 13,
                     lineHeight: 1.6,
+                    color: 'var(--text-primary)',
                     fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)',
                   }}>
                     {perk}
                   </span>
                 </div>
               ))}
-            </div>
-
-            {/* Countdown */}
-            <div>
-              <p style={{
-                margin: '0 0 12px',
-                fontSize: 11,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.5)',
-                fontFamily: 'var(--font-sans)',
-              }}>
-                {t.countdown}
-              </p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                {[
-                  { v: d, l: t.days },
-                  { v: h, l: t.hours },
-                  { v: m, l: t.min },
-                  { v: s, l: t.sec },
-                ].map(({ v, l }) => (
-                  <div key={l} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div style={boxNum}>{String(v).padStart(2, '0')}</div>
-                    <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {l}
-                    </span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
