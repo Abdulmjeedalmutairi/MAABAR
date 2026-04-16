@@ -3509,59 +3509,86 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
           {/* ── SETTINGS ── */}
           {activeTab === 'settings' && (
-            <div style={section}>
+            <div style={{ ...section, background: '#f5f3ef', paddingBottom: 60 }}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
-              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.settingsTitle}</h2>
+              <h2 style={{ fontSize: isAr ? 26 : 32, fontWeight: 300, marginBottom: 24, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : -0.5 }}>
+                {t.settingsTitle}
+              </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760 }}>
-                <div style={{ padding: '22px 24px', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 2.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>{isAr ? 'رحلة الانضمام' : lang === 'zh' ? '供应商资料' : 'Onboarding journey'}</p>
-                  <h3 style={{ fontSize: 22, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 10, ...arFont }}>{verificationStatusHeadline}</h3>
-                  <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 16, ...arFont }}>{verificationStatusBody}</p>
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-base)', color: 'var(--text-secondary)', fontSize: 11 }}>
-                      {isAr ? `اكتمال الملف: ${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}` : lang === 'zh' ? `资料完成度：${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}` : `Profile progress: ${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}`}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 760 }}>
+
+                {/* ── Card 1: Verification status ── */}
+                <div style={{ background: '#ede8dc', border: '1px solid #d8d0be', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 14 }}>
+                    {isAr ? 'حالة التحقق' : lang === 'zh' ? '验证状态' : 'Verification Status'}
+                  </p>
+                  <h3 style={{ fontSize: isAr ? 18 : 20, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : -0.2 }}>
+                    {verificationStatusHeadline}
+                  </h3>
+                  <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {verificationStatusBody}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.22)', color: '#2d7a4f', fontFamily: "'Tajawal', sans-serif" }}>
+                      {isAr ? `اكتمال الملف: ${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}` : lang === 'zh' ? `资料完成度：${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}` : `Profile: ${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}`}
                     </span>
-                    <span style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-base)', color: 'var(--text-secondary)', fontSize: 11 }}>
-                      {verificationLockMessage}
+                    <span style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, background: 'rgba(217,148,0,0.08)', border: '1px solid rgba(217,148,0,0.22)', color: '#b07800', fontFamily: "'Tajawal', sans-serif" }}>
+                      {supplierState.isApprovedStage
+                        ? (isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified')
+                        : supplierState.isUnderReviewStage
+                          ? (isAr ? 'قيد المراجعة' : lang === 'zh' ? '审核中' : 'Under review')
+                          : (isAr ? 'لم يُرسل بعد' : lang === 'zh' ? '尚未提交' : 'Not yet submitted')}
                     </span>
                   </div>
                 </div>
 
-                <SaveFeedbackCard feedback={settingsFeedback} isAr={isAr} />
-
-                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'الثقة والهوية البصرية' : lang === 'zh' ? '信任与品牌素材' : 'Trust & brand assets'}</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
+                {/* ── Card 2: Visual identity ── */}
+                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                    {isAr ? 'الهوية البصرية' : lang === 'zh' ? '品牌素材' : 'Visual Identity'}
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div>
-                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 12, ...arFont }}>{t.logo}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                          {settings.avatar_url ? <img src={settings.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 24, opacity: 0.3 }}>◻</span>}
+                      <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>{t.logo}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#e8e5de', border: '1px solid #d8d5ce', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                          {settings.avatar_url
+                            ? <img src={settings.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ fontSize: 20, opacity: 0.3 }}>◻</span>}
                         </div>
                         <div>
                           <input ref={logoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadLogo} />
-                          <button onClick={() => logoRef.current?.click()} className="btn-dark-sm" style={{ marginBottom: 6, fontSize: 11, minHeight: 34 }}>{uploadingLogo ? t.uploadingLogo : t.uploadLogo}</button>
-                          <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{isAr ? 'JPG أو PNG · حتى 5MB' : lang === 'zh' ? 'JPG 或 PNG · 最大 5MB' : 'JPG or PNG · Max 5MB'}</p>
+                          <button
+                            onClick={() => logoRef.current?.click()}
+                            style={{ background: '#1a1814', color: '#ffffff', border: 'none', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontFamily: "'Tajawal', sans-serif", fontWeight: 500, cursor: 'pointer', marginBottom: 6, display: 'block' }}>
+                            {uploadingLogo ? t.uploadingLogo : t.uploadLogo}
+                          </button>
+                          <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif" }}>
+                            {isAr ? 'JPG أو PNG · حتى 5MB' : lang === 'zh' ? 'JPG 或 PNG · 最大 5MB' : 'JPG or PNG · Max 5MB'}
+                          </p>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 12, ...arFont }}>{t.factoryImages}</p>
-                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>{t.factoryImages}</p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {(settings.factory_images || []).map((img, i) => (
-                          <div key={i} style={{ width: 90, height: 90, borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative', flexShrink: 0, border: '1px solid var(--border-subtle)' }}>
+                          <div key={i} style={{ width: 64, height: 64, borderRadius: 8, overflow: 'hidden', position: 'relative', flexShrink: 0, border: '1px solid #e8e5de' }}>
                             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <button onClick={() => removeFactoryImage(img)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.9)', border: 'none', width: 18, height: 18, borderRadius: '50%', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                            <button onClick={() => removeFactoryImage(img)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', width: 16, height: 16, borderRadius: '50%', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                           </div>
                         ))}
                         {(settings.factory_images || []).length < 3 && (
                           <>
                             <input ref={factoryRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadFactoryImage} />
-                            <div onClick={() => factoryRef.current?.click()} style={{ width: 90, height: 90, borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
-                              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
-                              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}>
-                              {uploadingFactory ? <p style={{ fontSize: 10, color: 'var(--text-disabled)' }}>...</p> : <p style={{ fontSize: 22, color: 'var(--text-disabled)' }}>+</p>}
+                            <div
+                              onClick={() => factoryRef.current?.click()}
+                              style={{ width: 64, height: 64, borderRadius: 8, border: '1px dashed #c8c4bc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.borderColor = '#1a1814'}
+                              onMouseLeave={e => e.currentTarget.style.borderColor = '#c8c4bc'}>
+                              {uploadingFactory
+                                ? <span style={{ fontSize: 10, color: '#b0ab9e' }}>...</span>
+                                : <span style={{ fontSize: 20, color: '#b0ab9e' }}>+</span>}
                             </div>
                           </>
                         )}
@@ -3570,68 +3597,167 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'معلومات الشركة الأساسية' : lang === 'zh' ? '基础公司信息' : 'Basic company info'}</p>
-                  <div className="form-grid">
-                    {[[t.companyName, 'company_name', 'text', true], [isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type', 'business_type'], [t.speciality, 'speciality', 'select'], [isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Year established', 'year_established', 'number'], [t.city, 'city', 'text', true], [t.country, 'country', 'text', true], [isAr ? 'عنوان الشركة' : lang === 'zh' ? '公司地址' : 'Company address', 'company_address'], [isAr ? 'موقع الشركة الإلكتروني' : lang === 'zh' ? '公司官网链接' : 'Company website URL', 'company_website', 'url']].map(([label, key, type, required]) => (
-                      <div key={key} className="form-group">
-                        <label className={`form-label${isAr ? ' ar' : ''}`}>{label}{required ? ' *' : ''}</label>
-                        {type === 'select'
-                          ? <select className="form-input" value={settings[key]} onChange={e => setSettings({ ...settings, [key]: e.target.value })}>
-                              <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
-                              {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
-                            </select>
-                          : <input className="form-input" type={type || 'text'} value={settings[key] || ''} onChange={e => setSettings({ ...settings, [key]: e.target.value })} dir={key === 'company_website' ? 'ltr' : undefined} />}
-                      </div>
-                    ))}
+                {/* ── Card 3: Company info ── */}
+                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                    {isAr ? 'معلومات الشركة' : lang === 'zh' ? '公司信息' : 'Company Info'}
+                  </p>
+                  <div className="settings-form-grid">
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.companyName} *</label>
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_name || ''} onChange={e => setSettings({ ...settings, company_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type'}
+                      </label>
+                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.business_type || ''} onChange={e => setSettings({ ...settings, business_type: e.target.value })}>
+                        <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
+                        <option value="manufacturer">{isAr ? 'مصنع' : lang === 'zh' ? '制造商' : 'Manufacturer'}</option>
+                        <option value="trading_company">{isAr ? 'شركة تجارية' : lang === 'zh' ? '贸易公司' : 'Trading Company'}</option>
+                        <option value="agent">{isAr ? 'وكيل' : lang === 'zh' ? '代理商' : 'Agent'}</option>
+                        <option value="distributor">{isAr ? 'موزع' : lang === 'zh' ? '经销商' : 'Distributor'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.speciality}</label>
+                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.speciality || ''} onChange={e => setSettings({ ...settings, speciality: e.target.value })}>
+                        <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
+                        {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Year established'}
+                      </label>
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.year_established || ''} onChange={e => setSettings({ ...settings, year_established: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.city} *</label>
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.city || ''} onChange={e => setSettings({ ...settings, city: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.country} *</label>
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.country || ''} onChange={e => setSettings({ ...settings, country: e.target.value })} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'عنوان الشركة' : lang === 'zh' ? '公司地址' : 'Company address'}
+                      </label>
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_address || ''} onChange={e => setSettings({ ...settings, company_address: e.target.value })} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'موقع الشركة الإلكتروني' : lang === 'zh' ? '公司官网链接' : 'Company website URL'}
+                      </label>
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.company_website || ''} onChange={e => setSettings({ ...settings, company_website: e.target.value })} />
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'بيانات التواصل' : lang === 'zh' ? '联系方式' : 'Contact details'}</p>
-                  <div className="form-grid">
-                    {[[t.whatsapp, 'whatsapp', 'tel'], [t.wechat, 'wechat'], [isAr ? 'اللغات التي تتحدثون بها' : lang === 'zh' ? '支持语言' : 'Languages', 'languages']].map(([label, key, type]) => (
-                      <div key={key} className="form-group">
-                        <label className={`form-label${isAr ? ' ar' : ''}`}>{label}</label>
-                        <input className="form-input" type={type || 'text'} value={settings[key] || ''} onChange={e => setSettings({ ...settings, [key]: e.target.value })} dir={['whatsapp', 'wechat'].includes(key) ? 'ltr' : undefined} />
-                        {key === 'languages' && <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6, ...arFont }}>{isAr ? 'اكتبها مفصولة بفواصل أو أسطر جديدة' : lang === 'zh' ? '可用逗号或换行分隔' : 'Use commas or new lines to separate values'}</p>}
-                      </div>
-                    ))}
+                {/* ── Card 4: Contact details ── */}
+                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                    {isAr ? 'بيانات التواصل' : lang === 'zh' ? '联系方式' : 'Contact Details'}
+                  </p>
+                  <div className="settings-form-grid">
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.whatsapp}</label>
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="tel" value={settings.whatsapp || ''} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.wechat}</label>
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="text" value={settings.wechat || ''} onChange={e => setSettings({ ...settings, wechat: e.target.value })} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages'}
+                      </label>
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.languages || ''} onChange={e => setSettings({ ...settings, languages: e.target.value })} />
+                      <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 6 }}>
+                        {isAr ? 'اكتبها مفصولة بفواصل أو أسطر جديدة' : lang === 'zh' ? '可用逗号或换行分隔' : 'Separate with commas or line breaks'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'تفاصيل تجارية' : lang === 'zh' ? '商业资料' : 'Commercial details'}</p>
-                  <div className="form-grid">
-                    {[[isAr ? 'الحد الأدنى لقيمة الطلب (SAR)' : lang === 'zh' ? '最低起订金额（USD）' : 'Minimum order value (SAR)', 'min_order_value', 'number'], [isAr ? 'دعم التخصيص / OEM / ODM' : lang === 'zh' ? '定制支持 / OEM / ODM' : 'Customization support', 'customization_support'], [isAr ? 'الأسواق التي تصدّرون إليها' : lang === 'zh' ? '出口市场' : 'Export markets', 'export_markets'], [t.tradeLink, 'trade_link', 'url', true], [isAr ? 'عملة العرض المفضلة' : lang === 'zh' ? '首选显示货币' : 'Preferred Display Currency', 'preferred_display_currency', 'display_currency']].map(([label, key, type, required]) => (
-                      <div key={key} className="form-group">
-                        <label className={`form-label${isAr ? ' ar' : ''}`}>{label}{required ? ' *' : ''}</label>
-                        {type === 'display_currency'
-                          ? <select className="form-input" value={settings[key] || 'USD'} onChange={e => setSettings({ ...settings, [key]: e.target.value })}>
-                              {DISPLAY_CURRENCIES.map(currency => <option key={currency} value={currency}>{currency}</option>)}
-                            </select>
-                          : <input className="form-input" type={type || 'text'} value={settings[key] || ''} onChange={e => setSettings({ ...settings, [key]: e.target.value })} dir={key === 'trade_link' ? 'ltr' : undefined} />}
-                        {key === 'export_markets' && <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6, ...arFont }}>{isAr ? 'يمكنك كتابة الدول أو المناطق مفصولة بفواصل' : lang === 'zh' ? '可填写国家或地区，并用逗号分隔' : 'You can list countries or regions separated by commas'}</p>}
-                      </div>
-                    ))}
+                {/* ── Card 5: Commercial details ── */}
+                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                    {isAr ? 'التفاصيل التجارية' : lang === 'zh' ? '商业资料' : 'Commercial Details'}
+                  </p>
+                  <div className="settings-form-grid">
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'الحد الأدنى لقيمة الطلب (USD)' : lang === 'zh' ? '最低订单金额 (USD)' : 'Minimum order value (USD)'}
+                      </label>
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.min_order_value || ''} onChange={e => setSettings({ ...settings, min_order_value: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'عملة العرض' : lang === 'zh' ? '显示货币' : 'Display currency'}
+                      </label>
+                      <select className="settings-select" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr', width: '100%' }} value={settings.preferred_display_currency || 'USD'} onChange={e => setSettings({ ...settings, preferred_display_currency: e.target.value })}>
+                        {DISPLAY_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'دعم التخصيص' : lang === 'zh' ? '定制支持' : 'Customization support'}
+                      </label>
+                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.customization_support || ''} onChange={e => setSettings({ ...settings, customization_support: e.target.value })}>
+                        <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
+                        <option value="yes">{isAr ? 'نعم' : lang === 'zh' ? '是' : 'Yes'}</option>
+                        <option value="oem">OEM</option>
+                        <option value="odm">ODM</option>
+                        <option value="no">{isAr ? 'لا' : lang === 'zh' ? '否' : 'No'}</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.tradeLink} *</label>
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.trade_link || ''} onChange={e => setSettings({ ...settings, trade_link: e.target.value })} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                        {isAr ? 'الأسواق التي تصدّرون إليها' : lang === 'zh' ? '出口市场' : 'Export markets'}
+                      </label>
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.export_markets || ''} onChange={e => setSettings({ ...settings, export_markets: e.target.value })} />
+                      <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 6 }}>
+                        {isAr ? 'اكتب الدول أو المناطق مفصولة بفواصل' : lang === 'zh' ? '填写国家或地区，逗号分隔' : 'List countries or regions, separated by commas'}
+                      </p>
+                    </div>
                   </div>
-                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', margin: '6px 0 0', lineHeight: 1.7, ...arFont }}>
-                    {isAr ? 'هذه العملة للعرض فقط أثناء التصفح. المدفوعات والمنتجات تبقى بعملتها الأصلية.' : lang === 'zh' ? '这只影响浏览时的显示货币。付款与产品原始货币保持不变。' : 'This affects browsing display only. Payments and saved product currencies remain in their original currency.'}
+                </div>
+
+                {/* ── Card 6: Company description ── */}
+                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                    {isAr ? 'وصف الشركة' : lang === 'zh' ? '公司介绍' : 'Company Description'}
+                  </p>
+                  <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 8 }}>
+                    {isAr ? 'اكتب نبذة عن شركتك' : lang === 'zh' ? '请介绍您的公司' : 'Tell buyers about your company'}
+                  </label>
+                  <textarea
+                    className="settings-textarea"
+                    rows={5}
+                    style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
+                    value={settings.company_description || ''}
+                    onChange={e => setSettings({ ...settings, company_description: e.target.value })}
+                    dir={isAr ? 'rtl' : 'ltr'}
+                  />
+                  <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 8 }}>
+                    {isAr ? 'يمكنك الكتابة بأي لغة' : lang === 'zh' ? '可使用任意语言填写' : 'You can write in any language'}
                   </p>
                 </div>
 
-                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', padding: '24px 28px', borderRadius: 'var(--radius-xl)' }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>{isAr ? 'وصف الشركة' : lang === 'zh' ? '公司介绍' : 'Company description'}</p>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className={`form-label${isAr ? ' ar' : ''}`}>{isAr ? 'اكتب نبذة عن شركتك' : lang === 'zh' ? '请介绍您的公司' : 'Tell buyers about your company'}</label>
-                    <textarea className="form-input" rows={5} style={{ resize: 'vertical' }} value={settings.company_description || ''} onChange={e => setSettings({ ...settings, company_description: e.target.value })} dir={isAr ? 'rtl' : 'ltr'} />
-                    <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 8, lineHeight: 1.7, ...arFont }}>{isAr ? 'اللغة غير مقيّدة هنا. اكتب باللغة التي تعبّر عن شركتك بوضوح.' : lang === 'zh' ? '这里不限制语言，请使用最能清楚介绍公司的语言。' : 'Language is not forced here. Use the language that best explains your company.'}</p>
-                  </div>
-                </div>
-
-                <button onClick={saveSettings} disabled={savingSettings} className="btn-primary" style={{ padding: '12px 32px', fontSize: 13, alignSelf: 'flex-start', minHeight: 46 }}>
+                {/* ── Save button ── */}
+                <button
+                  onClick={saveSettings}
+                  disabled={savingSettings}
+                  style={{ background: '#1a1814', color: '#ffffff', border: 'none', borderRadius: 8, padding: '13px 32px', fontFamily: "'Tajawal', sans-serif", fontSize: 14, fontWeight: 600, cursor: savingSettings ? 'default' : 'pointer', alignSelf: 'flex-start', fontVariantNumeric: 'lining-nums', opacity: savingSettings ? 0.7 : 1 }}>
                   {settingsPrimaryButtonLabel}
                 </button>
+
               </div>
             </div>
           )}

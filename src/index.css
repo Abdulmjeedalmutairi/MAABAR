@@ -1006,6 +1006,65 @@ section {
 .product-card-buy:hover { background: #2c2a25; }
 
 /* ══════════════════════════════════════════
+   SETTINGS FORM
+══════════════════════════════════════════ */
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 16px;
+}
+@media (max-width: 480px) {
+  .settings-form-grid { grid-template-columns: 1fr; }
+}
+
+.settings-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #e8e5de;
+  background: transparent;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  font-variant-numeric: lining-nums;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.settings-input:focus { border-bottom-color: #1a1814; }
+
+.settings-select {
+  border: none;
+  border-bottom: 1px solid #e8e5de;
+  background: transparent;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  font-variant-numeric: lining-nums;
+  transition: border-color 0.15s;
+  appearance: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.settings-select:focus { border-bottom-color: #1a1814; }
+
+.settings-textarea {
+  width: 100%;
+  border: 1px solid #e8e5de;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  resize: vertical;
+  font-variant-numeric: lining-nums;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.settings-textarea:focus { border-color: #1a1814; }
+
+/* ══════════════════════════════════════════
    TRUST
 ══════════════════════════════════════════ */
 #trust {
