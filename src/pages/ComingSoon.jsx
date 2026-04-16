@@ -79,7 +79,7 @@ export default function ComingSoon() {
       }}>
         Coming Soon
       </p>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+      <div style={{ direction: 'ltr', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <Box value={d} label="Days" />
         <Box value={h} label="Hours" />
         <Box value={m} label="Min" />
