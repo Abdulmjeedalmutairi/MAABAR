@@ -4,7 +4,7 @@ import { sb } from '../supabase';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 import BrandLogo from './BrandLogo';
 
-export default function Navbar({ user, profile, lang, setLang, setUser, setProfile }) {
+export default function Navbar({ user, profile, lang, setLang, setUser, setProfile, logoOnly }) {
   const nav = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled]   = useState(false);
@@ -167,6 +167,14 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
         { label: isAr ? 'الموردون' : lang === 'zh' ? '供应商' : 'Suppliers', path: '/suppliers' },
       ]
     : [];
+
+  if (logoOnly) {
+    return (
+      <nav className={scrolled ? 'scrolled' : ''} style={{ display: 'flex', alignItems: 'center' }}>
+        <BrandLogo as="button" size="sm" align="flex-start" onClick={() => nav('/')} />
+      </nav>
+    );
+  }
 
   return (
     <>

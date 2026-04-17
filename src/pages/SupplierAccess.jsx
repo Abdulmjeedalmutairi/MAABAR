@@ -117,7 +117,7 @@ const TRANSLATIONS = {
 export default function SupplierAccess({ user, profile, lang = 'zh' }) {
   const nav = useNavigate();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
-  const [currentLang, setCurrentLang] = useState(lang); // Local language state
+  const [currentLang, setCurrentLang] = useState('zh');
   usePageTitle('supplier-access', currentLang);
 
   useEffect(() => {

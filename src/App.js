@@ -261,7 +261,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     || location.pathname === '/preview'
     || location.pathname === '/login'
     || location.pathname.startsWith('/login/');
-  const isLTRPage = isAuthCallbackPage || location.pathname === '/supplier-access';
+  const isSupplierAccessPage = location.pathname === '/supplier-access';
+  const isLTRPage = isAuthCallbackPage || isSupplierAccessPage;
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
@@ -279,7 +280,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
 
   return (
     <div dir={pageDir} className="app-shell">
-      {!isChromelessPage && <Navbar {...sharedProps} />}
+      {!isChromelessPage && <Navbar {...sharedProps} logoOnly={isSupplierAccessPage} />}
       <Routes>
         <Route path="/"               element={<ComingSoon />} />
         <Route path="/buyer"          element={<BuyerRegister   user={user} />} />
