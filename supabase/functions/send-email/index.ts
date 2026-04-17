@@ -234,7 +234,7 @@ ${hasConfirmUrl ? `
  <tr>
  <td align="center" style="padding: 24px 0;">
  <a href="${confirmUrl}" 
- style="display:inline-block;padding:14px 32px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
+ style="display:inline-block;padding:14px 32px;background:#1a1814;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
  ${t.confirmCta}
  </a>
  </td>
@@ -578,25 +578,25 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
     const lang = d.lang || 'en';
     const t = ({
       en: {
-        subject: 'Maabar — Application Received | 申请已收到',
-        eyebrow: 'Application Received',
+        subject: 'Maabar — Verification Received | 认证资料已收到',
+        eyebrow: 'Verification Received',
         title: `Hello ${d.companyName || ''},`,
-        body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 to 72 hours.',
-        cta: 'Login to Maabar →',
+        body: 'We received your verification documents. The Maabar team will review your submission and contact you within 24 to 72 hours.',
+        cta: 'Sign in to your dashboard →',
       },
       zh: {
-        subject: 'Maabar — Application Received | 申请已收到',
-        eyebrow: '申请已收到',
+        subject: 'Maabar — Verification Received | 认证资料已收到',
+        eyebrow: '认证资料已收到',
         title: `${d.companyName || ''}，您好`,
-        body: '我们已收到您的供应商申请。Maabar 团队将在 24 至 72 小时内审核您的资料并与您联系。',
-        cta: '登录 Maabar →',
+        body: '我们已收到您的认证资料。Maabar 团队将在 24 至 72 小时内审核您的提交内容并与您联系。',
+        cta: '前往供应商控制台 →',
       },
     } as any)[lang] || {
-      subject: 'Maabar — Application Received | 申请已收到',
-      eyebrow: 'Application Received',
+      subject: 'Maabar — Verification Received | 认证资料已收到',
+      eyebrow: 'Verification Received',
       title: `Hello ${d.companyName || ''},`,
-      body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 to 72 hours.',
-      cta: 'Login to Maabar →',
+      body: 'We received your verification documents. The Maabar team will review your submission and contact you within 24 to 72 hours.',
+      cta: 'Sign in to your dashboard →',
     };
     return {
       subject: t.subject,
@@ -605,7 +605,7 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 <p class="gr">${t.eyebrow}</p>
 <p class="tg">${t.title}</p>
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 24px;">${t.body}</p>
-<div class="bw"><a href="https://maabar.io" class="bt">${t.cta}</a></div>
+<div class="bw"><a href="https://maabar.io/login/supplier" class="bt">${t.cta}</a></div>
 </div>`, { lang }),
     };
   },
@@ -756,38 +756,38 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null, head
 
   // Build confirmation URL (Supabase Auth verification endpoint)
   const baseUrl = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
-  const confirmUrl = `${baseUrl}/auth/v1/verify?token=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
+  const confirmUrl = `${baseUrl}/auth/v1/verify?token_hash=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
 
   console.log('[hook] Processing confirmation for:', email, 'lang:', lang, 'confirmUrl length:', confirmUrl.length);
 
   const t = ({
-    ar: { 
-      subject: 'تأكيد بريدك الإلكتروني — مَعبر', 
-      eyebrow: 'Email Confirmation', 
-      title: `أهلاً ${name || ''}،`, 
-      body: 'يرجى تأكيد بريدك الإلكتروني لتفعيل حساب المورد الخاص بك على منصة مَعبر.', 
-      confirmCta: 'تفعيل الحساب ←' 
+    ar: {
+      subject: 'تأكيد بريدك الإلكتروني — مَعبر',
+      eyebrow: 'Email Confirmation',
+      title: `أهلاً ${name || ''}،`,
+      body: 'يرجى تأكيد بريدك الإلكتروني لتفعيل حسابك على منصة مَعبر.',
+      confirmCta: 'تفعيل الحساب ←',
     },
-    en: { 
-      subject: 'Confirm your email — Maabar', 
-      eyebrow: 'Email Confirmation', 
-      title: `Hello ${name || ''},`, 
-      body: 'Please confirm your email address to activate your supplier account on Maabar.', 
-      confirmCta: 'Activate Account →' 
+    en: {
+      subject: 'Confirm your email — Maabar',
+      eyebrow: 'Email Confirmation',
+      title: `Hello ${name || ''},`,
+      body: 'Please confirm your email address to activate your Maabar account.',
+      confirmCta: 'Activate Account →',
     },
-    zh: { 
-      subject: '确认您的邮箱 — Maabar', 
-      eyebrow: '邮箱确认', 
-      title: `${name || ''}，您好`, 
-      body: '请确认您的邮箱地址以激活您在 Maabar 的供应商账户。', 
-      confirmCta: '激活账户 →' 
+    zh: {
+      subject: '确认您的邮箱 — Maabar',
+      eyebrow: '邮箱确认',
+      title: `${name || ''}，您好`,
+      body: '请确认您的邮箱地址以激活您的 Maabar 账户。',
+      confirmCta: '激活账户 →',
     },
-  } as any)[lang] || { 
-    subject: 'Confirm your email — Maabar', 
-    eyebrow: 'Email Confirmation', 
-    title: `Hello ${name || ''},`, 
-    body: 'Please confirm your email address to activate your supplier account on Maabar.', 
-    confirmCta: 'Activate Account →' 
+  } as any)[lang] || {
+    subject: 'Confirm your email — Maabar',
+    eyebrow: 'Email Confirmation',
+    title: `Hello ${name || ''},`,
+    body: 'Please confirm your email address to activate your Maabar account.',
+    confirmCta: 'Activate Account →',
   };
 
   const hasConfirmUrl = confirmUrl && confirmUrl !== '#';
@@ -800,7 +800,7 @@ ${hasConfirmUrl ? `
  <tr>
  <td align="center" style="padding: 24px 0;">
  <a href="${confirmUrl}" 
- style="display:inline-block;padding:14px 32px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
+ style="display:inline-block;padding:14px 32px;background:#1a1814;color:#ffffff;text-decoration:none;font-size:15px;font-family:sans-serif;border-radius:6px;">
  ${t.confirmCta}
  </a>
  </td>

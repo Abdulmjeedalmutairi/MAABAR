@@ -966,6 +966,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           lang,
         },
       });
+    } catch (emailError) {
+      console.error('supplier_verification_submitted email error:', emailError);
+    }
+
+    try {
       await sendMaabarEmail({
         type: 'supplier_application_received',
         to: mergedProfile.email || user.email,
@@ -976,7 +981,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         },
       });
     } catch (emailError) {
-      console.error('supplier verification submitted email error:', emailError);
+      console.error('supplier_application_received email error:', emailError);
     }
 
     setVerificationSaved(true);

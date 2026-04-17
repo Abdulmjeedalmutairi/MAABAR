@@ -2,7 +2,6 @@ export const SUPPLIER_APPLICATION_REQUIRED_KEYS = [
   'company_name',
   'country',
   'city',
-  'trade_link',
 ];
 
 export const SUPPLIER_VERIFICATION_REQUIRED_KEYS = [

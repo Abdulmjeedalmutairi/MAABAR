@@ -537,8 +537,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             lang: effectiveLang === 'zh' ? 'zh' : 'en',
           }).select().single();
 
-          if (profileError && profileError.code !== '23505') {
-            // 23505 = unique violation = webhook already inserted it = OK
+          if (profileError && profileError.code !== '23505' && profileError.status !== 403) {
+            // 23505 = unique violation, 403 = RLS block — both mean the DB trigger already created the profile
             console.error('[doSignUp] profile insert failed:', profileError);
             setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
             setMsgType('error');
