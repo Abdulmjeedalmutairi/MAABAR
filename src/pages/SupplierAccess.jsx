@@ -79,7 +79,7 @@ const TRANSLATIONS = {
     whatYouGet: '您将获得',
     benefits: [
       {
-        title: '免费注册 — 无月费 / التسجيل مجاني — لا رسوم شهرية',
+        title: '免费注册 — 无月费',
         desc: '仅对成功销售收取3%佣金，免费期结束后生效',
       },
       {
