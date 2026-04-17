@@ -574,7 +574,6 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
 </div>`),
   }),
 
-  // BUG 3 — No confirmation email to supplier after registration
   supplier_application_received: (d) => {
     const lang = d.lang || 'en';
     const t = ({
@@ -582,21 +581,21 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
         subject: 'Maabar — Application Received | 申请已收到',
         eyebrow: 'Application Received',
         title: `Hello ${d.companyName || ''},`,
-        body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 hours.',
+        body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 to 72 hours.',
         cta: 'Login to Maabar →',
       },
       zh: {
         subject: 'Maabar — Application Received | 申请已收到',
         eyebrow: '申请已收到',
         title: `${d.companyName || ''}，您好`,
-        body: '我们已收到您的供应商申请。Maabar 团队将在 24 小时内审核您的资料并与您联系。',
+        body: '我们已收到您的供应商申请。Maabar 团队将在 24 至 72 小时内审核您的资料并与您联系。',
         cta: '登录 Maabar →',
       },
     } as any)[lang] || {
       subject: 'Maabar — Application Received | 申请已收到',
       eyebrow: 'Application Received',
       title: `Hello ${d.companyName || ''},`,
-      body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 hours.',
+      body: 'We received your supplier application. The Maabar team will review your details and contact you within 24 to 72 hours.',
       cta: 'Login to Maabar →',
     };
     return {

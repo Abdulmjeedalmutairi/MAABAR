@@ -546,16 +546,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }
         }
 
-        // Admin is notified by App.js (maybeNotifyAdminOfConfirmedSupplier) after email confirmation — no duplicate needed here
-        await sendMaabarEmail({
-          type: 'supplier_application_received',
-          to: trimValue(email),
-          data: {
-            email: trimValue(email),
-            companyName: trimValue(supCompany),
-            lang: effectiveLang === 'zh' ? 'zh' : 'en',
-          },
-        });
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);
       }
