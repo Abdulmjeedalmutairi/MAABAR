@@ -23,16 +23,16 @@ function wrap(content, options: any = {}) {
   const locale = localeMeta(options.lang || 'ar');
   const subject = options.subject || 'مَعبر';
 
-  const grStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:rgba(0,0,0,0.22);margin:0 0 10px;text-transform:uppercase;';
-  const tgStyle = 'font-family:Georgia,serif;font-size:22px;line-height:1.4;font-weight:700;color:rgba(0,0,0,0.88);margin:0 0 16px;';
-  const ibStyle = 'background-color:#FAF8F5;border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:16px 18px;margin:0 0 20px;';
-  const ilStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:rgba(0,0,0,0.22);margin:0 0 10px;text-transform:uppercase;';
-  const irStyle = 'padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.07);font-family:Arial,sans-serif;';
-  const ikStyle = 'display:inline-block;min-width:130px;font-size:12px;color:rgba(0,0,0,0.45);vertical-align:top;';
-  const ivStyle = 'display:inline-block;font-size:12px;color:rgba(0,0,0,0.88);font-weight:600;vertical-align:top;';
+  const grStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#b0ab9e;margin:0 0 10px;text-transform:uppercase;';
+  const tgStyle = 'font-family:Georgia,serif;font-size:22px;line-height:1.4;font-weight:700;color:#1a1814;margin:0 0 16px;';
+  const ibStyle = 'background-color:#f5f3ef;border:1px solid #e8e5de;border-radius:10px;padding:16px 18px;margin:0 0 20px;';
+  const ilStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#b0ab9e;margin:0 0 10px;text-transform:uppercase;';
+  const irStyle = 'padding:8px 0;border-bottom:1px solid #e8e5de;font-family:Arial,sans-serif;';
+  const ikStyle = 'display:inline-block;min-width:130px;font-size:12px;color:#6b6560;vertical-align:top;';
+  const ivStyle = 'display:inline-block;font-size:12px;color:#1a1814;font-weight:600;vertical-align:top;';
   const unsubText = locale.lang === 'zh' ? '取消订阅' : locale.lang === 'en' ? 'Unsubscribe' : 'إلغاء الاشتراك';
   const bwStyle = `margin-top:24px;text-align:${locale.align};`;
-  const btStyle = 'display:inline-block;background-color:#1a1a1a;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:600;border-radius:10px;';
+  const btStyle = 'display:inline-block;background-color:#1a1814;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:600;border-radius:10px;';
 
   const rendered = content
     .replace(/<div class="bd">/g, `<div style="direction:${locale.dir};text-align:${locale.align};">`)
@@ -53,48 +53,39 @@ function wrap(content, options: any = {}) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
 <title>${subject}</title>
 </head>
-<body style="margin:0;padding:0;background:#EDE9E3;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EDE9E3">
+<body style="margin:0;padding:0;background:#f5f3ef;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f3ef">
 <tr><td align="center" style="padding:40px 20px;">
-<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-radius:16px;overflow:hidden;border:1px solid rgba(0,0,0,0.07);">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#faf9f7" style="border-radius:16px;overflow:hidden;border:1px solid #e8e5de;">
 
 <!-- HEADER -->
 <tr>
-<td bgcolor="#FAF8F5" style="padding:32px 40px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.07);">
-<table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
-<tr>
-<td style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:rgba(0,0,0,0.88);letter-spacing:2px;white-space:nowrap;">مَعبر</td>
-<td style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:rgba(0,0,0,0.22);padding:0 10px;">|</td>
-<td style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:rgba(0,0,0,0.88);letter-spacing:2px;white-space:nowrap;">MAABAR</td>
-</tr>
-<tr>
-<td colspan="3" style="font-family:Arial,sans-serif;font-size:11px;color:rgba(0,0,0,0.22);text-align:center;padding-top:6px;letter-spacing:2px;">迈巴尔</td>
-</tr>
-</table>
+<td bgcolor="#faf9f7" style="padding:32px 40px;text-align:center;border-bottom:1px solid #e8e5de;">
+<img src="https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/Maabar%20logo/maabar-logo.png" alt="MAABAR | مَعبر" width="200" style="display:block;margin:0 auto;max-width:200px;" />
 </td>
 </tr>
 
 <!-- DIVIDER -->
-<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="rgba(0,0,0,0.07)" height="1"></td></tr></table></td></tr>
+<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e5de" height="1"></td></tr></table></td></tr>
 
 <!-- CONTENT -->
 <tr>
-<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:14px;color:rgba(0,0,0,0.88);line-height:1.8;background:#ffffff;">
+<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:14px;color:#1a1814;line-height:1.8;background:#faf9f7;">
 ${rendered}
 </td>
 </tr>
 
 <!-- DIVIDER -->
-<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="rgba(0,0,0,0.07)" height="1"></td></tr></table></td></tr>
+<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e5de" height="1"></td></tr></table></td></tr>
 
 <!-- FOOTER -->
 <tr>
-<td bgcolor="#FAF8F5" style="padding:24px 40px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:rgba(0,0,0,0.35);">
+<td bgcolor="#faf9f7" style="padding:24px 40px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:#b0ab9e;">
 <p style="margin:0 0 8px 0;">© 2026 مَعبر · Riyadh, Saudi Arabia</p>
 <p style="margin:0;">
-<a href="https://maabar.io" style="color:rgba(0,0,0,0.45);text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
-<a href="mailto:info@maabar.io" style="color:rgba(0,0,0,0.45);text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
-<a href="https://maabar.io/unsubscribe" style="color:rgba(0,0,0,0.25);text-decoration:none;">${unsubText}</a>
+<a href="https://maabar.io" style="color:#6b6560;text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
+<a href="mailto:info@maabar.io" style="color:#6b6560;text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
+<a href="https://maabar.io/unsubscribe" style="color:#b0ab9e;text-decoration:none;">${unsubText}</a>
 </p>
 </td>
 </tr>

@@ -497,6 +497,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         speciality: trimValue(speciality),
         country: trimValue(country),
         city: trimValue(supCity),
+        lang: effectiveLang === 'zh' ? 'zh' : 'en',
       }),
     };
 
@@ -533,7 +534,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             whatsapp: trimValue(whatsapp),
             wechat: trimValue(wechat),
             speciality: trimValue(speciality),
-            lang: 'en',
+            lang: effectiveLang === 'zh' ? 'zh' : 'en',
           }).select().single();
 
           if (profileError && profileError.code !== '23505') {
@@ -548,10 +549,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         // Admin is notified by App.js (maybeNotifyAdminOfConfirmedSupplier) after email confirmation — no duplicate needed here
         await sendMaabarEmail({
           type: 'supplier_application_received',
+          to: trimValue(email),
           data: {
             email: trimValue(email),
             companyName: trimValue(supCompany),
-            lang: lang === 'zh' ? 'zh' : 'en',
+            lang: effectiveLang === 'zh' ? 'zh' : 'en',
           },
         });
       } catch (emailError) {
