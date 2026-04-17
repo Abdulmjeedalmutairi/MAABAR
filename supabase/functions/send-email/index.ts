@@ -746,9 +746,9 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null, head
   const userRole = user.user_metadata?.role || user.app_metadata?.role;
   const rawLang = normalizeLang(user.user_metadata?.lang || '') || (userRole === 'supplier' ? 'en' : 'ar');
   const lang = userRole === 'supplier' ? toSupplierLang(rawLang) : toBuyerLang(rawLang);
-  const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.company_name || '';
   const token = email_data.token_hash;
-  const redirectTo = email_data.redirect_to || 'https://maabar.io/auth/callback';
+  const redirectTo = 'https://maabar.io/auth/callback';
 
   if (!email || !token) {
     throw new Error('Missing email or token in hook payload');
