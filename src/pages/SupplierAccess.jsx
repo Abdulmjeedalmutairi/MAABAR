@@ -29,6 +29,10 @@ const TRANSLATIONS = {
     whatYouGet: 'What you get',
     benefits: [
       {
+        title: 'Free Registration — No Monthly Fees',
+        desc: '3% commission on successful sales only, after the free period ends.',
+      },
+      {
         title: '0% Commission',
         desc: 'First 20 suppliers: 0% commission for 6 months.',
       },
@@ -74,6 +78,10 @@ const TRANSLATIONS = {
     alreadyApproved: '已经批准了？登录',
     whatYouGet: '您将获得',
     benefits: [
+      {
+        title: '免费注册 — 无月费 / التسجيل مجاني — لا رسوم شهرية',
+        desc: '仅对成功销售收取3%佣金，免费期结束后生效',
+      },
       {
         title: '0% 佣金',
         desc: '前20名供应商：6个月内享受0%佣金。',

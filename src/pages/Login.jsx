@@ -9,6 +9,7 @@ import {
 } from '../lib/supplierOnboarding';
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 import { buildAuthCallbackUrl } from '../lib/authRedirects';
+import { CATEGORIES } from '../lib/supplierDashboardConstants';
 
 const L = {
   ar: {
@@ -29,7 +30,7 @@ const L = {
     tradeLink: 'روابط الصفحات التجارية',
     country: 'الدولة',
     supCity: 'المدينة',
-    speciality: 'التخصص (اختياري)',
+    speciality: 'التخصص',
     supplierRequiredHint: 'الحقول المعلَّمة بنجمة حمراء مطلوبة لإرسال الطلب الأساسي.',
     contactHint: 'وسائل التواصل اختيارية الآن. إذا أضفت WeChat أو WhatsApp سيسهّل ذلك على الفريق التواصل معك.',
     verificationLater: 'لن نطلب الآن السجل التجاري أو الرخصة أو صور المصنع أو بيانات استلام الأرباح. إذا احتجناها، ستكون في خطوة التحقق اللاحقة داخل حالة الحساب.',
@@ -74,7 +75,7 @@ const L = {
     tradeLink: 'Trade Page Links',
     country: 'Country',
     supCity: 'City',
-    speciality: 'Specialty (optional)',
+    speciality: 'Specialty',
     supplierRequiredHint: 'Fields marked with a red asterisk are required for the basic supplier signup.',
     contactHint: 'Contact methods are optional at signup. Adding WeChat or WhatsApp simply helps the team reach you faster.',
     verificationLater: 'Registration number, business license, factory photos, and payout details all stay out of initial signup. If needed, they will be requested later in verification.',
@@ -119,7 +120,7 @@ const L = {
     tradeLink: '贸易页面链接',
     country: '国家',
     supCity: '城市',
-    speciality: '专业领域（可选）',
+    speciality: '专业领域',
     supplierRequiredHint: '带红色星号的字段为基础供应商注册所必填。',
     contactHint: '注册时联系方式为可选项。若填写 WeChat 或 WhatsApp，团队联系您会更快。',
     verificationLater: '公司注册号、营业执照、工厂照片以及收款资料都不属于首次注册内容。如有需要，会在后续认证阶段再补充。',
@@ -218,24 +219,6 @@ function trimValue(value) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
-function normalizeTradeLinkList(value) {
-  if (Array.isArray(value)) {
-    return value.map(trimValue).filter(Boolean);
-  }
-
-  return String(value || '')
-    .split(/\r?\n/)
-    .map(trimValue)
-    .filter(Boolean);
-}
-
-function serializeTradeLinks(value) {
-  return normalizeTradeLinkList(value).join('\n');
-}
-
-function getPrimaryTradeLink(value) {
-  return normalizeTradeLinkList(value)[0] || '';
-}
 
 function buildFieldErrorMap({
   isSupplier,
@@ -255,7 +238,7 @@ function buildFieldErrorMap({
     if (!trimValue(values.supCompany)) errors.supCompany = langPack.requiredField;
     if (!trimValue(values.country)) errors.country = langPack.requiredField;
     if (!trimValue(values.supCity)) errors.supCity = langPack.requiredField;
-    if (!trimValue(values.tradeLink)) errors.tradeLink = langPack.requiredField;
+    if (!trimValue(values.speciality)) errors.speciality = langPack.requiredField;
   } else {
     if (!trimValue(values.firstName)) errors.firstName = langPack.requiredField;
     if (!trimValue(values.lastName)) errors.lastName = langPack.requiredField;
@@ -304,7 +287,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [supCompany, setSupCompany] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [wechat, setWechat] = useState('');
-  const [tradeLinksInput, setTradeLinksInput] = useState('');
   const [country, setCountry] = useState('');
   const [supCity, setSupCity] = useState('');
   const [speciality, setSpeciality] = useState('');
@@ -336,7 +318,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       supCompany,
       country,
       supCity,
-      tradeLink: serializeTradeLinks(tradeLinksInput),
+      speciality,
     },
     agreedTerms,
     langPack: l,
@@ -352,14 +334,12 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     supCompany,
     country,
     supCity,
-    tradeLinksInput,
+    speciality,
     agreedTerms,
     l,
   ]);
 
   const requiredAsterisk = <span style={{ color: '#d66b6b' }}> *</span>;
-  const normalizedTradeLinks = useMemo(() => normalizeTradeLinkList(tradeLinksInput), [tradeLinksInput]);
-  const primaryTradeLink = normalizedTradeLinks[0] || '';
 
   const getEmailConfirmationRedirect = (nextPath = '/dashboard') => buildAuthCallbackUrl(nextPath, isSupplier ? 'supplier' : 'buyer');
 
@@ -486,7 +466,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         supCompany,
         country,
         supCity,
-        tradeLink: serializeTradeLinks(tradeLinksInput),
+        speciality,
       },
       agreedTerms,
       langPack: l,
@@ -514,8 +494,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         company_name: trimValue(supCompany),
         whatsapp: trimValue(whatsapp),
         wechat: trimValue(wechat),
-        trade_link: primaryTradeLink,
-        trade_links: normalizedTradeLinks,
         speciality: trimValue(speciality),
         country: trimValue(country),
         city: trimValue(supCity),
@@ -554,8 +532,6 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             city: trimValue(supCity),
             whatsapp: trimValue(whatsapp),
             wechat: trimValue(wechat),
-            trade_link: primaryTradeLink,
-            trade_links: normalizedTradeLinks,
             speciality: trimValue(speciality),
             lang: 'en',
           }).select().single();
@@ -1002,21 +978,14 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   </datalist>
 
                   <div style={fieldStyle}>
-                    <label style={labelStyle}>{l.tradeLink}{requiredAsterisk}</label>
-                    <textarea
-                      style={getFieldInputStyle('tradeLink', { minHeight: 108, resize: 'vertical', lineHeight: 1.7 })}
-                      value={tradeLinksInput}
-                      onChange={(e) => setTradeLinksInput(e.target.value)}
-                      placeholder={'https://example.com/company\nhttps://example.com/store'}
-                      dir="ltr"
-                    />
-                    {getErrorText('tradeLink')}
-                    <p style={helperTextStyle}>{supplierSignupContent.tradeLinkHint}</p>
-                  </div>
-
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>{l.speciality}</label>
-                    <input style={inputStyle} value={speciality} onChange={(e) => setSpeciality(e.target.value)} placeholder={supplierSignupContent.specialityHint} />
+                    <label style={labelStyle}>{l.speciality}{requiredAsterisk}</label>
+                    <select style={getFieldInputStyle('speciality', { cursor: 'pointer' })} value={speciality} onChange={(e) => setSpeciality(e.target.value)}>
+                      <option value="">{effectiveLang === 'ar' ? 'اختر تخصصاً' : effectiveLang === 'zh' ? '请选择专业领域' : 'Select category'}</option>
+                      {(CATEGORIES[effectiveLang] || CATEGORIES.en).filter(c => c.val !== 'all').map(c => (
+                        <option key={c.val} value={c.val}>{c.label}</option>
+                      ))}
+                    </select>
+                    {getErrorText('speciality')}
                   </div>
 
                   <div style={{
