@@ -839,7 +839,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setProfile?.(prev => ({ ...(prev || {}), factory_images: nextImages, factory_photo: nextFactoryPhoto, factory_videos: nextVideos }));
   };
 
-  const removeVerificationMedia = (mediaType, pathToRemove) => {
+  const removeVerificationMedia = async (mediaType, pathToRemove) => {
     setVerification(prev => {
       const nextImages = mediaType === 'image'
         ? normalizeVerificationMedia(prev.factory_images).filter((item) => item !== pathToRemove)
@@ -848,12 +848,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         ? normalizeVerificationMedia(prev.factory_videos).filter((item) => item !== pathToRemove)
         : normalizeVerificationMedia(prev.factory_videos);
 
-      return {
+      const nextState = {
         ...prev,
         factory_images: nextImages,
         factory_videos: nextVideos,
         factory_photo: nextImages[0] || '',
       };
+
+      sb.from('profiles').update({
+        factory_images: nextState.factory_images,
+        factory_videos: nextState.factory_videos,
+        factory_photo: nextState.factory_photo,
+      }).eq('id', user.id).then(({ error }) => {
+        if (error) console.error('[removeVerificationMedia] DB error:', JSON.stringify(error));
+      });
+
+      return nextState;
     });
   };
 
