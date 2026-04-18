@@ -1049,7 +1049,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { error } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
-      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'certifications'],
+      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'bio_en', 'min_order_value', 'preferred_display_currency', 'certifications'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
 
