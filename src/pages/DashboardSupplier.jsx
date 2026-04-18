@@ -441,7 +441,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch {
       sessionStorage.removeItem(verificationDraftKey);
     }
-  }, [verificationDraftKey, profile]);
+  }, [verificationDraftKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (saveDraftFirstRunRef.current) {
