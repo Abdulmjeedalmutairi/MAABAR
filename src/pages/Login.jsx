@@ -540,12 +540,22 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             lang: effectiveLang === 'zh' ? 'zh' : 'en',
           }).select().single();
 
-          if (profileError && profileError.code !== '23505' && profileError.status !== 403) {
-            // 23505 = unique violation, 403 = RLS block — both mean the DB trigger already created the profile
-            console.error('[doSignUp] profile insert failed:', profileError);
-            setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
-            setMsgType('error');
-            return;
+          if (profileError) {
+            if (profileError.code === '23505' || profileError.status === 403) {
+              // Trigger may have already created the profile — verify it actually exists
+              const { data: existingProfile } = await sb.from('profiles').select('id').eq('id', data.user.id).maybeSingle();
+              if (!existingProfile) {
+                console.error('[doSignUp] profile missing after 403/23505:', JSON.stringify(profileError));
+                setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
+                setMsgType('error');
+                return;
+              }
+            } else {
+              console.error('[doSignUp] profile insert failed:', JSON.stringify(profileError));
+              setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
+              setMsgType('error');
+              return;
+            }
           }
         }
 
