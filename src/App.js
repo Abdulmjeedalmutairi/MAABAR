@@ -518,7 +518,7 @@ function App() {
     setLang(newLang);
     localStorage.setItem('maabar_lang', newLang);
     if (user?.id) {
-      sb.from('profiles').update({ lang: newLang }).eq('id', user.id).catch(() => {});
+      sb.from('profiles').update({ lang: newLang }).eq('id', user.id).then(() => {}).catch(() => {});
     }
   };
 
