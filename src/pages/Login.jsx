@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
-import { sendMaabarEmail } from '../lib/maabarEmail';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
