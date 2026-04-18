@@ -992,7 +992,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
-      optionalKeys: ['preferred_display_currency', 'payout_beneficiary_name', 'payout_account_number', 'payout_bank_address', 'payout_branch_name'],
+      optionalKeys: ['bank_name', 'swift_code', 'pay_method', 'alipay_account', 'preferred_display_currency', 'payout_beneficiary_name', 'payout_account_number', 'payout_bank_address', 'payout_branch_name'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
     setSavingPayout(false);
