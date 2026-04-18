@@ -559,6 +559,19 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }
         }
 
+        try {
+          await sendMaabarEmail({
+            type: 'supplier_welcome',
+            to: trimValue(email),
+            data: {
+              name: trimValue(supCompany),
+              lang: effectiveLang === 'zh' ? 'zh' : 'en',
+              recipientUserId: data?.user?.id,
+            },
+          });
+        } catch (welcomeEmailError) {
+          console.error('[doSignUp] supplier welcome email error:', JSON.stringify(welcomeEmailError));
+        }
       } catch (emailError) {
         console.error('supplier signup email error:', emailError);
       }
