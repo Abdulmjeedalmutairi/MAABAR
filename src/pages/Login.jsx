@@ -559,21 +559,22 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }
         }
 
-        try {
-          await sendMaabarEmail({
-            type: 'supplier_welcome',
-            to: trimValue(email),
-            data: {
-              name: trimValue(supCompany),
-              lang: effectiveLang === 'zh' ? 'zh' : 'en',
-              recipientUserId: data?.user?.id,
-            },
-          });
-        } catch (welcomeEmailError) {
-          console.error('[doSignUp] supplier welcome email error:', JSON.stringify(welcomeEmailError));
+        // Overwrite any values the DB trigger may have stored from browser-autofilled metadata
+        const { error: profileUpdateError } = await sb.from('profiles').update({
+          company_name: trimValue(supCompany),
+          country: trimValue(country),
+          city: trimValue(supCity),
+          whatsapp: trimValue(whatsapp) || null,
+          wechat: trimValue(wechat) || null,
+          speciality: trimValue(speciality),
+          trade_link: trimValue(tradeLink) || null,
+          lang: effectiveLang === 'zh' ? 'zh' : 'en',
+        }).eq('id', data.user.id);
+        if (profileUpdateError) {
+          console.error('[doSignUp] profile update error:', JSON.stringify(profileUpdateError));
         }
       } catch (emailError) {
-        console.error('supplier signup email error:', emailError);
+        console.error('supplier signup error:', emailError);
       }
 
       setSubmittedEmail(trimValue(email));
@@ -970,7 +971,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
                   <div style={fieldStyle}>
                     <label style={labelStyle}>{l.supCompany}{requiredAsterisk}</label>
-                    <input style={getFieldInputStyle('supCompany')} value={supCompany} onChange={(e) => setSupCompany(e.target.value)} />
+                    <input style={getFieldInputStyle('supCompany')} value={supCompany} onChange={(e) => setSupCompany(e.target.value)} autoComplete="organization" />
                     {getErrorText('supCompany')}
                     <p style={helperTextStyle}>{supplierSignupContent.companyHint}</p>
                   </div>
@@ -978,13 +979,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   <div style={{ display: 'flex', gap: 14 }}>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.country}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('country')} value={country} onChange={(e) => setCountry(e.target.value)} placeholder={isAr ? 'الصين' : lang === 'zh' ? '中国 / China' : 'China'} />
+                      <input style={getFieldInputStyle('country')} value={country} onChange={(e) => setCountry(e.target.value)} placeholder={isAr ? 'الصين' : lang === 'zh' ? '中国 / China' : 'China'} autoComplete="country-name" />
                       {getErrorText('country')}
                       <p style={helperTextStyle}>{supplierSignupContent.countryHint}</p>
                     </div>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.supCity}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('supCity')} value={supCity} onChange={(e) => setSupCity(e.target.value)} placeholder={isAr ? 'قوانغتشو' : lang === 'zh' ? '广州' : 'Guangzhou'} list="supplier-city-suggestions" />
+                      <input style={getFieldInputStyle('supCity')} value={supCity} onChange={(e) => setSupCity(e.target.value)} placeholder={isAr ? 'قوانغتشو' : lang === 'zh' ? '广州' : 'Guangzhou'} list="supplier-city-suggestions" autoComplete="address-level2" />
                       {getErrorText('supCity')}
                       <p style={helperTextStyle}>{supplierSignupContent.cityHint}</p>
                     </div>
@@ -1014,6 +1015,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                       onChange={(e) => setTradeLink(e.target.value)}
                       placeholder={effectiveLang === 'ar' ? 'https://...' : 'https://...'}
                       dir="ltr"
+                      autoComplete="off"
                     />
                     <p style={helperTextStyle}>{supplierSignupContent.tradeLinkHint}</p>
                   </div>
@@ -1031,11 +1033,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     <div style={{ display: 'flex', gap: 14 }}>
                       <div style={{ flex: 1 }}>
                         <label style={labelStyle}>{l.wechat}</label>
-                        <input style={inputStyle} value={wechat} onChange={(e) => setWechat(e.target.value)} dir="ltr" placeholder="WeChat ID" />
+                        <input style={inputStyle} value={wechat} onChange={(e) => setWechat(e.target.value)} dir="ltr" placeholder="WeChat ID" autoComplete="off" />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={labelStyle}>{l.whatsapp}</label>
-                        <input style={inputStyle} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" />
+                        <input style={inputStyle} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+..." dir="ltr" autoComplete="tel" />
                       </div>
                     </div>
                     <p style={{ ...helperTextStyle, marginTop: 8 }}>{l.contactHint}</p>
