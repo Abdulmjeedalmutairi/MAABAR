@@ -1074,8 +1074,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSavingSettings(true);
     const payload = buildSettingsPayload(settings, companyDescription);
 
-    console.log('[step1 save] payload:', JSON.stringify(payload));
-
     const { error } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
@@ -1086,7 +1084,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSavingSettings(false);
 
     if (error) {
-      console.log('[step1 save] error:', JSON.stringify(error));
+      console.error('[saveSettings] error:', JSON.stringify(error));
       setSettingsError(isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.');
       return false;
     }
