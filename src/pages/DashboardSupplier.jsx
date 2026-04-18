@@ -1170,7 +1170,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     let query = sb.from('requests').select('*, profiles!requests_buyer_id_fkey(full_name, company_name)').in('status', ['open', 'offers_received']).or('sourcing_mode.is.null,sourcing_mode.eq.direct').order('created_at', { ascending: false });
     if (activeCat !== 'all') query = query.or(`category.eq.${activeCat},category.is.null`);
     const { data, error } = await query;
-    console.log('loadRequests result:', data?.length, 'error:', error);
     if (error) {
       setRequests([]);
       setLoadingRequests(false);
