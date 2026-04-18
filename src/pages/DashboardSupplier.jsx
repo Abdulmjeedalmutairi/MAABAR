@@ -954,19 +954,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     try {
       await sendMaabarEmail({
-        type: 'supplier_verification_submitted',
-        data: {
-          recipientUserId: user.id,
-          name: mergedProfile.company_name || mergedProfile.full_name || user.email?.split('@')[0] || 'Supplier',
-          lang,
-        },
-      });
-    } catch (emailError) {
-      console.error('supplier_verification_submitted email error:', emailError);
-    }
-
-    try {
-      await sendMaabarEmail({
         type: 'supplier_application_received',
         to: mergedProfile.email || user.email,
         data: {
