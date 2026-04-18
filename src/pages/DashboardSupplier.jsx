@@ -966,6 +966,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       console.error('supplier_application_received email error:', emailError);
     }
 
+    try {
+      await sendMaabarEmail({
+        type: 'admin_supplier_verification',
+        data: {
+          companyName: mergedProfile.company_name || mergedProfile.full_name || '',
+          supplierId: user.id,
+          maabarSupplierId: mergedProfile.maabar_supplier_id || '',
+        },
+      });
+    } catch (emailError) {
+      console.error('admin_supplier_verification email error:', emailError);
+    }
+
     setVerificationSaved(true);
     setVerificationMsg(t.verificationSubmitted);
     setVerificationStep(3);
