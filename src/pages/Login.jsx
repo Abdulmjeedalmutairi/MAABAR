@@ -290,6 +290,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [country, setCountry] = useState('');
   const [supCity, setSupCity] = useState('');
   const [speciality, setSpeciality] = useState('');
+  const [tradeLink, setTradeLink] = useState('');
 
   useEffect(() => {
     setMode(getInitialMode());
@@ -497,6 +498,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         speciality: trimValue(speciality),
         country: trimValue(country),
         city: trimValue(supCity),
+        trade_link: trimValue(tradeLink),
         lang: effectiveLang === 'zh' ? 'zh' : 'en',
       }),
     };
@@ -534,6 +536,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             whatsapp: trimValue(whatsapp),
             wechat: trimValue(wechat),
             speciality: trimValue(speciality),
+            trade_link: trimValue(tradeLink),
             lang: effectiveLang === 'zh' ? 'zh' : 'en',
           }).select().single();
 
@@ -978,6 +981,18 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                       ))}
                     </select>
                     {getErrorText('speciality')}
+                  </div>
+
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>{l.tradeLink}</label>
+                    <textarea
+                      style={{ ...inputStyle, minHeight: 64, resize: 'vertical' }}
+                      value={tradeLink}
+                      onChange={(e) => setTradeLink(e.target.value)}
+                      placeholder={effectiveLang === 'ar' ? 'https://...' : 'https://...'}
+                      dir="ltr"
+                    />
+                    <p style={helperTextStyle}>{supplierSignupContent.tradeLinkHint}</p>
                   </div>
 
                   <div style={{
