@@ -416,7 +416,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const rawDraft = sessionStorage.getItem(verificationDraftKey);
     if (!rawDraft) {
-      setVerificationStep(hasPersistedSupplierSettings(profile) ? 2 : 1);
+      setVerificationStep(1);
       setDraftSavedAt('');
       return;
     }
