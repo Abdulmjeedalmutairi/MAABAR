@@ -129,11 +129,11 @@ export default function AuthCallback({ user, profile, lang }) {
   useEffect(() => {
     if (!user || profile) return; // If profile exists, no timeout needed
     const timeout = setTimeout(() => {
-      // Profile still null after 5 seconds — redirect anyway
-      nav('/dashboard', { replace: true });
+      // Profile still null after 5 seconds — use requestedRole to pick the right dashboard
+      nav(requestedRole === 'supplier' ? '/dashboard/supplier' : '/dashboard', { replace: true });
     }, 5000);
     return () => clearTimeout(timeout);
-  }, [user, profile, nav]);
+  }, [user, profile, nav, requestedRole]);
 
   const loginTarget = requestedRole === 'supplier' ? '/login/supplier' : '/login';
 
