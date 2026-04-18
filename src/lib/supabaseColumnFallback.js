@@ -3,6 +3,8 @@ function parseMissingColumn(error, table) {
   const patterns = [
     new RegExp(`column ${table}\\.([a-zA-Z0-9_]+) does not exist`, 'i'),
     new RegExp(`Could not find the '([^']+)' column of '${table}'`, 'i'),
+    // PostgREST v14+ PGRST204 schema-cache miss format
+    new RegExp(`Column '([^']+)' of relation '${table}' is not present in the schema cache`, 'i'),
   ];
 
   for (const pattern of patterns) {
