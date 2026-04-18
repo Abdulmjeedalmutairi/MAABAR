@@ -717,10 +717,12 @@ async function resolveEmailContext(to: string, data: any = {}) {
 const HOOK_SECRET_RAW = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
 
 async function handleSupabaseAuthHook(body: any, authHeader: string | null, headers: Headers) {
+  console.log('[hook] full body:', JSON.stringify(body));
+
   // Check if this is a Supabase Auth Hook (identified by User-Agent)
   const userAgent = headers.get('user-agent') || '';
   const isSupabaseHook = userAgent.includes('Go-http-client');
-  
+
   console.log('[hook] User-Agent:', userAgent);
   console.log('[hook] Is Supabase hook?', isSupabaseHook);
   
