@@ -84,6 +84,7 @@ import {
   getSupplierMaabarId,
   getSupplierOnboardingState,
   getSupplierStageLabel,
+  getSupplierTradeLinks,
   normalizeSupplierDocStoragePath,
 } from '../lib/supplierOnboarding';
 import { attachDirectoryProfiles } from '../lib/profileVisibility';
@@ -987,6 +988,25 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       });
     } catch (emailError) {
       console.error('admin_supplier_verification email error:', emailError);
+    }
+
+    try {
+      await sendMaabarEmail({
+        type: 'admin_new_supplier',
+        data: {
+          companyName: mergedProfile.company_name || mergedProfile.full_name || '',
+          email: mergedProfile.email || user.email || '',
+          country: mergedProfile.country || '',
+          city: mergedProfile.city || '',
+          speciality: mergedProfile.speciality || '',
+          whatsapp: mergedProfile.whatsapp || '',
+          wechat: mergedProfile.wechat || '',
+          tradeLink: mergedProfile.trade_link || '',
+          tradeLinks: getSupplierTradeLinks(mergedProfile),
+        },
+      });
+    } catch (emailError) {
+      console.error('admin_new_supplier email error:', emailError);
     }
 
     setVerificationSaved(true);
