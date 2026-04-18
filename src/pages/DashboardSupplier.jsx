@@ -483,7 +483,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       const num_employees = normalizeOptionalInteger(verification.num_employees);
       const debouncePayload = stripEmptyFields({ reg_number, years_experience, num_employees });
       if (Object.keys(debouncePayload).length === 0) return;
-      await sb.from('profiles').update(debouncePayload).eq('id', user.id);
+      const { error: debounceError } = await sb.from('profiles').update(debouncePayload).eq('id', user.id);
+      if (debounceError) { console.error('[verificationDebounce] update error:', JSON.stringify(debounceError)); return; }
       setProfile?.(prev => ({ ...(prev || {}), ...debouncePayload }));
     }, 800);
     return () => clearTimeout(verificationTextDebounceRef.current);
