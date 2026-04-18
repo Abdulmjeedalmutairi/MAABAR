@@ -72,6 +72,7 @@ import {
   ProductPreviewPanel,
 } from '../components/supplier/ProductComposer';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateTextToAllLanguages } from '../lib/requestTranslation';
 import {
   getOfferEstimatedTotal,
