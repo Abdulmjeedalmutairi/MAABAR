@@ -421,7 +421,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const rawDraft = sessionStorage.getItem(verificationDraftKey);
     if (!rawDraft) {
-      setVerificationStep(1);
+      setVerificationStep(hasPersistedSupplierSettings(profile) ? 2 : 1);
       setDraftSavedAt('');
       return;
     }
@@ -444,7 +444,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch {
       sessionStorage.removeItem(verificationDraftKey);
     }
-  }, [verificationDraftKey]);
+  }, [verificationDraftKey, profile]);
 
   useEffect(() => {
     if (saveDraftFirstRunRef.current) {
@@ -903,7 +903,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
       payload: stripEmptyFields(payload),
-      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'factory_videos'],
+      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'factory_videos', 'certifications'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
 
@@ -1049,16 +1049,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSavingSettings(true);
     const payload = buildSettingsPayload(settings, companyDescription);
 
+    console.log('[step1 save] payload:', JSON.stringify(payload));
+
     const { error } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
-      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency'],
+      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'certifications'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
 
     setSavingSettings(false);
 
     if (error) {
+      console.log('[step1 save] error:', JSON.stringify(error));
       setSettingsError(isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.');
       return false;
     }
