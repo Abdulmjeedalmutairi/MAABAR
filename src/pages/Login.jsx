@@ -262,7 +262,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const l = L[effectiveLang] || L.ar;
   const supplierSignupContent = SUPPLIER_SIGNUP_CONTENT[effectiveLang] || SUPPLIER_SIGNUP_CONTENT.en;
 
-  const getInitialMode = () => (isSupplier ? 'signin' : (searchParams.get('mode') === 'signup' ? 'signup' : 'signin'));
+  const getInitialMode = () => (searchParams.get('mode') === 'signup' ? 'signup' : (isSupplier ? 'signin' : 'signin'));
   const [mode, setMode] = useState(getInitialMode);
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
