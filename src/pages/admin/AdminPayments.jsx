@@ -1,0 +1,183 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import AdminShell from '../../components/admin/AdminShell';
+import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
+import AdminPaginator from '../../components/admin/AdminPaginator';
+import { sb } from '../../supabase';
+
+const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
+const FONT_BODY    = "'Tajawal', sans-serif";
+const PAGE_SIZE    = 50;
+
+const TABS = [
+  { key: 'all',             en: 'All',            ar: 'الكل' },
+  { key: 'paid',            en: 'Paid',           ar: 'مدفوع' },
+  { key: 'pending_payment', en: 'Pending',        ar: 'معلّق' },
+  { key: 'refunded',        en: 'Refunded',       ar: 'مُسترد' },
+];
+
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const fmtAmt  = (a, c) => a != null ? `${Number(a).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c}` : '—';
+
+function KPITile({ label, value, sub, color }) {
+  return (
+    <div style={{ background: 'var(--bg-raised, #fff)', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 10, padding: '20px' }}>
+      <p style={{ margin: '0 0 10px', fontSize: 10, fontWeight: 600, letterSpacing: 1.6, textTransform: 'uppercase', color: 'rgba(0,0,0,0.38)', fontFamily: FONT_BODY }}>{label}</p>
+      <p style={{ margin: 0, fontSize: 36, fontWeight: 300, lineHeight: 1, letterSpacing: '-0.02em', color: color || 'rgba(0,0,0,0.88)', fontFamily: FONT_HEADING, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}>{value}</p>
+      {sub && <p style={{ margin: '8px 0 0', fontSize: 11, color: 'rgba(0,0,0,0.38)', fontFamily: FONT_BODY }}>{sub}</p>}
+    </div>
+  );
+}
+
+const SHARED_CSS = (isAr) => `
+  .a-page { padding: 36px 32px; max-width: 1080px; }
+  .a-page-title { margin: 0 0 4px; font-size: 26px; font-weight: 400; color: rgba(0,0,0,0.88); font-family: ${FONT_HEADING}; line-height: 1.1; }
+  .a-page-sub { margin: 0 0 24px; font-size: 12px; color: rgba(0,0,0,0.38); font-family: ${FONT_BODY}; }
+  .a-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; }
+  .a-tabs { display: flex; gap: 4px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .a-tabs::-webkit-scrollbar { display: none; }
+  .a-tab { flex-shrink: 0; padding: 6px 14px; border-radius: 99px; border: 1px solid rgba(0,0,0,0.09); background: transparent; cursor: pointer; font-size: 12px; color: rgba(0,0,0,0.45); min-height: 34px; transition: all 0.12s; white-space: nowrap; font-family: ${FONT_BODY}; }
+  .a-tab.on { background: #1a1814; color: #fff; border-color: #1a1814; font-weight: 600; }
+  .a-tab:not(.on):hover { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.72); }
+  .a-table-wrap { border-radius: 10px; border: 1px solid rgba(0,0,0,0.07); overflow: hidden; }
+  .a-table { width: 100%; border-collapse: collapse; }
+  .a-table th { padding: 11px 16px; font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(0,0,0,0.38); text-align: ${isAr ? 'right' : 'left'}; background: var(--bg-subtle, #F5F2EE); border-bottom: 1px solid rgba(0,0,0,0.06); white-space: nowrap; font-family: ${FONT_BODY}; }
+  .a-table td { padding: 13px 16px; font-size: 13px; color: rgba(0,0,0,0.80); border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: middle; font-family: ${FONT_BODY}; }
+  .a-table tr:last-child td { border-bottom: none; }
+  .a-cards { display: none; flex-direction: column; gap: 8px; }
+  .a-card { background: var(--bg-raised,#fff); border: 1px solid rgba(0,0,0,0.07); border-radius: 10px; padding: 15px; }
+  .a-card-meta { font-size: 10px; color: rgba(0,0,0,0.35); font-family: ${FONT_BODY}; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 2px; }
+  .a-card-val { font-size: 13px; color: rgba(0,0,0,0.75); font-family: ${FONT_BODY}; }
+  .a-empty { text-align: center; padding: 40px 20px; color: rgba(0,0,0,0.30); font-family: ${FONT_BODY}; font-size: 13px; }
+  @media (max-width: 900px) { .a-page { padding: 22px 16px; } .a-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 768px) { .a-table-wrap { display: none; } .a-cards { display: flex; } .a-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 769px) { .a-cards { display: none; } }
+`;
+
+export default function AdminPayments({ user, profile, lang, ...rest }) {
+  const [tab, setTab] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState(null);
+  const isAr = lang === 'ar';
+
+  const loadKPIs = useCallback(async () => {
+    const [{ data: paid }, { data: refunded }, { data: pending }] = await Promise.all([
+      sb.from('orders').select('amount, currency, platform_fee_pct').eq('status', 'paid'),
+      sb.from('orders').select('amount, currency').eq('status', 'refunded'),
+      sb.from('orders').select('amount, currency').eq('status', 'pending_payment'),
+    ]);
+    const sumSAR = (rows) => (rows || []).filter(r => r.currency === 'SAR').reduce((s, r) => s + (r.amount || 0), 0);
+    const feeSum = (rows) => (rows || []).filter(r => r.currency === 'SAR').reduce((s, r) => s + (r.amount || 0) * (r.platform_fee_pct || 5) / 100, 0);
+    setKpis({
+      gmv: sumSAR(paid),
+      fees: feeSum(paid),
+      refunds: sumSAR(refunded),
+      pending: sumSAR(pending),
+    });
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    let q = sb.from('orders')
+      .select('id, created_at, status, amount, currency, platform_fee_pct, platform_fee_amount, payment_reference, payment_method, buyer:buyer_id(full_name, email), supplier:supplier_id(full_name, company_name)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    if (tab !== 'all') q = q.eq('status', tab);
+    const { data, count } = await q;
+    setOrders(data || []);
+    setTotal(count || 0);
+    setLoading(false);
+  }, [tab, page]);
+
+  useEffect(() => { setPage(0); }, [tab]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadKPIs(); }, [loadKPIs]);
+
+  const fmt = (n) => n != null ? n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' SAR' : '—';
+
+  return (
+    <AdminRouteGuard user={user} profile={profile} lang={lang}>
+      <AdminShell user={user} profile={profile} lang={lang}>
+        <style>{SHARED_CSS(isAr)}</style>
+        <div className="a-page" dir={isAr ? 'rtl' : 'ltr'}>
+          <h1 className="a-page-title">{isAr ? 'المدفوعات' : 'Payments'}</h1>
+          <p className="a-page-sub">{isAr ? 'ملخص مالي للمنصة' : 'Platform financial summary'}</p>
+
+          <div className="a-kpi-grid">
+            <KPITile label={isAr ? 'حجم المعاملات' : 'GMV (SAR)'} value={kpis ? fmt(kpis.gmv) : '—'} sub={isAr ? 'إجمالي المدفوعات' : 'Total paid orders'} color="#27725a" />
+            <KPITile label={isAr ? 'رسوم المنصة' : 'Platform Fees'} value={kpis ? fmt(kpis.fees) : '—'} sub={isAr ? 'الإيرادات' : 'Revenue collected'} color="#8B6914" />
+            <KPITile label={isAr ? 'المستردات' : 'Refunds'} value={kpis ? fmt(kpis.refunds) : '—'} sub={isAr ? 'إجمالي المستردة' : 'Total refunded'} color="#c0392b" />
+            <KPITile label={isAr ? 'معلّقة' : 'Pending'} value={kpis ? fmt(kpis.pending) : '—'} sub={isAr ? 'بانتظار الدفع' : 'Awaiting payment'} />
+          </div>
+
+          <div className="a-tabs">
+            {TABS.map(t => (
+              <button key={t.key} className={`a-tab${tab === t.key ? ' on' : ''}`} onClick={() => setTab(t.key)}>
+                {isAr ? t.ar : t.en}
+              </button>
+            ))}
+          </div>
+
+          <div className="a-table-wrap">
+            <table className="a-table">
+              <thead>
+                <tr>
+                  <th>{isAr ? 'المشتري' : 'Buyer'}</th>
+                  <th>{isAr ? 'المورد' : 'Supplier'}</th>
+                  <th>{isAr ? 'المبلغ' : 'Amount'}</th>
+                  <th>{isAr ? 'الرسوم' : 'Fee'}</th>
+                  <th>{isAr ? 'المرجع' : 'Ref'}</th>
+                  <th>{isAr ? 'الحالة' : 'Status'}</th>
+                  <th>{isAr ? 'التاريخ' : 'Date'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && <tr><td colSpan={7}><div className="a-empty">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</div></td></tr>}
+                {!loading && orders.length === 0 && <tr><td colSpan={7}><div className="a-empty">{isAr ? 'لا توجد مدفوعات' : 'No payments found'}</div></td></tr>}
+                {orders.map(o => {
+                  const fee = o.platform_fee_amount ?? (o.amount * o.platform_fee_pct / 100);
+                  return (
+                    <tr key={o.id}>
+                      <td style={{ fontWeight: 500 }}>{o.buyer?.full_name || o.buyer?.email || '—'}</td>
+                      <td>{o.supplier?.company_name || o.supplier?.full_name || '—'}</td>
+                      <td style={{ fontVariantNumeric: 'lining-nums', fontWeight: 500 }}>{fmtAmt(o.amount, o.currency)}</td>
+                      <td style={{ fontVariantNumeric: 'lining-nums', color: '#8B6914' }}>{fmtAmt(fee, o.currency)}</td>
+                      <td style={{ fontSize: 11, color: 'rgba(0,0,0,0.40)', fontFamily: 'monospace' }}>{o.payment_reference || '—'}</td>
+                      <td><AdminStatusBadge status={o.status} lang={lang} /></td>
+                      <td style={{ fontFamily: FONT_BODY, fontSize: 12, color: 'rgba(0,0,0,0.40)', fontVariantNumeric: 'lining-nums' }}>{fmtDate(o.created_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <AdminPaginator page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} isAr={isAr} />
+          </div>
+
+          <div className="a-cards">
+            {loading && <p style={{ color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY, fontSize: 13 }}>{isAr ? 'جارٍ التحميل...' : 'Loading…'}</p>}
+            {!loading && orders.length === 0 && <p style={{ color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY, fontSize: 13 }}>{isAr ? 'لا توجد مدفوعات' : 'No payments'}</p>}
+            {orders.map(o => {
+              const fee = o.platform_fee_amount ?? (o.amount * o.platform_fee_pct / 100);
+              return (
+                <div key={o.id} className="a-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, fontFamily: FONT_BODY, color: 'rgba(0,0,0,0.85)', fontVariantNumeric: 'lining-nums' }}>{fmtAmt(o.amount, o.currency)}</div>
+                    <AdminStatusBadge status={o.status} lang={lang} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+                    {[[isAr ? 'المشتري' : 'BUYER', o.buyer?.full_name], [isAr ? 'الرسوم' : 'FEE', fmtAmt(fee, o.currency)], [isAr ? 'التاريخ' : 'DATE', fmtDate(o.created_at)]].filter(([,v]) => v).map(([label, val]) => (
+                      <div key={label}><div className="a-card-meta">{label}</div><div className="a-card-val">{val}</div></div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </AdminShell>
+    </AdminRouteGuard>
+  );
+}

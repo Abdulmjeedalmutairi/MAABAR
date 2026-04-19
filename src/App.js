@@ -63,6 +63,18 @@ import AdminManagedDetail from './pages/admin/AdminManagedDetail';
 import AdminConcierge from './pages/admin/AdminConcierge';
 import AdminConciergeDetail from './pages/admin/AdminConciergeDetail';
 import AdminComingSoon from './pages/admin/AdminComingSoon';
+import AdminDisputes from './pages/admin/AdminDisputes';
+import AdminDisputeDetail from './pages/admin/AdminDisputeDetail';
+import AdminTraders from './pages/admin/AdminTraders';
+import AdminTraderDetail from './pages/admin/AdminTraderDetail';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminOrderDetail from './pages/admin/AdminOrderDetail';
+import AdminPayments from './pages/admin/AdminPayments';
+import AdminSupport from './pages/admin/AdminSupport';
+import AdminTicketDetail from './pages/admin/AdminTicketDetail';
+import AdminEmails from './pages/admin/AdminEmails';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminSettings from './pages/admin/AdminSettings';
 
 // Components
 import Navbar from './components/Navbar';
@@ -329,14 +341,18 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin/managed/:id"       element={<AdminManagedDetail   {...sharedProps} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
         <Route path="/admin/concierge/:id"     element={<AdminConciergeDetail {...sharedProps} />} />
-        <Route path="/admin/disputes"          element={<AdminComingSoon      {...sharedProps} section="Disputes" />} />
-        <Route path="/admin/traders"           element={<AdminComingSoon      {...sharedProps} section="Traders" />} />
-        <Route path="/admin/orders"            element={<AdminComingSoon      {...sharedProps} section="Orders" />} />
-        <Route path="/admin/payments"          element={<AdminComingSoon      {...sharedProps} section="Payments" />} />
-        <Route path="/admin/support"           element={<AdminComingSoon      {...sharedProps} section="Support" />} />
-        <Route path="/admin/emails"            element={<AdminComingSoon      {...sharedProps} section="Emails" />} />
-        <Route path="/admin/analytics"         element={<AdminComingSoon      {...sharedProps} section="Analytics" />} />
-        <Route path="/admin/settings"          element={<AdminComingSoon      {...sharedProps} section="Settings" />} />
+        <Route path="/admin/disputes"          element={<AdminDisputes        {...sharedProps} />} />
+        <Route path="/admin/disputes/:id"      element={<AdminDisputeDetail   {...sharedProps} />} />
+        <Route path="/admin/traders"           element={<AdminTraders         {...sharedProps} />} />
+        <Route path="/admin/traders/:id"       element={<AdminTraderDetail    {...sharedProps} />} />
+        <Route path="/admin/orders"            element={<AdminOrders          {...sharedProps} />} />
+        <Route path="/admin/orders/:id"        element={<AdminOrderDetail     {...sharedProps} />} />
+        <Route path="/admin/payments"          element={<AdminPayments        {...sharedProps} />} />
+        <Route path="/admin/support"           element={<AdminSupport         {...sharedProps} />} />
+        <Route path="/admin/support/:id"       element={<AdminTicketDetail    {...sharedProps} />} />
+        <Route path="/admin/emails"            element={<AdminEmails          {...sharedProps} />} />
+        <Route path="/admin/analytics"         element={<AdminAnalytics       {...sharedProps} />} />
+        <Route path="/admin/settings"          element={<AdminSettings        {...sharedProps} />} />
         {/* /apollo route removed — ApolloAgent not available */}
         <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
         <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
