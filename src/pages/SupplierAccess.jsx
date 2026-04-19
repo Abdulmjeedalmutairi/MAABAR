@@ -151,7 +151,8 @@ export default function SupplierAccess({ user, profile, lang = 'zh' }) {
   const goToApply = () => {
     let url = supplierPrimaryRoute;
     if (!user && supplierPrimaryRouteRaw === '/login/supplier') {
-      url += (url.includes('?') ? '&' : '?') + `lang=${currentLang}&mode=signup`;
+      // supplierPrimaryRoute already contains ?lang=... so only add mode=signup
+      url += (url.includes('?') ? '&' : '?') + 'mode=signup';
     }
     nav(url);
   };
