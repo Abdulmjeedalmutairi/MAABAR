@@ -54,6 +54,16 @@ import AgentPanel from './pages/AgentPanel';
 import Checkout from './pages/Checkout';
 import PaymentSuccess from './pages/PaymentSuccess';
 
+// Admin dashboard (Phase 1)
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminSuppliers from './pages/admin/AdminSuppliers';
+import AdminSupplierDetail from './pages/admin/AdminSupplierDetail';
+import AdminManaged from './pages/admin/AdminManaged';
+import AdminManagedDetail from './pages/admin/AdminManagedDetail';
+import AdminConcierge from './pages/admin/AdminConcierge';
+import AdminConciergeDetail from './pages/admin/AdminConciergeDetail';
+import AdminComingSoon from './pages/admin/AdminComingSoon';
+
 // Components
 import Navbar from './components/Navbar';
 import AIHub from './components/AIHub';
@@ -190,7 +200,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
   );
   if (!profile) return <DashboardBuyer {...sharedProps} />;
   const isPreview = localStorage.getItem('maabar_preview') === '1';
-  if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
+  if (profile.role === 'admin' || profile.role === 'super_admin') return <Navigate to="/admin/overview" replace />;
   if (profile.role === 'buyer') {
     const LAUNCH_DATE = new Date('2026-05-01T00:00:00+03:00');
     if (new Date() < LAUNCH_DATE && !isPreview) return <BuyerWaiting {...sharedProps} />;
@@ -255,7 +265,9 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
 function AppContent({ lang, profile, user, sharedProps, loading, profileError, setProfileError, setLoading, loadProfile }) {
   const location = useLocation();
   const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
+  const isAdminPage = location.pathname.startsWith('/admin');
   const isChromelessPage = isAuthCallbackPage
+    || isAdminPage
     || location.pathname === '/'
     || location.pathname === '/buyer'
     || location.pathname === '/preview'
@@ -307,6 +319,24 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/faq/suppliers"  element={<FAQSuppliers    {...sharedProps} />} />
         <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
         <Route path="/agent"          element={<AgentPanel />} />
+
+        {/* Admin dashboard */}
+        <Route path="/admin"                   element={<Navigate to="/admin/overview" replace />} />
+        <Route path="/admin/overview"          element={<AdminOverview        {...sharedProps} />} />
+        <Route path="/admin/suppliers"         element={<AdminSuppliers       {...sharedProps} />} />
+        <Route path="/admin/suppliers/:id"     element={<AdminSupplierDetail  {...sharedProps} />} />
+        <Route path="/admin/managed"           element={<AdminManaged         {...sharedProps} />} />
+        <Route path="/admin/managed/:id"       element={<AdminManagedDetail   {...sharedProps} />} />
+        <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
+        <Route path="/admin/concierge/:id"     element={<AdminConciergeDetail {...sharedProps} />} />
+        <Route path="/admin/disputes"          element={<AdminComingSoon      {...sharedProps} section="Disputes" />} />
+        <Route path="/admin/traders"           element={<AdminComingSoon      {...sharedProps} section="Traders" />} />
+        <Route path="/admin/orders"            element={<AdminComingSoon      {...sharedProps} section="Orders" />} />
+        <Route path="/admin/payments"          element={<AdminComingSoon      {...sharedProps} section="Payments" />} />
+        <Route path="/admin/support"           element={<AdminComingSoon      {...sharedProps} section="Support" />} />
+        <Route path="/admin/emails"            element={<AdminComingSoon      {...sharedProps} section="Emails" />} />
+        <Route path="/admin/analytics"         element={<AdminComingSoon      {...sharedProps} section="Analytics" />} />
+        <Route path="/admin/settings"          element={<AdminComingSoon      {...sharedProps} section="Settings" />} />
         {/* /apollo route removed — ApolloAgent not available */}
         <Route path="/checkout"       element={<Checkout        {...sharedProps} />} />
         <Route path="/payment-success"element={<PaymentSuccess  {...sharedProps} />} />
