@@ -558,20 +558,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }
         }
 
-        // Overwrite any values the DB trigger may have stored from browser-autofilled metadata
-        const { error: profileUpdateError } = await sb.from('profiles').update({
-          company_name: trimValue(supCompany),
-          country: trimValue(country),
-          city: trimValue(supCity),
-          whatsapp: trimValue(whatsapp) || null,
-          wechat: trimValue(wechat) || null,
-          speciality: trimValue(speciality),
-          trade_link: trimValue(tradeLink) || null,
-          lang: effectiveLang === 'zh' ? 'zh' : 'en',
-        }).eq('id', data.user.id);
-        if (profileUpdateError) {
-          console.error('[doSignUp] profile update error:', JSON.stringify(profileUpdateError));
-        }
+        // Note: no UPDATE here — email confirmation is required so there's no active session.
+        // The INSERT above (or the on_auth_user_created trigger) already persisted all fields
+        // from raw_user_meta_data which was set correctly from the form values.
       } catch (emailError) {
         console.error('supplier signup error:', emailError);
       }
