@@ -578,21 +578,21 @@ ${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.
     const lang = d.lang || 'en';
     const t = ({
       en: {
-        subject: 'Maabar — Verification Received | 认证资料已收到',
+        subject: 'Maabar — Verification Received',
         eyebrow: 'Verification Received',
         title: `Hello ${d.companyName || ''},`,
         body: 'We received your verification documents. The Maabar team will review your submission and contact you within 24 to 72 hours.',
         cta: 'Sign in to your dashboard →',
       },
       zh: {
-        subject: 'Maabar — Verification Received | 认证资料已收到',
+        subject: 'Maabar — 认证资料已收到',
         eyebrow: '认证资料已收到',
         title: `${d.companyName || ''}，您好`,
         body: '我们已收到您的认证资料。Maabar 团队将在 24 至 72 小时内审核您的提交内容并与您联系。',
         cta: '前往供应商控制台 →',
       },
     } as any)[lang] || {
-      subject: 'Maabar — Verification Received | 认证资料已收到',
+      subject: 'Maabar — Verification Received',
       eyebrow: 'Verification Received',
       title: `Hello ${d.companyName || ''},`,
       body: 'We received your verification documents. The Maabar team will review your submission and contact you within 24 to 72 hours.',
