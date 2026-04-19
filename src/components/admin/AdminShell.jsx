@@ -3,51 +3,95 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../../supabase';
 
 const NAV = [
-  { path: '/admin/overview',   labelEn: 'Overview',          labelAr: 'نظرة عامة',     phase: 1 },
-  { path: '/admin/suppliers',  labelEn: 'Suppliers',         labelAr: 'الموردون',       phase: 1 },
-  { path: '/admin/managed',    labelEn: 'Managed Requests',  labelAr: 'الطلبات المُدارة', phase: 1 },
-  { path: '/admin/concierge',  labelEn: 'Concierge',         labelAr: 'الكونسيرج',     phase: 1 },
-  { path: '/admin/disputes',   labelEn: 'Disputes',          labelAr: 'النزاعات',       phase: 2 },
-  { path: '/admin/traders',    labelEn: 'Traders',           labelAr: 'التجار',         phase: 2 },
-  { path: '/admin/orders',     labelEn: 'Orders',            labelAr: 'الطلبات',        phase: 2 },
-  { path: '/admin/payments',   labelEn: 'Payments',          labelAr: 'المدفوعات',      phase: 2 },
-  { path: '/admin/support',    labelEn: 'Support',           labelAr: 'الدعم',          phase: 2 },
-  { path: '/admin/emails',     labelEn: 'Emails',            labelAr: 'الإيميلات',      phase: 2 },
-  { path: '/admin/analytics',  labelEn: 'Analytics',         labelAr: 'التحليلات',      phase: 2 },
-  { path: '/admin/settings',   labelEn: 'Settings',          labelAr: 'الإعدادات',      phase: 2 },
+  { path: '/admin/overview',  enLabel: 'Overview',          arLabel: 'نظرة عامة',      phase: 1 },
+  { path: '/admin/suppliers', enLabel: 'Suppliers',         arLabel: 'الموردون',        phase: 1 },
+  { path: '/admin/managed',   enLabel: 'Managed Requests',  arLabel: 'الطلبات المُدارة', phase: 1 },
+  { path: '/admin/concierge', enLabel: 'Concierge',         arLabel: 'الكونسيرج',      phase: 1 },
+  { path: '/admin/disputes',  enLabel: 'Disputes',          arLabel: 'النزاعات',        phase: 2 },
+  { path: '/admin/traders',   enLabel: 'Traders',           arLabel: 'التجار',          phase: 2 },
+  { path: '/admin/orders',    enLabel: 'Orders',            arLabel: 'الطلبات',         phase: 2 },
+  { path: '/admin/payments',  enLabel: 'Payments',          arLabel: 'المدفوعات',       phase: 2 },
+  { path: '/admin/support',   enLabel: 'Support',           arLabel: 'الدعم',           phase: 2 },
+  { path: '/admin/emails',    enLabel: 'Emails',            arLabel: 'الإيميلات',       phase: 2 },
+  { path: '/admin/analytics', enLabel: 'Analytics',         arLabel: 'التحليلات',       phase: 2 },
+  { path: '/admin/settings',  enLabel: 'Settings',          arLabel: 'الإعدادات',       phase: 2 },
 ];
 
-const BOTTOM_NAV = NAV.slice(0, 5); // Overview, Suppliers, Managed, Concierge, Disputes
+const BOTTOM_NAV = [
+  { path: '/admin/overview',  enLabel: 'Overview',  arLabel: 'نظرة عامة' },
+  { path: '/admin/suppliers', enLabel: 'Suppliers', arLabel: 'الموردون' },
+  { path: '/admin/managed',   enLabel: 'Managed',   arLabel: 'مُدارة' },
+  { path: '/admin/concierge', enLabel: 'Concierge', arLabel: 'كونسيرج' },
+  { path: '/admin/disputes',  enLabel: 'Disputes',  arLabel: 'نزاعات' },
+];
 
-const BOTTOM_ICONS = {
-  '/admin/overview':   '▦',
-  '/admin/suppliers':  '◈',
-  '/admin/managed':    '◉',
-  '/admin/concierge':  '◎',
-  '/admin/disputes':   '◇',
-};
+// Trilingual logo — always LTR regardless of page direction
+function MaabarAdminLogo() {
+  return (
+    <div dir="ltr" style={{ userSelect: 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+        <span style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 15, fontWeight: 500, letterSpacing: '0.2em',
+          color: 'rgba(0,0,0,0.88)', textTransform: 'uppercase',
+        }}>
+          MAABAR
+        </span>
+        <span style={{ color: '#d4cfc6', fontSize: 14, fontWeight: 300 }}>|</span>
+        <span style={{
+          fontFamily: "'Cairo', sans-serif",
+          fontSize: 14, fontWeight: 600, color: '#6b6560',
+          letterSpacing: 0,
+        }}>
+          مَعبر
+        </span>
+        <span style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 11, color: '#b0ab9e', letterSpacing: 0.3,
+        }}>
+          迈巴尔
+        </span>
+      </div>
+      <div style={{ marginTop: 3 }}>
+        <span style={{
+          display: 'inline-block',
+          fontFamily: "'Tajawal', sans-serif",
+          fontSize: 9, fontWeight: 700, letterSpacing: '0.18em',
+          color: '#fff', background: '#1a1814',
+          padding: '1px 7px', borderRadius: 3,
+          textTransform: 'uppercase',
+        }}>
+          ADMIN
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function NavItem({ item, isActive, lang, onClick }) {
-  const isRTL = lang === 'ar';
+  const isAr = lang === 'ar';
+  const label = isAr ? item.arLabel : item.enLabel;
   return (
     <button
       onClick={() => onClick(item.path)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        width: '100%', padding: '10px 14px', border: 'none',
-        background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-        borderRadius: 10, cursor: 'pointer', textAlign: isRTL ? 'right' : 'left',
-        color: isActive ? 'var(--text-primary)' : item.phase === 2 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.65)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        width: '100%', padding: '0 12px', border: 'none',
+        background: isActive ? '#1a1814' : 'transparent',
+        borderRadius: 7, cursor: 'pointer',
+        color: isActive ? '#fff' : item.phase === 2 ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.62)',
         fontSize: 13, fontWeight: isActive ? 600 : 400,
-        fontFamily: isRTL ? 'var(--font-ar)' : 'var(--font-sans)',
-        minHeight: 44, transition: 'background 0.12s, color 0.12s',
-        borderLeft: !isRTL && isActive ? '2px solid rgba(255,255,255,0.7)' : '2px solid transparent',
-        borderRight: isRTL && isActive ? '2px solid rgba(255,255,255,0.7)' : '2px solid transparent',
+        fontFamily: isAr ? "'Tajawal', sans-serif" : "'Tajawal', sans-serif",
+        minHeight: 40, transition: 'background 0.12s, color 0.12s',
+        textAlign: isAr ? 'right' : 'left',
       }}
     >
-      {isRTL ? item.labelAr : item.labelEn}
+      <span>{label}</span>
       {item.phase === 2 && (
-        <span style={{ marginInlineStart: 'auto', fontSize: 9, letterSpacing: 0.8, opacity: 0.5, fontFamily: 'var(--font-sans)' }}>
+        <span style={{
+          fontSize: 8, letterSpacing: 0.8, opacity: 0.5,
+          fontFamily: "'Tajawal', sans-serif", fontWeight: 400,
+        }}>
           SOON
         </span>
       )}
@@ -55,57 +99,38 @@ function NavItem({ item, isActive, lang, onClick }) {
   );
 }
 
-export default function AdminShell({ children, user, profile, lang, currentPath }) {
+export default function AdminShell({ children, user, profile, lang }) {
   const nav = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isRTL = lang === 'ar';
-  const activePath = currentPath || location.pathname;
+  const isAr = lang === 'ar';
+  const activePath = location.pathname;
 
-  // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
-  // Lock body scroll when drawer is open
   useEffect(() => {
-    if (drawerOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
-  const handleNav = (path) => {
-    setDrawerOpen(false);
-    nav(path);
-  };
-
-  const handleSignOut = async () => {
-    await sb.auth.signOut();
-    nav('/login');
-  };
-
+  const handleNav = (path) => { setDrawerOpen(false); nav(path); };
+  const handleSignOut = async () => { await sb.auth.signOut(); nav('/login'); };
   const displayName = profile?.full_name || profile?.email || 'Admin';
 
-  const SidebarContent = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 8px' }}>
-      {/* Brand */}
-      <div style={{ padding: '0 6px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: 12 }}>
-        <p style={{ margin: 0, fontSize: 10, letterSpacing: 2.5, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-sans)', textTransform: 'uppercase' }}>
-          MAABAR
-        </p>
-        <p style={{ margin: '3px 0 0', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontFamily: 'var(--font-sans)', letterSpacing: 0.5 }}>
-          Admin Console
-        </p>
+  const SidebarInner = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 12px 16px' }}>
+      {/* Logo */}
+      <div style={{ padding: '0 4px 20px', borderBottom: '1px solid rgba(0,0,0,0.07)', marginBottom: 10 }}>
+        <MaabarAdminLogo />
       </div>
 
-      {/* Nav items */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+      {/* Nav */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto' }}>
         {NAV.map(item => (
           <NavItem
             key={item.path}
             item={item}
-            isActive={activePath.startsWith(item.path)}
+            isActive={activePath === item.path || (item.path !== '/admin/overview' && activePath.startsWith(item.path))}
             lang={lang}
             onClick={handleNav}
           />
@@ -113,26 +138,34 @@ export default function AdminShell({ children, user, profile, lang, currentPath 
       </div>
 
       {/* User footer */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 14, marginTop: 12 }}>
-        <div style={{ padding: '4px 8px 10px', direction: isRTL ? 'rtl' : 'ltr' }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', fontFamily: isRTL ? 'var(--font-ar)' : 'var(--font-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ borderTop: '1px solid rgba(0,0,0,0.07)', paddingTop: 12, marginTop: 12 }}>
+        <div style={{ padding: '0 6px 10px', direction: isAr ? 'rtl' : 'ltr' }}>
+          <p style={{
+            margin: 0, fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.75)',
+            fontFamily: "'Tajawal', sans-serif",
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
             {displayName}
           </p>
-          <p style={{ margin: '2px 0 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-            {profile?.role?.replace('_', ' ')}
+          <p style={{
+            margin: '1px 0 0', fontSize: 9, color: 'rgba(0,0,0,0.35)',
+            fontFamily: "'Tajawal', sans-serif", textTransform: 'uppercase', letterSpacing: 0.8,
+          }}>
+            {(profile?.role || '').replace('_', ' ')}
           </p>
         </div>
         <button
           onClick={handleSignOut}
           style={{
-            width: '100%', padding: '9px 14px', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, cursor: 'pointer',
-            color: 'rgba(255,255,255,0.5)', fontSize: 12, minHeight: 44,
-            fontFamily: isRTL ? 'var(--font-ar)' : 'var(--font-sans)',
-            transition: 'all 0.15s',
+            width: '100%', padding: '8px 12px', background: 'transparent',
+            border: '1px solid rgba(0,0,0,0.09)', borderRadius: 7, cursor: 'pointer',
+            color: 'rgba(0,0,0,0.40)', fontSize: 12, minHeight: 40,
+            fontFamily: "'Tajawal', sans-serif", transition: 'all 0.15s',
           }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = 'rgba(0,0,0,0.65)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(0,0,0,0.40)'; }}
         >
-          {isRTL ? 'تسجيل الخروج' : 'Sign out'}
+          {isAr ? 'تسجيل الخروج' : 'Sign out'}
         </button>
       </div>
     </div>
@@ -141,133 +174,136 @@ export default function AdminShell({ children, user, profile, lang, currentPath 
   return (
     <>
       <style>{`
-        .admin-shell-wrap { display: flex; min-height: var(--app-dvh, 100dvh); background: var(--bg-base); }
-        .admin-sidebar {
-          width: 220px; min-height: 100vh; position: fixed; top: 0;
-          background: #0f0f0f; z-index: 100; overflow-y: auto;
-          display: flex; flex-direction: column;
+        .a-shell { display: flex; min-height: 100dvh; background: var(--bg-base, #FAF8F5); }
+
+        /* Desktop sidebar */
+        .a-sidebar {
+          width: 216px; position: fixed; top: 0; bottom: 0;
+          background: var(--bg-raised, #fff);
+          border-right: 1px solid rgba(0,0,0,0.07);
+          z-index: 100; overflow-y: auto; display: flex; flex-direction: column;
         }
-        .admin-sidebar.ltr { left: 0; }
-        .admin-sidebar.rtl { right: 0; }
-        .admin-content {
-          flex: 1; min-width: 0; overflow-x: hidden;
-        }
-        .admin-content.ltr { margin-left: 220px; }
-        .admin-content.rtl { margin-right: 220px; }
-        .admin-topbar { display: none; }
-        .admin-drawer-overlay { display: none; }
-        .admin-bottom-nav { display: none; }
+        .a-sidebar.rtl { right: 0; left: auto; border-right: none; border-left: 1px solid rgba(0,0,0,0.07); }
+        .a-sidebar.ltr { left: 0; right: auto; }
+        .a-content { flex: 1; min-width: 0; overflow-x: hidden; }
+        .a-content.ltr { margin-left: 216px; }
+        .a-content.rtl { margin-right: 216px; }
+
+        .a-topbar { display: none; }
+        .a-drawer-overlay { display: none; }
+        .a-bottom-nav { display: none; }
 
         @media (max-width: 900px) {
-          .admin-sidebar { display: none; }
-          .admin-content.ltr { margin-left: 0; }
-          .admin-content.rtl { margin-right: 0; }
-          .admin-topbar {
+          .a-sidebar { display: none; }
+          .a-content.ltr { margin-left: 0; }
+          .a-content.rtl { margin-right: 0; }
+          .a-topbar {
             display: flex; align-items: center; justify-content: space-between;
-            position: fixed; top: 0; left: 0; right: 0; height: 56px;
-            background: #0f0f0f; z-index: 200; padding: 0 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            position: fixed; top: 0; left: 0; right: 0; height: 58px;
+            background: var(--bg-raised, #fff);
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            padding: 0 16px; z-index: 200;
           }
-          .admin-content { padding-top: 56px; padding-bottom: 68px; }
-          .admin-drawer-overlay {
+          .a-content { padding-top: 58px; padding-bottom: 62px; }
+          .a-drawer-overlay {
             display: block; position: fixed; inset: 0; z-index: 300;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
+            background: rgba(26,24,20,0.45); backdrop-filter: blur(3px);
           }
-          .admin-drawer {
-            position: fixed; top: 0; bottom: 0; width: 280px;
-            background: #0f0f0f; z-index: 301; overflow-y: auto;
-            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+          .a-drawer {
+            position: fixed; top: 0; bottom: 0; width: 270px; max-width: 88vw;
+            background: var(--bg-raised, #fff);
+            z-index: 301; overflow-y: auto;
+            transition: transform 0.24s cubic-bezier(0.4,0,0.2,1);
           }
-          .admin-drawer.ltr { left: 0; transform: translateX(-100%); }
-          .admin-drawer.ltr.open { transform: translateX(0); }
-          .admin-drawer.rtl { right: 0; transform: translateX(100%); }
-          .admin-drawer.rtl.open { transform: translateX(0); }
-          .admin-bottom-nav {
-            display: flex; position: fixed; bottom: 0; left: 0; right: 0;
-            height: 60px; background: #0f0f0f; z-index: 200;
-            border-top: 1px solid rgba(255,255,255,0.08);
+          .a-drawer.ltr { left: 0; transform: translateX(-100%); }
+          .a-drawer.ltr.open { transform: translateX(0); }
+          .a-drawer.rtl { right: 0; transform: translateX(100%); }
+          .a-drawer.rtl.open { transform: translateX(0); }
+          .a-bottom-nav {
+            display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 58px;
+            background: var(--bg-raised, #fff);
+            border-top: 1px solid rgba(0,0,0,0.07); z-index: 200;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
           }
         }
 
-        .admin-nav-item-hover:hover { background: rgba(255,255,255,0.06) !important; }
-        .admin-topbar-btn {
-          background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7);
-          font-size: 20px; padding: 8px; min-width: 44px; min-height: 44px;
-          display: flex; align-items: center; justify-content: center;
-          border-radius: 8px; transition: background 0.12s;
+        .a-hamburger {
+          background: none; border: none; cursor: pointer; padding: 8px;
+          min-width: 44px; min-height: 44px; display: flex; align-items: center;
+          justify-content: center; border-radius: 6px; transition: background 0.12s;
+          color: rgba(0,0,0,0.6);
         }
-        .admin-topbar-btn:hover { background: rgba(255,255,255,0.08); }
-        .admin-bottom-nav-btn {
+        .a-hamburger:hover { background: rgba(0,0,0,0.05); }
+
+        .a-bnav-btn {
           flex: 1; display: flex; flex-direction: column; align-items: center;
-          justify-content: center; gap: 4px; background: none; border: none;
-          cursor: pointer; min-height: 60px; padding: 0;
-          transition: background 0.12s; border-radius: 0;
+          justify-content: center; background: none; border: none; cursor: pointer;
+          min-height: 58px; padding: 6px 4px; gap: 2px; transition: background 0.12s;
         }
-        .admin-bottom-nav-btn:active { background: rgba(255,255,255,0.06); }
+        .a-bnav-btn:active { background: rgba(0,0,0,0.04); }
+        .a-bnav-label {
+          font-size: 10px; font-family: 'Tajawal', sans-serif; font-weight: 500;
+          letter-spacing: 0.2px; line-height: 1;
+        }
       `}</style>
 
-      <div className="admin-shell-wrap" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="a-shell" dir={isAr ? 'rtl' : 'ltr'}>
         {/* Desktop sidebar */}
-        <nav className={`admin-sidebar ${isRTL ? 'rtl' : 'ltr'}`}>
-          <SidebarContent />
+        <nav className={`a-sidebar ${isAr ? 'rtl' : 'ltr'}`}>
+          <SidebarInner />
         </nav>
 
         {/* Mobile topbar */}
-        <div className="admin-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button className="admin-topbar-btn" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
-              ≡
-            </button>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-sans)', letterSpacing: 1 }}>
-              MAABAR ADMIN
-            </span>
+        <div className="a-topbar">
+          <button className="a-hamburger" onClick={() => setDrawerOpen(true)} aria-label="Menu">
+            <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+              <rect y="0" width="18" height="1.5" rx="0.75" fill="currentColor"/>
+              <rect y="6" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+              <rect y="12" width="10" height="1.5" rx="0.75" fill="currentColor"/>
+            </svg>
+          </button>
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+            <MaabarAdminLogo />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-sans)' }}>
-                {(displayName[0] || 'A').toUpperCase()}
-              </span>
-            </div>
-          </div>
+          <div style={{ width: 44 }} />
         </div>
 
-        {/* Mobile drawer overlay */}
+        {/* Mobile drawer */}
         {drawerOpen && (
-          <div className="admin-drawer-overlay" onClick={() => setDrawerOpen(false)}>
+          <div className="a-drawer-overlay" onClick={() => setDrawerOpen(false)}>
             <div
-              className={`admin-drawer ${isRTL ? 'rtl' : 'ltr'} ${drawerOpen ? 'open' : ''}`}
+              className={`a-drawer ${isAr ? 'rtl' : 'ltr'} open`}
               onClick={e => e.stopPropagation()}
             >
-              <SidebarContent />
+              <SidebarInner />
             </div>
           </div>
         )}
 
         {/* Main content */}
-        <main className={`admin-content ${isRTL ? 'rtl' : 'ltr'}`}>
+        <main className={`a-content ${isAr ? 'rtl' : 'ltr'}`}>
           {children}
         </main>
 
-        {/* Mobile bottom nav */}
-        <nav className="admin-bottom-nav">
+        {/* Mobile bottom nav — text only, no icons */}
+        <nav className="a-bottom-nav">
           {BOTTOM_NAV.map(item => {
-            const isActive = activePath.startsWith(item.path);
+            const isActive = activePath === item.path || activePath.startsWith(item.path + '/');
             return (
               <button
                 key={item.path}
-                className="admin-bottom-nav-btn"
+                className="a-bnav-btn"
                 onClick={() => handleNav(item.path)}
               >
-                <span style={{ fontSize: 16, color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)' }}>
-                  {BOTTOM_ICONS[item.path]}
-                </span>
-                <span style={{
-                  fontSize: 9, fontFamily: 'var(--font-sans)', letterSpacing: 0.3,
-                  color: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-                  fontWeight: isActive ? 600 : 400, textTransform: 'uppercase',
+                <span className="a-bnav-label" style={{
+                  color: isActive ? '#1a1814' : 'rgba(0,0,0,0.35)',
+                  fontWeight: isActive ? 700 : 400,
                 }}>
-                  {lang === 'ar' ? item.labelAr.slice(0, 6) : item.labelEn.split(' ')[0]}
+                  {isAr ? item.arLabel : item.enLabel}
                 </span>
+                {isActive && (
+                  <span style={{ width: 16, height: 2, borderRadius: 1, background: '#1a1814', marginTop: 2 }} />
+                )}
               </button>
             );
           })}
