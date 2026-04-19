@@ -749,18 +749,24 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null, head
   const rawLang = normalizeLang(user.user_metadata?.lang || '') || (userRole === 'supplier' ? 'en' : 'ar');
   const lang = userRole === 'supplier' ? toSupplierLang(rawLang) : toBuyerLang(rawLang);
   const name = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.company_name || '';
-  const token = email_data.token_hash;
-  const redirectTo = userRole === 'supplier'
-    ? 'https://maabar.io/auth/callback?role=supplier'
-    : 'https://maabar.io/auth/callback';
+  const actionType = email_data.email_action_type || 'signup';
 
-  if (!email || !token) {
-    throw new Error('Missing email or token in hook payload');
+  if (!email) {
+    throw new Error('Missing email in hook payload');
   }
 
-  // Build confirmation URL (Supabase Auth verification endpoint)
+  // Use token_hash from the hook payload directly — do NOT call generateLink.
+  // Supabase docs: build a GET link to /auth/v1/verify with ?token=token_hash
+  // (parameter name is "token", value is the pre-hashed token_hash).
+  const tokenHash = email_data.token_hash || email_data.token;
+  if (!tokenHash) throw new Error('Missing token_hash in email_data');
+
+  const redirectTo = userRole === 'supplier'
+    ? 'https://maabar.io/auth/callback?role=supplier&next=%2Fdashboard'
+    : 'https://maabar.io/auth/callback?next=%2Fdashboard';
+
   const baseUrl = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
-  const confirmUrl = `${baseUrl}/auth/v1/verify?token_hash=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`;
+  const confirmUrl = `${baseUrl}/auth/v1/verify?token=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(actionType)}&redirect_to=${encodeURIComponent(redirectTo)}`;
 
   console.log('[hook] Processing confirmation for:', email, 'lang:', lang, 'confirmUrl length:', confirmUrl.length);
 
