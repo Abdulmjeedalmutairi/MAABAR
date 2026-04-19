@@ -200,7 +200,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
   );
   if (!profile) return <DashboardBuyer {...sharedProps} />;
   const isPreview = localStorage.getItem('maabar_preview') === '1';
-  if (profile.role === 'admin') return <Navigate to="/admin-seed" replace />;
+  if (profile.role === 'admin' || profile.role === 'super_admin') return <Navigate to="/admin/overview" replace />;
   if (profile.role === 'buyer') {
     const LAUNCH_DATE = new Date('2026-05-01T00:00:00+03:00');
     if (new Date() < LAUNCH_DATE && !isPreview) return <BuyerWaiting {...sharedProps} />;
