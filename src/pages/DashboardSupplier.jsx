@@ -1076,17 +1076,23 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setSavingSettings(true);
     const payload = buildSettingsPayload(settings, companyDescription);
 
-    const { error } = await runWithOptionalColumns({
+    const { data: savedRows, error } = await runWithOptionalColumns({
       table: 'profiles',
       payload,
       optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'bio_en', 'min_order_value', 'preferred_display_currency', 'certifications'],
-      execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
+      execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id).select('id'),
     });
 
     setSavingSettings(false);
 
     if (error) {
       console.error('[saveSettings] error:', JSON.stringify(error));
+      setSettingsError(isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.');
+      return false;
+    }
+
+    if (!savedRows || savedRows.length === 0) {
+      console.error('[saveSettings] 0 rows updated — RLS may be blocking the update');
       setSettingsError(isAr ? 'تعذر حفظ ملف الشركة. حاول مرة أخرى.' : lang === 'zh' ? '公司资料保存失败，请重试。' : 'Failed to save company profile. Please try again.');
       return false;
     }
@@ -3205,21 +3211,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         )}
 
                         <VfField label={isAr ? 'اسم الشركة *' : lang === 'zh' ? '公司名称 *' : 'Company Name *'} delay={0}>
-                          <input className="vf-input" value={settings.company_name || ''} onChange={e => setSettings({ ...settings, company_name: e.target.value })} />
+                          <input className="vf-input" value={settings.company_name || ''} onChange={e => setSettings(prev => ({ ...prev, company_name: e.target.value }))} />
                         </VfField>
                         <div style={{ height: 20 }} />
                         <VfG2>
                           <VfField label={isAr ? 'المدينة *' : lang === 'zh' ? '城市 *' : 'City *'} delay={0.05}>
-                            <input className="vf-input" value={settings.city || ''} onChange={e => setSettings({ ...settings, city: e.target.value })} />
+                            <input className="vf-input" value={settings.city || ''} onChange={e => setSettings(prev => ({ ...prev, city: e.target.value }))} />
                           </VfField>
                           <VfField label={isAr ? 'الدولة *' : lang === 'zh' ? '国家 *' : 'Country *'} delay={0.1}>
-                            <input className="vf-input" value={settings.country || ''} onChange={e => setSettings({ ...settings, country: e.target.value })} />
+                            <input className="vf-input" value={settings.country || ''} onChange={e => setSettings(prev => ({ ...prev, country: e.target.value }))} />
                           </VfField>
                         </VfG2>
                         <div style={{ height: 20 }} />
                         <VfG2>
                           <VfField label={isAr ? 'التخصص *' : lang === 'zh' ? '专业 *' : 'Specialty *'} delay={0.15}>
-                            <select className="vf-select" value={settings.speciality || ''} onChange={e => setSettings({ ...settings, speciality: e.target.value })}>
+                            <select className="vf-select" value={settings.speciality || ''} onChange={e => setSettings(prev => ({ ...prev, speciality: e.target.value }))}>
                               <option value="">—</option>
                               {(CATEGORIES[lang] || CATEGORIES.en).filter(c => c.val !== 'all').map(c => (
                                 <option key={c.val} value={c.val}>{c.label}</option>
@@ -3227,31 +3233,31 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             </select>
                           </VfField>
                           <VfField label={isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business Type'} delay={0.2}>
-                            <input className="vf-input" value={settings.business_type || ''} onChange={e => setSettings({ ...settings, business_type: e.target.value })} placeholder={isAr ? 'مصنّع / تاجر جملة' : lang === 'zh' ? '制造商 / 批发商' : 'Manufacturer / Wholesaler'} />
+                            <input className="vf-input" value={settings.business_type || ''} onChange={e => setSettings(prev => ({ ...prev, business_type: e.target.value }))} placeholder={isAr ? 'مصنّع / تاجر جملة' : lang === 'zh' ? '制造商 / 批发商' : 'Manufacturer / Wholesaler'} />
                           </VfField>
                         </VfG2>
                         <VfSep label={isAr ? 'التواصل' : lang === 'zh' ? '联系方式' : 'Contact'} />
                         <VfG2>
                           <VfField label="WeChat *" delay={0.25}>
-                            <input className="vf-input" value={settings.wechat || ''} onChange={e => setSettings({ ...settings, wechat: e.target.value })} dir="ltr" />
+                            <input className="vf-input" value={settings.wechat || ''} onChange={e => setSettings(prev => ({ ...prev, wechat: e.target.value }))} dir="ltr" />
                           </VfField>
                           <VfField label={isAr ? 'واتساب' : 'WhatsApp'} delay={0.3}>
-                            <input className="vf-input" value={settings.whatsapp || ''} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} dir="ltr" placeholder="+86..." />
+                            <input className="vf-input" value={settings.whatsapp || ''} onChange={e => setSettings(prev => ({ ...prev, whatsapp: e.target.value }))} dir="ltr" placeholder="+86..." />
                           </VfField>
                         </VfG2>
                         <div style={{ height: 20 }} />
                         <VfField label={isAr ? 'رابط المتجر / الملف التجاري *' : lang === 'zh' ? '店铺链接 *' : 'Trade Profile Link *'} delay={0.35}>
-                          <input className="vf-input" value={settings.trade_link || ''} onChange={e => setSettings({ ...settings, trade_link: e.target.value })} dir="ltr" placeholder="https://alibaba.com/..." />
+                          <input className="vf-input" value={settings.trade_link || ''} onChange={e => setSettings(prev => ({ ...prev, trade_link: e.target.value }))} dir="ltr" placeholder="https://alibaba.com/..." />
                         </VfField>
                         <div style={{ height: 20 }} />
                         <VfField label={isAr ? 'موقع الشركة' : lang === 'zh' ? '公司官网' : 'Company Website'} delay={0.4}>
-                          <input className="vf-input" value={settings.company_website || ''} onChange={e => setSettings({ ...settings, company_website: e.target.value })} dir="ltr" placeholder="https://..." />
+                          <input className="vf-input" value={settings.company_website || ''} onChange={e => setSettings(prev => ({ ...prev, company_website: e.target.value }))} dir="ltr" placeholder="https://..." />
                         </VfField>
                         <div style={{ height: 20 }} />
                         <VfField label={isAr ? 'وصف الشركة' : lang === 'zh' ? '公司介绍' : 'Company Description'} delay={0.45}>
                           <textarea className="vf-input" rows={3} style={{ resize: 'none', lineHeight: 1.7 }}
                             value={settings.company_description || ''}
-                            onChange={e => setSettings({ ...settings, company_description: e.target.value })}
+                            onChange={e => setSettings(prev => ({ ...prev, company_description: e.target.value }))}
                             placeholder={isAr ? 'نبذة — ما تنتجه، خبرتك، ميزتك التنافسية' : lang === 'zh' ? '简介 — 产品、经验、竞争优势' : 'Brief — products, experience, competitive advantage'}
                           />
                         </VfField>
@@ -3646,13 +3652,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <div className="settings-form-grid">
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.companyName} *</label>
-                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_name || ''} onChange={e => setSettings({ ...settings, company_name: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_name || ''} onChange={e => setSettings(prev => ({ ...prev, company_name: e.target.value }))} />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type'}
                       </label>
-                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.business_type || ''} onChange={e => setSettings({ ...settings, business_type: e.target.value })}>
+                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.business_type || ''} onChange={e => setSettings(prev => ({ ...prev, business_type: e.target.value }))}>
                         <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
                         <option value="manufacturer">{isAr ? 'مصنع' : lang === 'zh' ? '制造商' : 'Manufacturer'}</option>
                         <option value="trading_company">{isAr ? 'شركة تجارية' : lang === 'zh' ? '贸易公司' : 'Trading Company'}</option>
@@ -3662,7 +3668,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     </div>
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.speciality}</label>
-                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.speciality || ''} onChange={e => setSettings({ ...settings, speciality: e.target.value })}>
+                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.speciality || ''} onChange={e => setSettings(prev => ({ ...prev, speciality: e.target.value }))}>
                         <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
                         {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
                       </select>
@@ -3671,27 +3677,27 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Year established'}
                       </label>
-                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.year_established || ''} onChange={e => setSettings({ ...settings, year_established: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.year_established || ''} onChange={e => setSettings(prev => ({ ...prev, year_established: e.target.value }))} />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.city} *</label>
-                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.city || ''} onChange={e => setSettings({ ...settings, city: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.city || ''} onChange={e => setSettings(prev => ({ ...prev, city: e.target.value }))} />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.country} *</label>
-                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.country || ''} onChange={e => setSettings({ ...settings, country: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.country || ''} onChange={e => setSettings(prev => ({ ...prev, country: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'عنوان الشركة' : lang === 'zh' ? '公司地址' : 'Company address'}
                       </label>
-                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_address || ''} onChange={e => setSettings({ ...settings, company_address: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_address || ''} onChange={e => setSettings(prev => ({ ...prev, company_address: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'موقع الشركة الإلكتروني' : lang === 'zh' ? '公司官网链接' : 'Company website URL'}
                       </label>
-                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.company_website || ''} onChange={e => setSettings({ ...settings, company_website: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.company_website || ''} onChange={e => setSettings(prev => ({ ...prev, company_website: e.target.value }))} />
                     </div>
                   </div>
                 </div>
@@ -3704,17 +3710,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <div className="settings-form-grid">
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.whatsapp}</label>
-                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="tel" value={settings.whatsapp || ''} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="tel" value={settings.whatsapp || ''} onChange={e => setSettings(prev => ({ ...prev, whatsapp: e.target.value }))} />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.wechat}</label>
-                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="text" value={settings.wechat || ''} onChange={e => setSettings({ ...settings, wechat: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="text" value={settings.wechat || ''} onChange={e => setSettings(prev => ({ ...prev, wechat: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages'}
                       </label>
-                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.languages || ''} onChange={e => setSettings({ ...settings, languages: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.languages || ''} onChange={e => setSettings(prev => ({ ...prev, languages: e.target.value }))} />
                       <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 6 }}>
                         {isAr ? 'اكتبها مفصولة بفواصل أو أسطر جديدة' : lang === 'zh' ? '可用逗号或换行分隔' : 'Separate with commas or line breaks'}
                       </p>
@@ -3732,13 +3738,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'الحد الأدنى لقيمة الطلب (USD)' : lang === 'zh' ? '最低订单金额 (USD)' : 'Minimum order value (USD)'}
                       </label>
-                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.min_order_value || ''} onChange={e => setSettings({ ...settings, min_order_value: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.min_order_value || ''} onChange={e => setSettings(prev => ({ ...prev, min_order_value: e.target.value }))} />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'عملة العرض' : lang === 'zh' ? '显示货币' : 'Display currency'}
                       </label>
-                      <select className="settings-select" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr', width: '100%' }} value={settings.preferred_display_currency || 'USD'} onChange={e => setSettings({ ...settings, preferred_display_currency: e.target.value })}>
+                      <select className="settings-select" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr', width: '100%' }} value={settings.preferred_display_currency || 'USD'} onChange={e => setSettings(prev => ({ ...prev, preferred_display_currency: e.target.value }))}>
                         {DISPLAY_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
@@ -3746,7 +3752,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'دعم التخصيص' : lang === 'zh' ? '定制支持' : 'Customization support'}
                       </label>
-                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.customization_support || ''} onChange={e => setSettings({ ...settings, customization_support: e.target.value })}>
+                      <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.customization_support || ''} onChange={e => setSettings(prev => ({ ...prev, customization_support: e.target.value }))}>
                         <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
                         <option value="yes">{isAr ? 'نعم' : lang === 'zh' ? '是' : 'Yes'}</option>
                         <option value="oem">OEM</option>
@@ -3756,13 +3762,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.tradeLink} *</label>
-                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.trade_link || ''} onChange={e => setSettings({ ...settings, trade_link: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.trade_link || ''} onChange={e => setSettings(prev => ({ ...prev, trade_link: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
                         {isAr ? 'الأسواق التي تصدّرون إليها' : lang === 'zh' ? '出口市场' : 'Export markets'}
                       </label>
-                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.export_markets || ''} onChange={e => setSettings({ ...settings, export_markets: e.target.value })} />
+                      <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.export_markets || ''} onChange={e => setSettings(prev => ({ ...prev, export_markets: e.target.value }))} />
                       <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 6 }}>
                         {isAr ? 'اكتب الدول أو المناطق مفصولة بفواصل' : lang === 'zh' ? '填写国家或地区，逗号分隔' : 'List countries or regions, separated by commas'}
                       </p>
@@ -3783,7 +3789,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     rows={5}
                     style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
                     value={settings.company_description || ''}
-                    onChange={e => setSettings({ ...settings, company_description: e.target.value })}
+                    onChange={e => setSettings(prev => ({ ...prev, company_description: e.target.value }))}
                     dir={isAr ? 'rtl' : 'ltr'}
                   />
                   <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 8 }}>
@@ -3806,9 +3812,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }}
                             value={cert.name || ''}
                             onChange={e => {
-                              const updated = [...(settings.certifications || [])];
-                              updated[i] = { ...updated[i], name: e.target.value };
-                              setSettings({ ...settings, certifications: updated });
+                              setSettings(prev => {
+                                const updated = [...(prev.certifications || [])];
+                                updated[i] = { ...updated[i], name: e.target.value };
+                                return { ...prev, certifications: updated };
+                              });
                             }}
                           />
                           <input
@@ -3817,9 +3825,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }}
                             value={cert.issuer || ''}
                             onChange={e => {
-                              const updated = [...(settings.certifications || [])];
-                              updated[i] = { ...updated[i], issuer: e.target.value };
-                              setSettings({ ...settings, certifications: updated });
+                              setSettings(prev => {
+                                const updated = [...(prev.certifications || [])];
+                                updated[i] = { ...updated[i], issuer: e.target.value };
+                                return { ...prev, certifications: updated };
+                              });
                             }}
                           />
                           <input
@@ -3828,16 +3838,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }}
                             value={cert.valid_until || ''}
                             onChange={e => {
-                              const updated = [...(settings.certifications || [])];
-                              updated[i] = { ...updated[i], valid_until: e.target.value };
-                              setSettings({ ...settings, certifications: updated });
+                              setSettings(prev => {
+                                const updated = [...(prev.certifications || [])];
+                                updated[i] = { ...updated[i], valid_until: e.target.value };
+                                return { ...prev, certifications: updated };
+                              });
                             }}
                           />
                         </div>
                         <button
                           onClick={() => {
-                            const updated = (settings.certifications || []).filter((_, j) => j !== i);
-                            setSettings({ ...settings, certifications: updated });
+                            setSettings(prev => ({
+                              ...prev,
+                              certifications: (prev.certifications || []).filter((_, j) => j !== i),
+                            }));
                           }}
                           style={{ background: 'none', border: 'none', color: '#b0ab9e', cursor: 'pointer', fontSize: 16, padding: '8px 4px', flexShrink: 0, lineHeight: 1 }}>
                           ×
@@ -3846,7 +3860,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     ))}
                   </div>
                   <button
-                    onClick={() => setSettings({ ...settings, certifications: [...(settings.certifications || []), { name: '', issuer: '', valid_until: '' }] })}
+                    onClick={() => setSettings(prev => ({ ...prev, certifications: [...(prev.certifications || []), { name: '', issuer: '', valid_until: '' }] }))}
                     style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#1a1814', cursor: 'pointer', fontFamily: "'Tajawal', sans-serif", fontWeight: 600, textDecoration: 'underline' }}>
                     {isAr ? '+ إضافة شهادة' : lang === 'zh' ? '+ 添加认证' : '+ Add certification'}
                   </button>
