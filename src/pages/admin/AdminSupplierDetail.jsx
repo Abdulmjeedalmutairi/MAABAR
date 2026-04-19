@@ -7,6 +7,7 @@ import AdminNoteThread from '../../components/admin/AdminNoteThread';
 import { sb } from '../../supabase';
 import { logAdminAction } from '../../lib/adminAudit';
 import { sendMaabarEmail } from '../../lib/maabarEmail';
+import { normalizeSupplierDocStoragePath } from '../../lib/supplierOnboarding';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY    = "'Tajawal', sans-serif";
@@ -52,7 +53,22 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
   const [actionMsg, setActionMsg] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [signedUrls, setSignedUrls] = useState({});
   const isAr = lang === 'ar';
+
+  const getSignedUrl = useCallback(async (rawPath) => {
+    const path = normalizeSupplierDocStoragePath(rawPath);
+    if (!path) return null;
+    const { data, error } = await sb.storage.from('supplier-docs').createSignedUrl(path, 60 * 30);
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  }, []);
+
+  const openDoc = useCallback(async (rawPath) => {
+    const url = await getSignedUrl(rawPath);
+    if (!url) { alert('Could not open file.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, [getSignedUrl]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +78,25 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!supplier) return;
+    const rawPaths = [
+      supplier.license_photo,
+      supplier.factory_photo,
+      ...(Array.isArray(supplier.factory_images) ? supplier.factory_images : []),
+      ...(Array.isArray(supplier.factory_videos) ? supplier.factory_videos : []),
+    ].filter(Boolean);
+
+    Promise.all(
+      rawPaths.map(async (raw) => {
+        const signed = await getSignedUrl(raw);
+        return [raw, signed];
+      })
+    ).then((entries) => {
+      setSignedUrls(Object.fromEntries(entries.filter(([, v]) => v)));
+    });
+  }, [supplier, getSignedUrl]);
 
   const flash = (msg) => {
     setActionMsg(msg);
@@ -260,9 +295,9 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
             <SectionCard title={isAr ? 'المستندات' : 'Documents'}>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {docs.map((doc, i) => (
-                  <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="sd-doc-link">
+                  <button key={i} onClick={() => openDoc(doc.url)} className="sd-doc-link" style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
                     {doc.label} ↗
-                  </a>
+                  </button>
                 ))}
               </div>
             </SectionCard>
@@ -272,11 +307,16 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
           {images.length > 0 && (
             <SectionCard title={isAr ? 'صور المصنع' : 'Factory Photos'}>
               <div className="sd-img-grid">
-                {images.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Factory ${i + 1}`} className="sd-img" />
-                  </a>
-                ))}
+                {images.map((raw, i) => {
+                  const signed = signedUrls[raw];
+                  return signed ? (
+                    <a key={i} href={signed} target="_blank" rel="noopener noreferrer">
+                      <img src={signed} alt={`Factory ${i + 1}`} className="sd-img" />
+                    </a>
+                  ) : (
+                    <div key={i} className="sd-img" style={{ background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>…</div>
+                  );
+                })}
               </div>
             </SectionCard>
           )}
