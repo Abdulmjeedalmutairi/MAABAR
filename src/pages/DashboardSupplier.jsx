@@ -71,6 +71,7 @@ import {
   ProductForm,
   ProductPreviewPanel,
 } from '../components/supplier/ProductComposer';
+import { emptyVariantData, regenerateVariants } from '../components/supplier/VariantBuilder';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -190,11 +191,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [trackingInputs, setTrackingInputs] = useState({});
   const [shippingCompany, setShippingCompany] = useState('DHL');
   const [product, setProduct]               = useState(emptyProduct);
+  const [variantData, setVariantData]       = useState(emptyVariantData);
   const [usdRate, setUsdRate]               = useState(3.75);
   useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
   const [cnyRate, setCnyRate] = useState(7.25);
   useEffect(() => { getUsdToCny().then(r => setCnyRate(r)); }, []);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [editVariantData, setEditVariantData] = useState(emptyVariantData);
   const [saving, setSaving]                 = useState(false);
   const [pendingTracking, setPendingTracking] = useState([]);
   const [rejectedOffers, setRejectedOffers] = useState([]);
@@ -1372,6 +1375,173 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setEditProductComposerStep('preview');
   };
 
+  // ── Variant data persistence ───────────────────────────────────────────────
+  const saveVariantData = async (productId, vd) => {
+    const { options = [], variants = [], tiers = [], shipping = [] } = vd || {};
+
+    // Wipe and rewrite — simplest safe approach for Phase 2.
+    await sb.from('product_options').delete().eq('product_id', productId);
+    await sb.from('product_pricing_tiers').delete().eq('product_id', productId);
+    await sb.from('product_shipping_options').delete().eq('product_id', productId);
+    // product_variants cascade-deletes with options, so no need to delete separately.
+
+    if (!options.length) return;
+
+    const keyMap = {}; // _key → DB uuid
+
+    for (let oi = 0; oi < options.length; oi++) {
+      const opt = options[oi];
+      const { data: optRow, error: optErr } = await sb.from('product_options').insert({
+        product_id: productId,
+        name_zh: opt.name_zh,
+        name_en: opt.name_en || null,
+        name_ar: opt.name_ar || null,
+        input_type: opt.input_type || 'select',
+        display_order: oi,
+      }).select('id').single();
+      if (optErr) { console.error('saveVariantData option error:', optErr); continue; }
+      keyMap[opt._key] = optRow.id;
+
+      for (let vi = 0; vi < opt.values.length; vi++) {
+        const val = opt.values[vi];
+        const { data: valRow, error: valErr } = await sb.from('product_option_values').insert({
+          option_id: optRow.id,
+          value_zh: val.value_zh,
+          value_en: val.value_en || null,
+          value_ar: val.value_ar || null,
+          color_hex: opt.input_type === 'color_swatch' ? (val.color_hex || null) : null,
+          image_url: val.image_url || null,
+          display_order: vi,
+        }).select('id').single();
+        if (valErr) { console.error('saveVariantData value error:', valErr); continue; }
+        keyMap[val._key] = valRow.id;
+      }
+    }
+
+    for (const variant of variants) {
+      if (!variant.combo?.length) continue;
+      const optionValues = variant.combo
+        .map(({ optionKey, valueKey }) => ({ option_id: keyMap[optionKey], value_id: keyMap[valueKey] }))
+        .filter(o => o.option_id && o.value_id);
+      if (!optionValues.length) continue;
+      const { error: varErr } = await sb.from('product_variants').insert({
+        product_id: productId,
+        sku: variant.sku || null,
+        option_values: optionValues,
+        price: variant.price ? parseFloat(variant.price) : null,
+        moq: variant.moq ? parseInt(variant.moq, 10) : null,
+        stock: (variant.stock !== '' && variant.stock !== undefined && variant.stock !== null) ? parseInt(variant.stock, 10) : null,
+        lead_time_days: variant.lead_time_days ? parseInt(variant.lead_time_days, 10) : null,
+        image_url: variant.image_url || null,
+        is_active: variant.is_active !== false,
+      });
+      if (varErr) console.error('saveVariantData variant error:', varErr);
+    }
+
+    for (const tier of tiers) {
+      if (!tier.qty_from || !tier.unit_price) continue;
+      await sb.from('product_pricing_tiers').insert({
+        product_id: productId,
+        variant_id: null,
+        qty_from: parseInt(tier.qty_from, 10),
+        qty_to: tier.qty_to ? parseInt(tier.qty_to, 10) : null,
+        unit_price: parseFloat(tier.unit_price),
+      });
+    }
+
+    for (const ship of shipping) {
+      if (!ship.is_available) continue;
+      await sb.from('product_shipping_options').insert({
+        product_id: productId,
+        method: ship.method,
+        is_available: true,
+        lead_time_min_days: ship.lead_time_min_days ? parseInt(ship.lead_time_min_days, 10) : null,
+        lead_time_max_days: ship.lead_time_max_days ? parseInt(ship.lead_time_max_days, 10) : null,
+        cost_per_unit_usd: ship.cost_per_unit_usd ? parseFloat(ship.cost_per_unit_usd) : null,
+      });
+    }
+  };
+
+  const loadVariantData = async (productId) => {
+    const [
+      { data: optRows },
+      { data: varRows },
+      { data: tierRows },
+      { data: shipRows },
+    ] = await Promise.all([
+      sb.from('product_options').select('*, product_option_values(*)').eq('product_id', productId).order('display_order'),
+      sb.from('product_variants').select('*').eq('product_id', productId),
+      sb.from('product_pricing_tiers').select('*').eq('product_id', productId).order('qty_from'),
+      sb.from('product_shipping_options').select('*').eq('product_id', productId),
+    ]);
+
+    const options = (optRows || []).map(opt => ({
+      _key: opt.id,
+      name_zh: opt.name_zh || '',
+      name_en: opt.name_en || '',
+      name_ar: opt.name_ar || '',
+      input_type: opt.input_type || 'select',
+      values: ((opt.product_option_values || [])
+        .sort((a, b) => a.display_order - b.display_order)
+        .map(val => ({
+          _key: val.id,
+          value_zh: val.value_zh || '',
+          value_en: val.value_en || '',
+          value_ar: val.value_ar || '',
+          color_hex: val.color_hex || '#4A90D9',
+          image_url: val.image_url || null,
+        }))),
+    }));
+
+    // Rebuild variant combos from DB option_values jsonb
+    const dbValToUiKey = {}; // DB value uuid → _key (= same uuid in loaded data)
+    for (const opt of options) {
+      for (const val of opt.values) dbValToUiKey[val._key] = val._key;
+    }
+    const optionDbToKey = {};
+    for (const opt of options) optionDbToKey[opt._key] = opt._key;
+
+    const variants = (varRows || []).map(v => {
+      const combo = (v.option_values || []).map(({ option_id, value_id }) => ({
+        optionKey: optionDbToKey[option_id] || option_id,
+        valueKey: dbValToUiKey[value_id] || value_id,
+      }));
+      return {
+        _key: combo.map(c => `${c.optionKey}:${c.valueKey}`).join('|') || v.id,
+        combo,
+        sku: v.sku || '',
+        price: v.price != null ? String(v.price) : '',
+        moq: v.moq != null ? String(v.moq) : '',
+        stock: v.stock != null ? String(v.stock) : '',
+        lead_time_days: v.lead_time_days != null ? String(v.lead_time_days) : '',
+        image_url: v.image_url || null,
+        is_active: v.is_active !== false,
+      };
+    });
+
+    const tiers = (tierRows || []).map(t => ({
+      _key: t.id,
+      qty_from: t.qty_from != null ? String(t.qty_from) : '',
+      qty_to: t.qty_to != null ? String(t.qty_to) : '',
+      unit_price: t.unit_price != null ? String(t.unit_price) : '',
+    }));
+
+    const defaultShipping = emptyVariantData().shipping;
+    const shipping = defaultShipping.map(def => {
+      const row = (shipRows || []).find(s => s.method === def.method);
+      if (!row) return def;
+      return {
+        ...def,
+        is_available: row.is_available,
+        lead_time_min_days: row.lead_time_min_days != null ? String(row.lead_time_min_days) : '',
+        lead_time_max_days: row.lead_time_max_days != null ? String(row.lead_time_max_days) : '',
+        cost_per_unit_usd: row.cost_per_unit_usd != null ? String(row.cost_per_unit_usd) : '',
+      };
+    });
+
+    return { options, variants, tiers, shipping };
+  };
+
   const addProduct = async () => {
     const validationMessage = getProductComposerValidationMessage(product, lang);
     if (validationMessage) {
@@ -1390,12 +1560,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       console.error('addProduct translation error:', translationErr?.message || translationErr);
     }
     const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id);
-    const { error, strippedColumns } = await runWithOptionalColumns({
+    const { data: insertedRows, error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
       optionalKeys: PRODUCT_OPTIONAL_DB_FIELDS,
-      execute: (nextPayload) => sb.from('products').insert(nextPayload),
+      execute: (nextPayload) => sb.from('products').insert(nextPayload).select('id').single(),
     });
+    // Save variant data if variants are enabled
+    const newProductId = insertedRows?.id;
+    if (!error && newProductId && product.has_variants) {
+      try { await saveVariantData(newProductId, variantData); }
+      catch (vErr) { console.error('addProduct saveVariantData error:', vErr); }
+    }
     setSaving(false);
     if (error) {
       console.error('addProduct error:', error);
@@ -1404,6 +1580,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
     sessionStorage.removeItem('maabar_product_draft');
     setProduct(emptyProduct);
+    setVariantData(emptyVariantData());
     setProductComposerStep('edit');
     setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح' : lang === 'zh' ? '产品添加成功' : 'Product added successfully'));
     setTimeout(() => { setProductSaveMsg(''); setActiveTab('my-products'); }, 1800);
@@ -1430,13 +1607,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       optionalKeys: PRODUCT_OPTIONAL_DB_FIELDS,
       execute: (nextPayload) => sb.from('products').update(nextPayload).eq('id', editingProduct.id),
     });
+    if (!error && editingProduct.has_variants) {
+      try { await saveVariantData(editingProduct.id, editVariantData); }
+      catch (vErr) { console.error('updateProduct saveVariantData error:', vErr); }
+    }
     setSaving(false);
     if (error) {
       console.error('updateProduct error:', error);
       return;
     }
     setEditProductComposerStep('edit');
-    setEditingProduct(null); loadMyProducts(); loadStats();
+    setEditingProduct(null);
+    setEditVariantData(emptyVariantData());
+    loadMyProducts(); loadStats();
   };
 
   const toggleProductActive = async (p) => { await sb.from('products').update({ is_active: !p.is_active }).eq('id', p.id); loadMyProducts(); loadStats(); };
@@ -2470,7 +2653,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {editProductComposerStep === 'preview' ? (
                         <ProductPreviewPanel product={normalizeProductDraftMedia(editingProduct)} onPublish={updateProduct} onBack={() => setEditProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
                       ) : (
-                        <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} />
+                        <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={editVariantData} setVariantData={setEditVariantData} />
                       )}
                     </div>
                   ) : (
@@ -2491,7 +2674,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
                         <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
-                        <button onClick={() => { setEditingProduct(normalizeProductDraftMedia(p)); setEditProductComposerStep('edit'); setProductSaveMsg(''); }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
+                        <button onClick={() => { setEditingProduct(normalizeProductDraftMedia(p)); setEditProductComposerStep('edit'); setProductSaveMsg(''); if (p.has_variants) loadVariantData(p.id).then(setEditVariantData).catch(console.error); }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
                         <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
                       </div>
                     </div>
@@ -2981,7 +3164,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               {productComposerStep === 'preview' ? (
                 <ProductPreviewPanel product={normalizeProductDraftMedia(product)} onPublish={addProduct} onBack={() => setProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
               ) : (
-                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} />
+                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={variantData} setVariantData={setVariantData} />
               )}
               {productSaveMsg && (
                 <p style={{ marginTop: 12, fontSize: 13, color: ([t.productSavedWithFallback, 'تم إضافة المنتج بنجاح', '产品添加成功', 'Product added successfully'].includes(productSaveMsg) ? (productSaveMsg === t.productSavedWithFallback ? '#a08850' : '#5a9a72') : '#a07070'), fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>

@@ -8,6 +8,7 @@ import {
   normalizeProductAttributes,
 } from '../../lib/productMedia';
 import { VF_C, VF_CSS, VfField } from './VerificationFormUI';
+import { VariantBuilder } from './VariantBuilder';
 
 export const emptyProduct = {
   name_ar: '', name_en: '', name_zh: '',
@@ -16,7 +17,12 @@ export const emptyProduct = {
   image_url: null, gallery_images: [], video_url: null,
   spec_material: '', spec_dimensions: '', spec_unit_weight: '', spec_color_options: '', spec_packaging_details: '', spec_customization: '', spec_lead_time_days: '',
   attributes: [],
+  // variant-system fields
+  has_variants: false,
+  unit_weight_kg: '',
+  package_dimensions: '',
   sample_available: false, sample_price: '', sample_shipping: '', sample_max_qty: '3', sample_note: '',
+  sample_free_from_qty: '',
 };
 
 export const PRODUCT_OPTIONAL_DB_FIELDS = [
@@ -30,6 +36,11 @@ export const PRODUCT_OPTIONAL_DB_FIELDS = [
   'spec_lead_time_days',
   'attributes',
   'desc_zh',
+  // variant-system columns (added in Phase 1 migration)
+  'has_variants',
+  'unit_weight_kg',
+  'package_dimensions',
+  'sample_free_from_qty',
 ];
 
 export const buildProductWritePayload = (rawProduct, supplierId) => {
@@ -64,6 +75,11 @@ export const buildProductWritePayload = (rawProduct, supplierId) => {
     sample_shipping: product.sample_available ? parseFloat(product.sample_shipping || 0) : null,
     sample_max_qty: product.sample_available ? parseInt(product.sample_max_qty || 3, 10) : null,
     sample_note: product.sample_note || null,
+    // variant-system
+    has_variants: Boolean(product.has_variants),
+    unit_weight_kg: product.unit_weight_kg ? parseFloat(product.unit_weight_kg) : null,
+    package_dimensions: product.package_dimensions || null,
+    sample_free_from_qty: product.sample_free_from_qty ? parseInt(product.sample_free_from_qty, 10) : null,
     is_active: true,
   };
 };
@@ -270,6 +286,9 @@ export function ProductForm({
   categories,
   saveLabel,
   lang,
+  // variant system
+  variantData,
+  setVariantData,
 }) {
   const vfFont = { fontFamily: "'Tajawal', sans-serif" };
   const productCategories = (categories || []).filter(c => c.val !== 'all');
@@ -445,6 +464,8 @@ export function ProductForm({
             [t.specPackaging, 'spec_packaging_details'],
             [t.specCustomization, 'spec_customization'],
             [t.specLeadTime, 'spec_lead_time_days', 'number'],
+            [isAr ? 'وزن الوحدة (كجم)' : lang === 'zh' ? '单件重量（kg）' : 'Unit weight (kg)', 'unit_weight_kg', 'number'],
+            [isAr ? 'أبعاد الكرتون' : lang === 'zh' ? '外箱尺寸' : 'Carton dimensions', 'package_dimensions'],
           ].map(([label, key, type]) => (
             <VfField key={key} label={label}>
               <input className="vf-input" type={type || 'text'} placeholder={placeholders[key] || ''} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
@@ -453,7 +474,42 @@ export function ProductForm({
         </div>
       </div>
 
-      {/* ── Custom attributes ── */}
+      {/* ── Variants toggle ── */}
+      <div style={{ marginTop: 20, padding: '18px 20px', background: VF_C.paper, border: `1px solid ${data.has_variants ? VF_C.sageBr : VF_C.ink10}`, borderRadius: 12 }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={data.has_variants || false}
+            onChange={e => setData(prev => ({ ...prev, has_variants: e.target.checked }))}
+            style={{ width: 16, height: 16, marginTop: 2, accentColor: VF_C.sage, cursor: 'pointer', flexShrink: 0 }}
+          />
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 500, color: VF_C.ink, ...vfFont }}>
+              {isAr ? 'هذا المنتج له خيارات متعددة (ألوان، أحجام…)' : lang === 'zh' ? '该产品有多个规格/变体（颜色、尺寸等）' : 'This product has multiple options / variants'}
+            </p>
+            <p style={{ fontSize: 12, color: VF_C.ink60, marginTop: 3, ...vfFont }}>
+              {isAr ? 'فعّل لإضافة ألوان وأحجام مع تسعير مستقل لكل تركيبة' : lang === 'zh' ? '开启后可设置颜色、尺寸等选项，并为每个组合单独定价' : 'Enable to set up colors, sizes, and per-variant pricing'}
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* ── Variant Builder (when enabled) ── */}
+      {data.has_variants && variantData && setVariantData && (
+        <div style={{ marginTop: 20 }}>
+          <VariantBuilder
+            lang={lang}
+            data={variantData}
+            onChange={setVariantData}
+            productNameEn={data.name_en}
+            basePrice={data.price_from}
+            baseMoq={data.moq}
+          />
+        </div>
+      )}
+
+      {/* ── Custom attributes (flat products only) ── */}
+      {!data.has_variants && (
       <div style={{ marginTop: 20, padding: '18px 20px', background: VF_C.paper, border: `1px solid ${VF_C.ink10}`, borderRadius: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <p style={{ fontSize: 10, letterSpacing: 2, color: VF_C.ink30, textTransform: 'uppercase', ...vfFont }}>
@@ -495,6 +551,7 @@ export function ProductForm({
           </div>
         )}
       </div>
+      )}
 
       {/* ── Sample availability ── */}
       <div style={{ marginTop: 20, padding: '18px 20px', background: VF_C.paper, border: `1px solid ${VF_C.ink10}`, borderRadius: 12 }}>
@@ -504,7 +561,13 @@ export function ProductForm({
         </div>
         {data.sample_available && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0 24px', animation: 'fadeIn 0.25s ease' }}>
-            {[[t.samplePrice, 'sample_price', 'number'], [t.sampleShipping, 'sample_shipping', 'number'], [t.sampleMaxQty, 'sample_max_qty', 'number'], [t.sampleNote, 'sample_note']].map(([label, key, type]) => (
+            {[
+              [t.samplePrice, 'sample_price', 'number'],
+              [t.sampleShipping, 'sample_shipping', 'number'],
+              [t.sampleMaxQty, 'sample_max_qty', 'number'],
+              [t.sampleNote, 'sample_note'],
+              [isAr ? 'عينة مجانية من (وحدة)' : lang === 'zh' ? '免费样品起订量门槛（件）' : 'Free sample from qty', 'sample_free_from_qty', 'number'],
+            ].map(([label, key, type]) => (
               <VfField key={key} label={label}>
                 <input className="vf-input" type={type || 'text'} placeholder={placeholders[key] || ''} value={data[key] || ''} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} />
               </VfField>
