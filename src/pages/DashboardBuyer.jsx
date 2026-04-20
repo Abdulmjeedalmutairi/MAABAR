@@ -659,6 +659,15 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         return acc;
       }, {});
 
+      // Fetch order_line_items for variant-based requests
+      const { data: allLineItems } = requestIds.length
+        ? await sb.from('order_line_items').select('*, product_variants(sku)').in('request_id', requestIds)
+        : { data: [] };
+      const linesByRequest = (allLineItems || []).reduce((acc, li) => {
+        acc[li.request_id] = [...(acc[li.request_id] || []), li];
+        return acc;
+      }, {});
+
       const withOffers = await Promise.all(data.map(async (request) => {
         const { data: offers } = await sb.from('offers').select('*').eq('request_id', request.id);
         const offersWithProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
@@ -668,6 +677,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           brief: briefByRequest[request.id] || null,
           managedShortlist: shortlistByRequest[request.id] || [],
           managedFeedback: feedbackByRequest[request.id] || [],
+          lineItems: linesByRequest[request.id] || [],
         };
       }));
       setMyRequests(withOffers);
@@ -1449,6 +1459,23 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       </a>
                     )}
                   </div>
+
+                  {/* ── Variant line items (Phase 4) ── */}
+                  {(r.lineItems || []).length > 0 && (
+                    <div style={{ margin: '10px 0', padding: '12px 14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                      <p style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8 }}>
+                        {isAr ? 'المنتجات المطلوبة' : 'Order Lines'}
+                      </p>
+                      {(r.lineItems || []).map((li, idx) => (
+                        <div key={li.id || idx} style={{ display: 'flex', gap: 8, fontSize: 11, color: 'var(--text-secondary)', padding: '4px 0', borderBottom: idx < r.lineItems.length - 1 ? '1px solid var(--border-subtle)' : 'none', flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'monospace', flex: 1 }}>{li.product_variants?.sku || li.variant_id?.slice(0, 8) || '—'}</span>
+                          <span>×{li.quantity}</span>
+                          <span style={{ direction: 'ltr' }}>${Number(li.unit_price_usd).toFixed(2)}/u</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>${(li.quantity * li.unit_price_usd).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* ── Supplier strip (when accepted offer) ── */}
                   {!managed && acceptedOffer && (

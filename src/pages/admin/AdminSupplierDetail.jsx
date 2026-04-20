@@ -54,6 +54,16 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [signedUrls, setSignedUrls] = useState({});
+
+  // Phase 5 — product management
+  const [products, setProducts] = useState([]);
+  const [expandedProductId, setExpandedProductId] = useState(null);
+  const [productVariants, setProductVariants] = useState({}); // productId → variants[]
+  const [productTiers, setProductTiers] = useState({});       // productId → tiers[]
+  const [productShipping, setProductShipping] = useState({}); // productId → shipping[]
+  const [variantAction, setVariantAction] = useState(null);   // { variantId, type: 'toggle'|'stock', reason, value }
+  const [savingVariant, setSavingVariant] = useState(null);
+
   const isAr = lang === 'ar';
 
   const getSignedUrl = useCallback(async (rawPath) => {
@@ -72,10 +82,70 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await sb.from('profiles').select('*').eq('id', id).single();
-    setSupplier(data);
+    const [{ data: supplierData }, { data: productsData }] = await Promise.all([
+      sb.from('profiles').select('*').eq('id', id).single(),
+      sb.from('products').select('id, name_en, name_zh, name_ar, price_from, moq, is_active, has_variants, created_at').eq('supplier_id', id).order('created_at', { ascending: false }),
+    ]);
+    setSupplier(supplierData);
+    // Fetch variant counts per product
+    if (productsData?.length) {
+      const variantCounts = await Promise.all(
+        productsData.filter(p => p.has_variants).map(async (p) => {
+          const { count } = await sb.from('product_variants').select('id', { count: 'exact', head: true }).eq('product_id', p.id);
+          return [p.id, count || 0];
+        })
+      );
+      const countMap = Object.fromEntries(variantCounts);
+      setProducts((productsData || []).map(p => ({ ...p, variantCount: countMap[p.id] ?? null })));
+    } else {
+      setProducts(productsData || []);
+    }
     setLoading(false);
   }, [id]);
+
+  const loadProductVariants = useCallback(async (productId) => {
+    const [varRes, tierRes, shipRes] = await Promise.all([
+      sb.from('product_variants').select('*').eq('product_id', productId).order('created_at'),
+      sb.from('product_pricing_tiers').select('*').eq('product_id', productId).order('qty_from'),
+      sb.from('product_shipping_options').select('*').eq('product_id', productId),
+    ]);
+    setProductVariants(prev => ({ ...prev, [productId]: varRes.data || [] }));
+    setProductTiers(prev => ({ ...prev, [productId]: tierRes.data || [] }));
+    setProductShipping(prev => ({ ...prev, [productId]: shipRes.data || [] }));
+  }, []);
+
+  const toggleExpandProduct = (productId) => {
+    if (expandedProductId === productId) { setExpandedProductId(null); return; }
+    setExpandedProductId(productId);
+    if (!productVariants[productId]) loadProductVariants(productId);
+  };
+
+  const adminToggleVariant = async (variant, reason) => {
+    if (!reason?.trim()) { alert('Please enter a reason for the audit log.'); return; }
+    setSavingVariant(variant.id);
+    const newActive = !variant.is_active;
+    const { error } = await sb.from('product_variants').update({ is_active: newActive }).eq('id', variant.id);
+    if (error) { alert('Error: ' + error.message); setSavingVariant(null); return; }
+    await logAdminAction({ actorId: user.id, action: newActive ? 'variant_activated' : 'variant_deactivated', entityType: 'product_variant', entityId: variant.id, beforeState: { is_active: variant.is_active }, afterState: { is_active: newActive }, notes: reason });
+    await loadProductVariants(variant.product_id);
+    setVariantAction(null);
+    setSavingVariant(null);
+    flash(`Variant ${newActive ? 'activated' : 'deactivated'}`);
+  };
+
+  const adminAdjustStock = async (variant, newStock, reason) => {
+    if (!reason?.trim()) { alert('Please enter a reason for the audit log.'); return; }
+    const stockNum = parseInt(newStock, 10);
+    if (isNaN(stockNum) || stockNum < 0) { alert('Invalid stock value.'); return; }
+    setSavingVariant(variant.id);
+    const { error } = await sb.from('product_variants').update({ stock_qty: stockNum }).eq('id', variant.id);
+    if (error) { alert('Error: ' + error.message); setSavingVariant(null); return; }
+    await logAdminAction({ actorId: user.id, action: 'variant_stock_adjusted', entityType: 'product_variant', entityId: variant.id, beforeState: { stock_qty: variant.stock_qty }, afterState: { stock_qty: stockNum }, notes: reason });
+    await loadProductVariants(variant.product_id);
+    setVariantAction(null);
+    setSavingVariant(null);
+    flash(`Stock updated to ${stockNum}`);
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -318,6 +388,165 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                   );
                 })}
               </div>
+            </SectionCard>
+          )}
+
+          {/* ── Phase 5: Products ── */}
+          {products.length > 0 && (
+            <SectionCard title="Products">
+              {products.map(p => {
+                const isExpanded = expandedProductId === p.id;
+                const variants = productVariants[p.id] || [];
+                const tiers = productTiers[p.id] || [];
+                const shipping = productShipping[p.id] || [];
+                const productName = p.name_en || p.name_zh || p.name_ar || p.id;
+                return (
+                  <div key={p.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', marginBottom: 0, paddingBottom: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', cursor: 'pointer' }} onClick={() => p.has_variants && toggleExpandProduct(p.id)}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.80)', marginBottom: 2, fontFamily: FONT_BODY }}>{productName}</p>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>MOQ {p.moq || '—'}</span>
+                          {p.price_from && <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>${p.price_from}</span>}
+                          {p.has_variants && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 99, background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY }}>{p.variantCount ?? '?'} variants</span>}
+                          {/* Flag unusual pricing: product > 10x no baseline, just flag if no price */}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 99, background: p.is_active ? 'rgba(39,114,90,0.1)' : 'rgba(0,0,0,0.05)', color: p.is_active ? '#27725a' : 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>{p.is_active ? 'Active' : 'Inactive'}</span>
+                      {p.has_variants && <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.30)', fontFamily: FONT_BODY }}>{isExpanded ? '▲' : '▼'}</span>}
+                    </div>
+
+                    {isExpanded && p.has_variants && (
+                      <div style={{ paddingBottom: 16 }}>
+                        {/* Variant matrix */}
+                        {variants.length > 0 ? (
+                          <div style={{ overflowX: 'auto', marginBottom: 14 }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: FONT_BODY }}>
+                              <thead>
+                                <tr style={{ background: 'rgba(0,0,0,0.03)' }}>
+                                  {['SKU', 'Price (USD)', 'MOQ', 'Stock', 'Lead (days)', 'Active', 'Actions'].map(h => (
+                                    <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: 'rgba(0,0,0,0.38)', fontWeight: 600, letterSpacing: 0.8, whiteSpace: 'nowrap', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {variants.map(v => {
+                                  const basePrice = products.find(pr => pr.id === v.product_id)?.price_from;
+                                  const unusualPrice = basePrice && v.price_usd && v.price_usd > basePrice * 10;
+                                  return (
+                                    <tr key={v.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                      <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: 'rgba(0,0,0,0.60)', fontSize: 10 }}>{v.sku || '—'}</td>
+                                      <td style={{ padding: '8px 10px', color: unusualPrice ? '#c0392b' : 'rgba(0,0,0,0.70)' }}>
+                                        ${Number(v.price_usd || 0).toFixed(2)}
+                                        {unusualPrice && <span style={{ marginInlineStart: 4, fontSize: 9, background: 'rgba(192,57,43,0.1)', color: '#c0392b', padding: '1px 5px', borderRadius: 99 }}>⚠ unusual</span>}
+                                      </td>
+                                      <td style={{ padding: '8px 10px', color: 'rgba(0,0,0,0.60)' }}>{v.moq || '—'}</td>
+                                      <td style={{ padding: '8px 10px', color: v.stock_qty != null ? (v.stock_qty > 0 ? '#27725a' : '#c0392b') : 'rgba(0,0,0,0.30)' }}>{v.stock_qty ?? '—'}</td>
+                                      <td style={{ padding: '8px 10px', color: 'rgba(0,0,0,0.60)' }}>{v.lead_time_days ?? '—'}</td>
+                                      <td style={{ padding: '8px 10px' }}>
+                                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 99, background: v.is_active ? 'rgba(39,114,90,0.1)' : 'rgba(0,0,0,0.05)', color: v.is_active ? '#27725a' : 'rgba(0,0,0,0.35)' }}>
+                                          {v.is_active ? 'Active' : 'Off'}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                                        <button
+                                          onClick={() => setVariantAction({ variantId: v.id, productId: v.product_id, type: 'toggle', variant: v, reason: '', value: '' })}
+                                          style={{ fontSize: 10, padding: '3px 8px', marginInlineEnd: 6, background: 'none', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 6, cursor: 'pointer', color: 'rgba(0,0,0,0.50)', fontFamily: FONT_BODY }}>
+                                          {v.is_active ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                        <button
+                                          onClick={() => setVariantAction({ variantId: v.id, productId: v.product_id, type: 'stock', variant: v, reason: '', value: String(v.stock_qty ?? '') })}
+                                          style={{ fontSize: 10, padding: '3px 8px', background: 'none', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 6, cursor: 'pointer', color: 'rgba(0,0,0,0.50)', fontFamily: FONT_BODY }}>
+                                          Stock
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY, padding: '8px 0' }}>No active variants found.</p>
+                        )}
+
+                        {/* Inline action form */}
+                        {variantAction?.productId === p.id && (
+                          <div style={{ padding: '14px 16px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.10)', background: 'rgba(0,0,0,0.02)', marginBottom: 12 }}>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.60)', fontFamily: FONT_BODY, marginBottom: 10 }}>
+                              {variantAction.type === 'toggle' ? `${variantAction.variant.is_active ? 'Deactivate' : 'Activate'} variant — ${variantAction.variant.sku || variantAction.variantId.slice(0, 8)}` : `Adjust stock — ${variantAction.variant.sku || variantAction.variantId.slice(0, 8)}`}
+                            </p>
+                            {variantAction.type === 'stock' && (
+                              <div style={{ marginBottom: 8 }}>
+                                <label style={{ fontSize: 10, color: 'rgba(0,0,0,0.40)', letterSpacing: 0.8, textTransform: 'uppercase', fontFamily: FONT_BODY, display: 'block', marginBottom: 4 }}>New Stock Qty</label>
+                                <input
+                                  type="number" min="0"
+                                  value={variantAction.value}
+                                  onChange={e => setVariantAction(prev => ({ ...prev, value: e.target.value }))}
+                                  style={{ width: 120, padding: '6px 10px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: 13, fontFamily: FONT_BODY }}
+                                />
+                              </div>
+                            )}
+                            <div style={{ marginBottom: 10 }}>
+                              <label style={{ fontSize: 10, color: 'rgba(0,0,0,0.40)', letterSpacing: 0.8, textTransform: 'uppercase', fontFamily: FONT_BODY, display: 'block', marginBottom: 4 }}>Reason (required, logged to audit_log)</label>
+                              <input
+                                type="text"
+                                value={variantAction.reason}
+                                onChange={e => setVariantAction(prev => ({ ...prev, reason: e.target.value }))}
+                                placeholder="e.g. Quality issue, restock, admin correction…"
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 6, fontSize: 13, fontFamily: FONT_BODY }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button
+                                className="sd-btn sd-btn-approve"
+                                disabled={savingVariant === variantAction.variantId}
+                                onClick={() => {
+                                  if (variantAction.type === 'toggle') adminToggleVariant(variantAction.variant, variantAction.reason);
+                                  else adminAdjustStock(variantAction.variant, variantAction.value, variantAction.reason);
+                                }}
+                              >
+                                {savingVariant === variantAction.variantId ? '…' : 'Confirm'}
+                              </button>
+                              <button className="sd-btn sd-btn-ghost" onClick={() => setVariantAction(null)}>Cancel</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tiered pricing (read-only) */}
+                        {tiers.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <p style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', marginBottom: 6, fontFamily: FONT_BODY }}>Tiered Pricing</p>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {tiers.map((t, i) => (
+                                <div key={i} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.02)' }}>
+                                  <p style={{ fontSize: 10, color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY }}>{t.qty_to ? `${t.qty_from}–${t.qty_to}` : `${t.qty_from}+`}</p>
+                                  <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.70)', fontFamily: FONT_BODY }}>${Number(t.unit_price_usd).toFixed(2)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Shipping options (read-only) */}
+                        {shipping.length > 0 && (
+                          <div>
+                            <p style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', marginBottom: 6, fontFamily: FONT_BODY }}>Shipping Options</p>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {shipping.map((s, i) => (
+                                <div key={i} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: s.enabled ? 'rgba(39,114,90,0.05)' : 'rgba(0,0,0,0.02)' }}>
+                                  <p style={{ fontSize: 10, color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY, textTransform: 'capitalize' }}>{s.method}</p>
+                                  <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.60)', fontFamily: FONT_BODY }}>{s.lead_time_days ? `${s.lead_time_days}d` : '—'} {s.cost_usd ? `· $${s.cost_usd}` : ''}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </SectionCard>
           )}
 

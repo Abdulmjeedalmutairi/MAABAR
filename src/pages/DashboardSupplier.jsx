@@ -1185,7 +1185,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       setLoadingRequests(false);
       return;
     }
-    if (data) setRequests(data);
+    if (data) {
+      // Fetch order_line_items for requests that have them
+      const requestIds = data.map(r => r.id);
+      const { data: lineItemsData } = requestIds.length
+        ? await sb.from('order_line_items').select('*, product_variants(sku, option_values)').in('request_id', requestIds)
+        : { data: [] };
+      const linesByRequest = (lineItemsData || []).reduce((acc, li) => {
+        acc[li.request_id] = [...(acc[li.request_id] || []), li];
+        return acc;
+      }, {});
+      setRequests(data.map(r => ({ ...r, lineItems: linesByRequest[r.id] || [] })));
+    }
     setLoadingRequests(false);
   };
 
@@ -2508,6 +2519,28 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                   {offerForms[r.id] && (
                     <div style={{ background: 'var(--bg-muted)', border: '1px solid var(--border-subtle)', borderTop: 'none', padding: '18px 22px', marginBottom: 10, borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }}>
+                      {/* ── Variant line items (Phase 4) ── */}
+                      {r.lineItems?.length > 0 && (
+                        <div style={{ marginBottom: 16, padding: '14px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)' }}>
+                          <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
+                            {isAr ? 'المنتجات المطلوبة' : lang === 'zh' ? '询价明细' : 'Requested Line Items'}
+                          </p>
+                          {r.lineItems.map((li, idx) => (
+                            <div key={li.id || idx} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: idx < r.lineItems.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                              <p style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{li.product_variants?.sku || li.variant_id?.slice(0, 8) || '—'}</p>
+                              <p style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 60, textAlign: 'center' }}>{isAr ? `${li.quantity} قطعة` : `×${li.quantity}`}</p>
+                              <p style={{ fontSize: 12, color: 'var(--text-primary)', direction: 'ltr', minWidth: 80, textAlign: 'right' }}>${Number(li.unit_price_usd).toFixed(2)}/u</p>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr', minWidth: 80, textAlign: 'right' }}>${(li.quantity * li.unit_price_usd).toFixed(2)}</p>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>
+                              {isAr ? 'الإجمالي: ' : lang === 'zh' ? '总计：' : 'Total: '}${r.lineItems.reduce((s, li) => s + li.quantity * li.unit_price_usd, 0).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {(r.budget_per_unit || r.payment_plan || r.sample_requirement) && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
                           {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${r.budget_per_unit} SAR` : lang === 'zh' ? `预算参考：${r.budget_per_unit} 沙特里亚尔（SAR）` : `Budget hint: ${r.budget_per_unit} SAR (Saudi Riyal)`}</span>}
