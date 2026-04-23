@@ -845,13 +845,87 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     });
   };
 
+  const ensureBuyerVisibleOfferForShortlist = async (shortlistOffer) => {
+    const now = new Date().toISOString();
+    const shippingDays = shortlistOffer.shipping_time_days;
+    const shippingMethodText = shippingDays ? `${shippingDays} shipping days` : null;
+    const negotiationNote = shippingDays ? `shipping_time_days:${shippingDays}` : null;
+
+    if (shortlistOffer.offer_id) {
+      const updates = {
+        managed_visibility: 'buyer_visible',
+        status: 'accepted',
+        shortlisted_at: now,
+      };
+      if (shortlistOffer.unit_price != null) updates.price = shortlistOffer.unit_price;
+      if (shortlistOffer.moq) updates.moq = shortlistOffer.moq;
+      if (shortlistOffer.production_time_days != null) updates.delivery_days = shortlistOffer.production_time_days;
+      if (shippingMethodText) {
+        updates.shipping_method = shippingMethodText;
+        updates.negotiation_note = negotiationNote;
+      }
+      const { data, error } = await sb.from('offers').update(updates).eq('id', shortlistOffer.offer_id).select().maybeSingle();
+      if (error) throw error;
+      return data;
+    }
+
+    const { data: matchRow } = await sb
+      .from('managed_supplier_matches')
+      .select('id')
+      .eq('request_id', shortlistOffer.request_id)
+      .eq('supplier_id', shortlistOffer.supplier_id)
+      .maybeSingle();
+
+    const { data: inserted, error: insertError } = await sb.from('offers').insert({
+      request_id: shortlistOffer.request_id,
+      supplier_id: shortlistOffer.supplier_id,
+      price: shortlistOffer.unit_price,
+      shipping_cost: 0,
+      shipping_method: shippingMethodText,
+      moq: shortlistOffer.moq,
+      delivery_days: shortlistOffer.production_time_days,
+      origin: 'China',
+      note: shortlistOffer.selection_reason || shortlistOffer.maabar_notes || null,
+      status: 'accepted',
+      managed_match_id: matchRow?.id || null,
+      managed_visibility: 'buyer_visible',
+      shortlisted_at: now,
+      negotiation_note: negotiationNote,
+    }).select().maybeSingle();
+    if (insertError) throw insertError;
+
+    if (inserted?.id) {
+      await sb.from('managed_shortlisted_offers').update({ offer_id: inserted.id }).eq('id', shortlistOffer.id);
+    }
+    return inserted;
+  };
+
   const chooseManagedOffer = async (request, shortlistOffer) => {
     await recordManagedShortlistAction({ request, shortlistOffer, action: 'choose_offer' });
     await sb.from('managed_shortlisted_offers').update({ selected_by_buyer: true, buyer_selected_at: new Date().toISOString(), status: 'selected_by_buyer' }).eq('id', shortlistOffer.id);
     await sb.from('managed_shortlisted_offers').update({ selected_by_buyer: false }).eq('request_id', request.id).neq('id', shortlistOffer.id);
-    await sb.from('requests').update({ managed_status: 'buyer_selected', managed_last_buyer_action: 'choose_offer' }).eq('id', request.id);
-    await loadMyRequests();
-    await loadPendingActions();
+
+    let offer;
+    try {
+      offer = await ensureBuyerVisibleOfferForShortlist(shortlistOffer);
+    } catch (err) {
+      console.error('ensureBuyerVisibleOfferForShortlist error:', err);
+    }
+
+    if (!offer) {
+      alert(isAr ? 'تعذر فتح صفحة الدفع الآن' : lang === 'zh' ? '暂时无法打开结账页面' : 'Unable to open checkout right now');
+      await loadMyRequests();
+      await loadPendingActions();
+      return;
+    }
+
+    await sb.from('requests').update({
+      managed_status: 'buyer_selected',
+      managed_last_buyer_action: 'choose_offer',
+      status: 'supplier_confirmed',
+    }).eq('id', request.id);
+
+    nav('/checkout', { state: { offer, request: { ...request, status: 'supplier_confirmed' } } });
   };
 
   const requestManagedNegotiation = async (request, shortlistOffer, reason) => {
