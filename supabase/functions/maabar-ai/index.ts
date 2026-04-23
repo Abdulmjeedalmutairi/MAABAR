@@ -44,10 +44,20 @@ type CustomerSupportPayload = {
   };
 };
 
+type ManagedBriefPayload = {
+  language?: Lang;
+  title?: string;
+  description?: string;
+  category?: string;
+  quantity?: string | number | null;
+  budget?: string | number | null;
+  response_deadline?: string | null;
+};
+
 type RequestBody = {
-  task?: 'idea_to_product' | 'product_conversation' | 'chat_translation' | 'customer_support';
+  task?: 'idea_to_product' | 'product_conversation' | 'chat_translation' | 'customer_support' | 'managed_brief';
   personaName?: string;
-  payload?: IdeaToProductPayload | ProductConversationPayload | ChatTranslationPayload | CustomerSupportPayload;
+  payload?: IdeaToProductPayload | ProductConversationPayload | ChatTranslationPayload | CustomerSupportPayload | ManagedBriefPayload;
 };
 
 function json(data: unknown, status = 200) {
@@ -419,6 +429,60 @@ Rules:
       const text = await callProvider({
         systemInstruction,
         prompt: buildSupportPrompt(payload),
+        responseMimeType: 'application/json',
+      });
+
+      return json({ result: JSON.parse(text) });
+    }
+
+    if (body.task === 'managed_brief') {
+      const payload = body.payload as ManagedBriefPayload;
+      const language = payload.language || 'ar';
+      const nowIso = new Date().toISOString();
+
+      const systemInstruction = `You are ${personaName}, Maabar's sourcing analyst. You receive a raw buyer B2B sourcing request and produce a structured internal brief used for supplier matching.
+
+Return ONLY valid JSON with this exact shape:
+{
+  "cleaned_description": "<rewritten requirement, typos fixed, filler removed, 1-3 short paragraphs, in the buyer's language>",
+  "extracted_specs": [{ "key": "<snake_case_key>", "value": "<value>", "unit": "<unit or null>", "confidence": "high|medium|low" }],
+  "category": "electronics|furniture|clothing|building|food|other",
+  "priority": "urgent|normal",
+  "ai_confidence": "high|medium|low",
+  "supplier_brief": {
+    "ar": "<2-4 short supplier-facing lines, Arabic>",
+    "en": "<2-4 short supplier-facing lines, English>",
+    "zh": "<2-4 short supplier-facing lines, Simplified Chinese>"
+  },
+  "admin_follow_up_question": "<one concise question in the buyer's language | null>",
+  "admin_internal_notes": "<admin-only observations in the buyer's language | null>"
+}
+
+Rules:
+- cleaned_description: rewrite the raw prose into a crisp, unambiguous technical requirement. Stay in the buyer's language (${getLanguageName(language)}). Fix typos, remove filler. Never invent missing facts.
+- extracted_specs: only specs that are actually stated or strongly implied. Use snake_case keys (material, quantity, color, size, finish, certification, lead_time_days, tolerance, packaging, target_unit_cost, etc.). Include unit when numeric. confidence reflects how firmly the text supports the value.
+- category: pick the closest enum; never invent new ones.
+- priority: urgent only if (a) the response_deadline is within ~14 days of the server-provided "now" OR (b) the description contains explicit urgency words (عاجل, مستعجل, urgent, asap, rush, 紧急, 加急). Otherwise normal.
+- ai_confidence: high if quantity AND at least two meaningful specs AND use-case are all known; medium if one dimension is thin; low if multiple critical dimensions are missing.
+- supplier_brief: 2-4 short lines per language, supplier-facing. Must NOT contain buyer identity, payment terms, budget, or internal notes. Include product class, key specs, quantity, deadline if present, origin expectations.
+- admin_follow_up_question: set to a single concise question only if ai_confidence is "low" or "medium". null if "high".
+- admin_internal_notes: one or two short lines of admin-only observations (unrealistic budget, missing certification, possible duplicate, etc.). null if nothing to flag.
+- No emojis. No markdown. No commentary outside the JSON.`;
+
+      const prompt = [
+        `Buyer language: ${language}`,
+        `Server time now (ISO): ${nowIso}`,
+        `Title: ${payload.title || ''}`,
+        `Raw description: ${payload.description || ''}`,
+        `Form-selected category: ${payload.category || ''}`,
+        `Quantity: ${payload.quantity ?? ''}`,
+        `Budget per unit (optional): ${payload.budget ?? ''}`,
+        `Response deadline (ISO, optional): ${payload.response_deadline || ''}`,
+      ].join('\n');
+
+      const text = await callProvider({
+        systemInstruction,
+        prompt,
         responseMimeType: 'application/json',
       });
 
