@@ -58,8 +58,6 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
 import AdminSupplierDetail from './pages/admin/AdminSupplierDetail';
-import AdminManaged from './pages/admin/AdminManaged';
-import AdminManagedDetail from './pages/admin/AdminManagedDetail';
 import AdminConcierge from './pages/admin/AdminConcierge';
 import AdminConciergeDetail from './pages/admin/AdminConciergeDetail';
 import AdminComingSoon from './pages/admin/AdminComingSoon';
@@ -337,8 +335,6 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin/overview"          element={<AdminOverview        {...sharedProps} />} />
         <Route path="/admin/suppliers"         element={<AdminSuppliers       {...sharedProps} />} />
         <Route path="/admin/suppliers/:id"     element={<AdminSupplierDetail  {...sharedProps} />} />
-        <Route path="/admin/managed"           element={<AdminManaged         {...sharedProps} />} />
-        <Route path="/admin/managed/:id"       element={<AdminManagedDetail   {...sharedProps} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
         <Route path="/admin/concierge/:id"     element={<AdminConciergeDetail {...sharedProps} />} />
         <Route path="/admin/disputes"          element={<AdminDisputes        {...sharedProps} />} />

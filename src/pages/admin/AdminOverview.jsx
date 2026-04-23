@@ -72,7 +72,7 @@ async function fetchKPIs() {
     sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier').eq('status', 'verification_under_review'),
     sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier').eq('status', 'active'),
     sb.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['buyer', 'trader']),
-    sb.from('managed_requests').select('*', { count: 'exact', head: true }).in('status', ['open', 'assigned', 'sourcing']),
+    sb.from('requests').select('*', { count: 'exact', head: true }).eq('sourcing_mode', 'managed').not('managed_status', 'is', null),
     sb.from('concierge_requests').select('*', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
     sb.from('disputes').select('*', { count: 'exact', head: true }).in('status', ['open', 'under_review', 'mediating']),
     sb.from('requests').select('*', { count: 'exact', head: true }),
@@ -174,7 +174,6 @@ export default function AdminOverview({ user, profile, lang, ...rest }) {
               sub={isAr ? 'تحت المتابعة' : 'Under management'}
               accentColor={kpis?.openManaged > 0 ? '#8B6914' : undefined}
               loading={loading}
-              onClick={() => nav('/admin/managed')}
             />
             <KPITile
               label={isAr ? 'كونسيرج نشط' : 'Active Concierge'}
@@ -209,9 +208,6 @@ export default function AdminOverview({ user, profile, lang, ...rest }) {
                   : `${kpis.openDisputes} open dispute${kpis.openDisputes > 1 ? 's' : ''}`}
               </button>
             )}
-            <button className="a-quick-btn" onClick={() => nav('/admin/managed')}>
-              {isAr ? 'الطلبات المُدارة' : 'Managed Requests'}
-            </button>
             <button className="a-quick-btn" onClick={() => nav('/admin/concierge')}>
               {isAr ? 'الكونسيرج' : 'Concierge'}
             </button>

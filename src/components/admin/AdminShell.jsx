@@ -5,7 +5,6 @@ import { sb } from '../../supabase';
 const NAV = [
   { path: '/admin/overview',  enLabel: 'Overview',          arLabel: 'نظرة عامة',      phase: 1 },
   { path: '/admin/suppliers', enLabel: 'Suppliers',         arLabel: 'الموردون',        phase: 1 },
-  { path: '/admin/managed',   enLabel: 'Managed Requests',  arLabel: 'الطلبات المُدارة', phase: 1 },
   { path: '/admin/concierge', enLabel: 'Concierge',         arLabel: 'الكونسيرج',      phase: 1 },
   { path: '/admin/disputes',  enLabel: 'Disputes',          arLabel: 'النزاعات',        phase: 2 },
   { path: '/admin/traders',   enLabel: 'Traders',           arLabel: 'التجار',          phase: 2 },
@@ -20,7 +19,6 @@ const NAV = [
 const BOTTOM_NAV = [
   { path: '/admin/overview',  enLabel: 'Overview',  arLabel: 'نظرة عامة' },
   { path: '/admin/suppliers', enLabel: 'Suppliers', arLabel: 'الموردون' },
-  { path: '/admin/managed',   enLabel: 'Managed',   arLabel: 'مُدارة' },
   { path: '/admin/concierge', enLabel: 'Concierge', arLabel: 'كونسيرج' },
   { path: '/admin/disputes',  enLabel: 'Disputes',  arLabel: 'نزاعات' },
 ];
