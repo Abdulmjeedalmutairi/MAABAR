@@ -848,6 +848,33 @@ export default function AdminSeed({ user, profile, lang = 'en' }) {
     try {
       await sb.from('requests').update({ managed_status: 'shortlist_ready', managed_shortlist_ready_at: new Date().toISOString() }).eq('id', request.id);
       await sb.from('managed_supplier_matches').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('request_id', request.id).neq('status', 'shortlisted');
+
+      // Notify + email the buyer so they know a shortlist is waiting.
+      const reqTitle = request.title_ar || request.title_en || request.title_zh || '';
+      if (request.buyer_id) {
+        try {
+          await sb.from('notifications').insert({
+            user_id: request.buyer_id,
+            type: 'managed_shortlist_ready',
+            title_ar: 'القائمة المختصرة جاهزة — راجع العروض',
+            title_en: 'Your shortlist is ready — review the offers',
+            title_zh: '候选名单已就绪 — 请查看报价',
+            ref_id: request.id,
+            is_read: false,
+          });
+        } catch (e) { console.error('publishManagedShortlist notify buyer error:', e); }
+        try {
+          await fetch(`${SUPABASE_FUNCTIONS_URL}/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({
+              type: 'managed_shortlist_ready',
+              data: { recipientUserId: request.buyer_id, name: 'Trader', requestTitle: reqTitle },
+            }),
+          });
+        } catch (e) { console.error('publishManagedShortlist email error:', e); }
+      }
+
       addLog(tx('تم نشر أفضل 3 عروض للعميل داخل صفحة الطلب.', 'Top 3 offers published to the buyer inside the request page.'));
       await loadManagedWorkspace();
     } finally {

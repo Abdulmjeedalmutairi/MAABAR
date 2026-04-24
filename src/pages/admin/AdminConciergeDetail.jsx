@@ -4,8 +4,22 @@ import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
 import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminNoteThread from '../../components/admin/AdminNoteThread';
-import { sb } from '../../supabase';
+import { sb, SUPABASE_FUNCTIONS_URL, SUPABASE_ANON_KEY } from '../../supabase';
 import { logAdminAction } from '../../lib/adminAudit';
+
+const SEND_EMAIL_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
+
+async function sendEmail(type, data) {
+  try {
+    await fetch(SEND_EMAIL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ type, data }),
+    });
+  } catch (e) {
+    console.error(`[AdminConciergeDetail] email ${type} error:`, e);
+  }
+}
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY    = "'Tajawal', sans-serif";
@@ -29,10 +43,12 @@ const MANAGED_STATUS_TO_TAB = Object.entries(TAB_TO_MANAGED_STATUSES).reduce((ac
 // When the admin clicks a bucket button, write a specific managed_status value.
 // Pick the canonical leaf for each bucket so a single click advances the request
 // into that stage instead of an ambiguous intermediate state.
+// NOTE: `matched` is intentionally omitted. Reaching `shortlist_ready` must
+// happen via AdminSeed.publishManagedShortlist (which also creates the
+// managed_shortlisted_offers rows the buyer will actually render).
 const TAB_TO_CANONICAL_MANAGED = {
   pending:     'admin_review',
   in_progress: 'sourcing',
-  matched:     'shortlist_ready',
   closed:      'completed',
 };
 
@@ -80,6 +96,9 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   const nav = useNavigate();
   const [request, setRequest] = useState(null);
   const [connections, setConnections] = useState([]);
+  const [supplierOffers, setSupplierOffers] = useState([]);
+  const [shortlistRows, setShortlistRows] = useState([]);
+  const [shortlistingOfferId, setShortlistingOfferId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flashMsg, setFlashMsg] = useState('');
@@ -94,7 +113,12 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: req, error: reqError }, { data: conns }] = await Promise.all([
+    const [
+      { data: req, error: reqError },
+      { data: conns },
+      { data: offers },
+      { data: shortlist },
+    ] = await Promise.all([
       sb.from('requests')
         .select(`
           id, buyer_id, category, description, budget_per_unit, quantity, created_at,
@@ -114,6 +138,19 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         .select('*, supplier:supplier_id(full_name, email, company_name, country, status)')
         .eq('request_id', id)
         .order('created_at'),
+      // Submitted supplier offers against this managed request. Admin-only
+      // visibility — these are the prices/MOQs admin compares for shortlisting.
+      sb.from('offers')
+        .select('id, price, shipping_cost, moq, delivery_days, note, status, created_at, supplier_id, managed_match_id, negotiation_note, shortlisted_at, supplier:profiles!offers_supplier_id_fkey(full_name, company_name, country, status, maabar_supplier_id)')
+        .eq('request_id', id)
+        .eq('managed_visibility', 'admin_only')
+        .order('created_at', { ascending: false }),
+      // Existing shortlist — used to show "already shortlisted" state and to
+      // pick the next rank when inserting.
+      sb.from('managed_shortlisted_offers')
+        .select('id, offer_id, rank, status, supplier_id')
+        .eq('request_id', id)
+        .order('rank'),
     ]);
 
     if (reqError) console.error('[AdminConciergeDetail] load error:', reqError);
@@ -155,6 +192,8 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
 
     setRequest(normalized);
     setConnections(conns || []);
+    setSupplierOffers(offers || []);
+    setShortlistRows(shortlist || []);
     setLoading(false);
   }, [id]);
 
@@ -239,10 +278,30 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
       return;
     }
     await logAdminAction({ actorId: user.id, action: 'concierge_add_connection', entityType: 'concierge', entityId: id, beforeState: before, afterState: { connected_supplier_id: supplier.id } });
+
+    // Notify + email the supplier so they know a managed request was assigned.
+    const reqTitle = request.description || request.request_type || '';
+    try {
+      await sb.from('notifications').insert({
+        user_id: supplier.id,
+        type: 'managed_match_assigned',
+        title_ar: 'طلب مُدار جديد بانتظار عرضك',
+        title_en: 'A new managed request is waiting for your offer',
+        title_zh: '有新的托管需求等待您的报价',
+        ref_id: id,
+        is_read: false,
+      });
+    } catch (e) { console.error('[AdminConciergeDetail] notify supplier error:', e); }
+    sendEmail('managed_match_assigned', {
+      recipientUserId: supplier.id,
+      name: supplier.full_name || supplier.company_name || 'Supplier',
+      requestTitle: reqTitle,
+    });
+
     await load();
     // searchResults is derived from connections; once load() refreshes
     // `connections`, the newly-connected supplier drops out of the dropdown.
-    showFlash(isAr ? 'تمت إضافة المورد' : 'Supplier connected');
+    showFlash(isAr ? 'تمت إضافة المورد وتم إشعاره' : 'Supplier connected and notified');
   };
 
   const updateConnection = async (conn, patch) => {
@@ -262,6 +321,54 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     await logAdminAction({ actorId: user.id, action: 'concierge_remove_connection', entityType: 'concierge', entityId: id, beforeState: { supplier_id: conn.supplier_id }, afterState: null });
     await load();
     showFlash(isAr ? 'تمت الإزالة' : 'Connection removed');
+  };
+
+  const shortlistedOfferIds = new Set(shortlistRows.map((r) => r.offer_id).filter(Boolean));
+
+  // Inline port of AdminSeed.shortlistManagedOffer — keeps admins on this page
+  // for the review step. Final "publish shortlist" still lives on
+  // /admin-seed?requestId=... via the header button.
+  const shortlistOfferInline = async (offer) => {
+    if (!request?.buyer_id) return;
+    setShortlistingOfferId(offer.id);
+    try {
+      const shippingTimeDays = (() => {
+        const raw = String(offer.negotiation_note || '');
+        const match = raw.match(/shipping_time_days:(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+      })();
+      const nextRank = (shortlistRows.reduce((m, r) => Math.max(m, r.rank || 0), 0) || 0) + 1;
+      const { error: shortlistError } = await sb.from('managed_shortlisted_offers').upsert({
+        request_id: id,
+        buyer_id: request.buyer_id,
+        supplier_id: offer.supplier_id,
+        offer_id: offer.id,
+        rank: nextRank,
+        unit_price: offer.price,
+        moq: offer.moq,
+        production_time_days: offer.delivery_days || null,
+        shipping_time_days: shippingTimeDays,
+        verification_level: null,
+        maabar_notes: null,
+        selection_reason: null,
+        negotiation_summary: offer.note || null,
+        status: 'active',
+      }, { onConflict: 'request_id,rank' });
+      if (shortlistError) {
+        console.error('[AdminConciergeDetail] shortlistOffer error:', shortlistError);
+        setShortlistingOfferId('');
+        return;
+      }
+      await sb.from('offers').update({ shortlisted_at: new Date().toISOString() }).eq('id', offer.id);
+      if (offer.managed_match_id) {
+        await sb.from('managed_supplier_matches').update({ status: 'shortlisted' }).eq('id', offer.managed_match_id);
+      }
+      await logAdminAction({ actorId: user.id, action: 'concierge_shortlist_offer', entityType: 'concierge', entityId: id, beforeState: null, afterState: { offer_id: offer.id, rank: nextRank } });
+      await load();
+      showFlash(isAr ? 'تمت إضافة العرض للقائمة' : 'Offer added to shortlist');
+    } finally {
+      setShortlistingOfferId('');
+    }
   };
 
   const CSS = `
@@ -325,11 +432,22 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {STATUSES.filter(s => s !== request.status).map(s => (
+              {STATUSES.filter(s => s !== request.status && s !== 'matched').map(s => (
                 <button key={s} className="cd-btn" disabled={saving} onClick={() => updateStatus(s)}>
                   → {s.replace('_', ' ')}
                 </button>
               ))}
+              {/* Advancing to `shortlist_ready` must go through AdminSeed's
+                  publish step so the shortlist rows actually exist. Clicking
+                  this button does NOT mutate managed_status; it opens the
+                  review/publish workspace pre-scoped to this request. */}
+              <button
+                className="cd-btn cd-btn-primary"
+                disabled={saving}
+                onClick={() => nav(`/admin-seed?requestId=${id}`)}
+              >
+                {isAr ? 'راجع العروض وانشر القائمة' : 'Review offers & publish shortlist'}
+              </button>
             </div>
           </div>
 
@@ -551,6 +669,66 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
                 )}
               </div>
             ))}
+          </SectionCard>
+
+          {/* Supplier offers — every admin_only offer against this request */}
+          <SectionCard title={isAr ? `عروض الموردين (${supplierOffers.length})` : `Supplier Offers (${supplierOffers.length})`}>
+            {supplierOffers.length === 0 ? (
+              <p style={{ color: 'rgba(0,0,0,0.30)', fontSize: 12, fontFamily: FONT_BODY, margin: 0 }}>
+                {isAr ? 'لم يصل أي عرض بعد من الموردين المُعيَّنين.' : 'No offers submitted yet by assigned suppliers.'}
+              </p>
+            ) : supplierOffers.map((o) => {
+              const isShortlisted = shortlistedOfferIds.has(o.id) || !!o.shortlisted_at;
+              const sName = o.supplier?.company_name || o.supplier?.full_name || '—';
+              const sId = o.supplier?.maabar_supplier_id;
+              const pricePer = o.price != null ? `${o.price} USD/u` : '—';
+              const shipping = o.shipping_cost != null ? `+${o.shipping_cost} ${isAr ? 'شحن' : 'ship'}` : '';
+              const prodDays = o.delivery_days != null ? `${o.delivery_days} ${isAr ? 'يوم إنتاج' : 'd prod'}` : '';
+              return (
+                <div key={o.id} className="cd-conn-card" style={isShortlisted ? { borderColor: 'rgba(39,114,90,0.35)', background: 'rgba(39,114,90,0.04)' } : undefined}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(0,0,0,0.85)', fontFamily: FONT_BODY }}>{sName}</div>
+                      {sId && <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY, marginTop: 2 }}>{sId}</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <AdminStatusBadge status={isShortlisted ? 'shortlisted' : (o.status || 'pending')} lang={lang} />
+                      {!isShortlisted && (
+                        <button
+                          type="button"
+                          className="cd-btn cd-btn-primary"
+                          disabled={shortlistingOfferId === o.id}
+                          onClick={() => shortlistOfferInline(o)}
+                          style={{ padding: '0 12px', fontSize: 11, minHeight: 32 }}
+                        >
+                          {shortlistingOfferId === o.id
+                            ? (isAr ? 'جارٍ…' : 'Adding…')
+                            : (isAr ? 'أضف للقائمة المختصرة' : 'Add to shortlist')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'rgba(0,0,0,0.65)', fontFamily: FONT_BODY, direction: 'ltr', marginBottom: 6 }}>
+                    <span>{pricePer}</span>
+                    {shipping && <span>{shipping}</span>}
+                    {!!o.moq && <span>MOQ {o.moq}</span>}
+                    {prodDays && <span>{prodDays}</span>}
+                  </div>
+                  {!!o.note && (
+                    <div style={{ marginTop: 6, padding: '7px 10px', background: 'var(--bg-raised, #fff)', borderRadius: 6, fontSize: 12, color: 'rgba(0,0,0,0.60)', fontFamily: FONT_BODY }}>
+                      {o.note}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {supplierOffers.length > 0 && (
+              <p style={{ margin: '14px 0 0', fontSize: 11, color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY }}>
+                {isAr
+                  ? 'اختر أفضل 3 عروض هنا، ثم اضغط «راجع العروض وانشر القائمة» لنشرها للعميل.'
+                  : 'Shortlist up to 3 offers here, then click "Review offers & publish shortlist" above to publish to the buyer.'}
+              </p>
+            )}
           </SectionCard>
 
           {/* Notes */}

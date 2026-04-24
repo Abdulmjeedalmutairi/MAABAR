@@ -884,7 +884,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       shipping_method: shippingMethodText,
       moq: shortlistOffer.moq,
       delivery_days: shortlistOffer.production_time_days,
-      origin: 'China',
       note: shortlistOffer.selection_reason || shortlistOffer.maabar_notes || null,
       status: 'accepted',
       managed_match_id: matchRow?.id || null,
@@ -919,13 +918,47 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       return;
     }
 
+    // Managed accept lands on `closed` so the supplier still goes through the
+    // "Ready — notify buyer" handshake before the first payment unlocks — same
+    // as the direct-offer flow. No immediate nav to checkout.
     await sb.from('requests').update({
       managed_status: 'buyer_selected',
       managed_last_buyer_action: 'choose_offer',
-      status: 'supplier_confirmed',
+      status: 'closed',
     }).eq('id', request.id);
 
-    nav('/checkout', { state: { offer, request: { ...request, status: 'supplier_confirmed' } } });
+    // Notify the chosen supplier — they need to confirm readiness next.
+    if (offer?.supplier_id) {
+      try {
+        await sb.from('notifications').insert({
+          user_id: offer.supplier_id,
+          type: 'managed_offer_accepted',
+          title_ar: 'تم قبول عرضك المُدار — أكّد جاهزيتك',
+          title_en: 'Your managed offer was accepted — confirm readiness',
+          title_zh: '您的托管报价已被接受 — 请确认就绪',
+          ref_id: request.id,
+          is_read: false,
+        });
+      } catch (e) { console.error('chooseManagedOffer notify supplier error:', e); }
+      try {
+        await fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            type: 'managed_offer_accepted',
+            data: { recipientUserId: offer.supplier_id, name: 'Supplier', requestTitle: request.title_ar || request.title_en || '' },
+          }),
+        });
+      } catch (e) { console.error('chooseManagedOffer email error:', e); }
+    }
+
+    await loadMyRequests();
+    await loadPendingActions();
+    alert(isAr
+      ? 'تم قبول العرض. في انتظار تأكيد المورد الجاهزية ثم يفتح خيار الدفع.'
+      : lang === 'zh'
+        ? '报价已接受。等待供应商确认就绪后，即可开始付款。'
+        : 'Offer accepted. Waiting for the supplier to confirm readiness — payment will unlock once confirmed.');
   };
 
   const requestManagedNegotiation = async (request, shortlistOffer, reason) => {

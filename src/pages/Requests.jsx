@@ -391,10 +391,16 @@ export default function Requests({ lang, user, profile }) {
     };
 
     console.log('[submitNewRequest] title_zh before insert:', payload.title_zh);
+    // sourcing_mode, managed_status, managed_review_state, managed_priority,
+    // managed_ai_ready_at, response_deadline are all defined in
+    // supabase/migrations/202604012345_managed_sourcing_mvp.sql — writing them
+    // directly. The description_* columns still pass through
+    // runWithOptionalColumns for environments that haven't run the
+    // translation migration yet.
     const { data: insertedRequest, error, strippedColumns } = await runWithOptionalColumns({
       table: 'requests',
       payload,
-      optionalKeys: ['sourcing_mode', 'managed_status', 'managed_review_state', 'response_deadline', 'description_ar', 'description_en', 'description_zh'],
+      optionalKeys: ['description_ar', 'description_en', 'description_zh'],
       execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('*').single(),
     });
     if (strippedColumns && strippedColumns.length > 0) {
@@ -405,16 +411,11 @@ export default function Requests({ lang, user, profile }) {
       try {
         const brief = await generateManagedBriefWithAI({ request: payload, lang });
         await sb.from('managed_request_briefs').upsert(buildManagedBriefRow({ requestId: insertedRequest.id, buyerId: user.id, brief }), { onConflict: 'request_id' });
-        await runWithOptionalColumns({
-          table: 'requests',
-          payload: {
-            managed_status: 'admin_review',
-            managed_priority: brief.priority || 'normal',
-            managed_ai_ready_at: new Date().toISOString(),
-          },
-          optionalKeys: ['managed_status', 'managed_priority', 'managed_ai_ready_at'],
-          execute: (nextPayload) => sb.from('requests').update(nextPayload).eq('id', insertedRequest.id),
-        });
+        await sb.from('requests').update({
+          managed_status: 'admin_review',
+          managed_priority: brief.priority || 'normal',
+          managed_ai_ready_at: new Date().toISOString(),
+        }).eq('id', insertedRequest.id);
       } catch (managedError) {
         console.error('managed request setup error:', managedError);
       }

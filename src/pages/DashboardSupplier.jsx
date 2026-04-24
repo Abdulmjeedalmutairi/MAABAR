@@ -1225,6 +1225,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       ...match,
       offer: offerByRequest[match.request_id] || null,
     })));
+
+    // Mark any 'new' matches as seen so the admin's queue reflects supplier
+    // awareness. Fire-and-forget — non-blocking for the UI.
+    const unseenIds = (data || []).filter((m) => m.status === 'new').map((m) => m.id);
+    if (unseenIds.length > 0) {
+      sb
+        .from('managed_supplier_matches')
+        .update({ status: 'viewed', viewed_at: new Date().toISOString() })
+        .in('id', unseenIds)
+        .then(({ error }) => {
+          if (error) console.error('loadManagedMatches mark-viewed error:', error);
+        });
+    }
   };
 
   const submitManagedMatchOffer = async (match, draft) => {
@@ -1247,7 +1260,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       shipping_method: shippingDays ? `${shippingDays} ${isAr ? 'يوم شحن' : lang === 'zh' ? '天运输时效' : 'shipping days'}` : null,
       moq: draft.moq,
       delivery_days: productionDays,
-      origin: 'China',
       note: draft.note || null,
       status: 'pending',
       managed_match_id: match.id,
@@ -1274,6 +1286,23 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       supplier_response: 'quoted',
       supplier_responded_at: new Date().toISOString(),
     }).eq('id', match.id);
+
+    // Ping every admin so someone can review this managed offer.
+    try {
+      const { data: admins } = await sb.from('profiles').select('id').in('role', ['admin', 'super_admin']);
+      if (admins?.length) {
+        const rows = admins.map((a) => ({
+          user_id: a.id,
+          type: 'managed_offer_received',
+          title_ar: 'وصل عرض مُدار جديد للمراجعة',
+          title_en: 'A new managed offer is ready for review',
+          title_zh: '收到新的托管报价待审核',
+          ref_id: match.request_id,
+          is_read: false,
+        }));
+        await sb.from('notifications').insert(rows);
+      }
+    } catch (e) { console.error('submitManagedMatchOffer notify-admin error:', e); }
 
     setManagedOfferForms((prev) => ({ ...prev, [match.id]: false }));
     setSubmittingOfferId(null);

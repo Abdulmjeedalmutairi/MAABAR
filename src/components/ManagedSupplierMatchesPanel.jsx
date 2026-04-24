@@ -75,9 +75,9 @@ export default function ManagedSupplierMatchesPanel({
     : matches.filter(m => m.group === activeGroup || m.category === activeGroup || m.requests?.category === activeGroup);
 
   const statusLabels = {
-    ar: { new: 'جديد', viewed: 'تمت المشاهدة', quoted: 'تم التقديم', under_review: 'قيد المراجعة', declined: 'مرفوض', selected: 'مُختار', rejected: 'مرفوض', pending: 'بانتظار العرض' },
-    en: { new: 'New', viewed: 'Viewed', quoted: 'Submitted', under_review: 'Under review', declined: 'Declined', selected: 'Selected', rejected: 'Rejected', pending: 'Awaiting offer' },
-    zh: { new: '新', viewed: '已查看', quoted: '已提交', under_review: '审核中', declined: '已拒绝', selected: '已选择', rejected: '已拒绝', pending: '等待报价' },
+    ar: { new: 'جديد', viewed: 'تمت المشاهدة', quoted: 'تم التقديم', under_review: 'قيد المراجعة', declined: 'مرفوض', selected: 'مُختار', rejected: 'مرفوض', pending: 'بانتظار العرض', shortlisted: 'في القائمة المختصرة', selected_by_buyer: 'اختاره التاجر', dismissed: 'تم استبعاده', closed: 'مُغلق' },
+    en: { new: 'New', viewed: 'Viewed', quoted: 'Submitted', under_review: 'Under review', declined: 'Declined', selected: 'Selected', rejected: 'Rejected', pending: 'Awaiting offer', shortlisted: 'Shortlisted', selected_by_buyer: 'Buyer chose you', dismissed: 'Dismissed', closed: 'Closed' },
+    zh: { new: '新', viewed: '已查看', quoted: '已提交', under_review: '审核中', declined: '已拒绝', selected: '已选择', rejected: '已拒绝', pending: '等待报价', shortlisted: '入围候选', selected_by_buyer: '买家已选择您', dismissed: '已排除', closed: '已关闭' },
   };
   const getStatusLabel = (s) => statusLabels[lang]?.[s] || statusLabels.ar[s] || s || '—';
 
