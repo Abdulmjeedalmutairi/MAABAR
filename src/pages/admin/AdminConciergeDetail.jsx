@@ -38,6 +38,20 @@ const TAB_TO_CANONICAL_MANAGED = {
 
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
+// Supplier speciality values mirror the buyer-side request categories
+// (electronics, furniture, clothing, building, food, other). The admin picks
+// one to narrow the Connected-Suppliers list to matching specialists.
+const CATEGORY_LABELS = {
+  all:         { ar: 'كل الموردين', en: 'All suppliers', zh: '全部供应商' },
+  electronics: { ar: 'إلكترونيات',  en: 'Electronics',   zh: '电子产品' },
+  furniture:   { ar: 'أثاث',        en: 'Furniture',     zh: '家具' },
+  clothing:    { ar: 'ملابس',       en: 'Clothing',      zh: '服装' },
+  building:    { ar: 'مواد بناء',   en: 'Building',      zh: '建材' },
+  food:        { ar: 'غذاء',        en: 'Food',          zh: '食品' },
+  other:       { ar: 'أخرى',        en: 'Other',         zh: '其他' },
+};
+const CATEGORY_KEYS = ['all', 'electronics', 'furniture', 'clothing', 'building', 'food', 'other'];
+
 function SectionCard({ title, children, style }) {
   return (
     <div style={{ background: 'var(--bg-raised, #fff)', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 10, padding: '20px 20px 18px', marginBottom: 12, ...style }}>
@@ -69,7 +83,9 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flashMsg, setFlashMsg] = useState('');
-  const [supplierSearch, setSupplierSearch] = useState('');
+  // `null` means "use the request's own category as the default once it
+  // loads". An explicit admin choice (including 'all') overrides that.
+  const [categoryFilter, setCategoryFilter] = useState(null);
   const [allSuppliers, setAllSuppliers] = useState([]);
   const [searching, setSearching] = useState(false);
   const isAr = lang === 'ar';
@@ -82,7 +98,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
       sb.from('requests')
         .select(`
           id, buyer_id, category, description, budget_per_unit, quantity, created_at,
-          sourcing_mode, managed_status,
+          sourcing_mode, managed_status, payment_plan, sample_requirement, response_deadline,
           requester:profiles!requests_buyer_id_fkey(full_name, email, company_name, whatsapp, wechat),
           brief:managed_request_briefs(
             ai_confidence, cleaned_description, supplier_brief,
@@ -114,6 +130,11 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         buyer_id: req.buyer_id || null,
         requester: req.requester || null,
         request_type: req.category || 'managed',
+        category: req.category || null,
+        quantity: req.quantity || null,
+        payment_plan: req.payment_plan ?? null,
+        sample_requirement: req.sample_requirement || null,
+        response_deadline: req.response_deadline || null,
         description: brief?.cleaned_description || req.description || '',
         budget: req.budget_per_unit,
         currency: 'USD',
@@ -161,15 +182,15 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     setSaving(false);
   };
 
-  // Mirror AdminSuppliers: preload suppliers once, then filter client-side as
-  // the admin types. This avoids the flaky server-side .or(ilike) chain that
-  // returned zero hits and gives a live-dropdown UX.
+  // Preload every supplier once, then filter client-side by speciality. The
+  // admin narrows candidates via a category dropdown whose values mirror the
+  // buyer-side request categories.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setSearching(true);
       const { data, error } = await sb.from('profiles')
-        .select('id, full_name, email, company_name, country, status, maabar_supplier_id')
+        .select('id, full_name, email, company_name, country, status, maabar_supplier_id, speciality')
         .eq('role', 'supplier')
         .order('company_name', { ascending: true })
         .limit(500);
@@ -182,19 +203,15 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   }, []);
 
   const existingIds = new Set(connections.map(c => c.supplier_id));
+  // Resolve the active category: admin's explicit pick, else the request's
+  // own category as a sensible default once it loads.
+  const activeCategory = categoryFilter ?? request?.category ?? 'all';
   const searchResults = (() => {
-    const q = supplierSearch.trim().toLowerCase();
-    if (!q) return [];
     return allSuppliers
       .filter(s => !existingIds.has(s.id))
-      .filter(s => [s.full_name, s.email, s.company_name, s.country, s.maabar_supplier_id]
-        .some(f => (f || '').toLowerCase().includes(q)))
-      .slice(0, 10);
+      .filter(s => activeCategory === 'all' || (s.speciality || '').toLowerCase() === activeCategory)
+      .slice(0, 20);
   })();
-
-  // Search button stays in the UI (keepExistingUI); it's effectively a no-op
-  // since results update live on each keystroke.
-  const searchSuppliers = () => {};
 
   // managed_supplier_matches.status has no CHECK constraint, so the existing
   // ['active', 'closed'] dropdown values from the UI write through. The schema
@@ -316,14 +333,35 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
             </div>
           </div>
 
-          {/* Requester */}
+          {/* Requester + request details */}
           <SectionCard title={isAr ? 'مقدم الطلب' : 'Requester'}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px 24px', marginBottom: request.description ? 16 : 0 }}>
               <InfoItem label={isAr ? 'الاسم' : 'Name'} value={request.requester?.full_name} />
               <InfoItem label="Email" value={request.requester?.email} />
               <InfoItem label={isAr ? 'الشركة' : 'Company'} value={request.requester?.company_name} />
               <InfoItem label={isAr ? 'واتساب' : 'WhatsApp'} value={request.requester?.whatsapp} />
-              <InfoItem label={isAr ? 'الميزانية' : 'Budget'} value={request.budget ? `${request.budget} ${request.currency}` : null} />
+              <InfoItem
+                label={isAr ? 'التصنيف' : 'Category'}
+                value={request.category
+                  ? ((CATEGORY_LABELS[request.category]?.[lang]) || (CATEGORY_LABELS[request.category]?.en) || request.category)
+                  : null}
+              />
+              <InfoItem label={isAr ? 'الكمية' : 'Quantity'} value={request.quantity} />
+              <InfoItem label={isAr ? 'الميزانية للوحدة' : 'Budget/unit'} value={request.budget ? `${request.budget} ${request.currency}` : null} />
+              <InfoItem
+                label={isAr ? 'خطة الدفع' : 'Payment plan'}
+                value={request.payment_plan
+                  ? (isAr
+                      ? `${request.payment_plan}٪ مقدم + ${100 - request.payment_plan}٪ عند الشحن`
+                      : lang === 'zh'
+                        ? `${request.payment_plan}% 定金 + ${100 - request.payment_plan}% 发货前`
+                        : `${request.payment_plan}% upfront + ${100 - request.payment_plan}% on shipping`)
+                  : null}
+              />
+              <InfoItem
+                label={isAr ? 'الموعد النهائي' : 'Deadline'}
+                value={request.response_deadline ? fmtDate(request.response_deadline) : null}
+              />
               <InfoItem label={isAr ? 'تاريخ الطلب' : 'Submitted'} value={fmtDate(request.created_at)} />
             </div>
             {request.description && (
@@ -427,18 +465,28 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
 
           {/* Connections */}
           <SectionCard title={isAr ? `الموردون المرتبطون (${connections.length})` : `Connected Suppliers (${connections.length})`}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-              <input
-                value={supplierSearch}
-                onChange={e => setSupplierSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchSuppliers()}
-                placeholder={isAr ? 'بحث عن مورد للربط...' : 'Search supplier to connect…'}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', fontFamily: FONT_BODY }}>
+                {isAr ? 'التصنيف' : 'Category'}
+              </label>
+              <select
+                value={activeCategory}
+                onChange={e => setCategoryFilter(e.target.value)}
+                disabled={searching}
                 dir={isAr ? 'rtl' : 'ltr'}
-                style={{ flex: 1, minWidth: 200, padding: '9px 12px', background: 'var(--bg-subtle, #F5F2EE)', border: '1px solid rgba(0,0,0,0.09)', borderRadius: 8, fontSize: 13, color: 'rgba(0,0,0,0.80)', fontFamily: FONT_BODY, outline: 'none', minHeight: 38, boxSizing: 'border-box' }}
-              />
-              <button className="cd-btn cd-btn-primary" onClick={searchSuppliers} disabled={searching} style={{ minWidth: 72 }}>
-                {searching ? '…' : (isAr ? 'بحث' : 'Search')}
-              </button>
+                style={{ flex: 1, minWidth: 200, padding: '9px 12px', background: 'var(--bg-subtle, #F5F2EE)', border: '1px solid rgba(0,0,0,0.09)', borderRadius: 8, fontSize: 13, color: 'rgba(0,0,0,0.80)', fontFamily: FONT_BODY, outline: 'none', minHeight: 38, boxSizing: 'border-box', cursor: 'pointer' }}
+              >
+                {CATEGORY_KEYS.map(k => (
+                  <option key={k} value={k}>
+                    {(CATEGORY_LABELS[k] && (CATEGORY_LABELS[k][lang] || CATEGORY_LABELS[k].en)) || k}
+                  </option>
+                ))}
+              </select>
+              <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>
+                {searching
+                  ? (isAr ? 'جارٍ التحميل…' : 'Loading…')
+                  : `${searchResults.length} ${isAr ? 'مورد' : 'supplier' + (searchResults.length !== 1 ? 's' : '')}`}
+              </span>
             </div>
 
             {searchResults.length > 0 && (
