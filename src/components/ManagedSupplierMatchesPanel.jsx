@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { sb } from '../supabase';
 
 export default function ManagedSupplierMatchesPanel({
   lang = 'ar',
@@ -15,6 +16,48 @@ export default function ManagedSupplierMatchesPanel({
 }) {
   const isAr = lang === 'ar';
   const isZh = lang === 'zh';
+
+  // Request Details modal. Brief is fetched on open so the panel stays
+  // presentational — DashboardSupplier doesn't need a schema change.
+  const [detailsMatch, setDetailsMatch] = useState(null);
+  const [detailsBrief, setDetailsBrief] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const openDetails = async (match) => {
+    setDetailsMatch(match);
+    setDetailsBrief(null);
+    if (!match?.request_id) return;
+    setDetailsLoading(true);
+    const { data, error } = await sb
+      .from('managed_request_briefs')
+      .select('cleaned_description, supplier_brief, ai_output, ai_confidence')
+      .eq('request_id', match.request_id)
+      .maybeSingle();
+    if (error) console.error('[ManagedSupplierMatchesPanel] brief fetch error:', error);
+    setDetailsBrief(data || null);
+    setDetailsLoading(false);
+  };
+
+  const closeDetails = () => {
+    setDetailsMatch(null);
+    setDetailsBrief(null);
+    setDetailsLoading(false);
+  };
+
+  const pickBriefText = (brief) => {
+    if (!brief) return null;
+    const byLang = brief.ai_output?.supplier_brief_all;
+    if (byLang && (byLang[lang] || byLang.en || byLang.ar || byLang.zh)) {
+      return byLang[lang] || byLang.en || byLang.ar || byLang.zh;
+    }
+    return brief.supplier_brief || null;
+  };
+
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch { return String(d); }
+  };
 
   const groups = [
     { id: 'all', label: isAr ? 'الكل' : isZh ? '全部' : 'All' },
@@ -169,6 +212,17 @@ export default function ManagedSupplierMatchesPanel({
                   <span>{isAr ? 'الفئة:' : isZh ? '类别：' : 'Category:'} {req.category || match.category || 'general'}</span>
                   <span>{isAr ? 'الحالة:' : isZh ? '状态：' : 'Status:'} {getStatusLabel(match.status)}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => openDetails(match)}
+                  style={{
+                    marginTop: 8, padding: 0, background: 'none', border: 'none',
+                    color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12,
+                    textDecoration: 'underline',
+                  }}
+                >
+                  {isAr ? 'تفاصيل الطلب' : isZh ? '需求详情' : 'Request Details'} →
+                </button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6, fontSize: 13 }}>
@@ -318,6 +372,112 @@ export default function ManagedSupplierMatchesPanel({
           );
         })}
       </div>
+
+      {detailsMatch && (() => {
+        const req = detailsMatch.requests || {};
+        const description = getRequestDescription(detailsMatch);
+        const title = getRequestTitle(detailsMatch);
+        const briefText = pickBriefText(detailsBrief);
+        const L = (ar, en, zh) => (isAr ? ar : isZh ? zh : en);
+
+        return (
+          <div
+            onClick={closeDetails}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1000,
+              background: 'rgba(0,0,0,0.55)',
+              display: 'flex', justifyContent: 'center', alignItems: 'center',
+              padding: 20,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              dir={isAr ? 'rtl' : 'ltr'}
+              style={{
+                background: 'var(--bg-raised, #fff)',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: 16,
+                width: '100%', maxWidth: 640, maxHeight: '85vh', overflow: 'auto',
+                padding: 24,
+                boxShadow: '0 12px 44px rgba(0,0,0,0.18)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                <h3 style={{ margin: 0, fontSize: 20, color: 'var(--text-primary)', lineHeight: 1.3 }}>{title}</h3>
+                <button
+                  type="button"
+                  onClick={closeDetails}
+                  aria-label="Close"
+                  style={{
+                    minWidth: 32, minHeight: 32, borderRadius: 16,
+                    border: '1px solid var(--border-subtle)', background: 'transparent',
+                    cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px 18px', marginBottom: 18 }}>
+                <InfoField label={L('التصنيف', 'Category', '类别')} value={req.category || detailsMatch.category || '—'} />
+                <InfoField label={L('الكمية', 'Quantity', '数量')} value={req.quantity || detailsMatch.quantity || '—'} />
+                <InfoField
+                  label={L('الميزانية', 'Budget', '预算')}
+                  value={`${req.budget_per_unit || req.budget || detailsMatch.budget || '—'} ${req.currency || detailsMatch.currency || 'USD'}`}
+                />
+                <InfoField
+                  label={L('الموعد النهائي', 'Deadline', '截止日期')}
+                  value={fmtDate(req.response_deadline || req.deadline || detailsMatch.deadline)}
+                />
+                <InfoField label={L('الحالة', 'Status', '状态')} value={getStatusLabel(detailsMatch.status)} />
+              </div>
+
+              {description && (
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
+                    {L('الوصف الكامل', 'Full Description', '完整描述')}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    {description}
+                  </p>
+                </div>
+              )}
+
+              <div style={{
+                padding: 14, borderRadius: 12,
+                border: '1px solid rgba(139,105,20,0.20)',
+                background: 'rgba(139,105,20,0.04)',
+              }}>
+                <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 600, letterSpacing: 1.4, textTransform: 'uppercase', color: '#8B6914' }}>
+                  {L('ملخص المورد من معبر', 'Maabar Supplier Brief', 'Maabar 供应商简报')}
+                </p>
+                {detailsLoading ? (
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {L('جارٍ التحميل…', 'Loading…', '加载中…')}
+                  </p>
+                ) : briefText ? (
+                  <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    {briefText}
+                  </p>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-disabled)' }}>
+                    {L('لم يُنشأ ملخص بعد.', 'No AI brief available yet.', '暂无 AI 简报。')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+function InfoField({ label, value }) {
+  return (
+    <div>
+      <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>{label}</p>
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)' }}>{value}</p>
     </div>
   );
 }
