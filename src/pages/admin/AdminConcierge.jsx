@@ -16,6 +16,20 @@ const TABS = [
   { key: 'closed',      en: 'Closed',      ar: 'مغلق' },
 ];
 
+// Managed-request lifecycle (managed_status values in public.requests) collapsed
+// onto the four concierge tabs the UI exposes.
+const TAB_TO_MANAGED_STATUSES = {
+  pending:     ['submitted', 'admin_review'],
+  in_progress: ['sourcing', 'matching'],
+  matched:     ['shortlist_ready', 'buyer_review'],
+  closed:      ['buyer_selected', 'completed'],
+};
+
+const MANAGED_STATUS_TO_TAB = Object.entries(TAB_TO_MANAGED_STATUSES).reduce((acc, [tab, list]) => {
+  list.forEach(ms => { acc[ms] = tab; });
+  return acc;
+}, {});
+
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 const SHARED_CSS = (isAr) => `
@@ -57,13 +71,45 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = sb.from('concierge_requests')
-      .select('id, request_type, status, budget, currency, created_at, description, requester:requester_id(full_name, email, company_name)')
+    // Source of truth for managed buyer requests is public.requests
+    // (sourcing_mode='managed'). The concierge_requests table is not populated
+    // by the buyer flow. Join the buyer profile and the AI brief for context.
+    let q = sb.from('requests')
+      .select(`
+        id, category, description, budget_per_unit, quantity, created_at,
+        sourcing_mode, managed_status,
+        requester:profiles!requests_buyer_id_fkey(full_name, email, company_name),
+        brief:managed_request_briefs(ai_confidence, cleaned_description)
+      `)
+      .eq('sourcing_mode', 'managed')
       .order('created_at', { ascending: false })
       .limit(200);
-    if (tab !== 'all') q = q.eq('status', tab);
-    const { data } = await q;
-    setRequests(data || []);
+
+    if (tab !== 'all') {
+      const statuses = TAB_TO_MANAGED_STATUSES[tab] || [];
+      if (statuses.length) q = q.in('managed_status', statuses);
+    }
+
+    const { data, error } = await q;
+    if (error) console.error('[AdminConcierge] load error:', error);
+
+    // Normalize so the existing UI (which expects concierge_requests shape)
+    // keeps working without template changes.
+    const rows = (data || []).map(r => {
+      const brief = Array.isArray(r.brief) ? r.brief[0] : r.brief;
+      return {
+        id: r.id,
+        requester: r.requester || null,
+        request_type: r.category || 'managed',
+        description: brief?.cleaned_description || r.description || '',
+        budget: r.budget_per_unit,
+        currency: 'USD',
+        status: MANAGED_STATUS_TO_TAB[r.managed_status] || r.managed_status || 'pending',
+        created_at: r.created_at,
+      };
+    });
+
+    setRequests(rows);
     setLoading(false);
   }, [tab]);
 
