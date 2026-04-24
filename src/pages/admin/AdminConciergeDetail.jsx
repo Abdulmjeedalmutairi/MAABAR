@@ -12,6 +12,30 @@ const FONT_BODY    = "'Tajawal', sans-serif";
 
 const STATUSES = ['pending', 'in_progress', 'matched', 'closed'];
 
+// Mirrors the mapping used by AdminConcierge.jsx — the four concierge buckets
+// collapsed from the richer managed_status lifecycle on public.requests.
+const TAB_TO_MANAGED_STATUSES = {
+  pending:     ['submitted', 'admin_review'],
+  in_progress: ['sourcing', 'matching'],
+  matched:     ['shortlist_ready', 'buyer_review'],
+  closed:      ['buyer_selected', 'completed'],
+};
+
+const MANAGED_STATUS_TO_TAB = Object.entries(TAB_TO_MANAGED_STATUSES).reduce((acc, [tab, list]) => {
+  list.forEach(ms => { acc[ms] = tab; });
+  return acc;
+}, {});
+
+// When the admin clicks a bucket button, write a specific managed_status value.
+// Pick the canonical leaf for each bucket so a single click advances the request
+// into that stage instead of an ambiguous intermediate state.
+const TAB_TO_CANONICAL_MANAGED = {
+  pending:     'admin_review',
+  in_progress: 'sourcing',
+  matched:     'shortlist_ready',
+  closed:      'completed',
+};
+
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 function SectionCard({ title, children, style }) {
@@ -54,11 +78,50 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: req }, { data: conns }] = await Promise.all([
-      sb.from('concierge_requests').select('*, requester:requester_id(full_name, email, company_name, whatsapp, wechat)').eq('id', id).single(),
-      sb.from('concierge_connections').select('*, supplier:supplier_id(full_name, email, company_name, country, status)').eq('concierge_id', id).order('created_at'),
+    const [{ data: req, error: reqError }, { data: conns }] = await Promise.all([
+      sb.from('requests')
+        .select(`
+          id, category, description, budget_per_unit, quantity, created_at,
+          sourcing_mode, managed_status,
+          requester:profiles!requests_buyer_id_fkey(full_name, email, company_name, whatsapp, wechat),
+          brief:managed_request_briefs(
+            ai_confidence, cleaned_description, supplier_brief,
+            ai_output, extracted_specs,
+            admin_follow_up_question, admin_internal_notes
+          )
+        `)
+        .eq('id', id)
+        .maybeSingle(),
+      sb.from('concierge_connections')
+        .select('*, supplier:supplier_id(full_name, email, company_name, country, status)')
+        .eq('concierge_id', id)
+        .order('created_at'),
     ]);
-    setRequest(req);
+
+    if (reqError) console.error('[AdminConciergeDetail] load error:', reqError);
+
+    // Normalize into the shape the template already renders (kept from the
+    // original concierge_requests model): requester, request_type, description,
+    // budget/currency, status (bucket), summary (jsonb), assistant_suggestion.
+    let normalized = null;
+    if (req) {
+      const brief = Array.isArray(req.brief) ? req.brief[0] : req.brief;
+      normalized = {
+        id: req.id,
+        requester: req.requester || null,
+        request_type: req.category || 'managed',
+        description: brief?.cleaned_description || req.description || '',
+        budget: req.budget_per_unit,
+        currency: 'USD',
+        status: MANAGED_STATUS_TO_TAB[req.managed_status] || req.managed_status || 'pending',
+        managed_status: req.managed_status || null,
+        created_at: req.created_at,
+        assistant_suggestion: brief?.supplier_brief || null,
+        summary: brief?.ai_output || brief?.extracted_specs || null,
+      };
+    }
+
+    setRequest(normalized);
     setConnections(conns || []);
     setLoading(false);
   }, [id]);
@@ -68,9 +131,20 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   const updateStatus = async (newStatus) => {
     if (!request) return;
     setSaving(true);
-    const before = { status: request.status };
-    await sb.from('concierge_requests').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
-    await logAdminAction({ actorId: user.id, action: 'concierge_status_update', entityType: 'concierge', entityId: id, beforeState: before, afterState: { status: newStatus } });
+    const before = { status: request.status, managed_status: request.managed_status };
+    const targetManagedStatus = TAB_TO_CANONICAL_MANAGED[newStatus] || newStatus;
+    const { error } = await sb.from('requests')
+      .update({ managed_status: targetManagedStatus })
+      .eq('id', id);
+    if (error) console.error('[AdminConciergeDetail] updateStatus error:', error);
+    await logAdminAction({
+      actorId: user.id,
+      action: 'concierge_status_update',
+      entityType: 'concierge',
+      entityId: id,
+      beforeState: before,
+      afterState: { status: newStatus, managed_status: targetManagedStatus },
+    });
     await load();
     showFlash(isAr ? 'تم تحديث الحالة' : 'Status updated');
     setSaving(false);
