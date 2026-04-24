@@ -81,7 +81,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     const [{ data: req, error: reqError }, { data: conns }] = await Promise.all([
       sb.from('requests')
         .select(`
-          id, category, description, budget_per_unit, quantity, created_at,
+          id, buyer_id, category, description, budget_per_unit, quantity, created_at,
           sourcing_mode, managed_status,
           requester:profiles!requests_buyer_id_fkey(full_name, email, company_name, whatsapp, wechat),
           brief:managed_request_briefs(
@@ -92,9 +92,11 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         `)
         .eq('id', id)
         .maybeSingle(),
-      sb.from('concierge_connections')
+      // Connected Suppliers on managed requests live in managed_supplier_matches.
+      // Same supplier embed as before so the existing card template keeps working.
+      sb.from('managed_supplier_matches')
         .select('*, supplier:supplier_id(full_name, email, company_name, country, status)')
-        .eq('concierge_id', id)
+        .eq('request_id', id)
         .order('created_at'),
     ]);
 
@@ -108,6 +110,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
       const brief = Array.isArray(req.brief) ? req.brief[0] : req.brief;
       normalized = {
         id: req.id,
+        buyer_id: req.buyer_id || null,
         requester: req.requester || null,
         request_type: req.category || 'managed',
         description: brief?.cleaned_description || req.description || '',
@@ -163,9 +166,31 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     setSearching(false);
   };
 
+  // managed_supplier_matches.status has no CHECK constraint, so the existing
+  // ['active', 'closed'] dropdown values from the UI write through. The schema
+  // has no admin_interventions column — filter that out so the + Intervention
+  // button is a no-op rather than a failed write.
+  const MATCH_UPDATE_ALLOWED = new Set([
+    'status', 'admin_note', 'supplier_note', 'supplier_response',
+    'viewed_at', 'supplier_responded_at', 'closed_at',
+  ]);
+
   const addConnection = async (supplier) => {
+    if (!request?.buyer_id) {
+      console.error('[AdminConciergeDetail] addConnection: missing buyer_id on request');
+      return;
+    }
     const before = { connection_count: connections.length };
-    await sb.from('concierge_connections').insert({ concierge_id: id, supplier_id: supplier.id, connected_by: user.id });
+    const { error } = await sb.from('managed_supplier_matches').insert({
+      request_id: id,
+      buyer_id: request.buyer_id,
+      supplier_id: supplier.id,
+      status: 'new',
+    });
+    if (error) {
+      console.error('[AdminConciergeDetail] addConnection error:', error);
+      return;
+    }
     await logAdminAction({ actorId: user.id, action: 'concierge_add_connection', entityType: 'concierge', entityId: id, beforeState: before, afterState: { connected_supplier_id: supplier.id } });
     setSearchResults(prev => prev.filter(s => s.id !== supplier.id));
     await load();
@@ -173,13 +198,19 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   };
 
   const updateConnection = async (conn, patch) => {
-    await sb.from('concierge_connections').update(patch).eq('id', conn.id);
-    await logAdminAction({ actorId: user.id, action: 'concierge_update_connection', entityType: 'concierge', entityId: id, beforeState: conn, afterState: patch });
+    const filtered = Object.fromEntries(
+      Object.entries(patch).filter(([k]) => MATCH_UPDATE_ALLOWED.has(k)),
+    );
+    if (Object.keys(filtered).length === 0) return;
+    const { error } = await sb.from('managed_supplier_matches').update(filtered).eq('id', conn.id);
+    if (error) console.error('[AdminConciergeDetail] updateConnection error:', error);
+    await logAdminAction({ actorId: user.id, action: 'concierge_update_connection', entityType: 'concierge', entityId: id, beforeState: conn, afterState: filtered });
     await load();
   };
 
   const removeConnection = async (conn) => {
-    await sb.from('concierge_connections').delete().eq('id', conn.id);
+    const { error } = await sb.from('managed_supplier_matches').delete().eq('id', conn.id);
+    if (error) console.error('[AdminConciergeDetail] removeConnection error:', error);
     await logAdminAction({ actorId: user.id, action: 'concierge_remove_connection', entityType: 'concierge', entityId: id, beforeState: { supplier_id: conn.supplier_id }, afterState: null });
     await load();
     showFlash(isAr ? 'تمت الإزالة' : 'Connection removed');
