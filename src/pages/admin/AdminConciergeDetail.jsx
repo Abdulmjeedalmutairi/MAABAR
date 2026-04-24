@@ -70,7 +70,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   const [saving, setSaving] = useState(false);
   const [flashMsg, setFlashMsg] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [allSuppliers, setAllSuppliers] = useState([]);
   const [searching, setSearching] = useState(false);
   const isAr = lang === 'ar';
 
@@ -102,9 +102,10 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
 
     if (reqError) console.error('[AdminConciergeDetail] load error:', reqError);
 
-    // Normalize into the shape the template already renders (kept from the
-    // original concierge_requests model): requester, request_type, description,
-    // budget/currency, status (bucket), summary (jsonb), assistant_suggestion.
+    // Normalize into the shape the template already renders. Keep `brief` as a
+    // structured sub-object so the AI summary section can render each field
+    // (supplier_brief_all by language, extracted_specs list, admin follow-up,
+    // internal notes) instead of a raw JSON dump.
     let normalized = null;
     if (req) {
       const brief = Array.isArray(req.brief) ? req.brief[0] : req.brief;
@@ -120,7 +121,14 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         managed_status: req.managed_status || null,
         created_at: req.created_at,
         assistant_suggestion: brief?.supplier_brief || null,
-        summary: brief?.ai_output || brief?.extracted_specs || null,
+        brief: brief ? {
+          supplier_brief_all: brief.ai_output?.supplier_brief_all || null,
+          extracted_specs: Array.isArray(brief.extracted_specs) ? brief.extracted_specs : [],
+          admin_follow_up_question: brief.admin_follow_up_question || null,
+          admin_internal_notes: brief.admin_internal_notes || null,
+          cleaned_description: brief.cleaned_description || null,
+          ai_confidence: brief.ai_confidence || null,
+        } : null,
       };
     }
 
@@ -153,18 +161,40 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     setSaving(false);
   };
 
-  const searchSuppliers = async () => {
-    if (!supplierSearch.trim()) return;
-    setSearching(true);
-    const { data } = await sb.from('profiles')
-      .select('id, full_name, email, company_name, country, status')
-      .eq('role', 'supplier')
-      .or(`full_name.ilike.%${supplierSearch}%,email.ilike.%${supplierSearch}%,company_name.ilike.%${supplierSearch}%`)
-      .limit(10);
-    const existingIds = connections.map(c => c.supplier_id);
-    setSearchResults((data || []).filter(s => !existingIds.includes(s.id)));
-    setSearching(false);
-  };
+  // Mirror AdminSuppliers: preload suppliers once, then filter client-side as
+  // the admin types. This avoids the flaky server-side .or(ilike) chain that
+  // returned zero hits and gives a live-dropdown UX.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setSearching(true);
+      const { data, error } = await sb.from('profiles')
+        .select('id, full_name, email, company_name, country, status, maabar_supplier_id')
+        .eq('role', 'supplier')
+        .order('company_name', { ascending: true })
+        .limit(500);
+      if (cancelled) return;
+      if (error) console.error('[AdminConciergeDetail] loadSuppliers error:', error);
+      setAllSuppliers(data || []);
+      setSearching(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const existingIds = new Set(connections.map(c => c.supplier_id));
+  const searchResults = (() => {
+    const q = supplierSearch.trim().toLowerCase();
+    if (!q) return [];
+    return allSuppliers
+      .filter(s => !existingIds.has(s.id))
+      .filter(s => [s.full_name, s.email, s.company_name, s.country, s.maabar_supplier_id]
+        .some(f => (f || '').toLowerCase().includes(q)))
+      .slice(0, 10);
+  })();
+
+  // Search button stays in the UI (keepExistingUI); it's effectively a no-op
+  // since results update live on each keystroke.
+  const searchSuppliers = () => {};
 
   // managed_supplier_matches.status has no CHECK constraint, so the existing
   // ['active', 'closed'] dropdown values from the UI write through. The schema
@@ -192,8 +222,9 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
       return;
     }
     await logAdminAction({ actorId: user.id, action: 'concierge_add_connection', entityType: 'concierge', entityId: id, beforeState: before, afterState: { connected_supplier_id: supplier.id } });
-    setSearchResults(prev => prev.filter(s => s.id !== supplier.id));
     await load();
+    // searchResults is derived from connections; once load() refreshes
+    // `connections`, the newly-connected supplier drops out of the dropdown.
     showFlash(isAr ? 'تمت إضافة المورد' : 'Supplier connected');
   };
 
@@ -303,22 +334,96 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
             )}
           </SectionCard>
 
-          {/* AI summary — amber tint, no purple */}
-          {(request.summary || request.assistant_suggestion) && (
-            <SectionCard style={{ borderColor: 'rgba(139,105,20,0.20)', background: 'rgba(139,105,20,0.04)' }}>
-              <p style={{ margin: '0 0 12px', fontSize: 10, fontWeight: 600, letterSpacing: 1.6, textTransform: 'uppercase', color: '#8B6914', fontFamily: FONT_BODY }}>
-                {isAr ? 'ملخص المساعد الذكي' : 'AI Assistant Summary'}
-              </p>
-              {request.assistant_suggestion && (
-                <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(0,0,0,0.75)', lineHeight: 1.7, fontFamily: FONT_BODY }}>{request.assistant_suggestion}</p>
-              )}
-              {request.summary && (
-                <pre style={{ margin: 0, fontSize: 11, color: 'rgba(0,0,0,0.55)', fontFamily: "'Courier New', monospace", whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6 }}>
-                  {typeof request.summary === 'string' ? request.summary : JSON.stringify(request.summary, null, 2)}
-                </pre>
-              )}
-            </SectionCard>
-          )}
+          {/* AI summary — amber tint, no purple. Renders structured brief fields
+              (supplier_brief_all by language, extracted_specs list, admin
+              follow-up, internal notes) with cleaned_description as the last
+              resort if everything else is empty. */}
+          {(() => {
+            const brief = request.brief;
+            const suggestion = request.assistant_suggestion;
+            if (!brief && !suggestion) return null;
+
+            const briefText = brief?.supplier_brief_all
+              ? (brief.supplier_brief_all[lang]
+                  || brief.supplier_brief_all.en
+                  || brief.supplier_brief_all.ar
+                  || brief.supplier_brief_all.zh
+                  || null)
+              : null;
+
+            const specs = (brief?.extracted_specs || []).filter(s => s && (s.key || s.label || s.name));
+            const hasFollowUp = !!brief?.admin_follow_up_question;
+            const hasInternalNotes = !!brief?.admin_internal_notes;
+
+            const hasAnyParsed = !!(briefText || specs.length || hasFollowUp || hasInternalNotes || suggestion);
+            if (!hasAnyParsed && !brief?.cleaned_description) return null;
+
+            const amberLabel = { fontSize: 10, fontWeight: 600, letterSpacing: 1.4, textTransform: 'uppercase', color: '#8B6914', fontFamily: FONT_BODY, marginBottom: 6 };
+            const subLabel = { fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', fontFamily: FONT_BODY, marginBottom: 6 };
+            const bodyText = { margin: 0, fontSize: 13, color: 'rgba(0,0,0,0.75)', lineHeight: 1.7, fontFamily: FONT_BODY };
+
+            return (
+              <SectionCard style={{ borderColor: 'rgba(139,105,20,0.20)', background: 'rgba(139,105,20,0.04)' }}>
+                <p style={{ margin: '0 0 12px', ...amberLabel, fontSize: 10, letterSpacing: 1.6, marginBottom: 12 }}>
+                  {isAr ? 'ملخص المساعد الذكي' : 'AI Assistant Summary'}
+                </p>
+
+                {suggestion && (
+                  <p style={{ ...bodyText, marginBottom: 14 }}>{suggestion}</p>
+                )}
+
+                {briefText && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={subLabel}>{isAr ? 'الملخص' : 'Brief'}</p>
+                    <p style={bodyText}>{briefText}</p>
+                  </div>
+                )}
+
+                {specs.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={subLabel}>{isAr ? 'المواصفات المستخرجة' : 'Extracted Specs'}</p>
+                    <ul style={{ margin: 0, paddingInlineStart: 18, fontFamily: FONT_BODY, fontSize: 13, color: 'rgba(0,0,0,0.75)', lineHeight: 1.7 }}>
+                      {specs.map((spec, i) => {
+                        const label = spec.label || spec.key || spec.name;
+                        const value = spec.value != null && spec.value !== ''
+                          ? `${spec.value}${spec.unit ? ' ' + spec.unit : ''}`
+                          : (isAr ? '—' : '—');
+                        return (
+                          <li key={i}>
+                            <span style={{ color: 'rgba(0,0,0,0.55)' }}>{label}:</span>{' '}
+                            <span>{value}</span>
+                            {spec.confidence && (
+                              <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginInlineStart: 6 }}>
+                                ({spec.confidence})
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+                {hasFollowUp && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={subLabel}>{isAr ? 'سؤال للمتابعة' : 'Follow-up Question'}</p>
+                    <p style={bodyText}>{brief.admin_follow_up_question}</p>
+                  </div>
+                )}
+
+                {hasInternalNotes && (
+                  <div style={{ marginBottom: 0 }}>
+                    <p style={subLabel}>{isAr ? 'ملاحظات داخلية' : 'Internal Notes'}</p>
+                    <p style={bodyText}>{brief.admin_internal_notes}</p>
+                  </div>
+                )}
+
+                {!hasAnyParsed && brief?.cleaned_description && (
+                  <p style={bodyText}>{brief.cleaned_description}</p>
+                )}
+              </SectionCard>
+            );
+          })()}
 
           {/* Connections */}
           <SectionCard title={isAr ? `الموردون المرتبطون (${connections.length})` : `Connected Suppliers (${connections.length})`}>
