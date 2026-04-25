@@ -326,6 +326,27 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>`, { lang }) };
   },
 
+  direct_order_paid_supplier: (d) => {
+    const lang = d.lang || 'en';
+    const dateStr = formatReceiptDate(d.paidAt || '');
+    const t = ({
+      zh: { subject: `已收到全额付款 — ${d.requestTitle || ''}`, eyebrow: 'Full Payment Received', title: '已收到全额付款，请开始备货', body: `「${d.requestTitle || ''}」的 ${d.amount || '-'} USD 全额付款已确认。请立即开始备货并在发货时上传物流单号。`, dateLabel: '付款时间', cta: '查看订单 →' },
+      en: { subject: `Full payment received — ${d.requestTitle || ''}`, eyebrow: 'Full Payment Received', title: 'Full payment received — begin preparation', body: `The full payment of ${d.amount || '-'} USD for "${d.requestTitle || ''}" has been confirmed. Please prepare the shipment and upload a tracking number when you ship.`, dateLabel: 'Payment date', cta: 'Review order →' },
+    } as any)[lang] || { subject: `Full payment received — ${d.requestTitle || ''}`, eyebrow: 'Full Payment Received', title: 'Full payment received', body: `Full payment for "${d.requestTitle || ''}" confirmed. Prepare the shipment.`, dateLabel: 'Date', cta: 'Review order →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<div class="ib">
+<div class="ir"><span class="ik">${lang === 'zh' ? '订单' : 'Order'}</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">${lang === 'zh' ? '金额' : 'Amount'}</span><span class="iv">${d.amount || '-'} USD</span></div>
+${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span class="iv">${dateStr}</span></div>` : ''}
+</div>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=direct-orders" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
   new_sample: (d) => {
     const lang = d.lang || 'en';
     const t = ({
@@ -518,6 +539,27 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  direct_order_paid_buyer: (d) => {
+    const lang = d.lang || 'ar';
+    const dateStr = formatReceiptDate(d.paidAt || '');
+    const t = ({
+      ar: { subject: `تأكيد الدفع الكامل — ${d.requestTitle || ''}`, eyebrow: 'Paid in Full', title: 'تم استلام دفعتك كاملة', reqLabel: 'الطلب', amountLabel: 'المبلغ المدفوع', dateLabel: 'تاريخ الدفع', body: 'تم استلام دفعتك كاملة بنجاح. المورد سيبدأ تجهيز طلبك المباشر وسنعلمك عند شحنه ورفع رقم التتبع.', cta: 'متابعة الطلب ←' },
+      en: { subject: `Payment confirmed in full — ${d.requestTitle || ''}`, eyebrow: 'Paid in Full', title: 'Your payment was received in full', reqLabel: 'Order', amountLabel: 'Amount paid', dateLabel: 'Payment date', body: 'Your full payment has been received. The supplier will prepare your direct order and add tracking once it ships — you will be notified.', cta: 'Track order →' },
+    } as any)[lang] || { subject: `Payment confirmed in full — ${d.requestTitle || ''}`, eyebrow: 'Paid in Full', title: 'Payment received in full', reqLabel: 'Order', amountLabel: 'Amount', dateLabel: 'Date', body: 'Your full payment has been received.', cta: 'Track order →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<div class="ib">
+<div class="ir"><span class="ik">${t.reqLabel}</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">${t.amountLabel}</span><span class="iv">${d.amount || '-'} SAR</span></div>
+${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span class="iv">${dateStr}</span></div>` : ''}
+</div>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=direct-orders" class="bt">${t.cta}</a></div>
 </div>`, { lang }) };
   },
 

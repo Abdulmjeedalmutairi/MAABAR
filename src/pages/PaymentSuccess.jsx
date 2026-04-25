@@ -295,6 +295,7 @@ export default function PaymentSuccess({ lang, user }) {
         const maabarFee = 0;
         const supplierAmount = parseFloat((subtotal * 0.96).toFixed(2));
         const reqTitle = request?.title_ar || request?.title_en || request?.title_zh || '';
+        const isDirect = Boolean(offer?.isDirect);
 
         if (!persistedPayment) {
           if (initialState.isSecondPayment) {
@@ -349,7 +350,7 @@ export default function PaymentSuccess({ lang, user }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
                 body: JSON.stringify({
-                  type: 'payment_received_supplier',
+                  type: isDirect ? 'direct_order_paid_supplier' : 'payment_received_supplier',
                   data: { recipientUserId: offer.supplier_id, requestTitle: reqTitle, amount: firstPaymentAmount, name: 'Supplier', lang, paidAt: new Date().toISOString() },
                 }),
               });
@@ -360,9 +361,15 @@ export default function PaymentSuccess({ lang, user }) {
             await sb.from('notifications').insert({
               user_id: offer.supplier_id,
               type: 'payment_received',
-              title_ar: `وصلت دفعتك الأولى — ${firstPaymentAmount} ${currencyLabel}. ابدأ التجهيز الآن`,
-              title_en: `First payment received — ${firstPaymentAmount} ${currencyLabel}. Start preparation now`,
-              title_zh: `首付已收到 — ${firstPaymentAmount} ${currencyLabel}. 立即开始备货`,
+              title_ar: isDirect
+                ? `تم استلام الدفع كاملاً — ${firstPaymentAmount} ${currencyLabel}. ابدأ التجهيز الآن`
+                : `وصلت دفعتك الأولى — ${firstPaymentAmount} ${currencyLabel}. ابدأ التجهيز الآن`,
+              title_en: isDirect
+                ? `Full payment received — ${firstPaymentAmount} ${currencyLabel}. Start preparation now`
+                : `First payment received — ${firstPaymentAmount} ${currencyLabel}. Start preparation now`,
+              title_zh: isDirect
+                ? `已收到全额付款 — ${firstPaymentAmount} ${currencyLabel}. 立即开始备货`
+                : `首付已收到 — ${firstPaymentAmount} ${currencyLabel}. 立即开始备货`,
               ref_id: request.id,
               is_read: false,
             });
@@ -373,7 +380,7 @@ export default function PaymentSuccess({ lang, user }) {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
                   body: JSON.stringify({
-                    type: 'payment_confirmation_buyer',
+                    type: isDirect ? 'direct_order_paid_buyer' : 'payment_confirmation_buyer',
                     to: user.email,
                     data: { requestTitle: reqTitle, amount: firstPaymentAmount, name: '', lang, paidAt: new Date().toISOString() },
                   }),
