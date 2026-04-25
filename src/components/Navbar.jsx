@@ -106,7 +106,8 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     if (n.type === 'new_message') nav(`/chat/${n.ref_id}`);
     else if (['account_approved', 'account_rejected'].includes(n.type)) nav('/dashboard');
     else if (['account_more_info_required', 'verification_submitted'].includes(n.type)) nav('/dashboard?tab=verification');
-    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'offer_cancelled', 'payment_received', 'ready_to_ship', 'shipped', 'delivery_confirmed', 'request_deleted'].includes(n.type)) nav('/dashboard?tab=requests');
+    else if (n.type === 'direct_order_pending') nav('/dashboard?tab=direct-orders');
+    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'offer_cancelled', 'payment_received', 'ready_to_ship', 'shipped', 'delivery_confirmed', 'request_deleted', 'supplier_confirmed', 'supplier_rejected'].includes(n.type)) nav('/dashboard?tab=requests');
     else if (['new_sample', 'sample_approved', 'sample_rejected'].includes(n.type)) nav('/dashboard?tab=samples');
     else if (['product_inquiry', 'product_inquiry_reply'].includes(n.type)) nav('/dashboard?tab=product-inquiries');
     else nav('/dashboard');
