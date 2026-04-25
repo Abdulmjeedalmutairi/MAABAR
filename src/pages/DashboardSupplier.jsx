@@ -1358,7 +1358,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const reqIds = rows.map(r => r.id);
     const paymentsRes = reqIds.length
-      ? await sb.from('payments').select('id, request_id, amount, currency, status, created_at').eq('supplier_id', user.id).in('request_id', reqIds).order('created_at', { ascending: false })
+      ? await sb.from('payments').select('id, request_id, amount, status, created_at').eq('supplier_id', user.id).in('request_id', reqIds).order('created_at', { ascending: false })
       : { data: [], error: null };
     console.log('[loadPaidDirectOrders] payments query response:', paymentsRes);
     const paymentByRequest = (paymentsRes.data || []).reduce((acc, p) => {
