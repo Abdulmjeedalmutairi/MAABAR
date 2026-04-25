@@ -61,4 +61,28 @@ using (
     where msm.request_id = requests.id
       and msm.supplier_id = auth.uid()
   )
+
+  -- direct purchase: supplier sees the full lifecycle of orders placed
+  -- on a product they own. Targeting is via products.supplier_id, joined
+  -- through requests.product_ref (loose text reference, no FK — see
+  -- 20260420000001_product_variants_system.sql).
+  or (
+    public.is_verified_supplier(auth.uid())
+    and lower(coalesce(status, '')) in (
+      'pending_supplier_confirmation',
+      'supplier_confirmed',
+      'supplier_rejected',
+      'paid',
+      'ready_to_ship',
+      'shipping',
+      'arrived',
+      'delivered'
+    )
+    and exists (
+      select 1
+      from public.products p
+      where p.id::text = requests.product_ref
+        and p.supplier_id = auth.uid()
+    )
+  )
 );

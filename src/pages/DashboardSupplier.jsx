@@ -192,6 +192,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
   const [directOrderActioning, setDirectOrderActioning] = useState({});
   const [directOrdersNowMs, setDirectOrdersNowMs] = useState(() => Date.now());
+  const [paidDirectOrders, setPaidDirectOrders] = useState([]);
+  const [loadingPaidDirectOrders, setLoadingPaidDirectOrders] = useState(false);
+  const [directShippingActioning, setDirectShippingActioning] = useState({});
   const [trackingInputs, setTrackingInputs] = useState({});
   const [shippingCompany, setShippingCompany] = useState('DHL');
   const [product, setProduct]               = useState(emptyProduct);
@@ -321,7 +324,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
     { id: 'managed-matches', label: isAr ? 'الطلبات المطابقة لك' : lang === 'zh' ? '匹配给您的需求' : 'Matched requests for you' },
     { id: 'requests',     label: isAr ? 'الطلبات المفتوحة' : lang === 'zh' ? '开放需求' : 'Open requests' },
-    { id: 'direct-orders', label: isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders', badge: directOrders.length > 0 ? directOrders.length : null },
+    { id: 'direct-orders', label: isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders', badge: (directOrders.length + paidDirectOrders.length) > 0 ? (directOrders.length + paidDirectOrders.length) : null },
     { id: 'my-products',  label: t.myProducts },
     { id: 'offers',       label: t.offers },
     { id: 'add-product',  label: t.addProduct },
@@ -330,7 +333,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
     { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',     label: t.settings },
-  ], [lang, t, needsVerification, needsPayoutSetup, stats.pendingSamples, stats.productInquiries, stats.messages, isAr, directOrders.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  ], [lang, t, needsVerification, needsPayoutSetup, stats.pendingSamples, stats.productInquiries, stats.messages, isAr, directOrders.length, paidDirectOrders.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const lockedTabIds = isOnboardingLimited
     ? tabs.filter((tab) => !supplierState.limitedTabs.includes(tab.id)).map((tab) => tab.id)
     : [];
@@ -348,7 +351,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
-    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders();
+    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders(); loadPaidDirectOrders();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -364,6 +367,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     else if (['requests', 'managed-matches'].includes(activeTab)) setActiveBottomTab('requests');
     else if (['my-products', 'add-product'].includes(activeTab)) setActiveBottomTab('products');
     else if (['messages'].includes(activeTab)) setActiveBottomTab('messages');
+    else if (activeTab === 'direct-orders') setActiveBottomTab('more');
   }, [activeTab]);
 
   useEffect(() => {
@@ -510,7 +514,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeTab, activeCat]);
 
-  useEffect(() => { if (activeTab === 'direct-orders') loadDirectOrders(); }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (activeTab === 'direct-orders') { loadDirectOrders(); loadPaidDirectOrders(); } }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (activeTab !== 'direct-orders') return;
@@ -1315,6 +1319,124 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
     loadDirectOrders();
+  };
+
+  const loadPaidDirectOrders = async () => {
+    if (!user) return;
+    setLoadingPaidDirectOrders(true);
+
+    const productsRes = await sb.from('products').select('id').eq('supplier_id', user.id);
+    console.log('[loadPaidDirectOrders] products query response:', productsRes);
+    const myProductIds = (productsRes.data || []).map(p => p.id);
+    if (myProductIds.length === 0) {
+      setPaidDirectOrders([]);
+      setLoadingPaidDirectOrders(false);
+      return;
+    }
+
+    const ordersRes = await sb
+      .from('requests')
+      .select('*, profiles!requests_buyer_id_fkey(full_name, company_name)')
+      .eq('status', 'paid')
+      .in('product_ref', myProductIds)
+      .order('updated_at', { ascending: false });
+    console.log('[loadPaidDirectOrders] requests query response:', ordersRes);
+
+    const rows = ordersRes.data || [];
+    if (rows.length === 0) {
+      setPaidDirectOrders([]);
+      setLoadingPaidDirectOrders(false);
+      return;
+    }
+
+    const refIds = [...new Set(rows.map(r => r.product_ref).filter(Boolean))];
+    const productsByIdRes = refIds.length
+      ? await sb.from('products').select('id, name_ar, name_en, name_zh, price_from, currency, spec_lead_time_days').in('id', refIds)
+      : { data: [], error: null };
+    console.log('[loadPaidDirectOrders] product details response:', productsByIdRes);
+    const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+    const reqIds = rows.map(r => r.id);
+    const paymentsRes = reqIds.length
+      ? await sb.from('payments').select('id, request_id, amount, currency, status, created_at').eq('supplier_id', user.id).in('request_id', reqIds).order('created_at', { ascending: false })
+      : { data: [], error: null };
+    console.log('[loadPaidDirectOrders] payments query response:', paymentsRes);
+    const paymentByRequest = (paymentsRes.data || []).reduce((acc, p) => {
+      if (!acc[p.request_id]) acc[p.request_id] = p;
+      return acc;
+    }, {});
+
+    setPaidDirectOrders(rows.map(r => ({
+      ...r,
+      product: productsById[r.product_ref] || null,
+      payment: paymentByRequest[r.id] || null,
+    })));
+    setLoadingPaidDirectOrders(false);
+  };
+
+  const submitDirectTracking = async (request) => {
+    if (!request?.id || !request?.buyer_id) return;
+    const num = trackingInputs[request.id];
+    if (!num || !String(num).trim()) {
+      alert(isAr ? 'أدخل رقم التتبع أولاً' : lang === 'zh' ? '请先输入物流单号' : 'Enter the tracking number first');
+      return;
+    }
+    setDirectShippingActioning(prev => ({ ...prev, [request.id]: 'shipping' }));
+
+    const productName = request.product?.name_ar || request.product?.name_en || request.product?.name_zh || request.title_ar || request.title_en || '';
+    const deliveryDays = Number(request.product?.spec_lead_time_days || 0);
+    const estimatedDelivery = deliveryDays > 0
+      ? new Date(Date.now() + (deliveryDays * 24 * 60 * 60 * 1000)).toISOString()
+      : null;
+
+    const updRes = await sb.from('requests').update({
+      tracking_number: String(num).trim(),
+      shipping_company: shippingCompany,
+      status: 'shipping',
+      shipping_status: 'shipping',
+      ...(estimatedDelivery ? { estimated_delivery: estimatedDelivery } : {}),
+    }).eq('id', request.id).select().single();
+    console.log('[submitDirectTracking] update response:', updRes);
+    if (updRes.error) {
+      setDirectShippingActioning(prev => ({ ...prev, [request.id]: null }));
+      alert(isAr ? 'تعذّر تسجيل رقم التتبع — حاول مرة أخرى' : lang === 'zh' ? '无法保存物流信息 — 请重试' : 'Could not save tracking — try again');
+      return;
+    }
+
+    const notifRes = await sb.from('notifications').insert({
+      user_id: request.buyer_id,
+      type: 'shipped',
+      title_ar: `طلبك في الطريق — رقم التتبع: ${num}`,
+      title_en: `Your order is on the way — Tracking: ${num}`,
+      title_zh: `您的订单已发货 — 跟踪号：${num}`,
+      ref_id: request.id,
+      is_read: false,
+    }).select().single();
+    console.log('[submitDirectTracking] notification response:', notifRes);
+
+    try {
+      const r = await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'direct_order_shipped',
+          data: {
+            recipientUserId: request.buyer_id,
+            productName,
+            trackingNumber: String(num).trim(),
+            shippingCompany,
+          },
+        }),
+      });
+      const body = await r.json().catch(() => null);
+      console.log('[submitDirectTracking] email response:', { status: r.status, body });
+    } catch (emailError) {
+      console.error('[submitDirectTracking] email error:', emailError);
+    }
+
+    setTrackingInputs(prev => ({ ...prev, [request.id]: '' }));
+    setDirectShippingActioning(prev => ({ ...prev, [request.id]: null }));
+    loadPaidDirectOrders();
   };
 
   const formatDirectCountdown = (createdAt, nowMs) => {
@@ -2940,6 +3062,107 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </div>
                 );
               })}
+
+              {/* ── Paid orders awaiting tracking (Step 5) ─────────────── */}
+              <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid var(--border-subtle)' }}>
+                <h3 style={{ fontSize: isAr ? 18 : 20, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.2 }}>
+                  {isAr ? 'طلبات مدفوعة — أضف رقم التتبع' : lang === 'zh' ? '已付款订单 — 添加物流单号' : 'Paid Orders — Add Tracking'}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 18, ...arFont, lineHeight: 1.7 }}>
+                  {isAr
+                    ? 'أكمل التاجر الدفع — جهّز الشحنة وارفع رقم التتبع لتظهر للتاجر داخل مَعبر.'
+                    : lang === 'zh'
+                      ? '买家已付款 — 请准备发货并上传物流单号，以便买家在 Maabar 内查看。'
+                      : 'The buyer has paid — prepare the shipment and upload the tracking number so the buyer can see it in Maabar.'}
+                </p>
+
+                {loadingPaidDirectOrders && [1, 2].map(i => <SkeletonCard key={`paid-skel-${i}`} />)}
+                {!loadingPaidDirectOrders && paidDirectOrders.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '36px 0' }}>
+                    <p style={{ color: 'var(--text-disabled)', fontSize: 13, ...arFont }}>
+                      {isAr ? 'لا توجد طلبات مدفوعة في انتظار الشحن' : lang === 'zh' ? '暂无等待发货的已付款订单' : 'No paid orders awaiting tracking'}
+                    </p>
+                  </div>
+                )}
+
+                {!loadingPaidDirectOrders && paidDirectOrders.map(r => {
+                  const product = r.product || {};
+                  const productName = lang === 'zh'
+                    ? (product.name_zh || product.name_en || product.name_ar)
+                    : lang === 'en'
+                      ? (product.name_en || product.name_ar || product.name_zh)
+                      : (product.name_ar || product.name_en || product.name_zh);
+                  const buyerName = r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader');
+                  const acting = directShippingActioning[r.id];
+                  const payment = r.payment || null;
+                  const paymentDate = payment?.created_at || r.updated_at;
+                  const paymentAmount = payment ? Number(payment.amount || 0) : 0;
+                  const paymentCurrency = payment?.currency || product.currency || 'USD';
+                  const trackingValue = trackingInputs[r.id] || '';
+
+                  return (
+                    <div key={`paid-${r.id}`} style={{ marginBottom: 12, border: '1px solid rgba(45,122,79,0.25)', background: 'rgba(45,122,79,0.04)', borderRadius: 'var(--radius-lg)', padding: '18px 22px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                        <div style={{ flex: 1, minWidth: 220 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.28)', color: '#2d7a4f', letterSpacing: 0.4, fontWeight: 600 }}>
+                              {isAr ? 'مدفوع — جاهز للشحن' : lang === 'zh' ? '已付款 — 准备发货' : 'Paid — Ready to Ship'}
+                            </span>
+                          </div>
+                          <h4 style={{ fontSize: 15, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont }}>{productName || (isAr ? 'منتج' : 'Product')}</h4>
+                          <div style={{ display: 'flex', gap: 14, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', ...arFont }}>
+                            <span>{isAr ? 'التاجر:' : lang === 'zh' ? '买家：' : 'Buyer:'} {buyerName}</span>
+                            <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {r.quantity || '—'}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, minWidth: 150 }}>
+                          <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
+                            {isAr ? 'تاريخ الدفع' : lang === 'zh' ? '付款日期' : 'Payment Date'}
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--text-primary)', ...arFont }}>{fmtDate(paymentDate)}</span>
+                          {paymentAmount > 0 && (
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#2d7a4f', direction: 'ltr', marginTop: 4 }}>
+                              {paymentAmount.toFixed(2)} {paymentCurrency}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10, alignItems: 'center' }}>
+                        <select
+                          value={shippingCompany}
+                          onChange={e => setShippingCompany(e.target.value)}
+                          style={{ padding: '8px 12px', fontSize: 12, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)', cursor: 'pointer', outline: 'none', minHeight: 38 }}>
+                          {['DHL','FedEx','Aramex','UPS','SMSA', isAr ? 'أخرى' : lang === 'zh' ? '其他' : 'Other'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                        <input
+                          className="form-input"
+                          style={{ flex: 1, minWidth: 160 }}
+                          placeholder={t.trackingNum}
+                          value={trackingValue}
+                          onChange={e => setTrackingInputs(prev => ({ ...prev, [r.id]: e.target.value }))}
+                          dir="ltr"
+                        />
+                        <button
+                          className="btn-dark-sm"
+                          onClick={() => submitDirectTracking(r)}
+                          disabled={Boolean(acting) || !trackingValue.trim()}
+                          style={{ minHeight: 38 }}>
+                          {acting === 'shipping' ? '...' : isAr ? 'إرسال رقم التتبع' : lang === 'zh' ? '提交物流单号' : 'Send Tracking'}
+                        </button>
+                      </div>
+
+                      {r.buyer_id && (
+                        <button className="btn-outline" onClick={() => nav(`/chat/${r.buyer_id}`)} style={{ minHeight: 36, fontSize: 11, padding: '7px 14px', ...arFont }}>
+                          {isAr ? 'تواصل مع التاجر' : lang === 'zh' ? '联系买家' : 'Chat with Buyer'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -4590,6 +4813,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           <div className="more-menu-sheet" dir={isAr ? 'rtl' : 'ltr'}>
             <div className="more-menu-handle" />
             {[
+              { id: 'direct-orders',      label: isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders', badge: directOrders.length > 0 ? directOrders.length : null },
               { id: 'offers',             label: isAr ? 'عروضي' : lang === 'zh' ? '我的报价' : 'My Offers',          badge: null },
               { id: 'payout',             label: isAr ? 'المدفوعات' : lang === 'zh' ? '收款设置' : 'Payments',       badge: needsPayoutSetup ? '!' : null },
               { id: 'verification',       label: isAr ? 'التحقق' : lang === 'zh' ? '企业认证' : 'Verification',      badge: needsVerification ? '!' : null },

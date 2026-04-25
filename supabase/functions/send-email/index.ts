@@ -371,6 +371,25 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>`, { lang }) };
   },
 
+  direct_order_shipped: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `طلبك المباشر في الطريق — ${d.trackingNumber || ''}`, eyebrow: 'Direct Order Shipped', title: 'طلبك في الطريق', body: `تم شحن طلبك المباشر${d.productName ? ` لمنتج «${d.productName}»` : ''}. استخدم رقم التتبع أدناه لمتابعة الشحنة.`, carrierLabel: 'شركة الشحن', trackingLabel: 'رقم التتبع', cta: 'متابعة الطلب ←' },
+      en: { subject: `Your direct order has shipped — ${d.trackingNumber || ''}`, eyebrow: 'Direct Order Shipped', title: 'Your order is on the way', body: `Your direct order${d.productName ? ` for "${d.productName}"` : ''} has been shipped. Use the tracking number below to follow the shipment.`, carrierLabel: 'Carrier', trackingLabel: 'Tracking number', cta: 'Track order →' },
+    } as any)[lang] || { subject: `Direct order shipped — ${d.trackingNumber || ''}`, eyebrow: 'Direct Order Shipped', title: 'Order shipped', body: `Your direct order has been shipped.`, carrierLabel: 'Carrier', trackingLabel: 'Tracking', cta: 'Track order →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="ib">
+<div class="ir"><span class="ik">${t.carrierLabel}</span><span class="iv">${d.shippingCompany || '-'}</span></div>
+<div class="ir"><span class="ik">${t.trackingLabel}</span><span class="iv">${d.trackingNumber || '-'}</span></div>
+</div>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=direct-orders" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
   direct_order_rejected: (d) => {
     const lang = d.lang || 'ar';
     const t = ({

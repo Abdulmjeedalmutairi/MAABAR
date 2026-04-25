@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
 import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
+import { getPrimaryProductImage } from '../lib/productMedia';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
@@ -339,7 +340,7 @@ function TopSubTabs({ tabs, active, onSelect, isAr }) {
 
 /* ─── MobileBottomNav ────────────────────── */
 function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, setMoreOpen }) {
-  const moreActive = ['samples','product-inquiries','settings'].includes(activeTab);
+  const moreActive = ['direct-orders','samples','product-inquiries','settings'].includes(activeTab);
   const items = [
     { id: 'overview',  label: isAr ? 'الرئيسية' : 'Home'     },
     { id: 'requests',  label: isAr ? 'طلباتي'   : 'Requests' },
@@ -367,6 +368,7 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
           animation: 'slideUp 0.2s ease',
         }}>
           {[
+            { id: 'direct-orders',     label: isAr ? 'مشترياتي المباشرة' : 'My Direct Purchases' },
             { id: 'samples',           label: isAr ? 'العينات' : 'Samples' },
             { id: 'product-inquiries', label: isAr ? 'استفسارات المنتجات' : 'Product Inquiries' },
             { id: 'settings',          label: isAr ? 'الإعدادات' : 'Settings' },
@@ -496,6 +498,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [pendingActions, setPendingActions] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [samples, setSamples] = useState([]);
+  const [directOrders, setDirectOrders] = useState([]);
+  const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
+  const [directOrderPaying, setDirectOrderPaying] = useState({});
   const focusedRequestId = new URLSearchParams(location.search).get('request');
 
   // Review modal
@@ -532,6 +537,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     loadStats();
     loadPendingActions();
     loadActiveOrders();
+    loadMyDirectOrders();
 
     // Realtime — refresh when offers/requests change
     const channel = sb.channel(`buyer-dash-${user.id}`)
@@ -540,7 +546,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         if (activeTab === 'requests') loadMyRequests();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `buyer_id=eq.${user.id}` }, () => {
-        loadStats(); loadPendingActions(); loadActiveOrders();
+        loadStats(); loadPendingActions(); loadActiveOrders(); loadMyDirectOrders();
         if (activeTab === 'requests') loadMyRequests();
       })
       .subscribe();
@@ -550,6 +556,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   useEffect(() => {
     if (activeTab === 'overview') loadActiveOrders();
     if (activeTab === 'requests') loadMyRequests();
+    if (activeTab === 'direct-orders') loadMyDirectOrders();
     if (activeTab === 'messages') loadInbox();
     if (activeTab === 'product-inquiries') loadProductInquiries();
     if (activeTab === 'samples') loadMySamples();
@@ -585,7 +592,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   const loadPendingActions = async () => {
     const actions = [];
-    const { data: reqs } = await sb.from('requests').select('*, offers(id,status)').eq('buyer_id', user.id);
+    // Exclude direct purchase orders — they live in the dedicated direct-orders tab.
+    const { data: reqs } = await sb.from('requests').select('*, offers(id,status)').eq('buyer_id', user.id).is('product_ref', null);
     if (reqs) {
       reqs.forEach(r => {
         const pending = r.offers?.filter(o => o.status === 'pending') || [];
@@ -609,10 +617,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const loadActiveOrders = async () => {
     setLoadingActiveOrders(true);
     const ACTIVE_STATUSES = ['supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived'];
+    // Exclude direct purchase orders — they have their own dedicated tab.
     const { data: reqs } = await sb
       .from('requests')
       .select('*')
       .eq('buyer_id', user.id)
+      .is('product_ref', null)
       .in('status', ACTIVE_STATUSES)
       .order('updated_at', { ascending: false })
       .limit(5);
@@ -631,7 +641,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   const loadMyRequests = async () => {
     setLoadingRequests(true);
-    const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
+    // Exclude direct purchase orders — they live in the dedicated direct-orders tab.
+    const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).is('product_ref', null).order('created_at', { ascending: false });
     if (data) {
       const requestIds = data.map((request) => request.id);
       const managedRequestIds = data.filter((request) => isManagedRequest(request)).map((request) => request.id);
@@ -683,6 +694,71 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       setMyRequests(withOffers);
     }
     setLoadingRequests(false);
+  };
+
+  const loadMyDirectOrders = async () => {
+    setLoadingDirectOrders(true);
+
+    const ordersRes = await sb
+      .from('requests')
+      .select('*')
+      .eq('buyer_id', user.id)
+      .not('product_ref', 'is', null)
+      .order('created_at', { ascending: false });
+    console.log('[loadMyDirectOrders] requests query response:', ordersRes);
+
+    const refIds = [...new Set((ordersRes.data || []).map(r => r.product_ref).filter(Boolean))];
+    if (refIds.length === 0) {
+      setDirectOrders([]);
+      setLoadingDirectOrders(false);
+      return;
+    }
+
+    const productsRes = await sb
+      .from('products')
+      .select('id, supplier_id, name_ar, name_en, name_zh, price_from, currency, spec_lead_time_days, gallery_images, image_url')
+      .in('id', refIds);
+    console.log('[loadMyDirectOrders] products query response:', productsRes);
+
+    const productsWithProfiles = await attachSupplierProfiles(sb, productsRes.data || [], 'supplier_id', 'profiles');
+    console.log('[loadMyDirectOrders] products with supplier profiles:', productsWithProfiles);
+
+    const productsById = (productsWithProfiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+    setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
+    setLoadingDirectOrders(false);
+  };
+
+  const payDirectOrder = async (request) => {
+    if (!request?.id || !request?.product) {
+      alert(isAr ? 'تعذّر تجهيز الدفع — حاول إعادة تحميل الصفحة' : 'Could not prepare payment — try refreshing the page');
+      return;
+    }
+    if (request.status !== 'supplier_confirmed') {
+      alert(isAr ? 'لا يمكن الدفع قبل تأكيد المورد' : 'Cannot pay before the supplier confirms');
+      return;
+    }
+    setDirectOrderPaying(prev => ({ ...prev, [request.id]: true }));
+
+    const product = request.product;
+    const supplierId = product.supplier_id;
+    const supplierProfile = product.profiles || null;
+
+    const offer = {
+      id: request.id,
+      request_id: request.id,
+      supplier_id: supplierId,
+      profiles: supplierProfile,
+      price: Number(product.price_from || 0),
+      currency: product.currency || 'USD',
+      delivery_days: product.spec_lead_time_days || 30,
+      status: 'accepted',
+      isDirect: true,
+    };
+    console.log('[payDirectOrder] navigating to /checkout with payload:', { offer, request });
+
+    setDirectOrderPaying(prev => ({ ...prev, [request.id]: false }));
+    nav('/checkout', { state: { offer, request } });
   };
 
   const loadMySamples = async () => {
@@ -1132,9 +1208,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   const name = profile?.full_name || user?.email?.split('@')[0];
 
+  const directOrdersPayableCount = directOrders.filter(r => r.status === 'supplier_confirmed').length;
   const tabs = [
     { id: 'overview',  label: isAr ? 'نظرة عامة' : 'Overview' },
     { id: 'requests',  label: isAr ? 'طلباتي'    : 'My Requests' },
+    { id: 'direct-orders', label: isAr ? 'مشترياتي المباشرة' : lang === 'zh' ? '我的直接采购' : 'My Direct Purchases', badge: directOrdersPayableCount > 0 ? directOrdersPayableCount : null },
     { id: 'samples',   label: isAr ? 'العينات'   : 'Samples' },
     { id: 'product-inquiries', label: isAr ? 'استفسارات المنتجات' : lang === 'zh' ? '产品咨询' : 'Product Inquiries', badge: stats.productInquiries > 0 ? stats.productInquiries : null },
     { id: 'messages',  label: isAr ? 'الرسائل'   : 'Messages', badge: stats.messages > 0 ? stats.messages : null },
@@ -1922,6 +2000,173 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               );
               });
               })()}
+            </div>
+          )}
+
+          {/* ── DIRECT PURCHASE ORDERS (Step 4) ── */}
+          {activeTab === 'direct-orders' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} isAr={isAr} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -0.5 }}>
+                {isAr ? 'مشترياتي المباشرة' : lang === 'zh' ? '我的直接采购' : 'My Direct Purchases'}
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginBottom: 28, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr
+                  ? 'الطلبات التي اشتريتها مباشرة من صفحات المنتجات. عند تأكيد المورد، تظهر هنا «ادفع الآن».'
+                  : lang === 'zh'
+                    ? '您从产品页面直接下单的采购订单。供应商确认后，此处会出现「立即付款」。'
+                    : 'Orders you placed directly from product pages. When the supplier confirms, "Pay Now" appears here.'}
+              </p>
+
+              {loadingDirectOrders && (
+                <div style={{ padding: '60px 0', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 13, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'جاري التحميل…' : lang === 'zh' ? '加载中…' : 'Loading…'}
+                  </p>
+                </div>
+              )}
+
+              {!loadingDirectOrders && directOrders.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 14, marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'لا توجد مشتريات مباشرة بعد' : lang === 'zh' ? '暂无直接采购订单' : 'No direct purchases yet'}
+                  </p>
+                  <button onClick={() => nav('/products')} className="btn-outline" style={{ padding: '8px 20px', fontSize: 12, minHeight: 36 }}>
+                    {isAr ? 'تصفح المنتجات' : lang === 'zh' ? '浏览产品' : 'Browse Products'}
+                  </button>
+                </div>
+              )}
+
+              {!loadingDirectOrders && directOrders.map(r => {
+                const product = r.product || {};
+                const supplierProfile = product.profiles || null;
+                const productName = lang === 'zh'
+                  ? (product.name_zh || product.name_en || product.name_ar)
+                  : lang === 'en'
+                    ? (product.name_en || product.name_ar || product.name_zh)
+                    : (product.name_ar || product.name_en || product.name_zh);
+                const supplierName = supplierProfile?.company_name || supplierProfile?.full_name || (isAr ? 'مورد' : lang === 'zh' ? '供应商' : 'Supplier');
+                const unitPrice = Number(product.price_from || 0);
+                const currency = product.currency || 'USD';
+                const qty = Number(r.quantity || 0);
+                const totalEstimate = unitPrice * qty;
+                const productImage = getPrimaryProductImage(product);
+                const paying = Boolean(directOrderPaying[r.id]);
+
+                // Status-specific copy + UI tone
+                const statusInfo = (() => {
+                  if (r.status === 'pending_supplier_confirmation') return {
+                    label: isAr ? 'بانتظار تأكيد المورد' : lang === 'zh' ? '等待供应商确认' : 'Awaiting Supplier',
+                    color: '#b4781e',
+                    bg: 'rgba(180,120,30,0.05)',
+                    border: 'rgba(180,120,30,0.30)',
+                    body: isAr ? 'سيؤكد المورد طلبك خلال 24 ساعة. ستصلك إشعار فور الرد.' : lang === 'zh' ? '供应商将在 24 小时内确认订单，回复后您会收到通知。' : 'The supplier will confirm within 24 hours. You will be notified once they respond.',
+                  };
+                  if (r.status === 'supplier_confirmed') return {
+                    label: isAr ? 'تم التأكيد — ادفع الآن' : lang === 'zh' ? '已确认 — 请立即付款' : 'Confirmed — Pay Now',
+                    color: '#2d7a4f',
+                    bg: 'rgba(45,122,79,0.06)',
+                    border: 'rgba(45,122,79,0.35)',
+                    body: isAr ? 'أكد المورد جاهزيته لتنفيذ طلبك. أكمل الدفع الكامل ليبدأ بالتجهيز.' : lang === 'zh' ? '供应商已确认接单。请完成全额付款，供应商将立即开始备货。' : 'Supplier confirmed. Pay the full amount to start preparation.',
+                  };
+                  if (r.status === 'supplier_rejected') return {
+                    label: isAr ? 'رفض المورد' : lang === 'zh' ? '供应商已拒绝' : 'Supplier Declined',
+                    color: '#a07070',
+                    bg: 'rgba(138,58,58,0.05)',
+                    border: 'rgba(138,58,58,0.30)',
+                    body: isAr ? 'لم يتمكن المورد من تنفيذ طلبك. يمكنك تصفح موردين آخرين.' : lang === 'zh' ? '供应商无法接受此订单。您可以浏览其他供应商。' : 'The supplier could not fulfill this order. You can browse other suppliers.',
+                  };
+                  if (r.status === 'paid') return {
+                    label: isAr ? 'تم الدفع — في انتظار التجهيز' : lang === 'zh' ? '已付款 — 等待备货' : 'Paid — Awaiting Preparation',
+                    color: '#2d7a4f',
+                    bg: 'rgba(45,122,79,0.05)',
+                    border: 'rgba(45,122,79,0.25)',
+                    body: isAr ? 'تم استلام دفعتك. المورد سيبدأ التجهيز ويرسل رقم التتبع قريباً.' : lang === 'zh' ? '已收到您的付款。供应商将开始备货，并尽快提供物流单号。' : 'Payment received. The supplier will prepare your order and share tracking shortly.',
+                  };
+                  if (['ready_to_ship', 'shipping', 'arrived', 'delivered'].includes(r.status)) return {
+                    label: (isAr ? STATUS_AR[r.status] : STATUS_EN[r.status]) || r.status,
+                    color: '#5a6a8a',
+                    bg: 'rgba(90,106,138,0.05)',
+                    border: 'rgba(90,106,138,0.25)',
+                    body: isAr ? 'تتبّع شحنتك من تبويب «طلباتي»… (المرحلة القادمة).' : 'Track your shipment from the My Requests tab (next phase).',
+                  };
+                  return {
+                    label: r.status,
+                    color: 'var(--text-disabled)',
+                    bg: 'var(--bg-subtle)',
+                    border: 'var(--border-subtle)',
+                    body: '',
+                  };
+                })();
+
+                return (
+                  <div key={r.id} style={{ marginBottom: 14, border: `1px solid ${statusInfo.border}`, background: statusInfo.bg, borderRadius: 'var(--radius-lg)', padding: '20px 22px' }}>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                      {productImage && (
+                        <div style={{ width: 88, height: 88, borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--bg-subtle)', flexShrink: 0 }}>
+                          <img src={productImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: `1px solid ${statusInfo.border}`, color: statusInfo.color, letterSpacing: 0.4, fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {statusInfo.label}
+                          </span>
+                          <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{relativeTime(r.created_at, isAr)}</span>
+                        </div>
+                        <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 6, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {productName || (isAr ? 'منتج' : 'Product')}
+                        </h3>
+                        <div style={{ display: 'flex', gap: 14, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <span>{isAr ? 'المورد:' : lang === 'zh' ? '供应商：' : 'Supplier:'} {supplierName}</span>
+                          <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {qty || '—'}</span>
+                          {unitPrice > 0 && (
+                            <span style={{ direction: 'ltr' }}>{unitPrice.toFixed(2)} {currency} / unit</span>
+                          )}
+                          {totalEstimate > 0 && (
+                            <span style={{ direction: 'ltr', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {isAr ? 'الإجمالي:' : lang === 'zh' ? '总计：' : 'Total:'} {totalEstimate.toFixed(2)} {currency}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {statusInfo.body && (
+                      <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {statusInfo.body}
+                      </p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {r.status === 'supplier_confirmed' && (
+                        <button
+                          onClick={() => payDirectOrder(r)}
+                          disabled={paying || !product?.supplier_id}
+                          className="btn-primary"
+                          style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3 }}>
+                          {paying ? '…' : isAr ? 'ادفع الآن ←' : lang === 'zh' ? '立即付款 →' : 'Pay Now →'}
+                        </button>
+                      )}
+                      {r.status === 'supplier_rejected' && (
+                        <button onClick={() => nav('/products')} className="btn-outline" style={{ padding: '9px 18px', fontSize: 12, minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'تصفح المنتجات' : lang === 'zh' ? '浏览产品' : 'Browse Products'}
+                        </button>
+                      )}
+                      {product?.supplier_id && r.status !== 'supplier_rejected' && (
+                        <button onClick={() => nav(`/chat/${product.supplier_id}`)} className="btn-outline" style={{ padding: '9px 18px', fontSize: 12, minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'تواصل مع المورد' : lang === 'zh' ? '联系供应商' : 'Chat with Supplier'}
+                        </button>
+                      )}
+                      {product?.id && (
+                        <button onClick={() => nav(`/products/${product.id}`)} className="btn-outline" style={{ padding: '9px 18px', fontSize: 12, minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'عرض المنتج' : lang === 'zh' ? '查看产品' : 'View Product'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
