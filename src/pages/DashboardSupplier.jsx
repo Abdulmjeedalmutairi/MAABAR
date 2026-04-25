@@ -188,6 +188,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [loadingOffers, setLoadingOffers]   = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [directOrders, setDirectOrders] = useState([]);
+  const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
+  const [directOrderActioning, setDirectOrderActioning] = useState({});
+  const [directOrdersNowMs, setDirectOrdersNowMs] = useState(() => Date.now());
   const [trackingInputs, setTrackingInputs] = useState({});
   const [shippingCompany, setShippingCompany] = useState('DHL');
   const [product, setProduct]               = useState(emptyProduct);
@@ -317,6 +321,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
     { id: 'managed-matches', label: isAr ? 'الطلبات المطابقة لك' : lang === 'zh' ? '匹配给您的需求' : 'Matched requests for you' },
     { id: 'requests',     label: isAr ? 'الطلبات المفتوحة' : lang === 'zh' ? '开放需求' : 'Open requests' },
+    { id: 'direct-orders', label: isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders', badge: directOrders.length > 0 ? directOrders.length : null },
     { id: 'my-products',  label: t.myProducts },
     { id: 'offers',       label: t.offers },
     { id: 'add-product',  label: t.addProduct },
@@ -325,7 +330,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
     { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',     label: t.settings },
-  ], [lang, t, needsVerification, needsPayoutSetup, stats.pendingSamples, stats.productInquiries, stats.messages, isAr]); // eslint-disable-line react-hooks/exhaustive-deps
+  ], [lang, t, needsVerification, needsPayoutSetup, stats.pendingSamples, stats.productInquiries, stats.messages, isAr, directOrders.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const lockedTabIds = isOnboardingLimited
     ? tabs.filter((tab) => !supplierState.limitedTabs.includes(tab.id)).map((tab) => tab.id)
     : [];
@@ -343,7 +348,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
-    loadStats(); loadPendingTracking(); loadRejectedOffers();
+    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -504,6 +509,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   }, [product, activeTab, editingProduct]);
 
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeTab, activeCat]);
+
+  useEffect(() => { if (activeTab === 'direct-orders') loadDirectOrders(); }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (activeTab !== 'direct-orders') return;
+    const id = setInterval(() => setDirectOrdersNowMs(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [activeTab]);
 
   const loadStats = async () => {
     const [products, offersData, messages, acceptedOffers, payments, openProductInquiries, managedMatches, samplesResult] = await Promise.all([
@@ -1171,6 +1184,147 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { data } = await sb.from('products').select('*').eq('supplier_id', user.id).order('created_at', { ascending: false });
     if (data) setMyProducts(data);
     setLoadingProducts(false);
+  };
+
+  const loadDirectOrders = async () => {
+    if (!user) return;
+    setLoadingDirectOrders(true);
+
+    const productsRes = await sb.from('products').select('id').eq('supplier_id', user.id);
+    console.log('[loadDirectOrders] products query response:', productsRes);
+    const myProductIds = (productsRes.data || []).map(p => p.id);
+    if (myProductIds.length === 0) {
+      setDirectOrders([]);
+      setLoadingDirectOrders(false);
+      return;
+    }
+
+    const ordersRes = await sb
+      .from('requests')
+      .select('*, profiles!requests_buyer_id_fkey(full_name, company_name)')
+      .eq('status', 'pending_supplier_confirmation')
+      .in('product_ref', myProductIds)
+      .order('created_at', { ascending: false });
+    console.log('[loadDirectOrders] requests query response:', ordersRes);
+
+    const refIds = [...new Set((ordersRes.data || []).map(r => r.product_ref).filter(Boolean))];
+    const productsByIdRes = refIds.length
+      ? await sb.from('products').select('id, name_ar, name_en, name_zh, price_from, currency').in('id', refIds)
+      : { data: [], error: null };
+    console.log('[loadDirectOrders] product details response:', productsByIdRes);
+    const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+    setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
+    setLoadingDirectOrders(false);
+  };
+
+  const confirmDirectOrder = async (request) => {
+    if (!request?.id || !request?.buyer_id) return;
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: 'confirming' }));
+
+    const productName = request.product?.name_ar || request.product?.name_en || request.product?.name_zh || request.title_ar || request.title_en || '';
+
+    const updRes = await sb
+      .from('requests')
+      .update({ status: 'supplier_confirmed' })
+      .eq('id', request.id)
+      .select()
+      .single();
+    console.log('[confirmDirectOrder] update response:', updRes);
+    if (updRes.error) {
+      setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+      alert(isAr ? 'تعذّر تأكيد الطلب — حاول مرة أخرى' : lang === 'zh' ? '无法确认订单 — 请重试' : 'Could not confirm order — try again');
+      return;
+    }
+
+    const notifRes = await sb.from('notifications').insert({
+      user_id: request.buyer_id,
+      type: 'supplier_confirmed',
+      title_ar: `أكد المورد طلبك — يمكنك الدفع الآن: ${productName}`,
+      title_en: `Supplier confirmed — you can pay now: ${productName}`,
+      title_zh: `供应商已确认您的订单 — 请付款：${productName}`,
+      ref_id: request.id,
+      is_read: false,
+    }).select().single();
+    console.log('[confirmDirectOrder] notification response:', notifRes);
+
+    try {
+      const r = await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'direct_order_confirmed',
+          data: { recipientUserId: request.buyer_id, productName, quantity: request.quantity },
+        }),
+      });
+      const body = await r.json().catch(() => null);
+      console.log('[confirmDirectOrder] email response:', { status: r.status, body });
+    } catch (emailError) {
+      console.error('[confirmDirectOrder] email error:', emailError);
+    }
+
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+    loadDirectOrders();
+  };
+
+  const rejectDirectOrder = async (request) => {
+    if (!request?.id || !request?.buyer_id) return;
+    if (!window.confirm(isAr ? 'تأكيد رفض هذا الطلب؟' : lang === 'zh' ? '确认拒绝此订单？' : 'Reject this order?')) return;
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: 'rejecting' }));
+
+    const productName = request.product?.name_ar || request.product?.name_en || request.product?.name_zh || request.title_ar || request.title_en || '';
+
+    const updRes = await sb
+      .from('requests')
+      .update({ status: 'supplier_rejected' })
+      .eq('id', request.id)
+      .select()
+      .single();
+    console.log('[rejectDirectOrder] update response:', updRes);
+    if (updRes.error) {
+      setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+      alert(isAr ? 'تعذّر رفض الطلب — حاول مرة أخرى' : lang === 'zh' ? '无法拒绝订单 — 请重试' : 'Could not reject order — try again');
+      return;
+    }
+
+    const notifRes = await sb.from('notifications').insert({
+      user_id: request.buyer_id,
+      type: 'supplier_rejected',
+      title_ar: `لم يتمكن المورد من تنفيذ طلبك: ${productName}`,
+      title_en: `Supplier could not fulfill your order: ${productName}`,
+      title_zh: `供应商无法接受订单：${productName}`,
+      ref_id: request.id,
+      is_read: false,
+    }).select().single();
+    console.log('[rejectDirectOrder] notification response:', notifRes);
+
+    try {
+      const r = await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'direct_order_rejected',
+          data: { recipientUserId: request.buyer_id, productName, quantity: request.quantity },
+        }),
+      });
+      const body = await r.json().catch(() => null);
+      console.log('[rejectDirectOrder] email response:', { status: r.status, body });
+    } catch (emailError) {
+      console.error('[rejectDirectOrder] email error:', emailError);
+    }
+
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+    loadDirectOrders();
+  };
+
+  const formatDirectCountdown = (createdAt, nowMs) => {
+    if (!createdAt) return { expired: true, hours: 0, mins: 0 };
+    const expiresAt = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
+    const remaining = expiresAt - nowMs;
+    if (remaining <= 0) return { expired: true, hours: 0, mins: 0 };
+    const hours = Math.floor(remaining / (60 * 60 * 1000));
+    const mins = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+    return { expired: false, hours, mins };
   };
 
   const loadRequests = async () => {
@@ -2688,6 +2842,104 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── DIRECT PURCHASE ORDERS (Step 3) ── */}
+          {!isRestrictedSupplierTab && activeTab === 'direct-orders' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
+              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 8, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
+                {isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders'}
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24, ...arFont, lineHeight: 1.7 }}>
+                {isAr
+                  ? 'طلبات شراء مباشرة من تجار اختاروا منتجاتك. عليك التأكيد أو الرفض خلال 24 ساعة، وإلا تم إلغاء الطلب تلقائياً.'
+                  : lang === 'zh'
+                    ? '买家直接下单的采购订单。请在 24 小时内确认或拒绝，否则订单将自动取消。'
+                    : 'Direct purchase orders from buyers who picked your products. Confirm or reject within 24 hours — orders are auto-cancelled after that.'}
+              </p>
+
+              {loadingDirectOrders && [1, 2].map(i => <SkeletonCard key={i} />)}
+              {!loadingDirectOrders && directOrders.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <p style={{ color: 'var(--text-disabled)', fontSize: 14, ...arFont }}>
+                    {isAr ? 'لا توجد طلبات شراء مباشرة حالياً' : lang === 'zh' ? '暂无直接采购订单' : 'No pending direct orders'}
+                  </p>
+                </div>
+              )}
+
+              {!loadingDirectOrders && directOrders.map(r => {
+                const cd = formatDirectCountdown(r.created_at, directOrdersNowMs);
+                const productName = r.product
+                  ? (lang === 'zh' ? (r.product.name_zh || r.product.name_en || r.product.name_ar) : lang === 'en' ? (r.product.name_en || r.product.name_ar || r.product.name_zh) : (r.product.name_ar || r.product.name_en || r.product.name_zh))
+                  : getTitle(r);
+                const buyerName = r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader');
+                const acting = directOrderActioning[r.id];
+                const countdownColor = cd.expired ? '#a07070' : cd.hours < 4 ? '#b4781e' : '#5a9a72';
+                const countdownLabel = cd.expired
+                  ? (isAr ? 'انتهت المهلة' : lang === 'zh' ? '已超时' : 'Expired')
+                  : (isAr ? `متبقّي ${cd.hours} ساعة ${cd.mins} دقيقة` : lang === 'zh' ? `剩余 ${cd.hours} 小时 ${cd.mins} 分钟` : `${cd.hours}h ${cd.mins}m left`);
+
+                return (
+                  <div key={r.id} style={{ marginBottom: 12, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px 22px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+                      <div style={{ flex: 1, minWidth: 220 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72', letterSpacing: 0.4 }}>
+                            {isAr ? 'شراء مباشر' : lang === 'zh' ? '直接采购' : 'Direct Purchase'}
+                          </span>
+                          <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.created_at)}</span>
+                        </div>
+                        <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont }}>{productName}</h3>
+                        <div style={{ display: 'flex', gap: 16, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', ...arFont }}>
+                          <span>{isAr ? 'التاجر:' : lang === 'zh' ? '买家：' : 'Buyer:'} {buyerName}</span>
+                          <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {r.quantity || '—'}</span>
+                          {r.product?.price_from && (
+                            <span style={{ direction: 'ltr' }}>
+                              {Number(r.product.price_from).toFixed(2)} {r.product.currency || 'USD'} / unit
+                            </span>
+                          )}
+                        </div>
+                        {r.description && (
+                          <p style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--text-secondary)', ...arFont, lineHeight: 1.6 }}>
+                            {r.description}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 130 }}>
+                        <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
+                          {isAr ? 'مهلة 24 ساعة' : lang === 'zh' ? '24 小时窗口' : '24h Window'}
+                        </span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: countdownColor, fontFamily: 'var(--font-en)' }}>
+                          {countdownLabel}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        className="btn-dark-sm"
+                        onClick={() => confirmDirectOrder(r)}
+                        disabled={Boolean(acting) || cd.expired}
+                        style={{ minHeight: 38, opacity: cd.expired ? 0.5 : 1 }}>
+                        {acting === 'confirming' ? '...' : isAr ? 'تأكيد الطلب' : lang === 'zh' ? '确认订单' : 'Confirm Order'}
+                      </button>
+                      <button
+                        onClick={() => rejectDirectOrder(r)}
+                        disabled={Boolean(acting) || cd.expired}
+                        style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px 16px', fontSize: 12, cursor: (acting || cd.expired) ? 'not-allowed' : 'pointer', borderRadius: 'var(--radius-md)', minHeight: 38, opacity: cd.expired ? 0.5 : 1, ...arFont }}>
+                        {acting === 'rejecting' ? '...' : isAr ? 'رفض الطلب' : lang === 'zh' ? '拒绝订单' : 'Reject Order'}
+                      </button>
+                      {r.buyer_id && (
+                        <button className="btn-outline" onClick={() => nav(`/chat/${r.buyer_id}`)} style={{ minHeight: 38, ...arFont }}>
+                          {isAr ? 'تواصل مع التاجر' : lang === 'zh' ? '联系买家' : 'Chat with Buyer'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 

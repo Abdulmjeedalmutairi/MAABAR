@@ -54,7 +54,14 @@
       "Bash(git -C C:/Users/Mje_0/maabar branch -a)",
       "Bash(git *)",
       "Bash(where supabase *)",
-      "Bash(vercel ls *)"
+      "Bash(vercel ls *)",
+      "Bash(sed \"s/from\\('//\")",
+      "Bash(sed \"s/'$//\")",
+      "Bash(sed \"s/activeTab === '//\")",
+      "Bash(xargs cat *)",
+      "Bash(npx --no-install babel-node --presets=@babel/preset-env,@babel/preset-react --eval \"require\\('./src/screens/buyer/ManagedRequestScreen.js'\\)\")",
+      "Bash(\"C:/Users/Mje_0/maabar-app/node_modules/.bin/esparse.cmd\" --jsx \"C:/Users/Mje_0/maabar-app/src/screens/buyer/ManagedRequestScreen.js\")",
+      "Bash(\"C:/Users/Mje_0/maabar-app/node_modules/.bin/esparse.cmd\" --help)"
     ]
   }
 }

@@ -218,6 +218,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const [sending, setSending] = useState(false);
   const [sendingSample, setSendingSample] = useState(false);
   const [sendingInquiry, setSendingInquiry] = useState(false);
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
   // Variant state
@@ -362,6 +363,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     const supplierId = sup.id || product.supplier_id;
     if (!supplierId) { alert(isAr ? 'تعذّر تحديد المورد' : lang === 'zh' ? '未找到供应商' : 'Supplier not found'); return; }
     const requestId = createDirectRequestId();
+    const productName = product.name_ar || product.name_en || product.name_zh || '';
     const requestPayload = {
       id: requestId,
       buyer_id: user.id,
@@ -372,21 +374,56 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
       description: String(note || '').trim(),
       product_ref: id,
       category: product.category || 'other',
-      status: 'closed',
+      status: 'pending_supplier_confirmation',
       payment_plan: 100,
       sample_requirement: 'none',
       budget_per_unit: product.price_from ? Number(product.price_from) : null,
     };
+
     setSending(true);
-    const { error: reqError } = await sb.from('requests').insert(requestPayload);
+
+    const reqRes = await sb.from('requests').insert(requestPayload).select().single();
+    console.log('[submitOrder] requests.insert response:', reqRes);
+    if (reqRes.error) {
+      setSending(false);
+      console.error('direct product order creation failed:', reqRes.error);
+      alert(buildRequestCreationErrorMessage(lang, reqRes.error));
+      return;
+    }
+
+    const notifRes = await sb.from('notifications').insert({
+      user_id: supplierId,
+      type: 'direct_order_pending',
+      title_ar: `طلب شراء مباشر جديد: ${productName} — تأكيد خلال 24 ساعة`,
+      title_en: `New direct purchase order: ${productName} — confirm within 24 hours`,
+      title_zh: `新直接采购订单：${productName} — 请在 24 小时内确认`,
+      ref_id: requestId,
+      is_read: false,
+    }).select().single();
+    console.log('[submitOrder] notifications.insert response:', notifRes);
+
+    try {
+      const emailResp = await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'direct_order_pending',
+          data: {
+            recipientUserId: supplierId,
+            productName,
+            quantity: normalizedQty,
+          },
+        }),
+      });
+      const emailBody = await emailResp.json().catch(() => null);
+      console.log('[submitOrder] send-email response:', { status: emailResp.status, body: emailBody });
+    } catch (emailError) {
+      console.error('[submitOrder] send-email error:', emailError);
+    }
+
     setSending(false);
-    if (reqError) { console.error('direct product order creation failed:', reqError); alert(buildRequestCreationErrorMessage(lang, reqError)); return; }
-    nav('/checkout', {
-      state: {
-        offer: { id: requestId, request_id: requestId, supplier_id: supplierId, profiles: sup, price: product.price_from || 0, currency: product.currency || 'USD', delivery_days: product.spec_lead_time_days || 30, status: 'accepted', isDirect: true },
-        request: requestPayload,
-      }
-    });
+    setShowBuyForm(false);
+    setOrderConfirmed(true);
   };
 
   // ── Submit variant quote request ─────────────────────────────────────────────
@@ -955,7 +992,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         )}
 
         {/* ─── Flat buy form ─── */}
-        {showBuyForm && !product.has_variants && (
+        {showBuyForm && !product.has_variants && !orderConfirmed && (
           <div className="buy-form">
             <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 20, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
               {isAr ? 'أدخل الكمية' : lang === 'zh' ? '输入数量' : 'Enter Quantity'}
@@ -970,8 +1007,37 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
             </div>
             {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{isAr ? '* سيُطلب منك تسجيل الدخول' : lang === 'zh' ? '* 提交前需要先登录' : '* You\'ll be asked to sign in'}</p>}
             <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn-dark-sm" onClick={submitOrder} disabled={sending}>{sending ? '...' : isAr ? 'متابعة للدفع ←' : lang === 'zh' ? '前往付款 →' : 'Proceed to Payment →'}</button>
+              <button className="btn-dark-sm" onClick={submitOrder} disabled={sending}>{sending ? '...' : isAr ? 'إرسال الطلب ←' : lang === 'zh' ? '发送订单 →' : 'Send Order →'}</button>
               <button className="btn-outline" onClick={() => setShowBuyForm(false)}>{isAr ? 'إلغاء' : lang === 'zh' ? '取消' : 'Cancel'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Direct purchase confirmation (Step 2 success card) ─── */}
+        {orderConfirmed && (
+          <div className="buy-form" style={{ borderColor: 'rgba(45,122,79,0.35)', background: 'rgba(45,122,79,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(45,122,79,0.12)', color: '#2d7a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>✓</div>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 500, marginBottom: 8, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                  {isAr ? 'تم إرسال طلبك، بانتظار تأكيد المورد' : lang === 'zh' ? '订单已发送，等待供应商确认' : 'Your order has been sent — awaiting supplier confirmation'}
+                </h3>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                  {isAr
+                    ? 'سيتم تأكيد الطلب من المورد خلال 24 ساعة. ستصلك إشعار فور الرد، ثم تنتقل إلى خطوة الدفع.'
+                    : lang === 'zh'
+                      ? '供应商将在 24 小时内确认订单。一旦回复，您会收到通知并进入付款步骤。'
+                      : 'The supplier will confirm within 24 hours. You\'ll receive a notification once they respond, and then proceed to payment.'}
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button className="btn-outline" onClick={() => nav('/products')}>
+                {isAr ? 'العودة للمنتجات' : lang === 'zh' ? '返回产品' : 'Back to Products'}
+              </button>
+              <button className="btn-outline" onClick={() => nav('/dashboard?tab=requests')}>
+                {isAr ? 'عرض طلباتي' : lang === 'zh' ? '查看我的订单' : 'View My Orders'}
+              </button>
             </div>
           </div>
         )}

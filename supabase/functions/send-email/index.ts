@@ -341,6 +341,51 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>`, { lang }) };
   },
 
+  direct_order_pending: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `新直接采购订单 — ${d.productName || ''}`, eyebrow: 'New Direct Purchase Order', title: '收到新的直接采购订单', body: `买方下单采购 ${d.quantity || '-'} 件「${d.productName || ''}」。请在 24 小时内登录确认或拒绝订单，超时订单将自动取消。`, cta: '查看订单 →' },
+      en: { subject: `New direct purchase order — ${d.productName || ''}`, eyebrow: 'New Direct Purchase Order', title: 'You received a new purchase order', body: `A buyer placed a direct order for ${d.quantity || '-'} unit(s) of "${d.productName || ''}". Please log in within 24 hours to confirm or reject — the order will be cancelled automatically after that.`, cta: 'Review order →' },
+    } as any)[lang] || { subject: `New direct purchase order — ${d.productName || ''}`, eyebrow: 'New Direct Purchase Order', title: 'New purchase order', body: `Direct purchase order for "${d.productName || ''}".`, cta: 'Review order →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  direct_order_confirmed: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `أكد المورد طلبك — ${d.productName || ''}`, eyebrow: 'Order Confirmed', title: 'أكد المورد الطلب — يمكنك الدفع الآن', body: `أكد المورد جاهزيته لتنفيذ طلبك المباشر «${d.productName || ''}» (الكمية: ${d.quantity || '-'}). يمكنك الآن إتمام الدفع عبر مَعبر ليبدأ المورد بالتجهيز.`, cta: 'إتمام الدفع ←' },
+      en: { subject: `Supplier confirmed your order — ${d.productName || ''}`, eyebrow: 'Order Confirmed', title: 'Your supplier confirmed — you can pay now', body: `The supplier confirmed your direct purchase order for "${d.productName || ''}" (quantity: ${d.quantity || '-'}). You can now complete the payment through Maabar so the supplier can start preparation.`, cta: 'Complete Payment →' },
+    } as any)[lang] || { subject: `Supplier confirmed your order — ${d.productName || ''}`, eyebrow: 'Order Confirmed', title: 'Order confirmed', body: `The supplier confirmed your order for "${d.productName || ''}".`, cta: 'Complete Payment →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  direct_order_rejected: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `لم يتمكن المورد من تنفيذ طلبك — ${d.productName || ''}`, eyebrow: 'Order Cancelled', title: 'لم يتمكن المورد من تنفيذ طلبك المباشر', body: `تعذّر على المورد تنفيذ طلبك المباشر لمنتج «${d.productName || ''}» (الكمية: ${d.quantity || '-'}). يمكنك تصفح موردين آخرين على مَعبر أو تجربة منتج بديل.${d.autoRejected ? ' تم إلغاء الطلب تلقائياً بعد انتهاء مهلة الـ 24 ساعة.' : ''}`, cta: 'تصفح المنتجات ←' },
+      en: { subject: `Supplier could not fulfill your order — ${d.productName || ''}`, eyebrow: 'Order Cancelled', title: 'The supplier could not fulfill your direct order', body: `The supplier could not fulfill your direct order for "${d.productName || ''}" (quantity: ${d.quantity || '-'}). You can browse other suppliers on Maabar or try an alternative product.${d.autoRejected ? ' The order was cancelled automatically after the 24-hour confirmation window expired.' : ''}`, cta: 'Browse Products →' },
+    } as any)[lang] || { subject: `Order could not be fulfilled — ${d.productName || ''}`, eyebrow: 'Order Cancelled', title: 'Order cancelled', body: `Your direct order for "${d.productName || ''}" could not be fulfilled.`, cta: 'Browse Products →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/products" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
   // ── Buyer-bound: AR · EN ─────────────────────────────────────────────────────
 
   new_offer: (d) => {

@@ -43,8 +43,8 @@ const getTrackingUrl = (company, num) => {
   return urls[company] || `https://t.17track.net/en#nums=${num}`;
 };
 
-const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', supplier_confirmed: 'المورد جاهز', paid: 'تم الدفع', ready_to_ship: 'الشحنة جاهزة', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
-const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', supplier_confirmed: 'Supplier Ready', paid: 'Paid', ready_to_ship: 'Ready to Ship', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
+const STATUS_AR = { open: 'مرفوع', offers_received: 'عروض وصلت', closed: 'عرض مقبول', pending_supplier_confirmation: 'بانتظار تأكيد المورد', supplier_confirmed: 'المورد جاهز', supplier_rejected: 'رفض المورد الطلب', paid: 'تم الدفع', ready_to_ship: 'الشحنة جاهزة', shipping: 'قيد الشحن', arrived: 'وصل السعودية', delivered: 'تم التسليم' };
+const STATUS_EN = { open: 'Posted', offers_received: 'Offers In', closed: 'Accepted', pending_supplier_confirmation: 'Awaiting Supplier', supplier_confirmed: 'Supplier Ready', supplier_rejected: 'Supplier Declined', paid: 'Paid', ready_to_ship: 'Ready to Ship', shipping: 'Shipping', arrived: 'Arrived', delivered: 'Delivered' };
 const STATUS_STEPS = ['open', 'offers_received', 'closed', 'supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'];
 
 const CITIES_AR = ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'تبوك', 'أبها', 'القصيم', 'حائل', 'جازان', 'نجران'];
