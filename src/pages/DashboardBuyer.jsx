@@ -501,6 +501,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [directOrders, setDirectOrders] = useState([]);
   const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
   const [directOrderPaying, setDirectOrderPaying] = useState({});
+  const [directOrderActioning, setDirectOrderActioning] = useState({});
   const focusedRequestId = new URLSearchParams(location.search).get('request');
 
   // Review modal
@@ -727,6 +728,150 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
     setLoadingDirectOrders(false);
+  };
+
+  const markDirectOrderArrived = async (request) => {
+    if (!request?.id || !request?.product?.supplier_id) {
+      alert(isAr ? 'تعذّر تنفيذ العملية' : 'Could not perform this action');
+      return;
+    }
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: 'marking_arrived' }));
+
+    const supplierId = request.product.supplier_id;
+    const productName = request.product?.name_ar || request.product?.name_en || request.product?.name_zh || request.title_ar || request.title_en || '';
+
+    const updRes = await sb
+      .from('requests')
+      .update({ status: 'arrived', shipping_status: 'arrived' })
+      .eq('id', request.id)
+      .select()
+      .single();
+    console.log('[markDirectOrderArrived] update response:', updRes);
+    if (updRes.error) {
+      setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+      alert(isAr ? 'تعذّر التحديث — حاول مرة أخرى' : lang === 'zh' ? '无法更新 — 请重试' : 'Could not update — try again');
+      return;
+    }
+
+    const notifRes = await sb.from('notifications').insert({
+      user_id: supplierId,
+      type: 'arrived',
+      title_ar: `استلم التاجر الشحنة — ${productName}`,
+      title_en: `Buyer marked shipment arrived — ${productName}`,
+      title_zh: `买家已收到货物 — ${productName}`,
+      ref_id: request.id,
+      is_read: false,
+    }).select().single();
+    console.log('[markDirectOrderArrived] notification response:', notifRes);
+
+    try {
+      const r = await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'direct_order_arrived',
+          data: {
+            recipientUserId: supplierId,
+            productName,
+            trackingNumber: request.tracking_number || '',
+          },
+        }),
+      });
+      const body = await r.json().catch(() => null);
+      console.log('[markDirectOrderArrived] email response:', { status: r.status, body });
+    } catch (emailError) {
+      console.error('[markDirectOrderArrived] email error:', emailError);
+    }
+
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+    loadMyDirectOrders();
+  };
+
+  const confirmDirectDelivery = async (request) => {
+    if (!request?.id || !request?.product?.supplier_id) {
+      alert(isAr ? 'تعذّر تنفيذ العملية' : 'Could not perform this action');
+      return;
+    }
+    if (!window.confirm(isAr
+      ? 'تأكيد استلام البضاعة؟ سيتم تحرير المبلغ للمورد ولا يمكن التراجع.'
+      : lang === 'zh'
+        ? '确认收货？款项将放给供应商，此操作不可撤销。'
+        : 'Confirm delivery? This will release the payment to the supplier and cannot be undone.')) {
+      return;
+    }
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: 'confirming_delivery' }));
+
+    const supplierId = request.product.supplier_id;
+    const supplierName = request.product?.profiles?.company_name || request.product?.profiles?.full_name || 'Supplier';
+    const productName = request.product?.name_ar || request.product?.name_en || request.product?.name_zh || request.title_ar || request.title_en || '';
+
+    const updRes = await sb
+      .from('requests')
+      .update({ status: 'delivered', shipping_status: 'delivered' })
+      .eq('id', request.id)
+      .select()
+      .single();
+    console.log('[confirmDirectDelivery] update response:', updRes);
+    if (updRes.error) {
+      setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+      alert(isAr ? 'تعذّر تأكيد التسليم — حاول مرة أخرى' : lang === 'zh' ? '无法确认收货 — 请重试' : 'Could not confirm delivery — try again');
+      return;
+    }
+
+    const paymentLookupRes = await sb
+      .from('payments')
+      .select('id, amount')
+      .eq('request_id', request.id)
+      .eq('buyer_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    console.log('[confirmDirectDelivery] payments lookup response:', paymentLookupRes);
+
+    let payoutAmount = 0;
+    if (paymentLookupRes.data?.id) {
+      payoutAmount = Number(paymentLookupRes.data.amount || 0);
+      const payUpdRes = await sb
+        .from('payments')
+        .update({ status: 'completed' })
+        .eq('id', paymentLookupRes.data.id)
+        .select()
+        .single();
+      console.log('[confirmDirectDelivery] payments update response:', payUpdRes);
+    }
+
+    const notifRes = await sb.from('notifications').insert({
+      user_id: supplierId,
+      type: 'delivery_confirmed',
+      title_ar: `أكد التاجر الاستلام — سيتم تحويل المبلغ خلال 24 ساعة (${productName})`,
+      title_en: `Buyer confirmed delivery — payout within 24h (${productName})`,
+      title_zh: `买家已确认收货 — 24 小时内放款 (${productName})`,
+      ref_id: request.id,
+      is_read: false,
+    }).select().single();
+    console.log('[confirmDirectDelivery] notification response:', notifRes);
+
+    try {
+      const r = await fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'payout_initiated',
+          data: {
+            recipientUserId: supplierId,
+            name: supplierName,
+            amount: payoutAmount,
+          },
+        }),
+      });
+      const body = await r.json().catch(() => null);
+      console.log('[confirmDirectDelivery] email response:', { status: r.status, body });
+    } catch (emailError) {
+      console.error('[confirmDirectDelivery] email error:', emailError);
+    }
+
+    setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
+    loadMyDirectOrders();
   };
 
   const payDirectOrder = async (request) => {
@@ -2083,12 +2228,33 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     border: 'rgba(45,122,79,0.25)',
                     body: isAr ? 'تم استلام دفعتك. المورد سيبدأ التجهيز ويرسل رقم التتبع قريباً.' : lang === 'zh' ? '已收到您的付款。供应商将开始备货，并尽快提供物流单号。' : 'Payment received. The supplier will prepare your order and share tracking shortly.',
                   };
-                  if (['ready_to_ship', 'shipping', 'arrived', 'delivered'].includes(r.status)) return {
-                    label: (isAr ? STATUS_AR[r.status] : STATUS_EN[r.status]) || r.status,
-                    color: '#5a6a8a',
-                    bg: 'rgba(90,106,138,0.05)',
-                    border: 'rgba(90,106,138,0.25)',
-                    body: isAr ? 'تتبّع شحنتك من تبويب «طلباتي»… (المرحلة القادمة).' : 'Track your shipment from the My Requests tab (next phase).',
+                  if (r.status === 'ready_to_ship') return {
+                    label: isAr ? 'الشحنة جاهزة' : lang === 'zh' ? '准备发货' : 'Ready to Ship',
+                    color: '#b4781e',
+                    bg: 'rgba(180,120,30,0.05)',
+                    border: 'rgba(180,120,30,0.30)',
+                    body: isAr ? 'المورد جهّز الشحنة وسيرسل رقم التتبع قريباً.' : lang === 'zh' ? '供应商已备货完毕，物流单号将很快提供。' : 'The supplier has prepared your shipment. Tracking will appear here shortly.',
+                  };
+                  if (r.status === 'shipping') return {
+                    label: isAr ? 'في الطريق إليك' : lang === 'zh' ? '运输中' : 'On the Way',
+                    color: '#b4781e',
+                    bg: 'rgba(180,120,30,0.05)',
+                    border: 'rgba(180,120,30,0.30)',
+                    body: isAr ? 'الشحنة في الطريق. تابع رقم التتبع، وأكد الاستلام عند الوصول.' : lang === 'zh' ? '货物正在运送途中。请使用物流单号跟踪，到货后请确认。' : 'Your shipment is on the way. Track it below and mark it as arrived once it lands.',
+                  };
+                  if (r.status === 'arrived') return {
+                    label: isAr ? 'وصلت — أكد الاستلام' : lang === 'zh' ? '已到货 — 请确认收货' : 'Arrived — Confirm Delivery',
+                    color: '#4a6bbf',
+                    bg: 'rgba(60,100,180,0.05)',
+                    border: 'rgba(60,100,180,0.30)',
+                    body: isAr ? 'وصلت الشحنة. عند فحصها وتأكيد سلامتها، أكد الاستلام لتحرير المبلغ للمورد.' : lang === 'zh' ? '货物已到达。检查无误后请确认收货，款项将放给供应商。' : 'The shipment arrived. After inspection, confirm delivery to release the payment to the supplier.',
+                  };
+                  if (r.status === 'delivered') return {
+                    label: isAr ? 'مكتمل ✓' : lang === 'zh' ? '已完成 ✓' : 'Completed ✓',
+                    color: '#2d7a4f',
+                    bg: 'rgba(45,122,79,0.04)',
+                    border: 'rgba(45,122,79,0.25)',
+                    body: isAr ? `تم التسليم بنجاح في ${relativeTime(r.updated_at, isAr)}. تم تحويل المبلغ للمورد.` : lang === 'zh' ? `订单已于 ${relativeTime(r.updated_at, isAr)} 完成交付，款项已放给供应商。` : `Delivered ${relativeTime(r.updated_at, isAr)}. Payout has been released to the supplier.`,
                   };
                   return {
                     label: r.status,
@@ -2138,6 +2304,30 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       </p>
                     )}
 
+                    {/* Tracking panel — visible whenever a tracking number has been uploaded */}
+                    {r.tracking_number && ['shipping', 'arrived', 'delivered'].includes(r.status) && (() => {
+                      const carrier = r.shipping_company || 'Other';
+                      const trackUrl = getTrackingUrl(carrier, r.tracking_number);
+                      return (
+                        <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                          <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>
+                            {isAr ? 'تتبع الشحنة' : lang === 'zh' ? '物流跟踪' : 'Shipment Tracking'}
+                          </p>
+                          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                              {isAr ? 'شركة الشحن:' : lang === 'zh' ? '承运商：' : 'Carrier:'} <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{carrier}</strong>
+                            </span>
+                            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                              {isAr ? 'رقم التتبع:' : lang === 'zh' ? '物流单号：' : 'Tracking #:'} <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-en)', fontWeight: 600, direction: 'ltr', display: 'inline-block' }}>{r.tracking_number}</strong>
+                            </span>
+                            <a href={trackUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#4a6bbf', textDecoration: 'none', borderBottom: '1px dashed #4a6bbf', paddingBottom: 1 }}>
+                              {isAr ? 'تتبع الشحنة ↗' : lang === 'zh' ? '查看跟踪 ↗' : 'Track Shipment ↗'}
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       {r.status === 'supplier_confirmed' && (
                         <button
@@ -2148,12 +2338,34 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           {paying ? '…' : isAr ? 'ادفع الآن ←' : lang === 'zh' ? '立即付款 →' : 'Pay Now →'}
                         </button>
                       )}
+                      {r.status === 'shipping' && (
+                        <button
+                          onClick={() => markDirectOrderArrived(r)}
+                          disabled={Boolean(directOrderActioning[r.id]) || !product?.supplier_id}
+                          className="btn-primary"
+                          style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3 }}>
+                          {directOrderActioning[r.id] === 'marking_arrived' ? '…' : isAr ? 'تم استلام الشحنة' : lang === 'zh' ? '已收到货物' : 'Mark as Arrived'}
+                        </button>
+                      )}
+                      {r.status === 'arrived' && (
+                        <button
+                          onClick={() => confirmDirectDelivery(r)}
+                          disabled={Boolean(directOrderActioning[r.id]) || !product?.supplier_id}
+                          style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3, background: '#2d7a4f', color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)', cursor: directOrderActioning[r.id] ? 'not-allowed' : 'pointer' }}>
+                          {directOrderActioning[r.id] === 'confirming_delivery' ? '…' : isAr ? 'تأكيد الاستلام' : lang === 'zh' ? '确认收货' : 'Confirm Delivery'}
+                        </button>
+                      )}
+                      {r.status === 'delivered' && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.30)', borderRadius: 'var(--radius-md)', color: '#2d7a4f', fontSize: 12, fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          ✓ {isAr ? `مكتمل · ${relativeTime(r.updated_at, isAr)}` : lang === 'zh' ? `已完成 · ${relativeTime(r.updated_at, isAr)}` : `Completed · ${relativeTime(r.updated_at, isAr)}`}
+                        </span>
+                      )}
                       {r.status === 'supplier_rejected' && (
                         <button onClick={() => nav('/products')} className="btn-outline" style={{ padding: '9px 18px', fontSize: 12, minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr ? 'تصفح المنتجات' : lang === 'zh' ? '浏览产品' : 'Browse Products'}
                         </button>
                       )}
-                      {product?.supplier_id && r.status !== 'supplier_rejected' && (
+                      {product?.supplier_id && r.status !== 'supplier_rejected' && r.status !== 'delivered' && (
                         <button onClick={() => nav(`/chat/${product.supplier_id}`)} className="btn-outline" style={{ padding: '9px 18px', fontSize: 12, minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr ? 'تواصل مع المورد' : lang === 'zh' ? '联系供应商' : 'Chat with Supplier'}
                         </button>

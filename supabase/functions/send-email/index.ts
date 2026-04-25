@@ -371,6 +371,21 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>`, { lang }) };
   },
 
+  direct_order_arrived: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      zh: { subject: `买家已收到货物 — ${d.productName || ''}`, eyebrow: 'Shipment Marked Arrived', title: '买家已收到货物', body: `买家标记了您发出的直接采购订单${d.productName ? `「${d.productName}」` : ''}${d.trackingNumber ? `（物流单号：${d.trackingNumber}）` : ''}已抵达。买家确认无误后会正式确认收货并触发放款。`, cta: '查看订单 →' },
+      en: { subject: `Buyer marked shipment as arrived — ${d.productName || ''}`, eyebrow: 'Shipment Marked Arrived', title: 'Buyer received the shipment', body: `The buyer marked your direct order${d.productName ? ` for "${d.productName}"` : ''}${d.trackingNumber ? ` (tracking ${d.trackingNumber})` : ''} as arrived. They will confirm final delivery once they verify the goods, which triggers the payout.`, cta: 'Review order →' },
+    } as any)[lang] || { subject: `Shipment marked as arrived — ${d.productName || ''}`, eyebrow: 'Shipment Marked Arrived', title: 'Shipment marked as arrived', body: `The buyer marked the shipment as arrived. Final delivery confirmation is pending.`, cta: 'Review order →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=direct-orders" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
   direct_order_shipped: (d) => {
     const lang = d.lang || 'ar';
     const t = ({
