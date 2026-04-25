@@ -134,6 +134,17 @@ const translateInquiryText = async (text, sourceLang, targetLang) => {
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
+const getTrackingUrl = (company, num) => {
+  const urls = {
+    'DHL':    `https://www.dhl.com/track?tracking-id=${num}`,
+    'FedEx':  `https://www.fedex.com/tracking?tracknumbers=${num}`,
+    'Aramex': `https://www.aramex.com/track/${num}`,
+    'UPS':    `https://www.ups.com/track?tracknum=${num}`,
+    'SMSA':   `https://www.smsaexpress.com/track?awbno=${num}`,
+  };
+  return urls[company] || `https://t.17track.net/en#nums=${num}`;
+};
+
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
 
 // جلب سعر الصرف USD → SAR
@@ -195,6 +206,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [paidDirectOrders, setPaidDirectOrders] = useState([]);
   const [loadingPaidDirectOrders, setLoadingPaidDirectOrders] = useState(false);
   const [directShippingActioning, setDirectShippingActioning] = useState({});
+  const [shippingDirectOrders, setShippingDirectOrders] = useState([]);
+  const [completedDirectOrders, setCompletedDirectOrders] = useState([]);
+  const [loadingDirectHistory, setLoadingDirectHistory] = useState(false);
   const [trackingInputs, setTrackingInputs] = useState({});
   const [shippingCompany, setShippingCompany] = useState('DHL');
   const [product, setProduct]               = useState(emptyProduct);
@@ -351,7 +365,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
-    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders(); loadPaidDirectOrders();
+    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -514,7 +528,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeTab, activeCat]);
 
-  useEffect(() => { if (activeTab === 'direct-orders') { loadDirectOrders(); loadPaidDirectOrders(); } }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (activeTab === 'direct-orders') { loadDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory(); } }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (activeTab !== 'direct-orders') return;
@@ -1374,6 +1388,64 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setLoadingPaidDirectOrders(false);
   };
 
+  const loadDirectOrdersHistory = async () => {
+    if (!user) return;
+    setLoadingDirectHistory(true);
+
+    const productsRes = await sb.from('products').select('id').eq('supplier_id', user.id);
+    console.log('[loadDirectOrdersHistory] products query response:', productsRes);
+    const myProductIds = (productsRes.data || []).map(p => p.id);
+    if (myProductIds.length === 0) {
+      setShippingDirectOrders([]);
+      setCompletedDirectOrders([]);
+      setLoadingDirectHistory(false);
+      return;
+    }
+
+    const ordersRes = await sb
+      .from('requests')
+      .select('*, profiles!requests_buyer_id_fkey(full_name, company_name)')
+      .in('status', ['shipping', 'arrived', 'delivered'])
+      .in('product_ref', myProductIds)
+      .order('created_at', { ascending: false });
+    console.log('[loadDirectOrdersHistory] requests query response:', ordersRes);
+
+    const rows = ordersRes.data || [];
+    if (rows.length === 0) {
+      setShippingDirectOrders([]);
+      setCompletedDirectOrders([]);
+      setLoadingDirectHistory(false);
+      return;
+    }
+
+    const refIds = [...new Set(rows.map(r => r.product_ref).filter(Boolean))];
+    const productsByIdRes = refIds.length
+      ? await sb.from('products').select('id, name_ar, name_en, name_zh, price_from, currency').in('id', refIds)
+      : { data: [], error: null };
+    console.log('[loadDirectOrdersHistory] product details response:', productsByIdRes);
+    const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+    const reqIds = rows.map(r => r.id);
+    const paymentsRes = reqIds.length
+      ? await sb.from('payments').select('id, request_id, amount, status, created_at').eq('supplier_id', user.id).in('request_id', reqIds).order('created_at', { ascending: false })
+      : { data: [], error: null };
+    console.log('[loadDirectOrdersHistory] payments query response:', paymentsRes);
+    const paymentByRequest = (paymentsRes.data || []).reduce((acc, p) => {
+      if (!acc[p.request_id]) acc[p.request_id] = p;
+      return acc;
+    }, {});
+
+    const enriched = rows.map(r => ({
+      ...r,
+      product: productsById[r.product_ref] || null,
+      payment: paymentByRequest[r.id] || null,
+    }));
+
+    setShippingDirectOrders(enriched.filter(r => r.status === 'shipping' || r.status === 'arrived'));
+    setCompletedDirectOrders(enriched.filter(r => r.status === 'delivered'));
+    setLoadingDirectHistory(false);
+  };
+
   const submitDirectTracking = async (request) => {
     if (!request?.id || !request?.buyer_id) return;
     const num = trackingInputs[request.id];
@@ -1437,6 +1509,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setTrackingInputs(prev => ({ ...prev, [request.id]: '' }));
     setDirectShippingActioning(prev => ({ ...prev, [request.id]: null }));
     loadPaidDirectOrders();
+    loadDirectOrdersHistory();
   };
 
   const formatDirectCountdown = (createdAt, nowMs) => {
@@ -3159,6 +3232,152 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           {isAr ? 'تواصل مع التاجر' : lang === 'zh' ? '联系买家' : 'Chat with Buyer'}
                         </button>
                       )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Active shipments (read-only) ──────────────────────── */}
+              <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid var(--border-subtle)' }}>
+                <h3 style={{ fontSize: isAr ? 18 : 20, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.2 }}>
+                  {isAr ? 'الشحنات النشطة' : lang === 'zh' ? '运输中的订单' : 'Active Shipments'}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 18, ...arFont, lineHeight: 1.7 }}>
+                  {isAr
+                    ? 'الطلبات التي شحنتها وفي انتظار تأكيد التاجر بالاستلام.'
+                    : lang === 'zh'
+                      ? '已发货的订单，等待买家确认收货。'
+                      : 'Orders you have shipped — awaiting the buyer to confirm receipt.'}
+                </p>
+
+                {loadingDirectHistory && [1, 2].map(i => <SkeletonCard key={`shipping-skel-${i}`} />)}
+                {!loadingDirectHistory && shippingDirectOrders.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '36px 0' }}>
+                    <p style={{ color: 'var(--text-disabled)', fontSize: 13, ...arFont }}>
+                      {isAr ? 'لا توجد شحنات نشطة' : lang === 'zh' ? '暂无运输中的订单' : 'No active shipments'}
+                    </p>
+                  </div>
+                )}
+
+                {!loadingDirectHistory && shippingDirectOrders.map(r => {
+                  const product = r.product || {};
+                  const productName = lang === 'zh'
+                    ? (product.name_zh || product.name_en || product.name_ar)
+                    : lang === 'en'
+                      ? (product.name_en || product.name_ar || product.name_zh)
+                      : (product.name_ar || product.name_en || product.name_zh);
+                  const buyerName = r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader');
+                  const carrier = r.shipping_company || 'Other';
+                  const trackingNumber = r.tracking_number || '';
+                  const trackUrl = trackingNumber ? getTrackingUrl(carrier, trackingNumber) : null;
+                  const isArrived = r.status === 'arrived';
+                  const statusLabel = isArrived
+                    ? (isAr ? 'وصلت — التاجر يفحص' : lang === 'zh' ? '已到货 — 买家正在验收' : 'Arrived — Buyer Inspecting')
+                    : (isAr ? 'في الطريق' : lang === 'zh' ? '运输中' : 'In Transit');
+                  const statusColor = isArrived ? '#4a6bbf' : '#b4781e';
+                  const statusBg = isArrived ? 'rgba(60,100,180,0.05)' : 'rgba(180,120,30,0.05)';
+                  const statusBorder = isArrived ? 'rgba(60,100,180,0.30)' : 'rgba(180,120,30,0.30)';
+
+                  return (
+                    <div key={`shipping-${r.id}`} style={{ marginBottom: 12, border: `1px solid ${statusBorder}`, background: statusBg, borderRadius: 'var(--radius-lg)', padding: '18px 22px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+                        <div style={{ flex: 1, minWidth: 220 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: `1px solid ${statusBorder}`, color: statusColor, letterSpacing: 0.4, fontWeight: 600, ...arFont }}>
+                              {statusLabel}
+                            </span>
+                            <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.created_at)}</span>
+                          </div>
+                          <h4 style={{ fontSize: 15, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont }}>{productName || (isAr ? 'منتج' : 'Product')}</h4>
+                          <div style={{ display: 'flex', gap: 14, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', ...arFont }}>
+                            <span>{isAr ? 'التاجر:' : lang === 'zh' ? '买家：' : 'Buyer:'} {buyerName}</span>
+                            <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {r.quantity || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {trackingNumber && (
+                        <div style={{ padding: '10px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', ...arFont }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            {isAr ? 'شركة الشحن:' : lang === 'zh' ? '承运商：' : 'Carrier:'} <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{carrier}</strong>
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            {isAr ? 'رقم التتبع:' : lang === 'zh' ? '物流单号：' : 'Tracking #:'} <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-en)', fontWeight: 600, direction: 'ltr', display: 'inline-block' }}>{trackingNumber}</strong>
+                          </span>
+                          {trackUrl && (
+                            <a href={trackUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#4a6bbf', textDecoration: 'none', borderBottom: '1px dashed #4a6bbf', paddingBottom: 1 }}>
+                              {isAr ? 'تتبع الشحنة ↗' : lang === 'zh' ? '查看跟踪 ↗' : 'Track Shipment ↗'}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Completed orders (read-only) ──────────────────────── */}
+              <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid var(--border-subtle)' }}>
+                <h3 style={{ fontSize: isAr ? 18 : 20, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.2 }}>
+                  {isAr ? 'الطلبات المكتملة' : lang === 'zh' ? '已完成订单' : 'Completed Orders'}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 18, ...arFont, lineHeight: 1.7 }}>
+                  {isAr
+                    ? 'الطلبات التي أكد التاجر استلامها — تم تحرير المبالغ.'
+                    : lang === 'zh'
+                      ? '买家已确认收货的订单 — 款项已放给您。'
+                      : 'Orders the buyer has confirmed delivered — payouts have been released.'}
+                </p>
+
+                {loadingDirectHistory && [1].map(i => <SkeletonCard key={`done-skel-${i}`} />)}
+                {!loadingDirectHistory && completedDirectOrders.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '36px 0' }}>
+                    <p style={{ color: 'var(--text-disabled)', fontSize: 13, ...arFont }}>
+                      {isAr ? 'لا توجد طلبات مكتملة بعد' : lang === 'zh' ? '暂无已完成订单' : 'No completed orders yet'}
+                    </p>
+                  </div>
+                )}
+
+                {!loadingDirectHistory && completedDirectOrders.map(r => {
+                  const product = r.product || {};
+                  const productName = lang === 'zh'
+                    ? (product.name_zh || product.name_en || product.name_ar)
+                    : lang === 'en'
+                      ? (product.name_en || product.name_ar || product.name_zh)
+                      : (product.name_ar || product.name_en || product.name_zh);
+                  const buyerName = r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader');
+                  const payment = r.payment || null;
+                  const paymentAmount = payment ? Number(payment.amount || 0) : 0;
+                  const paymentCurrency = product.currency || 'USD';
+                  const deliveryDate = r.updated_at || payment?.created_at || r.created_at;
+
+                  return (
+                    <div key={`done-${r.id}`} style={{ marginBottom: 12, border: '1px solid rgba(45,122,79,0.20)', background: 'rgba(45,122,79,0.03)', borderRadius: 'var(--radius-lg)', padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 220 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.28)', color: '#2d7a4f', letterSpacing: 0.4, fontWeight: 600, ...arFont }}>
+                              ✓ {isAr ? 'مكتمل' : lang === 'zh' ? '已完成' : 'Completed'}
+                            </span>
+                          </div>
+                          <h4 style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, color: 'var(--text-primary)', ...arFont }}>{productName || (isAr ? 'منتج' : 'Product')}</h4>
+                          <div style={{ display: 'flex', gap: 14, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', ...arFont }}>
+                            <span>{isAr ? 'التاجر:' : lang === 'zh' ? '买家：' : 'Buyer:'} {buyerName}</span>
+                            <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {r.quantity || '—'}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, minWidth: 140 }}>
+                          <span style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)' }}>
+                            {isAr ? 'تاريخ التسليم' : lang === 'zh' ? '交付日期' : 'Delivered'}
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--text-primary)', ...arFont }}>{fmtDate(deliveryDate)}</span>
+                          {paymentAmount > 0 && (
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#2d7a4f', direction: 'ltr', marginTop: 4 }}>
+                              {paymentAmount.toFixed(2)} {paymentCurrency}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
