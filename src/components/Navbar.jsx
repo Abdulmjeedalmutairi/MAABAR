@@ -101,13 +101,25 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
     }
   };
 
-  const handleNotifClick = (n) => {
+  const handleNotifClick = async (n) => {
     setNotifOpen(false);
     if (n.type === 'new_message') nav(`/chat/${n.ref_id}`);
     else if (['account_approved', 'account_rejected'].includes(n.type)) nav('/dashboard');
     else if (['account_more_info_required', 'verification_submitted'].includes(n.type)) nav('/dashboard?tab=verification');
     else if (n.type === 'direct_order_pending') nav('/dashboard?tab=direct-orders');
-    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'offer_cancelled', 'payment_received', 'ready_to_ship', 'shipped', 'delivery_confirmed', 'request_deleted', 'supplier_confirmed', 'supplier_rejected'].includes(n.type)) nav('/dashboard?tab=requests');
+    else if (['payment_received', 'shipped', 'arrived', 'delivery_confirmed', 'supplier_confirmed'].includes(n.type)) {
+      // Shared between RFQ and Direct Purchase — disambiguate via requests.product_ref.
+      if (!n.ref_id) { nav('/dashboard?tab=requests'); return; }
+      const lookupRes = await sb
+        .from('requests')
+        .select('product_ref')
+        .eq('id', n.ref_id)
+        .single();
+      console.log('[handleNotifClick] requests lookup for shared type:', { type: n.type, ref_id: n.ref_id, response: lookupRes });
+      if (lookupRes.data?.product_ref) nav('/dashboard?tab=direct-orders');
+      else nav('/dashboard?tab=requests');
+    }
+    else if (['new_offer', 'offer_accepted', 'offer_rejected', 'offer_cancelled', 'ready_to_ship', 'request_deleted', 'supplier_rejected'].includes(n.type)) nav('/dashboard?tab=requests');
     else if (['new_sample', 'sample_approved', 'sample_rejected'].includes(n.type)) nav('/dashboard?tab=samples');
     else if (['product_inquiry', 'product_inquiry_reply'].includes(n.type)) nav('/dashboard?tab=product-inquiries');
     else nav('/dashboard');
