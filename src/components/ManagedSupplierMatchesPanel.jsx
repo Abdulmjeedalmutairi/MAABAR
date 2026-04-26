@@ -55,7 +55,7 @@ export default function ManagedSupplierMatchesPanel({
 
   const fmtDate = (d) => {
     if (!d) return '—';
-    try { return new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    try { return new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
     catch { return String(d); }
   };
 

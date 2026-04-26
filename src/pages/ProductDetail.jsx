@@ -550,7 +550,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   };
 
   const stars = (r) => { let s = ''; for (let i = 1; i <= 5; i++) s += i <= r ? '★' : '☆'; return s; };
-  const fmt = (n) => Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  const fmt = (n) => Number(n).toLocaleString('ar-SA-u-nu-latn', { maximumFractionDigits: 2 });
 
   if (loading) return <div className="product-detail-wrap"><BrandedLoading lang={lang} tone="product" /></div>;
 

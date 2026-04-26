@@ -356,7 +356,7 @@ export function formatDraftSavedAt(value, lang = 'en') {
       });
     }
     if (lang === 'ar') {
-      return date.toLocaleString('ar-SA', {
+      return date.toLocaleString('ar-SA-u-nu-latn', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

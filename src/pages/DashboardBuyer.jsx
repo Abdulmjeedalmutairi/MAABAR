@@ -114,7 +114,7 @@ function relativeTime(dateStr, isAr) {
     if (mins < 60) return `منذ ${mins} د`;
     if (hrs < 24)  return `منذ ${hrs} س`;
     if (days < 30) return `منذ ${days} يوم`;
-    return new Date(dateStr).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('ar-SA-u-nu-latn', { month: 'short', day: 'numeric' });
   }
   if (mins < 1)  return 'just now';
   if (mins < 60) return `${mins}m ago`;
@@ -264,7 +264,7 @@ function TrackingCard({ request, isAr }) {
           {request.estimated_delivery && (
             <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>
               {isAr ? 'وصول متوقع: ' : 'ETA: '}
-              {new Date(request.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' })}
+              {new Date(request.estimated_delivery).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : 'en-US', { month: 'short', day: 'numeric' })}
             </p>
           )}
         </div>
@@ -2560,7 +2560,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? '#5a9a72' : 'var(--text-secondary)' }}>
                           {statusLabel}
                         </span>
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
                       </div>
                     </div>
 

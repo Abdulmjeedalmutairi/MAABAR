@@ -24,7 +24,7 @@ const callAI = async (system, messages) => {
 
 const parseJSON = (text) => JSON.parse(text.replace(/```json|```/g, '').trim());
 
-const fmt = (n) => n ? Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 0 }) : '0';
+const fmt = (n) => n ? Number(n).toLocaleString('ar-SA-u-nu-latn', { maximumFractionDigits: 0 }) : '0';
 
 /* ─────────────────────────────────────────
    Tool definitions

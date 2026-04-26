@@ -39,13 +39,13 @@ export default function AgentPanel() {
       if (mode === 'suggest' && data.suggestions) {
         setSuggestions(data.suggestions);
       } else if (data.success) {
-        setLog(l => [{ cmd: command, file: data.file, status: data.message, time: new Date().toLocaleTimeString('ar') }, ...l]);
+        setLog(l => [{ cmd: command, file: data.file, status: data.message, time: new Date().toLocaleTimeString('ar-SA-u-nu-latn') }, ...l]);
         setCommand('');
       } else {
-        setLog(l => [{ cmd: command, status: `❌ ${data.error}`, time: new Date().toLocaleTimeString('ar') }, ...l]);
+        setLog(l => [{ cmd: command, status: `❌ ${data.error}`, time: new Date().toLocaleTimeString('ar-SA-u-nu-latn') }, ...l]);
       }
     } catch (e) {
-      setLog(l => [{ cmd: command, status: '❌ تعذر الاتصال', time: new Date().toLocaleTimeString('ar') }, ...l]);
+      setLog(l => [{ cmd: command, status: '❌ تعذر الاتصال', time: new Date().toLocaleTimeString('ar-SA-u-nu-latn') }, ...l]);
     }
     setLoading(false);
   };

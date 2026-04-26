@@ -147,7 +147,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     return s;
   };
 
-  const fmt = (n) => Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  const fmt = (n) => Number(n).toLocaleString('ar-SA-u-nu-latn', { maximumFractionDigits: 2 });
 
   const calcPrice = () => {
     if (!calcProduct || !calcQty) return;

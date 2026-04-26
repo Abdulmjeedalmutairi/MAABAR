@@ -389,12 +389,12 @@ export default function Chat({ lang, user, profile }) {
   };
 
   const fmtTime = (date) => new Date(date).toLocaleTimeString(
-    isAr ? 'ar-SA' : 'en-US',
+    isAr ? 'ar-SA-u-nu-latn' : 'en-US',
     { hour: '2-digit', minute: '2-digit' }
   );
 
   const fmtDate = (date) => new Date(date).toLocaleDateString(
-    isAr ? 'ar-SA' : 'en-US',
+    isAr ? 'ar-SA-u-nu-latn' : 'en-US',
     { weekday: 'long', month: 'short', day: 'numeric' }
   );
 

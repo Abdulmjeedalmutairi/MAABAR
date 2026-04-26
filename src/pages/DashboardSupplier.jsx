@@ -3582,7 +3582,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           return etaDate ? (
                             <p style={{ fontSize: 11, color: 'var(--text-disabled)', fontVariantNumeric: 'lining-nums' }}>
                               {isAr ? 'التسليم المتوقع: ' : lang === 'zh' ? '预计到达：' : 'ETA: '}
-                              {etaDate.toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}
+                              {etaDate.toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-US')}
                             </p>
                           ) : null;
                         })()}
@@ -3845,7 +3845,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? '#5a9a72' : 'var(--text-secondary)' }}>
                           {statusLabel}
                         </span>
-                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
                       </div>
                     </div>
 
@@ -3919,7 +3919,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         </div>
                       </div>
                       {r.comment && <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, ...arFont }}>{r.comment}</p>}
-                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6 }}>{new Date(r.created_at).toLocaleDateString(isAr ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6 }}>{new Date(r.created_at).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
                     </div>
                   ))}
                 </>

@@ -141,7 +141,7 @@ function toList(value) {
 }
 
 function getLocale(lang = 'en') {
-  return lang === 'ar' ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-GB';
+  return lang === 'ar' ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-GB';
 }
 
 function pickLangText(value, lang = 'en') {

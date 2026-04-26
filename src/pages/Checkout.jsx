@@ -430,7 +430,7 @@ export default function Checkout({ lang, user, profile }) {
 
   if (!offer || !request) return null;
 
-  const fmt = (n) => Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  const fmt = (n) => Number(n).toLocaleString('ar-SA-u-nu-latn', { maximumFractionDigits: 2 });
 
   return (
     <div style={{ minHeight: 'var(--app-dvh)', paddingTop: 'var(--page-top-offset)', background: 'var(--bg-base)' }}>
