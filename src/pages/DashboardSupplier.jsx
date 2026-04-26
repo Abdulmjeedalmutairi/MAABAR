@@ -3543,7 +3543,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         </p>
                         {hasOfferShippingCost(o) && (
                           <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>
-                            {isAr ? 'شحن: ' : lang === 'zh' ? '运费：' : 'Ship: '}<span style={{ fontVariantNumeric: 'lining-nums' }}>{getOfferShippingCost(o).toFixed(2)}</span>
+                            {isAr ? 'شحن: ' : lang === 'zh' ? '运费：' : 'Ship: '}<span style={{ fontVariantNumeric: 'lining-nums' }}>{formatPriceWithConversion({
+                              amount: getOfferShippingCost(o),
+                              sourceCurrency: o.currency || viewerCurrency,
+                              displayCurrency: viewerCurrency,
+                              rates: exchangeRates,
+                              lang,
+                            })}</span>
                           </p>
                         )}
                       </div>
