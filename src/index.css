@@ -1,4 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Tajawal:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=Tajawal:wght@300;400;500;600;700&display=swap');
+
+/* ===== NUMERIC FONT — Inter, scoped to digits via unicode-range =====
+   By restricting Inter's font-face to U+0030–U+0039 + common numeric
+   punctuation (the four spaces / decimal / thousands separators), the
+   browser uses Inter ONLY for digits while keeping Cairo/Cormorant for
+   everything else. No component changes needed — adding Inter once at
+   the front of every font-family stack is enough. */
+@font-face {
+  font-family: 'InterNum';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: local('Inter'), local('Inter-Regular');
+  unicode-range: U+0030-0039, U+002C-002E, U+0025, U+0024, U+00A0, U+2009, U+202F, U+066B, U+066C;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
 
 /* ===== RESET ===== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,8 +72,12 @@ body { background: #FAF8F5 !important; }
   --red:   #e05c5c;
   --amber: #e8a020;
 
-  --font-sans: 'Cormorant Garamond', Georgia, serif;
-  --font-ar:   'Cairo', sans-serif;
+  /* InterNum is restricted by @font-face unicode-range to digits only;
+     it precedes the body font in every stack so digits get Inter while
+     letters fall through to Cormorant / Cairo. */
+  --font-sans: 'InterNum', 'Cormorant Garamond', Georgia, serif;
+  --font-ar:   'InterNum', 'Cairo', sans-serif;
+  --font-num:  'InterNum', 'Cormorant Garamond', system-ui, sans-serif;
 
   --space-1:  4px;
   --space-2:  8px;
@@ -116,8 +136,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   animation: fadeIn 0.4s ease;
-  font-variant-numeric: lining-nums;
-  font-feature-settings: "lnum" 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
 }
 
 #root,
