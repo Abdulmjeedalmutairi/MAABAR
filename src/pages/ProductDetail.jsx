@@ -2,7 +2,7 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
-import { buildDisplayPrice } from '../lib/displayCurrency';
+import { buildDisplayPrice, formatPriceWithConversion } from '../lib/displayCurrency';
 import { buildProductSpecs, getProductGalleryImages } from '../lib/productMedia';
 import {
   buildSupplierTrustSignals,
@@ -862,7 +862,13 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
                           {isAr ? `الإجمالي (${orderLines.reduce((s, l) => s + l.qty, 0)} قطعة)` : `Grand Total (${orderLines.reduce((s, l) => s + l.qty, 0)} units)`}
                         </p>
-                        <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', direction: 'ltr' }}>${orderGrandTotal.toFixed(2)}</p>
+                        <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', direction: 'ltr' }}>{formatPriceWithConversion({
+                          amount: orderGrandTotal,
+                          sourceCurrency: 'USD',
+                          displayCurrency,
+                          rates: exchangeRates,
+                          lang,
+                        })}</p>
                       </div>
 
                       {/* Request quote button */}
