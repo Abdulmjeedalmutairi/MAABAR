@@ -278,7 +278,6 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
   const isAdminPage = location.pathname.startsWith('/admin');
   const isChromelessPage = isAuthCallbackPage
     || isAdminPage
-    || location.pathname === '/'
     || location.pathname === '/buyer'
     || location.pathname === '/preview'
     || location.pathname === '/login'
@@ -304,7 +303,11 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     <div dir={pageDir} className="app-shell">
       {!isChromelessPage && <Navbar {...sharedProps} logoOnly={isSupplierAccessPage} />}
       <Routes>
-        <Route path="/"               element={<ComingSoon />} />
+        {/* Homepage temporarily reverted to <Home> for Moyasar review.
+            To re-enable countdown after approval: swap element back to <ComingSoon />
+            and re-add `location.pathname === '/'` to isChromelessPage above.
+            See MAABAR_CURRENCY_STATUS.md → "Countdown re-enable". */}
+        <Route path="/"               element={<Home            {...sharedProps} />} />
         <Route path="/buyer"          element={<BuyerRegister   user={user} />} />
         <Route path="/preview"        element={<PreviewAccess   {...sharedProps} />} />
         <Route path="/products"       element={<Products        {...sharedProps} />} />

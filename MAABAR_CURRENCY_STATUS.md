@@ -84,3 +84,26 @@
 | Build Your Idea | `src/components/IdeaToProduct.jsx`, `src/lib/ideaToProductFlow.js`, `src/lib/managedSourcing.js` | `src/screens/buyer/IdeaToProductScreen.js`, `src/lib/managedBrief.js` |
 | Edge function | `supabase/functions/maabar-ai/index.ts` (`ManagedBriefPayload` + prompt) | — |
 | Product listings | — | `src/screens/shared/ProductsScreen.js`, `SupplierProfileScreen.js`, `src/screens/supplier/SupplierProductsScreen.js`, `SupplierDirectOrdersScreen.js` |
+
+---
+
+## Countdown re-enable (after Moyasar approval)
+
+The countdown landing page (`src/pages/ComingSoon.jsx`) is temporarily disabled so Moyasar reviewers see the real Maabar landing page on `/`. The component file is kept in the repo and the `import ComingSoon` line in `src/App.js` is kept too, so re-enabling is a two-line flip.
+
+In `src/App.js`:
+
+1. **Route** — swap the `/` route back:
+   ```jsx
+   <Route path="/" element={<ComingSoon />} />
+   ```
+2. **Chromeless** — re-add the line so the Navbar stays hidden on the countdown:
+   ```jsx
+   const isChromelessPage = isAuthCallbackPage
+       || isAdminPage
+       || location.pathname === '/'
+       || location.pathname === '/buyer'
+       ...
+   ```
+
+Disabled in commit `chore: temporarily disable countdown for Moyasar review`.
