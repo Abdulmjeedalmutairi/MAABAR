@@ -24,61 +24,6 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 const SUPABASE_URL = 'https://utzalmszfqfcofywfetv.supabase.co';
 
-// Function لتحويل العملة بناءً على اللغة
-const getCurrencyForLang = (lang) => {
-  switch (lang) {
-    case 'ar': return { code: 'SAR', symbol: '﷼', name: 'ريال سعودي' };
-    case 'zh': return { code: 'CNY', symbol: '¥', name: '人民币' };
-    default: return { code: 'USD', symbol: '$', name: 'US Dollar' };
-  }
-};
-
-// Function لعرض العملة المناسبة
-const formatCurrency = (amount, lang, includeSymbol = true) => {
-  const currency = getCurrencyForLang(lang);
-  if (lang === 'zh') {
-    // للمورد الصيني: نعرض CNY (人民币)
-    return includeSymbol ? `${amount.toFixed(2)} ${currency.symbol}` : `${amount.toFixed(2)} ${currency.code}`;
-  } else if (lang === 'ar') {
-    // للمورد العربي: نعرض SAR
-    return includeSymbol ? `${amount.toFixed(2)} ${currency.symbol}` : `${amount.toFixed(2)} ${currency.code}`;
-  } else {
-    // للباقي: USD
-    return includeSymbol ? `${currency.symbol}${amount.toFixed(2)}` : `${amount.toFixed(2)} ${currency.code}`;
-  }
-};
-
-// أسعار الصرف الثابتة (تتغير أسبوعياً يدوياً)
-const EXCHANGE_RATES = {
-  SAR_TO_USD: 0.27,    // 1 SAR = 0.27 USD
-  SAR_TO_CNY: 1.93,    // 1 SAR = 1.93 CNY
-  USD_TO_SAR: 3.70,    // 1 USD = 3.70 SAR (للتحويل العكسي)
-  CNY_TO_SAR: 0.52,    // 1 CNY = 0.52 SAR (للتحويل العكسي)
-};
-
-// تحويل العملة بناءً على اللغة
-const convertCurrency = (amountSAR, targetLang) => {
-  if (targetLang === 'ar') return amountSAR; // SAR → SAR
-  if (targetLang === 'zh') return amountSAR * EXCHANGE_RATES.SAR_TO_CNY; // SAR → CNY
-  return amountSAR * EXCHANGE_RATES.SAR_TO_USD; // SAR → USD
-};
-
-// عرض مزدوج مع التحويل
-const formatCurrencyWithConversion = (amountSAR, lang) => {
-  if (lang === 'ar') {
-    return `${amountSAR.toFixed(2)} SAR`;
-  }
-  
-  const converted = convertCurrency(amountSAR, lang);
-  const currency = getCurrencyForLang(lang);
-  
-  if (lang === 'zh') {
-    return `${converted.toFixed(2)} ${currency.code} (≈ ${amountSAR.toFixed(2)} SAR)`;
-  } else {
-    return `${currency.symbol}${converted.toFixed(2)} (≈ ${amountSAR.toFixed(2)} SAR)`;
-  }
-};
-
 // Function لتحويل JSON إلى نص مقروء إذا كان الوصف يحتوي على JSON
 const parseJsonIfNeeded = (text) => {
   if (!text || typeof text !== 'string') return text;
@@ -131,17 +76,6 @@ const translateRequestText = async (text, sourceLang, targetLang) => {
   } catch (error) {
     console.error('Request translation error:', error);
     return text;
-  }
-};
-
-// جلب سعر الصرف USD → SAR
-const getUsdToSar = async () => {
-  try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD');
-    const data = await res.json();
-    return data?.rates?.SAR || 3.75;
-  } catch {
-    return 3.75; // fallback ثابت
   }
 };
 
@@ -203,8 +137,6 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
   const [offerForms, setOfferForms] = useState({});
   const [offers, setOffers]       = useState({});
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
-  const [usdRate, setUsdRate]     = useState(3.75);
-  useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
   const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', budget_currency: viewerCurrency, payment_plan: '', sample_requirement: '', image_url: '', sourcing_mode: 'direct', response_deadline: '' });
 
   // Keep the form's default budget currency in sync with the viewer's
