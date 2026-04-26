@@ -51,6 +51,9 @@ type ManagedBriefPayload = {
   category?: string;
   quantity?: string | number | null;
   budget?: string | number | null;
+  // ISO 4217 — currency the buyer entered the budget in.
+  // null/undefined ⇒ legacy row (treat as SAR per migration semantics).
+  budget_currency?: string | null;
   response_deadline?: string | null;
 };
 
@@ -476,7 +479,7 @@ Rules:
         `Raw description: ${payload.description || ''}`,
         `Form-selected category: ${payload.category || ''}`,
         `Quantity: ${payload.quantity ?? ''}`,
-        `Budget per unit (optional): ${payload.budget ?? ''}`,
+        `Budget per unit (optional): ${payload.budget ?? ''}${payload.budget_currency ? ' ' + payload.budget_currency : ''}`,
         `Response deadline (ISO, optional): ${payload.response_deadline || ''}`,
       ].join('\n');
 

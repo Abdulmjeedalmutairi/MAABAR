@@ -11,6 +11,11 @@ import {
 } from '../lib/ideaToProductFlow';
 import { buildTranslatedRequestFields } from '../lib/requestTranslation';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import {
+  DISPLAY_CURRENCIES,
+  DEFAULT_DISPLAY_CURRENCY,
+  normalizeDisplayCurrency,
+} from '../lib/displayCurrency';
 
 const SAUDI_REPRESENTATIVE_NAMES = [
   'سلمان', 'فيصل', 'تركي', 'عبدالعزيز', 'سعود', 'نورة', 'العنود', 'الجوهرة', 'ريم', 'لولوة'
@@ -77,7 +82,7 @@ const COPY = {
     sentSuccess: 'تم إرسال طلبك للموردين المطابقين. تقدر تتابع العروض من لوحة التحكم.',
     supplierRouteIntro: 'واضح أنك تريد الوصول لموردين بسرعة. خلني آخذ منك الحد الأدنى فقط ثم أجهز الطلب بشكل احترافي.',
     buildRouteIntro: 'ممتاز. خلني أفهم فكرتك بشكل مرتب، وبعدها أطلع لك brief جاهز للتصنيع.',
-    budgetOptional: 'الميزانية للوحدة (اختياري)',
+    budgetOptional: 'الميزانية للوحدة',
     requestPreviewNote: 'الإرسال ينشر طلبك المفتوح تحت هذا التصنيف حتى يراه الموردون المناسبون.',
     reportFields: {
       product: 'المنتج',
@@ -118,7 +123,7 @@ const COPY = {
     sentSuccess: 'Your request was sent to matched suppliers. You can track offers from your dashboard.',
     supplierRouteIntro: 'Got it — you want supplier matching fast. I’ll only ask for the essentials, then prepare a clean brief.',
     buildRouteIntro: 'Great. I’ll understand your idea first, then turn it into a professional manufacturing brief.',
-    budgetOptional: 'Budget per unit (optional)',
+    budgetOptional: 'Budget per unit',
     requestPreviewNote: 'Sending publishes your request under this category so the right suppliers can see it.',
     reportFields: {
       product: 'Product',
@@ -159,7 +164,7 @@ const COPY = {
     sentSuccess: '需求已发送给匹配供应商。您可以在控制台查看报价。',
     supplierRouteIntro: '了解，您想尽快对接供应商。我先收集最核心的信息，再为您整理成专业需求。',
     buildRouteIntro: '很好。我先了解您的产品想法，然后整理成专业制造 brief。',
-    budgetOptional: '单价预算（可选）',
+    budgetOptional: '单价预算',
     requestPreviewNote: '发送后会按当前分类发布需求，方便匹配供应商查看。',
     reportFields: {
       product: '产品',
@@ -294,10 +299,14 @@ function FieldInput({ isAr, as = 'input', ...props }) {
   );
 }
 
-export default function IdeaToProduct({ lang, user, onClose }) {
+export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) {
   const nav = useNavigate();
   const isAr = lang === 'ar';
   const t = COPY[lang] || COPY.en;
+  // The Saudi trader is the primary user of this flow — default to SAR.
+  // displayCurrency (if plumbed from App-level state) overrides; user can
+  // still change it on the form. Stored AS-ENTERED, never converted.
+  const defaultBudgetCurrency = normalizeDisplayCurrency(displayCurrency || 'SAR');
   const representativeName = useMemo(() => SAUDI_REPRESENTATIVE_NAMES[Math.floor(Math.random() * SAUDI_REPRESENTATIVE_NAMES.length)], []);
   const initialMessages = useMemo(() => getInitialMessages(lang, representativeName), [lang, representativeName]);
   const [minimized, setMinimized] = useState(false);
@@ -307,7 +316,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
   const [phase, setPhase] = useState('chat');
   const [idea, setIdea] = useState('');
   const [result, setResult] = useState(null);
-  const [reviewDraft, setReviewDraft] = useState(() => buildIdeaRequestDraft({}, {}));
+  const [reviewDraft, setReviewDraft] = useState(() => buildIdeaRequestDraft({}, { budget_currency: defaultBudgetCurrency }));
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -381,7 +390,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
     setPhase('chat');
     setIdea('');
     setResult(null);
-    setReviewDraft(buildIdeaRequestDraft({}, {}));
+    setReviewDraft(buildIdeaRequestDraft({}, { budget_currency: defaultBudgetCurrency }));
     setError('');
     setSubmitting(false);
     setIsTyping(false);
@@ -555,6 +564,7 @@ export default function IdeaToProduct({ lang, user, onClose }) {
       category: normalizedDraft.category || result?.category || 'other',
       status: 'open',
       budget_per_unit: normalizedDraft.budget_per_unit ? parseFloat(normalizedDraft.budget_per_unit) : null,
+      budget_currency: normalizedDraft.budget_per_unit ? normalizeDisplayCurrency(normalizedDraft.budget_currency || defaultBudgetCurrency) : null,
       payment_plan: normalizedDraft.payment_plan ? parseInt(normalizedDraft.payment_plan, 10) : null,
       sample_requirement: normalizedDraft.sample_requirement || null,
       reference_image: normalizedDraft.reference_image || normalizedDraft.image_url || null,
@@ -656,7 +666,27 @@ export default function IdeaToProduct({ lang, user, onClose }) {
                   </div>
                   <div>
                     <FormLabel isAr={isAr}>{t.budgetOptional}</FormLabel>
-                    <FieldInput isAr={isAr} type="number" min="0" value={reviewDraft.budget_per_unit || ''} onChange={(event) => updateReviewDraft('budget_per_unit', event.target.value)} dir="ltr" />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <FieldInput isAr={isAr} type="number" min="0" value={reviewDraft.budget_per_unit || ''} onChange={(event) => updateReviewDraft('budget_per_unit', event.target.value)} dir="ltr" style={{ flex: 1 }} />
+                      <select
+                        value={reviewDraft.budget_currency || defaultBudgetCurrency}
+                        onChange={(event) => updateReviewDraft('budget_currency', event.target.value)}
+                        style={{
+                          width: 90,
+                          background: '#FAF8F5',
+                          color: 'rgba(0,0,0,0.88)',
+                          border: '1px solid rgba(0,0,0,0.10)',
+                          borderRadius: 12,
+                          padding: '12px 10px',
+                          fontSize: 14,
+                          outline: 'none',
+                          direction: 'ltr',
+                          fontFamily: 'var(--font-sans)',
+                        }}
+                      >
+                        {DISPLAY_CURRENCIES.map(c => (<option key={c} value={c}>{c}</option>))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 

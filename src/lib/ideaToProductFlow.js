@@ -32,6 +32,7 @@ export function buildIdeaRequestDraft(report = {}, overrides = {}) {
     description: overrides.description ?? report.request_description ?? report.specs ?? '',
     category: overrides.category || report.category || 'other',
     budget_per_unit: overrides.budget_per_unit ?? '',
+    budget_currency: overrides.budget_currency || '',
     payment_plan: overrides.payment_plan || '30',
     sample_requirement: overrides.sample_requirement || 'preferred',
     image_url: overrides.image_url || '',
