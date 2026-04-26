@@ -3538,7 +3538,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ padding: '10px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Est. Total'}</p>
                         <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1, fontVariantNumeric: 'lining-nums' }}>
-                          {total.toFixed(2)} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                          {formatPriceWithConversion({
+                            amount: total,
+                            sourceCurrency: o.currency || viewerCurrency,
+                            displayCurrency: viewerCurrency,
+                            rates: exchangeRates,
+                            lang,
+                          })}
                         </p>
                         {o.moq && <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>MOQ {o.moq} · {o.delivery_days}{isAr ? ' يوم' : lang === 'zh' ? ' 天' : 'd'}{o.origin ? ` · ${o.origin}` : ''}</p>}
                       </div>
