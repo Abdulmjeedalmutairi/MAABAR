@@ -5,7 +5,13 @@ import { sb, SUPABASE_URL } from '../supabase';
 import Footer from '../components/Footer';
 import ManagedSupplierMatchesPanel from '../components/ManagedSupplierMatchesPanel';
 import { getManagedMatchGroup, isManagedRequest } from '../lib/managedSourcing';
-import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
+import {
+  DISPLAY_CURRENCIES,
+  DEFAULT_DISPLAY_CURRENCY,
+  formatCurrencyAmount,
+  formatPriceWithConversion,
+  normalizeDisplayCurrency,
+} from '../lib/displayCurrency';
 import {
   PRODUCT_GALLERY_LIMIT,
   getProductGalleryImages,
@@ -167,7 +173,8 @@ const getUsdToSar = async () => {
   }
 };
 
-export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile }) {
+export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile, exchangeRates }) {
+  const viewerCurrency = normalizeDisplayCurrency(displayCurrency || DEFAULT_DISPLAY_CURRENCY);
   const nav      = useNavigate();
   const location = useLocation();
   const t        = T[lang] || T.zh;
@@ -2036,10 +2043,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         console.error('saveEditOffer translation error:', translationErr?.message || translationErr);
       }
     }
+    const editCurrency = normalizeDisplayCurrency(editOfferForm.currency || editOfferModal.currency || viewerCurrency);
     const { error } = await runWithOptionalColumns({
       table: 'offers',
       payload: {
         price,
+        currency: editCurrency,
         shipping_cost: shippingCost,
         shipping_method: String(editOfferForm.shippingMethod || '').trim() || null,
         moq: editOfferForm.moq,
@@ -2048,7 +2057,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         note: editOfferForm.note,
         ...noteTranslations,
       },
-      optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh'],
+      optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh', 'currency'],
       execute: (nextPayload) => sb.from('offers').update(nextPayload).eq('id', editOfferModal.id),
     });
     setSavingEditOffer(false);
@@ -2131,6 +2140,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         days: '',
         origin: 'China',
         note: '',
+        currency: viewerCurrency,
       },
     }));
   };
@@ -2161,12 +2171,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         return;
       }
 
+      const offerCurrency = normalizeDisplayCurrency(o.currency || viewerCurrency);
       const { error } = await runWithOptionalColumns({
         table: 'offers',
         payload: {
           request_id: requestId,
           supplier_id: user.id,
           price,
+          currency: offerCurrency,
           shipping_cost: shippingCost,
           shipping_method: shippingMethod || null,
           moq,
@@ -2175,7 +2187,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           note: note || null,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method', 'origin'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'currency'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
@@ -2921,63 +2933,64 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                       {(r.budget_per_unit || r.payment_plan || r.sample_requirement) && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-                          {r.budget_per_unit && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `ميزانية تقريبية: ${r.budget_per_unit} SAR` : lang === 'zh' ? `预算参考：${r.budget_per_unit} 沙特里亚尔（SAR）` : `Budget hint: ${r.budget_per_unit} SAR (Saudi Riyal)`}</span>}
+                          {r.budget_per_unit && (
+                            <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>
+                              {isAr ? 'ميزانية تقريبية: ' : lang === 'zh' ? '预算参考：' : 'Budget hint: '}
+                              {formatPriceWithConversion({
+                                amount: parseFloat(r.budget_per_unit),
+                                sourceCurrency: r.budget_currency || 'SAR',
+                                displayCurrency: viewerCurrency,
+                                rates: exchangeRates,
+                                lang,
+                              })}
+                            </span>
+                          )}
                           {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}% 定金，${100 - r.payment_plan}% 发货前` : `Payment plan: ${r.payment_plan}%`}</span>}
                           {r.sample_requirement && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `العينة: ${r.sample_requirement === 'required' ? 'إلزامية' : r.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة'}` : lang === 'zh' ? `样品：${r.sample_requirement === 'required' ? '必须提供' : r.sample_requirement === 'preferred' ? '建议提供' : '无需样品'}` : `Sample: ${r.sample_requirement === 'required' ? 'Required' : r.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed'}`}</span>}
                         </div>
                       )}
                       <div className="form-grid">
                         <div className="form-group">
-                          <label className="form-label">{isAr ? 'سعر الوحدة / المنتج (USD) *' : lang === 'zh' ? '产品单价 (USD) *' : 'Product / Unit Price (USD) *'}</label>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <div style={{ position: 'relative', flex: 1 }}>
-                              <input
-                                className="form-input"
-                                type="number"
-                                placeholder="USD"
-                                value={offers[r.id]?.price || ''}
-                                onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
-                                style={{ paddingRight: 40 }}
-                                dir="ltr"
-                              />
-                              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
-                            </div>
-                            {offers[r.id]?.price && (
-                              <div style={{
-                                flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
-                                border: '1px solid var(--border-subtle)', borderRadius: 3,
-                                fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
-                              }}>
-                                {lang === 'ar' ? `≈ ${(parseFloat(offers[r.id]?.price || 0) * (usdRate || 3.75)).toFixed(2)} ﷼` : lang === 'zh' ? `≈ ${(parseFloat(offers[r.id]?.price || 0) * (cnyRate || 7.25)).toFixed(2)} ¥` : null}
-                              </div>
-                            )}
+                          <label className="form-label">{isAr ? 'سعر الوحدة / المنتج *' : lang === 'zh' ? '产品单价 *' : 'Product / Unit Price *'}</label>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                            <input
+                              className="form-input"
+                              type="number"
+                              value={offers[r.id]?.price || ''}
+                              onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
+                              dir="ltr"
+                              style={{ flex: 1 }}
+                            />
+                            <select className="form-input"
+                              value={offers[r.id]?.currency || viewerCurrency}
+                              onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], currency: e.target.value } }))}
+                              style={{ width: 90, direction: 'ltr', fontFamily: 'var(--font-sans)' }}
+                            >
+                              {DISPLAY_CURRENCIES.map(c => (<option key={c} value={c}>{c}</option>))}
+                            </select>
                           </div>
+                          {offers[r.id]?.price && r.budget_currency && r.budget_currency !== (offers[r.id]?.currency || viewerCurrency) && (
+                            <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6, direction: 'ltr' }}>
+                              {isAr ? 'تقريب لميزانية المشتري:' : lang === 'zh' ? '相对买家预算约：' : 'Buyer budget reference:'}{' '}
+                              {formatPriceWithConversion({
+                                amount: parseFloat(offers[r.id]?.price || 0),
+                                sourceCurrency: offers[r.id]?.currency || viewerCurrency,
+                                displayCurrency: r.budget_currency,
+                                rates: exchangeRates,
+                                lang,
+                              })}
+                            </p>
+                          )}
                         </div>
                         <div className="form-group">
-                          <label className="form-label">{isAr ? 'تكلفة الشحن (USD) *' : lang === 'zh' ? '运费 (USD) *' : 'Shipping Cost (USD) *'}</label>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <div style={{ position: 'relative', flex: 1 }}>
-                              <input
-                                className="form-input"
-                                type="number"
-                                placeholder="USD"
-                                value={offers[r.id]?.shippingCost || ''}
-                                onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
-                                style={{ paddingRight: 40 }}
-                                dir="ltr"
-                              />
-                              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
-                            </div>
-                            {offers[r.id]?.shippingCost && (
-                              <div style={{
-                                flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
-                                border: '1px solid var(--border-subtle)', borderRadius: 3,
-                                fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
-                              }}>
-                                {lang === 'ar' ? `≈ ${(parseFloat(offers[r.id]?.shippingCost || 0) * (usdRate || 3.75)).toFixed(2)} ﷼` : lang === 'zh' ? `≈ ${(parseFloat(offers[r.id]?.shippingCost || 0) * (cnyRate || 7.25)).toFixed(2)} ¥` : null}
-                              </div>
-                            )}
-                          </div>
+                          <label className="form-label">{isAr ? 'تكلفة الشحن *' : lang === 'zh' ? '运费 *' : 'Shipping Cost *'}</label>
+                          <input
+                            className="form-input"
+                            type="number"
+                            value={offers[r.id]?.shippingCost || ''}
+                            onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
+                            dir="ltr"
+                          />
                         </div>
                         <div className="form-group">
                           <label className="form-label">{isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping Method'}</label>
@@ -3009,19 +3022,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                             <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
                             <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                              {getOfferProductSubtotal({ price: offers[r.id]?.price }, r).toFixed(2)} USD
+                              {formatCurrencyAmount(getOfferProductSubtotal({ price: offers[r.id]?.price }, r), offers[r.id]?.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                           <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                             <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
                             <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                              {getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }).toFixed(2)} USD
+                              {formatCurrencyAmount(getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }), offers[r.id]?.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                           <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
                             <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
                             <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                              {getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r).toFixed(2)} USD
+                              {formatCurrencyAmount(getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r), offers[r.id]?.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                         </div>
@@ -3508,7 +3521,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'سعر الوحدة' : lang === 'zh' ? '单价' : 'Unit Price'}</p>
                         <p style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1, fontVariantNumeric: 'lining-nums' }}>
-                          {parseFloat(o.price || 0).toFixed(2)} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                          {parseFloat(o.price || 0).toFixed(2)} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{normalizeDisplayCurrency(o.currency || viewerCurrency)}</span>
                         </p>
                         {hasOfferShippingCost(o) && (
                           <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 3 }}>
@@ -3593,6 +3606,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                                 days: String(o.delivery_days ?? ''),
                                 origin: o.origin || 'China',
                                 note: o.note || '',
+                                currency: normalizeDisplayCurrency(o.currency || viewerCurrency),
                               });
                             }}
                             className="btn-outline"
@@ -4835,7 +4849,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           [isAr ? 'التاجر' : lang === 'zh' ? '采购商' : 'Buyer', selectedRequest.profiles?.full_name || selectedRequest.profiles?.company_name || '—'],
           [isAr ? 'الكمية' : lang === 'zh' ? '数量' : 'Quantity', selectedRequest.quantity || '—'],
           [isAr ? 'التصنيف' : lang === 'zh' ? '分类' : 'Category', cats.find(c => c.val === selectedRequest.category)?.label || selectedRequest.category || '—'],
-          [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit ? (lang === 'zh' ? `${selectedRequest.budget_per_unit} 沙特里亚尔（SAR）` : lang === 'en' ? `${selectedRequest.budget_per_unit} SAR (Saudi Riyal)` : `${selectedRequest.budget_per_unit} SAR`) : '—'],
+          [isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget', selectedRequest.budget_per_unit
+            ? formatPriceWithConversion({
+                amount: parseFloat(selectedRequest.budget_per_unit),
+                sourceCurrency: selectedRequest.budget_currency || 'SAR',
+                displayCurrency: viewerCurrency,
+                rates: exchangeRates,
+                lang,
+              })
+            : '—'],
           [isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan', selectedRequest.payment_plan ? (lang === 'zh' ? `${selectedRequest.payment_plan}% 定金，${100 - selectedRequest.payment_plan}% 发货前` : `${selectedRequest.payment_plan}%`) : '—'],
           [isAr ? 'العينة' : lang === 'zh' ? '样品' : 'Sample', selectedRequest.sample_requirement ? (isAr ? (selectedRequest.sample_requirement === 'required' ? 'إلزامية' : selectedRequest.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة') : lang === 'zh' ? (selectedRequest.sample_requirement === 'required' ? '必须提供' : selectedRequest.sample_requirement === 'preferred' ? '建议提供' : '无需样品') : (selectedRequest.sample_requirement === 'required' ? 'Required' : selectedRequest.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed')) : '—'],
         ].map(([label, value]) => (
@@ -4905,8 +4927,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <div className="form-group">
                 <label className="form-label">{isAr ? 'سعر الوحدة / المنتج' : lang === 'zh' ? '产品单价' : 'Product / Unit Price'}</label>
-                <input className="form-input" type="number" dir="ltr" value={editOfferForm.price}
-                  onChange={e => setEditOfferForm(f => ({ ...f, price: e.target.value }))} />
+                <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                  <input className="form-input" type="number" dir="ltr" value={editOfferForm.price}
+                    onChange={e => setEditOfferForm(f => ({ ...f, price: e.target.value }))}
+                    style={{ flex: 1 }} />
+                  <select className="form-input"
+                    value={editOfferForm.currency || viewerCurrency}
+                    onChange={e => setEditOfferForm(f => ({ ...f, currency: e.target.value }))}
+                    style={{ width: 90, direction: 'ltr', fontFamily: 'var(--font-sans)' }}
+                  >
+                    {DISPLAY_CURRENCIES.map(c => (<option key={c} value={c}>{c}</option>))}
+                  </select>
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">{isAr ? 'تكلفة الشحن' : lang === 'zh' ? '运费' : 'Shipping Cost'}</label>
@@ -4947,15 +4979,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             }}>
               <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                 <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
-                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>{getOfferProductSubtotal({ price: editOfferForm.price }, editOfferModal?.requests).toFixed(2)} USD</p>
+                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                  {formatCurrencyAmount(getOfferProductSubtotal({ price: editOfferForm.price }, editOfferModal?.requests), editOfferForm.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
+                </p>
               </div>
               <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                 <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
-                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>{getOfferShippingCost({ shipping_cost: editOfferForm.shippingCost }).toFixed(2)} USD</p>
+                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                  {formatCurrencyAmount(getOfferShippingCost({ shipping_cost: editOfferForm.shippingCost }), editOfferForm.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
+                </p>
               </div>
               <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
                 <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
-                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>{getOfferEstimatedTotal({ price: editOfferForm.price, shipping_cost: editOfferForm.shippingCost }, editOfferModal?.requests).toFixed(2)} USD</p>
+                <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
+                  {formatCurrencyAmount(getOfferEstimatedTotal({ price: editOfferForm.price, shipping_cost: editOfferForm.shippingCost }, editOfferModal?.requests), editOfferForm.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
+                </p>
               </div>
             </div>
 

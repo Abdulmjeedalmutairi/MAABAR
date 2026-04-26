@@ -2,7 +2,12 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb } from '../supabase';
-import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
+import {
+  DISPLAY_CURRENCIES,
+  DEFAULT_DISPLAY_CURRENCY,
+  formatPriceWithConversion,
+  normalizeDisplayCurrency,
+} from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
 import {
   getOfferEstimatedTotal,
@@ -473,7 +478,8 @@ function BackBtn({ onClick, isAr }) {
 }
 
 /* ─── Main ───────────────────────────────── */
-export default function DashboardBuyer({ user, profile, lang, displayCurrency, setDisplayCurrency }) {
+export default function DashboardBuyer({ user, profile, lang, displayCurrency, setDisplayCurrency, exchangeRates }) {
+  const viewerCurrency = normalizeDisplayCurrency(displayCurrency || DEFAULT_DISPLAY_CURRENCY);
   const nav      = useNavigate();
   const location = useLocation();
   const isAr     = lang === 'ar';
@@ -1958,18 +1964,26 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                     </div>
                                   )}
 
+                                  {(() => {
+                                    const offerCcy = normalizeDisplayCurrency(o.currency || 'USD');
+                                    return (
                                   <div style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
                                     <p style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
-                                      {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>USD</span>
+                                      {o.price} <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{offerCcy}</span>
                                     </p>
                                     <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
                                       {isAr ? 'سعر الوحدة' : lang === 'zh' ? '产品单价' : 'Unit price'}
+                                      {offerCcy !== viewerCurrency && (
+                                        <> · ≈ {formatPriceWithConversion({ amount: parseFloat(o.price || 0), sourceCurrency: offerCcy, displayCurrency: viewerCurrency, rates: exchangeRates, lang, options: { minimumFractionDigits: 2 } }).split(' ≈ ')[1]}</>
+                                      )}
                                     </p>
                                     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                      {isAr ? 'تكلفة المنتجات' : lang === 'zh' ? '产品合计' : 'Products total'}: {getOfferProductSubtotal(o, r).toFixed(2)} USD
+                                      {isAr ? 'تكلفة المنتجات' : lang === 'zh' ? '产品合计' : 'Products total'}: {formatPriceWithConversion({ amount: getOfferProductSubtotal(o, r), sourceCurrency: offerCcy, displayCurrency: viewerCurrency, rates: exchangeRates, lang, options: { minimumFractionDigits: 2 } })}
                                     </p>
                                     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                      {isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}: {hasOfferShippingCost(o) ? `${getOfferShippingCost(o).toFixed(2)} USD` : (isAr ? 'غير محدد بشكل منفصل' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
+                                      {isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}: {hasOfferShippingCost(o)
+                                        ? formatPriceWithConversion({ amount: getOfferShippingCost(o), sourceCurrency: offerCcy, displayCurrency: viewerCurrency, rates: exchangeRates, lang, options: { minimumFractionDigits: 2 } })
+                                        : (isAr ? 'غير محدد بشكل منفصل' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
                                     </p>
                                     {getOfferShippingMethod(o) && (
                                       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -1977,12 +1991,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                       </p>
                                     )}
                                     <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
-                                      {isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated total'}: {offerEstimatedTotal.toFixed(2)} USD
+                                      {isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated total'}: {formatPriceWithConversion({ amount: offerEstimatedTotal, sourceCurrency: offerCcy, displayCurrency: viewerCurrency, rates: exchangeRates, lang, options: { minimumFractionDigits: 2 } })}
                                     </p>
                                     <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
                                       MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : lang === 'zh' ? '天' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}
                                     </p>
                                   </div>
+                                    );
+                                  })()}
 
                                   {o.note && (
                                     <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>

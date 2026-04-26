@@ -12,6 +12,13 @@ import {
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { buildManagedBriefRow, generateManagedBriefWithAI } from '../lib/managedSourcing';
 import { buildTranslatedRequestFields, translateTextToAllLanguages } from '../lib/requestTranslation';
+import {
+  DISPLAY_CURRENCIES,
+  DEFAULT_DISPLAY_CURRENCY,
+  formatCurrencyAmount,
+  formatPriceWithConversion,
+  normalizeDisplayCurrency,
+} from '../lib/displayCurrency';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -185,7 +192,8 @@ const SkeletonCard = () => (
 );
 
 /* ─── Main ───────────────────────────────── */
-export default function Requests({ lang, user, profile }) {
+export default function Requests({ lang, user, profile, displayCurrency, exchangeRates }) {
+  const viewerCurrency = normalizeDisplayCurrency(displayCurrency || DEFAULT_DISPLAY_CURRENCY);
   const nav = useNavigate();
   const location = useLocation();
   const [requests, setRequests]   = useState([]);
@@ -197,7 +205,13 @@ export default function Requests({ lang, user, profile }) {
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
   const [usdRate, setUsdRate]     = useState(3.75);
   useEffect(() => { getUsdToSar().then(r => setUsdRate(r)); }, []);
-  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '', sourcing_mode: 'direct', response_deadline: '' });
+  const [newReq, setNewReq]       = useState({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', budget_currency: viewerCurrency, payment_plan: '', sample_requirement: '', image_url: '', sourcing_mode: 'direct', response_deadline: '' });
+
+  // Keep the form's default budget currency in sync with the viewer's
+  // preferred display currency until they explicitly override it on the form.
+  useEffect(() => {
+    setNewReq(prev => prev.budget_per_unit ? prev : { ...prev, budget_currency: viewerCurrency });
+  }, [viewerCurrency]);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRef, setUploadingRef] = useState(false);
   const [showAllRequests, setShowAllRequests] = useState(true);
@@ -381,6 +395,7 @@ export default function Requests({ lang, user, profile }) {
       category: newReq.category || 'other',
       status: 'open',
       budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
+      budget_currency: newReq.budget_per_unit ? normalizeDisplayCurrency(newReq.budget_currency || viewerCurrency) : null,
       payment_plan: newReq.payment_plan ? parseInt(newReq.payment_plan, 10) : null,
       sample_requirement: newReq.sample_requirement,
       reference_image: newReq.reference_image || newReq.image_url || null,
@@ -433,7 +448,7 @@ export default function Requests({ lang, user, profile }) {
         : (isAr ? 'تم رفع طلبك! سيتواصل معك الموردون قريباً' : lang === 'zh' ? '需求已发布，供应商会尽快联系您' : 'Request posted! Suppliers will contact you soon')
     );
     sessionStorage.removeItem('maabar_request_draft');
-    setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', payment_plan: '', sample_requirement: '', image_url: '', reference_image: '', sourcing_mode: 'direct', response_deadline: '' });
+    setNewReq({ title_ar: '', title_en: '', quantity: '', description: '', category: 'other', budget_per_unit: '', budget_currency: viewerCurrency, payment_plan: '', sample_requirement: '', image_url: '', reference_image: '', sourcing_mode: 'direct', response_deadline: '' });
     if (isManagedMode && insertedRequest?.id) {
       nav('/dashboard?tab=requests&request=' + insertedRequest.id);
     }
@@ -451,6 +466,7 @@ export default function Requests({ lang, user, profile }) {
         days: '',
         origin: 'China',
         note: '',
+        currency: viewerCurrency,
       },
     }));
   };
@@ -495,12 +511,14 @@ export default function Requests({ lang, user, profile }) {
           console.error('submitOffer translation error:', translationErr?.message || translationErr);
         }
       }
+      const offerCurrency = normalizeDisplayCurrency(o.currency || viewerCurrency);
       const { error } = await runWithOptionalColumns({
         table: 'offers',
         payload: {
           request_id: requestId,
           supplier_id: user.id,
           price,
+          currency: offerCurrency,
           shipping_cost: shippingCost,
           shipping_method: shippingMethod || null,
           moq,
@@ -510,7 +528,7 @@ export default function Requests({ lang, user, profile }) {
           ...noteTranslations,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh', 'currency'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
@@ -801,14 +819,25 @@ export default function Requests({ lang, user, profile }) {
             <div className="form-grid">
               <div className="form-group">
                 <label className={`form-label${isAr ? ' ar' : ''}`}>
-                  {isAr ? 'الميزانية لكل وحدة (ريال)' : 'Budget per Unit (SAR)'}
+                  {isAr ? 'الميزانية لكل وحدة' : lang === 'zh' ? '每单位预算' : 'Budget per Unit'}
                 </label>
-                <input className="form-input" type="number" min="0"
-                  value={newReq.budget_per_unit}
-                  onChange={e => setNewReq({ ...newReq, budget_per_unit: e.target.value })}
-                  placeholder={isAr ? 'اختياري' : 'Optional'}
-                  dir="ltr"
-                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input className="form-input" type="number" min="0"
+                    value={newReq.budget_per_unit}
+                    onChange={e => setNewReq({ ...newReq, budget_per_unit: e.target.value })}
+                    placeholder={isAr ? 'اختياري' : lang === 'zh' ? '可选' : 'Optional'}
+                    dir="ltr"
+                    style={{ flex: 1 }}
+                  />
+                  <select
+                    className="form-input"
+                    value={newReq.budget_currency || viewerCurrency}
+                    onChange={e => setNewReq({ ...newReq, budget_currency: e.target.value })}
+                    style={{ width: 90, direction: 'ltr', fontFamily: 'var(--font-sans)' }}
+                  >
+                    {DISPLAY_CURRENCIES.map(c => (<option key={c} value={c}>{c}</option>))}
+                  </select>
+                </div>
               </div>
               {isManagedMode && (
                 <div className="form-group">
@@ -1088,8 +1117,14 @@ export default function Requests({ lang, user, profile }) {
                     <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
                       <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الميزانية' : lang === 'zh' ? '预算' : 'Budget'}</p>
                       <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0 }}>
-                        {r.budget_per_unit 
-                          ? formatCurrencyWithConversion(parseFloat(r.budget_per_unit), lang)
+                        {r.budget_per_unit
+                          ? formatPriceWithConversion({
+                              amount: parseFloat(r.budget_per_unit),
+                              sourceCurrency: r.budget_currency || 'SAR',
+                              displayCurrency: viewerCurrency,
+                              rates: exchangeRates,
+                              lang,
+                            })
                           : (isAr ? 'غير محددة' : lang === 'zh' ? '未说明' : 'Not specified')}
                       </p>
                     </div>
@@ -1241,55 +1276,45 @@ export default function Requests({ lang, user, profile }) {
                   <div className="form-grid">
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'سعر الوحدة / المنتج (USD) *' : lang === 'zh' ? '产品单价 (CNY) *' : 'Product / Unit Price (USD) *'}
+                        {isAr ? 'سعر الوحدة / المنتج *' : lang === 'zh' ? '产品单价 *' : 'Product / Unit Price *'}
                       </label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <div style={{ position: 'relative', flex: 1 }}>
-                          <input className="form-input" type="number"
-                            placeholder={effectiveLang === "zh" ? "CNY" : effectiveLang === "ar" ? "SAR" : "USD"}
-                            value={offers[r.id]?.price || ''}
-                            onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
-                            style={{ paddingRight: 40 }}
-                            dir="ltr"
-                          />
-                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
-                        </div>
-                        {offers[r.id]?.price && (
-                          <div style={{
-                            flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
-                            border: '1px solid var(--border-subtle)', borderRadius: 3,
-                            fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
-                          }}>
-                            ≈ {(parseFloat(offers[r.id]?.price || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
-                          </div>
-                        )}
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                        <input className="form-input" type="number"
+                          value={offers[r.id]?.price || ''}
+                          onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], price: e.target.value } }))}
+                          dir="ltr"
+                          style={{ flex: 1 }}
+                        />
+                        <select className="form-input"
+                          value={offers[r.id]?.currency || viewerCurrency}
+                          onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], currency: e.target.value } }))}
+                          style={{ width: 90, direction: 'ltr', fontFamily: 'var(--font-sans)' }}
+                        >
+                          {DISPLAY_CURRENCIES.map(c => (<option key={c} value={c}>{c}</option>))}
+                        </select>
                       </div>
+                      {offers[r.id]?.price && r.budget_currency && r.budget_currency !== (offers[r.id]?.currency || viewerCurrency) && (
+                        <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 6, direction: 'ltr' }}>
+                          {isAr ? 'تقريب لميزانية المشتري:' : lang === 'zh' ? '相对买家预算约：' : 'Buyer budget reference:'}{' '}
+                          {formatPriceWithConversion({
+                            amount: parseFloat(offers[r.id]?.price || 0),
+                            sourceCurrency: offers[r.id]?.currency || viewerCurrency,
+                            displayCurrency: r.budget_currency,
+                            rates: exchangeRates,
+                            lang,
+                          })}
+                        </p>
+                      )}
                     </div>
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
-                        {isAr ? 'تكلفة الشحن (USD) *' : lang === 'zh' ? `运费 (${getCurrencyForLang(lang).code}) *` : 'Shipping Cost (USD) *'}
+                        {isAr ? 'تكلفة الشحن *' : lang === 'zh' ? '运费 *' : 'Shipping Cost *'}
                       </label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <div style={{ position: 'relative', flex: 1 }}>
-                          <input className="form-input" type="number"
-                            placeholder={effectiveLang === "zh" ? "CNY" : effectiveLang === "ar" ? "SAR" : "USD"}
-                            value={offers[r.id]?.shippingCost || ''}
-                            onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
-                            style={{ paddingRight: 40 }}
-                            dir="ltr"
-                          />
-                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-disabled)', pointerEvents: 'none' }}>$</span>
-                        </div>
-                        {offers[r.id]?.shippingCost && (
-                          <div style={{
-                            flex: 1, padding: '10px 12px', background: 'var(--bg-subtle)',
-                            border: '1px solid var(--border-subtle)', borderRadius: 3,
-                            fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', direction: 'ltr',
-                          }}>
-                            ≈ {(parseFloat(offers[r.id]?.shippingCost || 0) * (usdRate || 3.75)).toFixed(2)} ﷼
-                          </div>
-                        )}
-                      </div>
+                      <input className="form-input" type="number"
+                        value={offers[r.id]?.shippingCost || ''}
+                        onChange={e => setOffers(prev => ({ ...prev, [r.id]: { ...prev[r.id], shippingCost: e.target.value } }))}
+                        dir="ltr"
+                      />
                     </div>
                     <div className="form-group">
                       <label className={`form-label${isAr ? ' ar' : ''}`}>
@@ -1348,19 +1373,19 @@ export default function Requests({ lang, user, profile }) {
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'إجمالي المنتجات' : lang === 'zh' ? '产品合计' : 'Products Total'}</p>
                         <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {getOfferProductSubtotal({ price: offers[r.id]?.price }, r).toFixed(2)} {lang === 'zh' ? 'CNY' : lang === 'ar' ? 'SAR' : 'USD'}
+                          {formatCurrencyAmount(getOfferProductSubtotal({ price: offers[r.id]?.price }, r), offers[r.id]?.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الشحن' : lang === 'zh' ? '运费' : 'Shipping'}</p>
                         <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }).toFixed(2)} {lang === 'zh' ? 'CNY' : lang === 'ar' ? 'SAR' : 'USD'}
+                          {formatCurrencyAmount(getOfferShippingCost({ shipping_cost: offers[r.id]?.shippingCost }), offers[r.id]?.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div style={{ padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 4 }}>{isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated Total'}</p>
                         <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r).toFixed(2)} {lang === 'zh' ? 'CNY' : lang === 'ar' ? 'SAR' : 'USD'}
+                          {formatCurrencyAmount(getOfferEstimatedTotal({ price: offers[r.id]?.price, shipping_cost: offers[r.id]?.shippingCost }, r), offers[r.id]?.currency || viewerCurrency, lang, { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>
