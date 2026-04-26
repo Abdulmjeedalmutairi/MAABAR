@@ -611,25 +611,32 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
   },
 
   custom_marketing: (d) => {
+    const lang = d.lang || 'en';
+    const t = ({
+      ar: { brand: 'مَعبر', detailsTitle: 'التفاصيل', ctaText: 'اكتشف المزيد ←' },
+      en: { brand: 'Maabar', detailsTitle: 'Details', ctaText: 'Learn more →' },
+      zh: { brand: 'Maabar', detailsTitle: '详情', ctaText: '了解更多 →' },
+    } as any)[lang] || { brand: 'Maabar', detailsTitle: 'Details', ctaText: 'Learn more →' };
+
     const infoRows = Array.isArray(d.infoRows) ? d.infoRows : [];
     const paragraphs = Array.isArray(d.paragraphs) ? d.paragraphs : [];
     const renderedParagraphs = paragraphs.map((p: string) => `<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 16px;">${p}</p>`).join('');
     const renderedInfoRows = infoRows.length
       ? infoRows.map((row: any) => `<div class="ir"><span class="ik">${row?.label || '-'}</span><span class="iv">${row?.value || '-'}</span></div>`).join('')
-      : `<div class="ir"><span class="ik">التفاصيل</span><span class="iv">—</span></div>`;
+      : `<div class="ir"><span class="ik">${t.detailsTitle}</span><span class="iv">—</span></div>`;
     return ({
-      subject: d.subject || 'مَعبر',
+      subject: d.subject || t.brand,
       html: wrap(`
 <div class="bd">
-<p class="gr">${d.kicker || d.emailType || 'مَعبر'}</p>
+<p class="gr">${d.kicker || d.emailType || t.brand}</p>
 <p class="tg">${d.headline || ''}</p>
 ${renderedParagraphs || `<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${d.body || ''}</p>`}
 <div class="ib">
-<p class="il">${d.detailsTitle || 'التفاصيل'}</p>
+<p class="il">${d.detailsTitle || t.detailsTitle}</p>
 ${renderedInfoRows}
 </div>
-${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.ctaText || 'اكتشف المزيد ←'}</a></div>`}
-</div>`),
+${d.hideCta ? '' : `<div class="bw"><a href="${d.ctaUrl || '#'}" class="bt">${d.ctaText || t.ctaText}</a></div>`}
+</div>`, { lang }),
     });
   },
 
