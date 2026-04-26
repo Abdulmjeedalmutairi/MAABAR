@@ -13,6 +13,7 @@ import {
   loadPendingMoyasarCheckout,
 } from '../lib/moyasarCheckout';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import { formatCurrencyAmount } from '../lib/displayCurrency';
 import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -445,7 +446,7 @@ export default function PaymentSuccess({ lang, user }) {
     return null;
   }
 
-  const fmt = (n) => Number(n || 0).toLocaleString(isAr ? 'ar-SA' : 'en-US', { maximumFractionDigits: 2 });
+  const fmt = (n) => formatCurrencyAmount(n, checkoutCurrency, lang, { maximumFractionDigits: 2 });
 
   return (
     <div style={{ minHeight: 'var(--app-dvh)', background: '#F7F5F2', paddingTop: 'var(--page-top-offset)' }}>
@@ -471,7 +472,7 @@ export default function PaymentSuccess({ lang, user }) {
                 {t.requestSummary}
               </p>
               <div className="success-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-                <SummaryRow label={t.amount} value={`${fmt(amountPaid)} ${currencyLabel}`} />
+                <SummaryRow label={t.amount} value={fmt(amountPaid)} />
                 <SummaryRow label={t.paymentId} value={payment.moyasar_id || payment.id} mono />
                 <SummaryRow label={t.status} value={t.held} />
                 <SummaryRow label={t.requestRef} value={String(request.id).slice(0, 8).toUpperCase()} mono />
