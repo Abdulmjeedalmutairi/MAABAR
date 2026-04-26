@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { sb } from '../supabase';
+import { getLocalizedSupplierBrief } from '../lib/managedSourcing';
 
 export default function ManagedSupplierMatchesPanel({
   lang = 'ar',
@@ -42,15 +43,6 @@ export default function ManagedSupplierMatchesPanel({
     setDetailsMatch(null);
     setDetailsBrief(null);
     setDetailsLoading(false);
-  };
-
-  const pickBriefText = (brief) => {
-    if (!brief) return null;
-    const byLang = brief.ai_output?.supplier_brief_all;
-    if (byLang && (byLang[lang] || byLang.en || byLang.ar || byLang.zh)) {
-      return byLang[lang] || byLang.en || byLang.ar || byLang.zh;
-    }
-    return brief.supplier_brief || null;
   };
 
   const fmtDate = (d) => {
@@ -377,7 +369,7 @@ export default function ManagedSupplierMatchesPanel({
         const req = detailsMatch.requests || {};
         const description = getRequestDescription(detailsMatch);
         const title = getRequestTitle(detailsMatch);
-        const briefText = pickBriefText(detailsBrief);
+        const briefText = getLocalizedSupplierBrief(detailsBrief, lang);
         const L = (ar, en, zh) => (isAr ? ar : isZh ? zh : en);
 
         return (

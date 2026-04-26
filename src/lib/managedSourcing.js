@@ -24,6 +24,19 @@ export function buildManagedBriefRow({ requestId, buyerId, brief }) {
   };
 }
 
+// Resolve the supplier-facing brief text in the viewer's language.
+// Prefers the trilingual ai_output.supplier_brief_all cache; falls through
+// to the singular supplier_brief column when the cache is missing or cleared
+// (e.g., after an admin edit invalidates the AI translations).
+export function getLocalizedSupplierBrief(brief, lang) {
+  if (!brief) return null;
+  const byLang = brief.ai_output?.supplier_brief_all;
+  if (byLang && (byLang[lang] || byLang.en || byLang.ar || byLang.zh)) {
+    return byLang[lang] || byLang.en || byLang.ar || byLang.zh;
+  }
+  return brief.supplier_brief || null;
+}
+
 export function getManagedVerificationLevel(profiles, lang = 'ar') {
   // Determine verification level based on supplier profile
   if (!profiles) return 'basic';

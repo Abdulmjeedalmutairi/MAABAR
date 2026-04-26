@@ -18,6 +18,7 @@ import ManagedAdminWorkspace from '../components/ManagedAdminWorkspace';
 import {
   buildManagedBriefRow,
   generateManagedBriefWithAI,
+  getLocalizedSupplierBrief,
   getManagedVerificationLevel,
   isManagedRequest,
 } from '../lib/managedSourcing';
@@ -771,7 +772,9 @@ export default function AdminSeed({ user, profile, lang = 'en' }) {
         cleaned_description: request.brief?.cleaned_description || request.description || '',
         category: request.brief?.category || request.category || 'other',
         ai_confidence: request.brief?.ai_confidence || 'medium',
-        ai_output: request.brief?.ai_output || {},
+        // Admin edits invalidate the AI's trilingual cache so suppliers
+        // see the singular column (admin's authoritative text), not stale AI output.
+        ai_output: { ...(request.brief?.ai_output || {}), supplier_brief_all: null },
       }, { onConflict: 'request_id' });
       await sb.from('requests').update({
         managed_status: draft.admin_follow_up_question ? 'admin_review' : 'sourcing',
@@ -796,7 +799,7 @@ export default function AdminSeed({ user, profile, lang = 'en' }) {
         buyer_id: request.buyer_id,
         supplier_id: supplierId,
         status: 'new',
-        admin_note: request.brief?.supplier_brief || null,
+        admin_note: getLocalizedSupplierBrief(request.brief, 'en') || null,
       }));
       await sb.from('managed_supplier_matches').upsert(rows, { onConflict: 'request_id,supplier_id' });
       await sb.from('requests').update({ managed_status: 'sourcing', managed_review_state: 'matched' }).eq('id', request.id);
