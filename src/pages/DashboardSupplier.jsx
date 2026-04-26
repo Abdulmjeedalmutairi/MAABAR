@@ -2919,13 +2919,31 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             <div key={li.id || idx} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: idx < r.lineItems.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
                               <p style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{li.product_variants?.sku || li.variant_id?.slice(0, 8) || '—'}</p>
                               <p style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 60, textAlign: 'center' }}>{isAr ? `${li.quantity} قطعة` : `×${li.quantity}`}</p>
-                              <p style={{ fontSize: 12, color: 'var(--text-primary)', direction: 'ltr', minWidth: 80, textAlign: 'right' }}>${Number(li.unit_price_usd).toFixed(2)}/u</p>
-                              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr', minWidth: 80, textAlign: 'right' }}>${(li.quantity * li.unit_price_usd).toFixed(2)}</p>
+                              <p style={{ fontSize: 12, color: 'var(--text-primary)', direction: 'ltr', minWidth: 80, textAlign: 'right' }}>{formatPriceWithConversion({
+                                amount: Number(li.unit_price_usd),
+                                sourceCurrency: 'USD',
+                                displayCurrency: viewerCurrency,
+                                rates: exchangeRates,
+                                lang,
+                              })}/u</p>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr', minWidth: 80, textAlign: 'right' }}>{formatPriceWithConversion({
+                                amount: li.quantity * li.unit_price_usd,
+                                sourceCurrency: 'USD',
+                                displayCurrency: viewerCurrency,
+                                rates: exchangeRates,
+                                lang,
+                              })}</p>
                             </div>
                           ))}
                           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
                             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>
-                              {isAr ? 'الإجمالي: ' : lang === 'zh' ? '总计：' : 'Total: '}${r.lineItems.reduce((s, li) => s + li.quantity * li.unit_price_usd, 0).toFixed(2)}
+                              {isAr ? 'الإجمالي: ' : lang === 'zh' ? '总计：' : 'Total: '}{formatPriceWithConversion({
+                                amount: r.lineItems.reduce((s, li) => s + li.quantity * li.unit_price_usd, 0),
+                                sourceCurrency: 'USD',
+                                displayCurrency: viewerCurrency,
+                                rates: exchangeRates,
+                                lang,
+                              })}
                             </p>
                           </div>
                         </div>
