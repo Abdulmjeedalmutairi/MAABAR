@@ -80,7 +80,7 @@ import {
 import { emptyVariantData, regenerateVariants } from '../components/supplier/VariantBuilder';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
-import { buildTranslatedProductFields, translateTextToAllLanguages } from '../lib/requestTranslation';
+import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
@@ -1608,6 +1608,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
 
     setSubmittingOfferId(match.id);
+    const noteTranslations = await translateOfferNote(draft.note, lang);
     const payload = {
       request_id: match.request_id,
       supplier_id: user.id,
@@ -1617,6 +1618,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       moq: draft.moq,
       delivery_days: productionDays,
       note: draft.note || null,
+      ...noteTranslations,
       status: 'pending',
       managed_match_id: match.id,
       managed_visibility: 'admin_only',
@@ -2171,6 +2173,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         return;
       }
 
+      const noteTranslations = await translateOfferNote(note, lang);
       const offerCurrency = normalizeDisplayCurrency(o.currency || viewerCurrency);
       const { error } = await runWithOptionalColumns({
         table: 'offers',
@@ -2185,9 +2188,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           delivery_days: days,
           origin,
           note: note || null,
+          ...noteTranslations,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'currency'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh', 'currency'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
