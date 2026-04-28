@@ -279,7 +279,7 @@ export default function Checkout({ lang, user, profile }) {
   const supplierTrustSignals = buildSupplierTrustSignals(supplierSnapshot || {});
   const supplierMaabarId = getSupplierMaabarId(supplierSnapshot || {});
   const isReviewedSupplier = isSupplierPubliclyVisible(supplierSnapshot?.status);
-  const shippingMethod = getOfferShippingMethod(offer);
+  const shippingMethod = getOfferShippingMethod(offer, lang);
   const requestTitle = isAr
     ? request?.title_ar || request?.title_en || request?.title_zh || '—'
     : lang === 'zh'
@@ -466,7 +466,7 @@ export default function Checkout({ lang, user, profile }) {
                 { label: t.unitPrice, val: `${fmt(offer.price)} ${currencyLabel}` },
                 { label: t.productTotal, val: `${fmt(productTotal)} ${currencyLabel}` },
                 { label: t.shippingCost, val: hasOfferShippingCost(offer) ? `${fmt(shippingCost)} ${currencyLabel}` : t.shippingNotSpecified },
-                ...(getOfferShippingMethod(offer) ? [{ label: t.shippingMethod, val: getOfferShippingMethod(offer) }] : []),
+                ...(getOfferShippingMethod(offer, lang) ? [{ label: t.shippingMethod, val: getOfferShippingMethod(offer, lang) }] : []),
                 { label: t.subtotal, val: `${fmt(subtotal)} ${currencyLabel}` },
                 { label: t.maabarFee, val: `${fmt(maabarFee)} ${currencyLabel}` },
               ].map((item, i) => (

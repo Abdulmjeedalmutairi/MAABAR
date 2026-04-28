@@ -189,7 +189,7 @@ export default function PaymentSuccess({ lang, user }) {
   const supplierTrustSignals = buildSupplierTrustSignals(supplierSnapshot || {});
   const supplierMaabarId = getSupplierMaabarId(supplierSnapshot || {});
   const isReviewedSupplier = isSupplierPubliclyVisible(supplierSnapshot?.status);
-  const shippingMethod = getOfferShippingMethod(offer);
+  const shippingMethod = getOfferShippingMethod(offer, lang);
   const requestTitle = isAr
     ? request?.title_ar || request?.title_en || request?.title_zh || '—'
     : lang === 'zh'

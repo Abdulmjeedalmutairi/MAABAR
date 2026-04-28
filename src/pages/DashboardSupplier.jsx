@@ -1614,7 +1614,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       supplier_id: user.id,
       price,
       shipping_cost: shippingCost,
-      shipping_method: shippingDays ? `${shippingDays} ${isAr ? 'يوم شحن' : lang === 'zh' ? '天运输时效' : 'shipping days'}` : null,
+      // Store the numeric only; lang formatting happens at render time via
+      // getOfferShippingMethod(offer, lang) so each viewer sees their language.
+      shipping_method: shippingDays ? String(shippingDays) : null,
       moq: draft.moq,
       delivery_days: productionDays,
       note: draft.note || null,

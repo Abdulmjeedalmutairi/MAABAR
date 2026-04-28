@@ -11,6 +11,7 @@ import {
 import { getPrimaryProductImage } from '../lib/productMedia';
 import {
   getOfferEstimatedTotal,
+  formatMoq,
   getOfferProductSubtotal,
   getOfferShippingCost,
   getOfferShippingMethod,
@@ -1990,16 +1991,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                         ? formatPriceWithConversion({ amount: getOfferShippingCost(o), sourceCurrency: offerCcy, displayCurrency: viewerCurrency, rates: exchangeRates, lang, options: { minimumFractionDigits: 2 } })
                                         : (isAr ? 'غير محدد بشكل منفصل' : lang === 'zh' ? '未单独填写' : 'Not specified separately')}
                                     </p>
-                                    {getOfferShippingMethod(o) && (
+                                    {getOfferShippingMethod(o, lang) && (
                                       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                        {isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping method'}: {getOfferShippingMethod(o)}
+                                        {isAr ? 'طريقة الشحن' : lang === 'zh' ? '运输方式' : 'Shipping method'}: {getOfferShippingMethod(o, lang)}
                                       </p>
                                     )}
                                     <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
                                       {isAr ? 'الإجمالي التقديري' : lang === 'zh' ? '预计总额' : 'Estimated total'}: {formatPriceWithConversion({ amount: offerEstimatedTotal, sourceCurrency: offerCcy, displayCurrency: viewerCurrency, rates: exchangeRates, lang, options: { minimumFractionDigits: 2 } })}
                                     </p>
                                     <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
-                                      MOQ: {o.moq} · {o.delivery_days} {isAr ? 'يوم' : lang === 'zh' ? '天' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}
+                                      MOQ: {formatMoq(o.moq)} · {o.delivery_days} {isAr ? 'يوم' : lang === 'zh' ? '天' : 'd'}{o.origin ? ` · ${isAr ? 'المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}: ${o.origin}` : ''}
                                     </p>
                                   </div>
                                     );
