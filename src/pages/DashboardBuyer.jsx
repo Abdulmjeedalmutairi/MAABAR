@@ -1343,7 +1343,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       await sb.from('messages').insert({
         sender_id: user.id,
         receiver_id: acceptedOffer.supplier_id,
-        content: `The trader has cancelled the request: ${reqNameEn}`,
+        content: JSON.stringify({
+          ar: `قام التاجر بإلغاء الطلب: ${reqNameAr}`,
+          en: `The trader has cancelled the request: ${reqNameEn}`,
+          zh: `采购商已取消请求: ${reqNameEn}`,
+        }),
+        message_type: 'system',
         is_read: false,
       });
     }

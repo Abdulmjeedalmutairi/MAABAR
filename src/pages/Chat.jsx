@@ -168,7 +168,7 @@ export default function Chat({ lang, user, profile }) {
   useEffect(() => {
     if (!user || translationDirection === 'off' || !messages.length) return;
     const ids = messages
-      .filter((m) => !String(m.id).startsWith('temp-') && m.sender_id !== user.id)
+      .filter((m) => !String(m.id).startsWith('temp-') && m.sender_id !== user.id && m.message_type !== 'system')
       .map((m) => m.id);
     if (!ids.length) return;
     sb.from('message_translations')
@@ -194,6 +194,7 @@ export default function Chat({ lang, user, profile }) {
       const translationKey = `${translationDirection}:${message.id}`;
       return (
         message.sender_id !== user.id &&
+        message.message_type !== 'system' &&
         !translations[translationKey] &&
         !translatingIds.has(translationKey) &&
         message.content &&
@@ -477,6 +478,34 @@ export default function Chat({ lang, user, profile }) {
           const dateStr = fmtDate(message.created_at);
           const showDate = dateStr !== lastDate;
           lastDate = dateStr;
+
+          // System messages — centered label, content is a JSON {ar,en,zh}
+          // payload set by the writer (e.g., DashboardBuyer cancel flow). No
+          // bubble, no AI translation.
+          if (message.message_type === 'system') {
+            let systemText = '';
+            try {
+              const parsed = JSON.parse(message.content);
+              if (parsed && typeof parsed === 'object') {
+                systemText = parsed[lang] || parsed.en || parsed.ar || parsed.zh || '';
+              } else {
+                systemText = message.content || '';
+              }
+            } catch {
+              systemText = message.content || '';
+            }
+            return (
+              <React.Fragment key={message.id}>
+                {showDate && (
+                  <div className="chat-day-sep"><span>{dateStr}</span></div>
+                )}
+                <div style={{ textAlign: 'center', padding: '8px 16px', color: 'var(--text-secondary)', fontSize: 12, fontStyle: 'italic' }}>
+                  {systemText}
+                </div>
+              </React.Fragment>
+            );
+          }
+
           const translationKey = `${translationDirection}:${message.id}`;
           const translation = !isMe && translationDirection !== 'off' ? translations[translationKey] : null;
           const isTranslating = !isMe && translatingIds.has(translationKey);
