@@ -154,6 +154,8 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     if (!supplier) return;
     const rawPaths = [
       supplier.license_photo,
+      supplier.legal_rep_id_photo,
+      supplier.address_proof_photo,
       supplier.factory_photo,
       ...(Array.isArray(supplier.factory_images) ? supplier.factory_images : []),
       ...(Array.isArray(supplier.factory_videos) ? supplier.factory_videos : []),
@@ -259,7 +261,20 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     [supplier.factory_photo, ...(Array.isArray(supplier.factory_images) ? supplier.factory_images : [])].filter(Boolean)
   ));
   const videos = Array.isArray(supplier.factory_videos) ? supplier.factory_videos.filter(Boolean) : [];
-  const docs = [supplier.license_photo && { label: isAr ? 'السجل التجاري' : 'Business License', url: supplier.license_photo }].filter(Boolean);
+  const docs = [
+    supplier.license_photo && {
+      label: isAr ? 'السجل التجاري' : lang === 'zh' ? '营业执照' : 'Business License',
+      url: supplier.license_photo,
+    },
+    supplier.legal_rep_id_photo && {
+      label: isAr ? 'هوية الممثل القانوني' : lang === 'zh' ? '法定代表人身份证' : 'Legal Representative ID',
+      url: supplier.legal_rep_id_photo,
+    },
+    supplier.address_proof_photo && {
+      label: isAr ? 'إثبات عنوان المصنع' : lang === 'zh' ? '工厂地址证明' : 'Factory/Office Address Proof',
+      url: supplier.address_proof_photo,
+    },
+  ].filter(Boolean);
 
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
