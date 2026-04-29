@@ -133,6 +133,8 @@ export function buildVerificationState(profile = {}) {
     years_experience: profile.years_experience != null ? String(profile.years_experience) : '',
     num_employees: profile.num_employees != null ? String(profile.num_employees) : '',
     license_photo: profile.license_photo || '',
+    legal_rep_id_photo: profile.legal_rep_id_photo || '',
+    address_proof_photo: profile.address_proof_photo || '',
     factory_photo: profile.factory_photo || verificationImages[0] || '',
     factory_images: verificationImages,
     factory_videos: verificationVideos,

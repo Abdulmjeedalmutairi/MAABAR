@@ -752,13 +752,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const loadVerification = async () => {
-    const { data } = await sb.from('profiles').select('reg_number,years_experience,num_employees,license_photo,factory_photo').eq('id', user.id).single();
+    const { data } = await sb.from('profiles').select('reg_number,years_experience,num_employees,license_photo,legal_rep_id_photo,address_proof_photo,factory_photo').eq('id', user.id).single();
     if (data) {
       setVerification({
         reg_number: data.reg_number || '',
         years_experience: data.years_experience || '',
         num_employees: data.num_employees || '',
         license_photo: data.license_photo || '',
+        legal_rep_id_photo: data.legal_rep_id_photo || '',
+        address_proof_photo: data.address_proof_photo || '',
         factory_photo: data.factory_photo || '',
       });
     }
@@ -788,9 +790,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     window.open(signedUrl, '_blank', 'noopener,noreferrer');
   };
 
+  // Single-file verification document types — each maps to one column on
+  // profiles. The legacy 'license' / new 'legal_rep_id' / new 'address_proof'
+  // share the same upload-then-update-column pattern; everything else
+  // (factory images, factory videos) falls through to the multi-file path.
+  const SINGLE_DOC_COLUMN_BY_TYPE = {
+    license: 'license_photo',
+    legal_rep_id: 'legal_rep_id_photo',
+    address_proof: 'address_proof_photo',
+  };
+
   const uploadVerificationDoc = async (file, type) => {
     if (!file) return;
-    const key = type === 'license' ? 'license' : 'images';
+    const isSingleDoc = Object.prototype.hasOwnProperty.call(SINGLE_DOC_COLUMN_BY_TYPE, type);
+    const key = isSingleDoc ? type : 'images';
     setUploadingVerificationDoc(prev => ({ ...prev, [key]: true }));
     const extension = file.name.split('.').pop() || (file.type === 'application/pdf' ? 'pdf' : 'jpg');
     const path = `${user.id}/${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
@@ -801,10 +814,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
 
-    if (type === 'license') {
-      await sb.from('profiles').update({ license_photo: path }).eq('id', user.id);
-      setVerification(prev => ({ ...prev, license_photo: path }));
-      setProfile?.(prev => ({ ...(prev || {}), license_photo: path }));
+    if (isSingleDoc) {
+      const column = SINGLE_DOC_COLUMN_BY_TYPE[type];
+      await sb.from('profiles').update({ [column]: path }).eq('id', user.id);
+      setVerification(prev => ({ ...prev, [column]: path }));
+      setProfile?.(prev => ({ ...(prev || {}), [column]: path }));
       return;
     }
 
@@ -945,6 +959,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       years_experience: normalizeOptionalInteger(verification.years_experience),
       num_employees: normalizeOptionalInteger(verification.num_employees),
       license_photo: normalizeTextInput(verification.license_photo),
+      legal_rep_id_photo: normalizeTextInput(verification.legal_rep_id_photo),
+      address_proof_photo: normalizeTextInput(verification.address_proof_photo),
       factory_photo: verificationImages[0] || '',
       factory_images: verificationImages,
       factory_videos: verificationVideos,
@@ -953,7 +969,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { error, payload: persistedPayload } = await runWithOptionalColumns({
       table: 'profiles',
       payload: stripEmptyFields(payload),
-      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'factory_videos', 'certifications'],
+      optionalKeys: ['business_type', 'year_established', 'languages', 'customization_support', 'export_markets', 'company_address', 'company_website', 'company_description', 'preferred_display_currency', 'factory_videos', 'certifications', 'legal_rep_id_photo', 'address_proof_photo'],
       execute: (nextPayload) => sb.from('profiles').update(nextPayload).eq('id', user.id),
     });
 
@@ -4345,6 +4361,80 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           )}
                         </div>
 
+                        {/* Legal Representative ID — required */}
+                        <div className="vf-fu" style={{ animationDelay: '0.22s', marginBottom: 12 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                            {t.legalRepIdLabel}<span style={{ color: 'var(--error, #e53e3e)', marginInlineStart: 4 }}>*</span>
+                          </p>
+                          {verification.legal_rep_id_photo ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                              <VfChk size={13} />
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                                {isAr ? 'هوية الممثل القانوني — مرفوعة' : lang === 'zh' ? '法定代表人身份证 — 已上传' : 'Legal Rep. ID — uploaded'}
+                              </p>
+                              <button onClick={() => openVerificationDoc(verification.legal_rep_id_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
+                              </button>
+                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'استبدال' : lang === 'zh' ? '更换' : 'Replace'}
+                                <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'legal_rep_id'); e.target.value = ''; }} />
+                              </label>
+                            </div>
+                          ) : (
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
+                              {uploadingVerificationDoc.legal_rep_id
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                : <>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                      {isAr ? 'رفع الملف' : lang === 'zh' ? '上传文件' : 'Upload file'}
+                                    </p>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                      PDF {isAr ? 'أو صورة' : lang === 'zh' ? '或图片' : 'or image'} · 10MB
+                                    </p>
+                                  </>
+                              }
+                              <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'legal_rep_id'); e.target.value = ''; }} />
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Factory/Office Address Proof — required */}
+                        <div className="vf-fu" style={{ animationDelay: '0.24s', marginBottom: 12 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                            {t.addressProofLabel}<span style={{ color: 'var(--error, #e53e3e)', marginInlineStart: 4 }}>*</span>
+                          </p>
+                          {verification.address_proof_photo ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                              <VfChk size={13} />
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                                {isAr ? 'إثبات عنوان المصنع — مرفوع' : lang === 'zh' ? '工厂/办公室地址证明 — 已上传' : 'Address proof — uploaded'}
+                              </p>
+                              <button onClick={() => openVerificationDoc(verification.address_proof_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
+                              </button>
+                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                {isAr ? 'استبدال' : lang === 'zh' ? '更换' : 'Replace'}
+                                <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'address_proof'); e.target.value = ''; }} />
+                              </label>
+                            </div>
+                          ) : (
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
+                              {uploadingVerificationDoc.address_proof
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                : <>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                      {isAr ? 'رفع الملف' : lang === 'zh' ? '上传文件' : 'Upload file'}
+                                    </p>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                      PDF {isAr ? 'أو صورة' : lang === 'zh' ? '或图片' : 'or image'} · 10MB
+                                    </p>
+                                  </>
+                              }
+                              <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'address_proof'); e.target.value = ''; }} />
+                            </label>
+                          )}
+                        </div>
+
                         {/* Factory images */}
                         <div className="vf-fu" style={{ animationDelay: '0.25s', marginBottom: 12 }}>
                           <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
@@ -4428,11 +4518,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           )}
                         </div>
 
+                        {/* Privacy note — visible below all upload fields */}
+                        <div className="vf-fu" style={{ animationDelay: '0.34s', marginTop: 18, marginBottom: 6, padding: '12px 16px', borderRadius: 10, background: VF_C.paper, border: `1px solid ${VF_C.ink10}` }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, lineHeight: 1.7, margin: 0 }}>
+                            {t.verificationPrivacyNote}
+                          </p>
+                        </div>
+
                         <div className="vf-fu" style={{ animationDelay: '0.36s', marginTop: 36, display: 'grid', gap: 10 }}>
                           <button className="vf-btn-ink" onClick={() => {
                             const isStepReady = Boolean(String(verification.reg_number || '').trim())
                               && Boolean(String(verification.years_experience || '').trim())
                               && Boolean(String(verification.license_photo || '').trim())
+                              && Boolean(String(verification.legal_rep_id_photo || '').trim())
+                              && Boolean(String(verification.address_proof_photo || '').trim())
                               && verificationImages.length > 0;
                             if (!isStepReady) { setVerificationSaved(false); setVerificationMsg(t.verificationMissing); return; }
                             setVerificationMsg('');
@@ -4460,6 +4559,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             [isAr ? 'رقم التسجيل'       : lang === 'zh' ? '注册号'     : 'Reg. number',    verification.reg_number || '—'],
                             [isAr ? 'سنوات الخبرة'      : lang === 'zh' ? '从业年限'   : 'Experience',     verification.years_experience || '—'],
                             [isAr ? 'رخصة الأعمال'      : lang === 'zh' ? '营业执照'   : 'License',        verification.license_photo ? (isAr ? 'مرفوعة ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓') : '—'],
+                            [t.legalRepIdLabel,                                                              verification.legal_rep_id_photo ? (isAr ? 'مرفوعة ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓') : '—'],
+                            [t.addressProofLabel,                                                            verification.address_proof_photo ? (isAr ? 'مرفوع ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓') : '—'],
                             [isAr ? 'صور المصنع'         : lang === 'zh' ? '工厂图片'   : 'Factory photos', `${verificationImages.length} ${isAr ? 'صور' : lang === 'zh' ? '张' : 'photos'}`],
                             ...(verificationVideos.length > 0 ? [[isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory video', isAr ? 'مرفوع ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓']] : []),
                           ].map(([k, v], i, arr) => (
