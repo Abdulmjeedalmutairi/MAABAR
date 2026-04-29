@@ -255,6 +255,13 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
   const emailConfirmed = sessionUser ? hasConfirmedEmail(sessionUser) : null;
   const stage = getSupplierStageFromStatus(status);
   const canAccessOperationalFeatures = status === 'verified';
+  // C-1 visibility: suppliers under review can stage products in draft so
+  // they're ready to ship the moment verification is approved. Created
+  // products default to is_active=false at the application layer; the DB
+  // trigger auto_publish_products_on_supplier_verified flips them on
+  // approval. Other operational features (messaging, requests, offers,
+  // payout) stay locked until status === 'verified'.
+  const canAccessProducts = canAccessOperationalFeatures || status === 'verification_under_review';
   const routeGuardRedirect = '/dashboard';
 
   return {
@@ -285,11 +292,13 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
     canAccessOperationalFeatures,
     canAccessMessaging: canAccessOperationalFeatures,
     canAccessRequests: canAccessOperationalFeatures,
-    canAccessProducts: canAccessOperationalFeatures,
+    canAccessProducts,
     canAccessOffers: canAccessOperationalFeatures,
     canAccessPayoutSetup: canAccessOperationalFeatures,
     routeGuardRedirect,
-    limitedTabs: ['overview', 'verification', 'settings'],
+    limitedTabs: canAccessProducts
+      ? ['overview', 'verification', 'settings', 'my-products', 'add-product']
+      : ['overview', 'verification', 'settings'],
     fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'product-inquiries', 'reviews', 'messages', 'settings'],
   };
 }

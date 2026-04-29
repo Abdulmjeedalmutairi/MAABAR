@@ -1961,6 +1961,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       console.error('addProduct translation error:', translationErr?.message || translationErr);
     }
     const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id);
+    // C-1 visibility: pre-approval suppliers stage products in draft; the
+    // auto_publish_products_on_supplier_verified DB trigger flips them on
+    // approval. Verified suppliers keep the default is_active=true.
+    if (!supplierState.isVerifiedStatus) payload.is_active = false;
     const { data: insertedRows, error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -2002,6 +2006,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
     const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields });
     delete payload.supplier_id;
+    // Same C-1 guard as addProduct: edits by pre-approval suppliers cannot
+    // self-publish a product; is_active stays false until the auto-publish
+    // trigger fires on supplier approval.
+    if (!supplierState.isVerifiedStatus) payload.is_active = false;
     const { error } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -3477,8 +3485,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{p.price_from} {p.currency || 'USD'} · {isAr ? 'MOQ' : lang === 'zh' ? '最小起订量' : 'MOQ'}: {p.moq}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
-                        <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
+                        {supplierState.isVerifiedStatus ? (
+                          <>
+                            <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
+                            <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid rgba(139,105,20,0.28)', color: '#8B6914', background: 'rgba(139,105,20,0.08)' }}>{t.productDraftPendingApprovalLabel}</span>
+                        )}
                         <button onClick={() => { setEditingProduct(normalizeProductDraftMedia(p)); setEditProductComposerStep('edit'); setProductSaveMsg(''); if (p.has_variants) loadVariantData(p.id).then(setEditVariantData).catch(console.error); }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
                         <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
                       </div>
