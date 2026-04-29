@@ -78,6 +78,7 @@ import {
   ProductPreviewPanel,
 } from '../components/supplier/ProductComposer';
 import { emptyVariantData, regenerateVariants } from '../components/supplier/VariantBuilder';
+import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -330,6 +331,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const needsVerification = !supplierState.isApprovedStage && !supplierState.isUnderReviewStage && !supplierState.isVerificationComplete;
   const needsPayoutSetup = supplierState.isApprovedStage && !supplierState.isPayoutComplete;
   const showUploadProductsBanner = supplierState.isVerificationRequiredStatus || supplierState.isVerificationUnderReviewStatus;
+  const showOnboardingSequence = supplierState.isApprovedStage && profile?.onboarding_completed !== true;
   const isOnboardingLimited = !supplierState.canAccessOperationalFeatures;
   const isVerificationLocked = supplierState.isUnderReviewStage || supplierState.isApprovedStage;
   const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
@@ -2465,6 +2467,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   return (
     <div className="dashboard-wrap">
+
+      {showOnboardingSequence && (
+        <SupplierOnboardingSequence
+          user={user}
+          profile={profile}
+          lang={lang}
+          supplierMaabarId={supplierMaabarId}
+          setProfile={setProfile}
+          onComplete={() => { /* parent state already updated via setProfile inside the sequence */ }}
+          onNavigateToTab={(target) => setActiveTab(target)}
+        />
+      )}
 
       {/* ══════════════════════════════════════
           HEADER
