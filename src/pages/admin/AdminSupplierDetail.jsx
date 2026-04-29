@@ -8,6 +8,7 @@ import { sb } from '../../supabase';
 import { logAdminAction } from '../../lib/adminAudit';
 import { sendMaabarEmail } from '../../lib/maabarEmail';
 import { normalizeSupplierDocStoragePath } from '../../lib/supplierOnboarding';
+import { getSpecialtyLabel } from '../../lib/supplierDashboardConstants';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY    = "'Tajawal', sans-serif";
@@ -341,7 +342,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
               <InfoRow label={isAr ? 'اسم الشركة' : 'Company Name'} value={supplier.company_name} />
               <InfoRow label={isAr ? 'الدولة' : 'Country'} value={supplier.country} />
               <InfoRow label={isAr ? 'المدينة' : 'City'} value={supplier.city} />
-              <InfoRow label={isAr ? 'التخصص' : 'Speciality'} value={supplier.speciality} />
+              <InfoRow label={isAr ? 'التخصص' : 'Speciality'} value={getSpecialtyLabel(supplier.speciality, lang)} />
               <InfoRow label={isAr ? 'نوع النشاط' : 'Business Type'} value={supplier.business_type} />
               <InfoRow label={isAr ? 'سنة التأسيس' : 'Est. Year'} value={supplier.year_established} />
               <InfoRow label={isAr ? 'عدد الموظفين' : 'Employees'} value={supplier.num_employees} />

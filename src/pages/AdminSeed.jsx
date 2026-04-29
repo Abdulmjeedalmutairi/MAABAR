@@ -14,6 +14,7 @@ import {
   getSupplierReviewQueueStatuses,
   getSupplierTradeLinks,
 } from '../lib/supplierOnboarding';
+import { getSpecialtyLabel } from '../lib/supplierDashboardConstants';
 import ManagedAdminWorkspace from '../components/ManagedAdminWorkspace';
 import {
   buildManagedBriefRow,
@@ -1795,7 +1796,7 @@ Shape: {"action":"add_requests","count":3,"data":[{"title_ar":"","title_en":"","
                           <InfoPair label={tx('البريد الإلكتروني', 'Email')} value={selectedSupplier.email} href={selectedSupplier.email ? `mailto:${selectedSupplier.email}` : ''} />
                           <InfoPair label={tx('المدينة / الدولة', 'City / country')} value={[selectedSupplier.city, selectedSupplier.country].filter(Boolean).join(', ')} />
                           <InfoPair label={tx('نوع النشاط', 'Business type')} value={selectedSupplier.business_type} />
-                          <InfoPair label={tx('التخصص', 'Speciality')} value={selectedSupplier.speciality} />
+                          <InfoPair label={tx('التخصص', 'Speciality')} value={getSpecialtyLabel(selectedSupplier.speciality, lang)} />
                           <InfoPair label={tx('موقع الشركة', 'Company website')} value={selectedSupplier.company_website} href={selectedSupplier.company_website} />
                           <InfoPair label={tx('الروابط التجارية', 'Trade links')} value={selectedSupplier.tradeLinks.join(' · ')} href={selectedSupplier.tradeLinks[0]} />
                           <InfoPair label={tx('واتساب', 'WhatsApp')} value={selectedSupplier.whatsapp} />

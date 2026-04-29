@@ -18,7 +18,7 @@ import {
   getPrimaryProductImage,
   normalizeProductDraftMedia,
 } from '../lib/productMedia';
-import { T, CATEGORIES, OFFER_STATUS } from '../lib/supplierDashboardConstants';
+import { T, CATEGORIES, OFFER_STATUS, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
 import {
   VERIFICATION_IMAGE_LIMIT,
   VERIFICATION_VIDEO_LIMIT,
@@ -4086,7 +4086,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {[
                           [isAr ? 'اسم الشركة' : lang === 'zh' ? '公司名称' : 'Company', settings.company_name || '—'],
                           [isAr ? 'المدينة / الدولة' : lang === 'zh' ? '城市 / 国家' : 'City / Country', `${settings.city || '—'} · ${settings.country || '—'}`],
-                          [isAr ? 'التخصص' : lang === 'zh' ? '专业' : 'Specialty', settings.speciality || '—'],
+                          [isAr ? 'التخصص' : lang === 'zh' ? '专业' : 'Specialty', getSpecialtyLabel(settings.speciality, lang) || '—'],
                           ['WeChat', settings.wechat || '—'],
                           [isAr ? 'رابط المتجر' : lang === 'zh' ? '店铺链接' : 'Trade link', settings.trade_link || '—'],
                           [isAr ? 'رقم التسجيل' : lang === 'zh' ? '注册号' : 'Reg. number', verification.reg_number || '—'],
@@ -4567,7 +4567,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           {[
                             [isAr ? 'اسم الشركة'       : lang === 'zh' ? '公司名称'   : 'Company',       settings.company_name || '—'],
                             [isAr ? 'المدينة / الدولة'  : lang === 'zh' ? '城市 / 国家' : 'City / Country', `${settings.city || '—'} · ${settings.country || '—'}`],
-                            [isAr ? 'التخصص'            : lang === 'zh' ? '专业'       : 'Specialty',      settings.speciality || '—'],
+                            [isAr ? 'التخصص'            : lang === 'zh' ? '专业'       : 'Specialty',      getSpecialtyLabel(settings.speciality, lang) || '—'],
                             ['WeChat',                                                                         settings.wechat || '—'],
                             [isAr ? 'رابط المتجر'       : lang === 'zh' ? '店铺链接'   : 'Trade link',     settings.trade_link || '—'],
                             [isAr ? 'رقم التسجيل'       : lang === 'zh' ? '注册号'     : 'Reg. number',    verification.reg_number || '—'],

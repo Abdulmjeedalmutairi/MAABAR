@@ -79,6 +79,19 @@ export const CATEGORIES = {
   ],
 };
 
+// Map a raw category/specialty code (e.g. 'home_decor', 'auto_parts')
+// to its translated label using the CATEGORIES table above. Falls back
+// to the raw code if no entry is found, and returns '' for empty input.
+// Use this everywhere a supplier or product specialty is rendered to
+// the user — never display the raw enum string directly.
+export function getSpecialtyLabel(rawCode, lang = 'en') {
+  const code = String(rawCode || '').trim();
+  if (!code) return '';
+  const list = CATEGORIES[lang] || CATEGORIES.en;
+  const found = list.find((c) => c.val === code);
+  return found ? found.label : code;
+}
+
 export const OFFER_STATUS = {
   ar: { pending: 'قيد المراجعة', accepted: 'مقبول', rejected: 'مرفوض' },
   en: { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' },
