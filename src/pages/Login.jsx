@@ -1152,7 +1152,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 {isSupplier
                   ? (mode === 'signin'
                     ? (isAr ? 'ما عندك طلب بعد؟' : lang === 'zh' ? '还没有申请？' : 'No application yet?')
-                    : (isAr ? 'عندك طلب قائم؟' : lang === 'zh' ? '已经提交过申请？' : 'Already applied?'))
+                    : (isAr ? 'سبق وتقدمت؟' : lang === 'zh' ? '已申请？' : 'Already applied?'))
                   : (mode === 'signin' ? l.toSignup : l.toSignin)}{' '}
                 <button
                   onClick={() => {
@@ -1181,7 +1181,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   {isSupplier
                     ? (mode === 'signin'
                       ? (isAr ? 'ابدأ الطلب' : lang === 'zh' ? '开始申请' : 'Start application')
-                      : (isAr ? 'سجّل الدخول' : lang === 'zh' ? '登录查看状态' : 'Sign in'))
+                      : (isAr ? 'تسجيل الدخول' : lang === 'zh' ? '登录' : 'Sign in'))
                     : (mode === 'signin' ? l.toSignupLink : l.toSigninLink)}
                 </button>
               </p>
@@ -1219,7 +1219,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 {isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
               </button>
               <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#1a1a1a', border: 'none', color: '#ffffff', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: termsFont }}>
-                {isAr ? 'أوافق' : lang === 'zh' ? '我同意' : 'I Agree'}
+                {isAr ? 'أوافق' : lang === 'zh' ? '我同意' : 'I agree'}
               </button>
             </div>
           </div>
