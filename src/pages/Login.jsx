@@ -683,7 +683,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   return (
     <>
-      <div style={{
+      <div dir={isAr ? 'rtl' : 'ltr'} style={{
         minHeight: 'var(--app-dvh)',
         display: 'flex',
         alignItems: 'center',
@@ -1191,7 +1191,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       </div>
 
       {showTerms && (
-        <div onClick={() => setShowTerms(false)} style={{
+        <div dir={isAr ? 'rtl' : 'ltr'} onClick={() => setShowTerms(false)} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
           zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
         }}>
