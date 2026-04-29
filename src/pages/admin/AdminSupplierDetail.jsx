@@ -250,7 +250,15 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     </AdminRouteGuard>
   );
 
-  const images = [supplier.factory_photo, ...(Array.isArray(supplier.factory_images) ? supplier.factory_images : [])].filter(Boolean);
+  // Dedupe: factory_photo is mirrored from factory_images[0] on every
+  // supplier-side upload, so a naive [factory_photo, ...factory_images]
+  // produced a duplicate of the first image. Wrap in a Set to keep the
+  // legacy fallback (when factory_images is empty but factory_photo is
+  // set) without rendering the same path twice.
+  const images = Array.from(new Set(
+    [supplier.factory_photo, ...(Array.isArray(supplier.factory_images) ? supplier.factory_images : [])].filter(Boolean)
+  ));
+  const videos = Array.isArray(supplier.factory_videos) ? supplier.factory_videos.filter(Boolean) : [];
   const docs = [supplier.license_photo && { label: isAr ? 'السجل التجاري' : 'Business License', url: supplier.license_photo }].filter(Boolean);
 
   return (
@@ -386,6 +394,28 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                     </a>
                   ) : (
                     <div key={i} className="sd-img" style={{ background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>…</div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* Factory videos */}
+          {videos.length > 0 && (
+            <SectionCard title={isAr ? 'فيديو المصنع' : 'Factory Videos'}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                {videos.map((raw, i) => {
+                  const signed = signedUrls[raw];
+                  return signed ? (
+                    <video
+                      key={i}
+                      src={signed}
+                      controls
+                      preload="metadata"
+                      style={{ width: '100%', maxWidth: 360, borderRadius: 8, background: 'rgba(0,0,0,0.04)' }}
+                    />
+                  ) : (
+                    <div key={i} style={{ width: 240, height: 135, background: 'rgba(0,0,0,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>…</div>
                   );
                 })}
               </div>
