@@ -541,14 +541,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
           if (profileError) {
             if (profileError.code === '23505' || profileError.status === 403) {
-              // Trigger may have already created the profile — verify it actually exists
-              const { data: existingProfile } = await sb.from('profiles').select('id').eq('id', data.user.id).maybeSingle();
-              if (!existingProfile) {
-                console.error('[doSignUp] profile missing after 403/23505:', JSON.stringify(profileError));
-                setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
-                setMsgType('error');
-                return;
-              }
+              // 23505 (unique violation) and 403 (RLS-denied insert pre-confirmation)
+              // both mean the on_auth_user_created trigger already created the profile
+              // from raw_user_meta_data. We can't SELECT to verify without an active
+              // session (RLS denies anonymous reads), so trust the trigger contract.
+              console.info('[doSignUp] profile created by trigger:', profileError.code || profileError.status);
             } else {
               console.error('[doSignUp] profile insert failed:', JSON.stringify(profileError));
               setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
