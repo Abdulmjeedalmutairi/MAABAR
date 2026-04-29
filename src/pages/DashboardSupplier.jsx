@@ -329,6 +329,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   });
   const needsVerification = !supplierState.isApprovedStage && !supplierState.isUnderReviewStage && !supplierState.isVerificationComplete;
   const needsPayoutSetup = supplierState.isApprovedStage && !supplierState.isPayoutComplete;
+  const showUploadProductsBanner = supplierState.isVerificationRequiredStatus || supplierState.isVerificationUnderReviewStatus;
   const isOnboardingLimited = !supplierState.canAccessOperationalFeatures;
   const isVerificationLocked = supplierState.isUnderReviewStage || supplierState.isApprovedStage;
   const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
@@ -2733,6 +2734,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={openVerificationFlow} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{t.verificationCtaAction}</button>
                   </div>
+                </div>
+              )}
+              {showUploadProductsBanner && (
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(139,105,20,0.06)', border: '1px solid rgba(139,105,20,0.22)', borderRadius: 'var(--radius-lg)' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
+                    {t.uploadProductsBannerTitle}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 16, ...arFont, lineHeight: 1.7 }}>
+                    {t.uploadProductsBannerBody}
+                  </p>
+                  <button onClick={() => setActiveTab('add-product')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 34 }}>{t.uploadProductsBannerAction}</button>
                 </div>
               )}
               {needsPayoutSetup && (
