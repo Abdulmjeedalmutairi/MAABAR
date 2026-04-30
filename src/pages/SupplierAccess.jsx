@@ -30,7 +30,7 @@ const TRANSLATIONS = {
     benefits: [
       {
         title: 'Free Registration — No Monthly Fees',
-        desc: '3% commission on successful sales only, after the free period ends.',
+        desc: 'Commission applies only on successful sales after the free period ends — see our Terms & Conditions for full details.',
       },
       {
         title: '0% Commission',
@@ -80,7 +80,7 @@ const TRANSLATIONS = {
     benefits: [
       {
         title: '免费注册 — 无月费',
-        desc: '仅对成功销售收取3%佣金，免费期结束后生效',
+        desc: '仅对成功销售收取佣金，免费期结束后生效。详情请查看条款与条件。',
       },
       {
         title: '0% 佣金',

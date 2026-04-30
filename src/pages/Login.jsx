@@ -9,6 +9,7 @@ import {
 import { getIdeaFlowResumePath, hasIdeaFlowDraft } from '../lib/ideaToProductFlow';
 import { buildAuthCallbackUrl } from '../lib/authRedirects';
 import { CATEGORIES } from '../lib/supplierDashboardConstants';
+import { SECTIONS } from '../lib/terms';
 
 const L = {
   ar: {
@@ -644,40 +645,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
   };
 
-  const TERMS = {
-    ar: [
-      { title: '1. تعريف المنصة', body: 'مَعبر هي منصة وساطة تجارية إلكترونية تربط التجار السعوديين بالموردين الصينيين. تعمل مَعبر بوصفها وسيطاً تجارياً فقط، وليست طرفاً في أي صفقة.' },
-      { title: '2. شروط التسجيل', body: 'للتاجر: يجب أن يكون مقيماً أو يمارس نشاطاً تجارياً في المملكة العربية السعودية.\nللمورد: يجب أن يكون لديه سجل تجاري ساري، ويخضع لمراجعة وموافقة مَعبر قبل التفعيل.' },
-      { title: '3. آلية إبرام العقود', body: 'تُبرم الصفقات عبر آلية العرض والقبول: يرفع التاجر طلبًا، يُقدّم الموردون عروضهم، يختار التاجر العرض الأنسب ويؤكده. يُعدّ هذا التأكيد عقدًا ملزمًا.' },
-      { title: '4. نظام الدفع المرحلي', body: 'تتيح مَعبر ثلاثة خيارات: 30٪ مقدماً، أو 50٪، أو 100٪. الدفعة الأولى تُمثّل التزام التاجر. الدفعة الثانية تُسدَّد بعد إشعار "الشحنة جاهزة".' },
-      { title: '5. العمولة', body: 'تأخذ مَعبر 0% عمولة على الصفقة.' },
-      { title: '6. سياسة المشاكل والإرجاع', body: 'إذا وصلت البضاعة تالفة أو مختلفة عن الوصف، يُفتح نزاع خلال 48 ساعة. مَعبر تبتّ خلال 7 أيام عمل.' },
-      { title: '7. الخصوصية وحماية البيانات', body: 'تلتزم مَعبر بنظام حماية البيانات الشخصية السعودي (PDPL). نحن نجمع البيانات الضرورية فقط لتشغيل المنصة ولا نشاركها إلا في الحالات المحددة في سياسة الخصوصية الكاملة. يحق لك الاطلاع على بياناتك وتصحيحها وحذفها.' },
-      { title: '8. الاختصاص القضائي', body: 'تخضع هذه الشروط لأنظمة المملكة العربية السعودية.' },
-    ],
-    en: [
-      { title: '1. Platform Definition', body: 'Maabar is an electronic trade intermediary platform connecting Saudi traders with Chinese suppliers. Maabar acts only as an intermediary and is not a party to any transaction between users.' },
-      { title: '2. Registration Terms', body: 'For traders: the user must be resident in, or operating a business in, Saudi Arabia.\nFor suppliers: the user must hold a valid commercial registration or business license and is subject to Maabar review before activation.' },
-      { title: '3. Contract Formation', body: 'Transactions are formed through an offer-and-acceptance model: the trader posts a request, suppliers submit offers, and the trader confirms the selected offer. That confirmation becomes binding.' },
-      { title: '4. Staged Payment System', body: 'Maabar supports three payment options: 30% upfront, 50% upfront, or 100% upfront. The first installment represents commitment, and the second installment is paid after the supplier marks the shipment as ready.' },
-      { title: '5. Commission', body: 'Maabar charges 0% commission on the transaction.' },
-      { title: '6. Issues and Returns', body: 'If goods arrive damaged or materially different from the description, a dispute may be opened within 48 hours. Maabar reviews the case within 7 business days.' },
-      { title: '7. Privacy and Data Protection', body: 'Maabar complies with the Saudi Personal Data Protection Law (PDPL). We collect only the data necessary to operate the platform and share it only in cases specified in the full privacy policy. You have the right to access, correct, and delete your data.' },
-      { title: '8. Governing Law', body: 'These terms are governed by the laws of the Kingdom of Saudi Arabia.' },
-    ],
-    zh: [
-      { title: '1. 平台定义', body: 'Maabar 是连接沙特贸易商与中国供应商的电子贸易中介平台。Maabar 仅作为中介存在，并非用户之间交易的合同方。' },
-      { title: '2. 注册条款', body: '贸易商：用户须在沙特阿拉伯居住或经营业务。\n供应商：用户须持有有效商业登记或营业执照，并在账户激活前接受 Maabar 审核。' },
-      { title: '3. 合同成立方式', body: '交易通过"报价—接受"的方式成立：贸易商发布需求，供应商提交报价，贸易商确认所选报价后，该确认即构成具有约束力的协议。' },
-      { title: '4. 分阶段付款制度', body: 'Maabar 支持 30% 预付、50% 预付或 100% 一次性付款。首付款代表交易承诺，第二笔款项在供应商发出"货物已准备好"通知后支付。' },
-      { title: '5. 平台佣金', body: 'Maabar 对交易收取 0% 佣金。' },
-      { title: '6. 问题与退货', body: '如货物损坏或与描述存在重大差异，可在 48 小时内发起争议。Maabar 会在 7 个工作日内完成审查。' },
-      { title: '7. 隐私与数据保护', body: 'Maabar 遵守沙特个人数据保护法（PDPL）。我们仅收集运营平台所需的数据，并仅在完整隐私政策规定的情况下共享数据。您有权访问、更正和删除您的数据。' },
-      { title: '8. 适用法律', body: '本条款受沙特阿拉伯王国法律管辖。' },
-    ],
-  };
-
-  const termsSections = TERMS[lang] || TERMS.ar;
+  const termsSections = SECTIONS[lang] || SECTIONS.ar;
   const termsDir = isAr ? 'rtl' : 'ltr';
   const termsFont = isAr ? 'var(--font-ar)' : 'var(--font-sans)';
 
