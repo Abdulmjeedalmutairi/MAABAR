@@ -1337,16 +1337,30 @@ Shape: {"action":"add_requests","count":3,"data":[{"title_ar":"","title_en":"","
       }
 
       if (parsed.action === 'add_products') {
+        // After Phase 4 migration, products.price_from no longer exists —
+        // pricing is sourced from product_pricing_tiers. The seeder writes
+        // a single product-level tier so seed products still display a
+        // sensible "from" price on listings.
         for (const item of parsed.data || []) {
-          await sb.from('products').insert({
+          const { data: insertedRow, error: insErr } = await sb.from('products').insert({
             supplier_id: user.id,
             name_ar: item.name_ar,
             name_en: item.name_en,
             name_zh: item.name_zh || item.name_en,
-            price_from: item.price_from,
-            moq: item.moq,
+            moq: item.moq ? parseInt(item.moq, 10) || null : null,
             is_active: true,
-          });
+          }).select('id').single();
+          if (insErr) { console.error('[AdminSeed] insert product error:', insErr); continue; }
+          const seedPrice = Number(item.price_from);
+          if (insertedRow?.id && Number.isFinite(seedPrice) && seedPrice > 0) {
+            await sb.from('product_pricing_tiers').insert({
+              product_id: insertedRow.id,
+              variant_id: null,
+              qty_from: 1,
+              qty_to: null,
+              unit_price: seedPrice,
+            });
+          }
         }
         addLog(tx(`تمت إضافة ${(parsed.data || []).length} منتجات تجريبية.`, `Added ${(parsed.data || []).length} seed products.`));
       }

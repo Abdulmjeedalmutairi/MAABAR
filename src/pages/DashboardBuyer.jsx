@@ -23,6 +23,7 @@ import {
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 import { shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import {
   attachDirectoryProfiles,
   attachSupplierProfiles,
@@ -724,7 +725,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     const productsRes = await sb
       .from('products')
-      .select('id, supplier_id, name_ar, name_en, name_zh, price_from, currency, spec_lead_time_days, gallery_images, image_url')
+      .select(`id, supplier_id, name_ar, name_en, name_zh, currency, spec_lead_time_days, gallery_images, image_url, ${PRODUCT_TIER_EMBED}`)
       .in('id', refIds);
     console.log('[loadMyDirectOrders] products query response:', productsRes);
 
@@ -901,7 +902,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       request_id: request.id,
       supplier_id: supplierId,
       profiles: supplierProfile,
-      price: Number(product.price_from || 0),
+      price: Number(deriveProductPriceFrom(product) || 0),
       currency: product.currency || 'USD',
       delivery_days: product.spec_lead_time_days || 30,
       status: 'accepted',
@@ -2213,7 +2214,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     ? (product.name_en || product.name_ar || product.name_zh)
                     : (product.name_ar || product.name_en || product.name_zh);
                 const supplierName = supplierProfile?.company_name || supplierProfile?.full_name || (isAr ? 'مورد' : lang === 'zh' ? '供应商' : 'Supplier');
-                const unitPrice = Number(product.price_from || 0);
+                const unitPrice = Number(deriveProductPriceFrom(product) || 0);
                 const currency = product.currency || 'USD';
                 const qty = Number(r.quantity || 0);
                 const totalEstimate = unitPrice * qty;

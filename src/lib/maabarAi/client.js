@@ -146,6 +146,30 @@ Return only the translated text.`,
     return { translatedText: stripCodeFence(text) };
   }
 
+  if (task === MAABAR_AI_TASKS.HS_CODE_SUGGEST) {
+    const langName = getLanguageName(payload.language);
+    const text = await callLegacyProxy(
+      `You are ${MAABAR_AI_PERSONA_NAME}, Maabar's customs & trade-classification assistant.
+Suggest 3 plausible Harmonized System (HS) codes for the given product.
+Return ONLY valid JSON with this exact shape:
+{
+  "suggestions": [
+    { "code": "8517.62.00", "description": "Short clear description in ${langName}" },
+    { "code": "...", "description": "..." },
+    { "code": "...", "description": "..." }
+  ]
+}
+Rules:
+- Codes must be valid HS code formats (digits and dots only).
+- Descriptions stay short (≤ 12 words) and in ${langName}.
+- Do not output anything outside the JSON object.
+- No emojis. No markdown. No extra commentary.`,
+      [{ role: 'user', content: `Product name: ${payload.productName || ''}\nCategory: ${payload.category || ''}\nDescription: ${payload.description || ''}` }]
+    );
+
+    return { result: JSON.parse(stripCodeFence(text)) };
+  }
+
   if (task === MAABAR_AI_TASKS.CUSTOMER_SUPPORT) {
     const representativeName = payload.userProfile?.representativeName || 'سلمان';
     const conversation = payload.conversation || [];
@@ -222,6 +246,36 @@ export async function translateChatMessage({
   });
 
   return data.translatedText || '';
+}
+
+// Suggest 3 HS (Harmonized System) codes for a product.
+// Returns an array of { code, description } objects, or [] on error.
+export async function suggestHsCodes({
+  productName,
+  category,
+  description,
+  language = 'en',
+}) {
+  if (!productName) return [];
+  try {
+    const data = await requestMaabarAI(MAABAR_AI_TASKS.HS_CODE_SUGGEST, {
+      productName,
+      category,
+      description,
+      language,
+    });
+    const list = Array.isArray(data?.result?.suggestions) ? data.result.suggestions : [];
+    return list
+      .filter(item => item && typeof item.code === 'string')
+      .slice(0, 3)
+      .map(item => ({
+        code: String(item.code).trim(),
+        description: String(item.description || '').trim(),
+      }));
+  } catch (err) {
+    console.error('[suggestHsCodes] error:', err?.message || err);
+    return [];
+  }
 }
 
 export async function requestSupportReply({

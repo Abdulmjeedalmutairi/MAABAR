@@ -10,6 +10,7 @@ import {
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 import { attachSupplierProfiles, fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import {
   getProductInquiryQuestion,
   getProductInquiryAllTranslations,
@@ -260,7 +261,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
   const loadProduct = async () => {
     setLoading(true);
-    const { data: baseProduct } = await sb.from('products').select('*').eq('id', id).maybeSingle();
+    const { data: baseProduct } = await sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('id', id).maybeSingle();
     if (baseProduct) {
       const [productWithSupplier] = await attachSupplierProfiles(sb, [baseProduct], 'supplier_id', 'profiles');
       if (productWithSupplier?.profiles) {
@@ -271,7 +272,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
       }
     }
     if (profile?.role === 'supplier' && user?.id) {
-      const { data: ownProduct } = await sb.from('products').select('*').eq('id', id).eq('supplier_id', user.id).maybeSingle();
+      const { data: ownProduct } = await sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('id', id).eq('supplier_id', user.id).maybeSingle();
       if (ownProduct) {
         const ownSupplierProfile = await fetchSupplierPublicProfileById(sb, user.id);
         const p = { ...ownProduct, profiles: ownSupplierProfile || null };
@@ -377,7 +378,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
       status: 'pending_supplier_confirmation',
       payment_plan: 100,
       sample_requirement: 'none',
-      budget_per_unit: product.price_from ? Number(product.price_from) : null,
+      budget_per_unit: deriveProductPriceFrom(product) || null,
     };
 
     setSending(true);
@@ -575,7 +576,8 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const sampleTotal = product.sample_available ? (parseFloat(product.sample_price || 0) + parseFloat(product.sample_shipping || 0)) * parseInt(sampleQty || 1, 10) : 0;
   const galleryImages = getProductGalleryImages(product);
   const previewImage = selectedImage || galleryImages[0] || null;
-  const price = buildDisplayPrice({ amount: product.price_from, sourceCurrency: product.currency || 'USD', displayCurrency: displayCurrency || product.currency || 'USD', rates: exchangeRates, lang });
+  const productPriceFrom = deriveProductPriceFrom(product);
+  const price = buildDisplayPrice({ amount: productPriceFrom, sourceCurrency: product.currency || 'USD', displayCurrency: displayCurrency || product.currency || 'USD', rates: exchangeRates, lang });
   const productSpecs = buildProductSpecs(product, lang);
   const sourcingHighlights = [
     { label: isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '起订量' : 'MOQ', value: product.moq || '—' },
@@ -643,7 +645,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           </p>
         )}
 
-        <p className="product-detail-price">{product.price_from ? price.formattedDisplay : '—'}</p>
+        <p className="product-detail-price">{productPriceFrom ? price.formattedDisplay : '—'}</p>
         {price.isConverted && (
           <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -12, marginBottom: 22 }}>
             {isAr ? `السعر الأصلي: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Original price: ${price.formattedSource}`}

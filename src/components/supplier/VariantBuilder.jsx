@@ -830,15 +830,10 @@ export function VariantBuilder({ lang, data, onChange, productNameEn, basePrice,
         />
       </div>
 
-      {/* ── Tiered Pricing ───────────────────────────────────────── */}
-      <div style={{ marginBottom: 20 }}>
-        <TieredPricingSection
-          tiers={tiers}
-          lang={lang}
-          onChange={(newTiers) => onChange({ ...data, tiers: newTiers })}
-          basePrice={basePrice}
-        />
-      </div>
+      {/* Tiered pricing removed — product-level tiers (variant_id IS NULL) are now
+          owned by ProductComposer's TieredPricingTable, which writes the canonical
+          rows. The TieredPricingSection function below is intentionally retained
+          but unused; Phase 4 cleanup will remove it. */}
 
       {/* ── Shipping ─────────────────────────────────────────────── */}
       <div style={{ marginBottom: 20 }}>

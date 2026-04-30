@@ -5,6 +5,7 @@ import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -77,7 +78,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     setSupplier(visibleSupplier);
 
     const [{ data: p }, { data: r }] = await Promise.all([
-      sb.from('products').select('*').eq('supplier_id', id).eq('is_active', true),
+      sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
 
@@ -152,7 +153,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const calcPrice = () => {
     if (!calcProduct || !calcQty) return;
     const qty = parseFloat(calcQty);
-    const price = calcProduct.price_from;
+    const price = deriveProductPriceFrom(calcProduct);
     setCalcResult({
       unitPrice: price,
       total: qty * price,
@@ -354,7 +355,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           ) : (
             <div className="product-grid">
               {products.map((p, idx) => {
-                const price = buildDisplayPrice({ amount: p.price_from, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
+                const productPriceFrom = deriveProductPriceFrom(p);
+                const price = buildDisplayPrice({ amount: productPriceFrom, sourceCurrency: p.currency || 'USD', displayCurrency: displayCurrency || p.currency || 'USD', rates: exchangeRates, lang });
                 const animation = { animation: `fadeIn 0.4s ease ${idx * 0.04}s both` };
                 return (
                   <div key={p.id}>
@@ -374,7 +376,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                         <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>
                           {isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar}
                         </h3>
-                        <p className="product-card-price">{p.price_from ? price.formattedDisplay : '—'}</p>
+                        <p className="product-card-price">{productPriceFrom ? price.formattedDisplay : '—'}</p>
                         <button className="product-card-buy" onClick={e => { e.stopPropagation(); nav(`/products/${p.id}`); }}>
                           اشتر الآن
                         </button>

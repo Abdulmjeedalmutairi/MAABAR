@@ -9,6 +9,7 @@ import { logAdminAction } from '../../lib/adminAudit';
 import { sendMaabarEmail } from '../../lib/maabarEmail';
 import { normalizeSupplierDocStoragePath } from '../../lib/supplierOnboarding';
 import { getSpecialtyLabel } from '../../lib/supplierDashboardConstants';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../../lib/productPriceLookup';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY    = "'Tajawal', sans-serif";
@@ -102,7 +103,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     setLoading(true);
     const [{ data: supplierData }, { data: productsData }] = await Promise.all([
       sb.from('profiles').select('*').eq('id', id).single(),
-      sb.from('products').select('id, name_en, name_zh, name_ar, price_from, moq, is_active, has_variants, created_at').eq('supplier_id', id).order('created_at', { ascending: false }),
+      sb.from('products').select(`id, name_en, name_zh, name_ar, moq, is_active, has_variants, created_at, ${PRODUCT_TIER_EMBED}`).eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
     setSupplier(supplierData);
     // Fetch variant counts per product
@@ -470,7 +471,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                         <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.80)', marginBottom: 2, fontFamily: FONT_BODY }}>{productName}</p>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>MOQ {p.moq || '—'}</span>
-                          {p.price_from && <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>${p.price_from}</span>}
+                          {(() => { const pf = deriveProductPriceFrom(p); return pf ? <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>${pf}</span> : null; })()}
                           {p.has_variants && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 99, background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY }}>{p.variantCount ?? '?'} variants</span>}
                           {/* Flag unusual pricing: product > 10x no baseline, just flag if no price */}
                         </div>
@@ -494,7 +495,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                               </thead>
                               <tbody>
                                 {variants.map(v => {
-                                  const basePrice = products.find(pr => pr.id === v.product_id)?.price_from;
+                                  const basePrice = deriveProductPriceFrom(products.find(pr => pr.id === v.product_id));
                                   const unusualPrice = basePrice && v.price_usd && v.price_usd > basePrice * 10;
                                   return (
                                     <tr key={v.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>

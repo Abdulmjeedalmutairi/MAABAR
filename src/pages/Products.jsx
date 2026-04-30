@@ -7,6 +7,7 @@ import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { attachSupplierProfiles } from '../lib/profileVisibility';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 
 const CATEGORIES = {
   ar: [
@@ -103,7 +104,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
 
     const { data } = await sb
       .from('products')
-      .select('*')
+      .select(`*, ${PRODUCT_TIER_EMBED}`)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
@@ -123,7 +124,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     .filter(p => activeCategory === 'all' || p.category === activeCategory)
     .filter(p => {
       const converted = buildDisplayPrice({
-        amount: p.price_from,
+        amount: deriveProductPriceFrom(p),
         sourceCurrency: p.currency || 'USD',
         displayCurrency: uiDisplayCurrency,
         rates: exchangeRates,
@@ -133,7 +134,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     })
     .filter(p => {
       const converted = buildDisplayPrice({
-        amount: p.price_from,
+        amount: deriveProductPriceFrom(p),
         sourceCurrency: p.currency || 'USD',
         displayCurrency: uiDisplayCurrency,
         rates: exchangeRates,
@@ -144,8 +145,8 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
     .filter(p => !capabilityFilters.sample || Boolean(p.sample_available))
     .filter(p => !capabilityFilters.customization || Boolean(p.spec_customization))
     .sort((a, b) => {
-      const aPrice = buildDisplayPrice({ amount: a.price_from, sourceCurrency: a.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang }).displayAmount;
-      const bPrice = buildDisplayPrice({ amount: b.price_from, sourceCurrency: b.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang }).displayAmount;
+      const aPrice = buildDisplayPrice({ amount: deriveProductPriceFrom(a), sourceCurrency: a.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang }).displayAmount;
+      const bPrice = buildDisplayPrice({ amount: deriveProductPriceFrom(b), sourceCurrency: b.currency || 'USD', displayCurrency: uiDisplayCurrency, rates: exchangeRates, lang }).displayAmount;
       if (sortBy === 'price_asc') return aPrice - bPrice;
       if (sortBy === 'price_desc') return bPrice - aPrice;
       return new Date(b.created_at) - new Date(a.created_at);
@@ -358,7 +359,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
             {filtered.map((p, idx) => {
               const isReviewedSupplier = isSupplierPubliclyVisible(p.profiles?.status);
               const price = buildDisplayPrice({
-                amount: p.price_from,
+                amount: deriveProductPriceFrom(p),
                 sourceCurrency: p.currency || 'USD',
                 displayCurrency: uiDisplayCurrency,
                 rates: exchangeRates,
@@ -396,7 +397,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                     </h3>
 
                     <p className="product-card-price">
-                      {p.price_from ? price.formattedDisplay : '—'}
+                      {deriveProductPriceFrom(p) ? price.formattedDisplay : '—'}
                     </p>
 
                     <button

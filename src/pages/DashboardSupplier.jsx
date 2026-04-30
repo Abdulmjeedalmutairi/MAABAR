@@ -76,8 +76,19 @@ import {
   getProductCompletenessItems,
   ProductForm,
   ProductPreviewPanel,
+  expandStoredSelect,
+  COUNTRY_OF_ORIGIN_OPTIONS,
+  PORT_OF_LOADING_OPTIONS,
 } from '../components/supplier/ProductComposer';
 import { emptyVariantData, regenerateVariants } from '../components/supplier/VariantBuilder';
+import {
+  emptyTierSet,
+  loadProductPricingTiers,
+  saveProductPricingTiers,
+} from '../lib/productPricingTiers';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
+import { BUCKET_PRODUCT_MEDIA, BUCKET_PRODUCT_CERTS, removeStorageObjectByUrl } from '../lib/productMediaCleanup';
+import { loadProductCertifications, saveProductCertifications, emptyCertRow, CERT_TYPES, CERT_MAX_COUNT } from '../lib/productCertifications';
 import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
@@ -227,6 +238,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   useEffect(() => { getUsdToCny().then(r => setCnyRate(r)); }, []);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editVariantData, setEditVariantData] = useState(emptyVariantData);
+  // Snapshot of the cert rows that were on the product when editing began.
+  // Used as `prevCerts` at save time so we know which rows to delete.
+  const [editProductCertsSnapshot, setEditProductCertsSnapshot] = useState([]);
   const [saving, setSaving]                 = useState(false);
   const [pendingTracking, setPendingTracking] = useState([]);
   const [rejectedOffers, setRejectedOffers] = useState([]);
@@ -1225,7 +1239,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const loadMyProducts = async () => {
     setLoadingProducts(true);
-    const { data } = await sb.from('products').select('*').eq('supplier_id', user.id).order('created_at', { ascending: false });
+    const { data } = await sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('supplier_id', user.id).order('created_at', { ascending: false });
     if (data) setMyProducts(data);
     setLoadingProducts(false);
   };
@@ -1253,7 +1267,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const refIds = [...new Set((ordersRes.data || []).map(r => r.product_ref).filter(Boolean))];
     const productsByIdRes = refIds.length
-      ? await sb.from('products').select('id, name_ar, name_en, name_zh, price_from, currency').in('id', refIds)
+      ? await sb.from('products').select(`id, name_ar, name_en, name_zh, currency, ${PRODUCT_TIER_EMBED}`).in('id', refIds)
       : { data: [], error: null };
     console.log('[loadDirectOrders] product details response:', productsByIdRes);
     const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
@@ -1391,7 +1405,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const refIds = [...new Set(rows.map(r => r.product_ref).filter(Boolean))];
     const productsByIdRes = refIds.length
-      ? await sb.from('products').select('id, name_ar, name_en, name_zh, price_from, currency, spec_lead_time_days').in('id', refIds)
+      ? await sb.from('products').select(`id, name_ar, name_en, name_zh, currency, spec_lead_time_days, ${PRODUCT_TIER_EMBED}`).in('id', refIds)
       : { data: [], error: null };
     console.log('[loadPaidDirectOrders] product details response:', productsByIdRes);
     const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
@@ -1446,7 +1460,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const refIds = [...new Set(rows.map(r => r.product_ref).filter(Boolean))];
     const productsByIdRes = refIds.length
-      ? await sb.from('products').select('id, name_ar, name_en, name_zh, price_from, currency').in('id', refIds)
+      ? await sb.from('products').select(`id, name_ar, name_en, name_zh, currency, ${PRODUCT_TIER_EMBED}`).in('id', refIds)
       : { data: [], error: null };
     console.log('[loadDirectOrdersHistory] product details response:', productsByIdRes);
     const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
@@ -1752,10 +1766,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const removeImageAt = (index, isEdit = false) => {
     const setter = isEdit ? setEditingProduct : setProduct;
+    const source = isEdit ? editingProduct : product;
+    const removedUrl = getProductGalleryImages(source)[index];
     applyProductMedia(setter, prev => ({
       ...prev,
       gallery_images: getProductGalleryImages(prev).filter((_, imgIndex) => imgIndex !== index),
     }));
+    // Phase 4 — orphan cleanup: drop the storage object too.
+    if (removedUrl) {
+      removeStorageObjectByUrl(sb, BUCKET_PRODUCT_MEDIA, removedUrl);
+    }
   };
 
   const handleVideoUpload = async (e, isEdit = false) => {
@@ -1769,7 +1789,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const removeVideo = (isEdit = false) => {
     const setter = isEdit ? setEditingProduct : setProduct;
+    const source = isEdit ? editingProduct : product;
+    const removedUrl = source?.video_url;
     applyProductMedia(setter, prev => ({ ...prev, video_url: null }));
+    // Phase 4 — orphan cleanup: drop the storage object too.
+    if (removedUrl) {
+      removeStorageObjectByUrl(sb, BUCKET_PRODUCT_MEDIA, removedUrl);
+    }
   };
 
   const openProductPreview = () => {
@@ -1799,8 +1825,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { options = [], variants = [], tiers = [], shipping = [] } = vd || {};
 
     // Wipe and rewrite — simplest safe approach for Phase 2.
+    // NOTE: product-level pricing tiers (variant_id IS NULL) are owned by the
+    // ProductComposer flow now — saveProductPricingTiers handles those. Here
+    // we only delete variant-specific tiers (variant_id IS NOT NULL) to avoid
+    // wiping the product-level rows that were just written by the parent flow.
     await sb.from('product_options').delete().eq('product_id', productId);
-    await sb.from('product_pricing_tiers').delete().eq('product_id', productId);
+    await sb.from('product_pricing_tiers').delete().eq('product_id', productId).not('variant_id', 'is', null);
     await sb.from('product_shipping_options').delete().eq('product_id', productId);
     // product_variants cascade-deletes with options, so no need to delete separately.
 
@@ -1857,16 +1887,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       if (varErr) console.error('saveVariantData variant error:', varErr);
     }
 
-    for (const tier of tiers) {
-      if (!tier.qty_from || !tier.unit_price) continue;
-      await sb.from('product_pricing_tiers').insert({
-        product_id: productId,
-        variant_id: null,
-        qty_from: parseInt(tier.qty_from, 10),
-        qty_to: tier.qty_to ? parseInt(tier.qty_to, 10) : null,
-        unit_price: parseFloat(tier.unit_price),
-      });
-    }
+    // Product-level tiers (variant_id IS NULL) are written by the
+    // ProductComposer flow via saveProductPricingTiers. The variants
+    // subsystem owns only variant-level tiers, which the UI does not
+    // currently expose — leave the variant-tier slot wired but unused.
+    void tiers;
 
     for (const ship of shipping) {
       if (!ship.is_available) continue;
@@ -1882,6 +1907,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   };
 
   const loadVariantData = async (productId) => {
+    // Product-level tiers (variant_id IS NULL) are loaded by the ProductComposer
+    // flow via loadProductPricingTiers, not here. We only fetch variant-level
+    // tiers, which the current UI does not surface but kept loaded for safety.
     const [
       { data: optRows },
       { data: varRows },
@@ -1890,7 +1918,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     ] = await Promise.all([
       sb.from('product_options').select('*, product_option_values(*)').eq('product_id', productId).order('display_order'),
       sb.from('product_variants').select('*').eq('product_id', productId),
-      sb.from('product_pricing_tiers').select('*').eq('product_id', productId).order('qty_from'),
+      sb.from('product_pricing_tiers').select('*').eq('product_id', productId).not('variant_id', 'is', null).order('qty_from'),
       sb.from('product_shipping_options').select('*').eq('product_id', productId),
     ]);
 
@@ -1985,11 +2013,32 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       optionalKeys: PRODUCT_OPTIONAL_DB_FIELDS,
       execute: (nextPayload) => sb.from('products').insert(nextPayload).select('id').single(),
     });
-    // Save variant data if variants are enabled
     const newProductId = insertedRows?.id;
-    if (!error && newProductId && product.has_variants) {
-      try { await saveVariantData(newProductId, variantData); }
-      catch (vErr) { console.error('addProduct saveVariantData error:', vErr); }
+    if (!error && newProductId) {
+      // Save the 3 product-level pricing tiers (variant_id IS NULL).
+      try {
+        const tierErr = await saveProductPricingTiers(sb, newProductId, product.tiers, product.moq);
+        if (tierErr) console.error('addProduct saveProductPricingTiers error:', tierErr);
+      } catch (tErr) { console.error('addProduct saveProductPricingTiers exception:', tErr); }
+
+      // Phase 4 — save certifications (uploads PDFs + inserts DB rows).
+      if (Array.isArray(product.certifications) && product.certifications.length > 0) {
+        try {
+          await saveProductCertifications(sb, {
+            productId: newProductId,
+            userId: user.id,
+            nextCerts: product.certifications,
+            prevCerts: [],
+          });
+        } catch (cErr) { console.error('addProduct saveProductCertifications error:', cErr); }
+      }
+
+      // Save variant data if variants are enabled (options/variants/shipping only;
+      // tiers are now owned by the product-level flow above).
+      if (product.has_variants) {
+        try { await saveVariantData(newProductId, variantData); }
+        catch (vErr) { console.error('addProduct saveVariantData error:', vErr); }
+      }
     }
     setSaving(false);
     if (error) {
@@ -1998,7 +2047,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
     sessionStorage.removeItem('maabar_product_draft');
-    setProduct(emptyProduct);
+    setProduct({ ...emptyProduct, tiers: emptyTierSet(), certifications: [] });
     setVariantData(emptyVariantData());
     setProductComposerStep('edit');
     setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح' : lang === 'zh' ? '产品添加成功' : 'Product added successfully'));
@@ -2026,9 +2075,27 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       optionalKeys: PRODUCT_OPTIONAL_DB_FIELDS,
       execute: (nextPayload) => sb.from('products').update(nextPayload).eq('id', editingProduct.id),
     });
-    if (!error && editingProduct.has_variants) {
-      try { await saveVariantData(editingProduct.id, editVariantData); }
-      catch (vErr) { console.error('updateProduct saveVariantData error:', vErr); }
+    if (!error) {
+      // Save the 3 product-level pricing tiers (variant_id IS NULL).
+      try {
+        const tierErr = await saveProductPricingTiers(sb, editingProduct.id, editingProduct.tiers, editingProduct.moq);
+        if (tierErr) console.error('updateProduct saveProductPricingTiers error:', tierErr);
+      } catch (tErr) { console.error('updateProduct saveProductPricingTiers exception:', tErr); }
+
+      // Phase 4 — diff certifications against the snapshot loaded at edit time.
+      try {
+        await saveProductCertifications(sb, {
+          productId: editingProduct.id,
+          userId: user.id,
+          nextCerts: editingProduct.certifications || [],
+          prevCerts: editProductCertsSnapshot,
+        });
+      } catch (cErr) { console.error('updateProduct saveProductCertifications error:', cErr); }
+
+      if (editingProduct.has_variants) {
+        try { await saveVariantData(editingProduct.id, editVariantData); }
+        catch (vErr) { console.error('updateProduct saveVariantData error:', vErr); }
+      }
     }
     setSaving(false);
     if (error) {
@@ -2038,6 +2105,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setEditProductComposerStep('edit');
     setEditingProduct(null);
     setEditVariantData(emptyVariantData());
+    setEditProductCertsSnapshot([]);
     loadMyProducts(); loadStats();
   };
 
@@ -3169,11 +3237,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <div style={{ display: 'flex', gap: 16, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', ...arFont }}>
                           <span>{isAr ? 'التاجر:' : lang === 'zh' ? '买家：' : 'Buyer:'} {buyerName}</span>
                           <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {r.quantity || '—'}</span>
-                          {r.product?.price_from && (
-                            <span style={{ direction: 'ltr' }}>
-                              {Number(r.product.price_from).toFixed(2)} {r.product.currency || 'USD'} / unit
-                            </span>
-                          )}
+                          {(() => {
+                            const productPrice = deriveProductPriceFrom(r.product);
+                            if (!productPrice) return null;
+                            return (
+                              <span style={{ direction: 'ltr' }}>
+                                {productPrice.toFixed(2)} {r.product?.currency || 'USD'} / unit
+                              </span>
+                            );
+                          })()}
                         </div>
                         {r.description && (
                           <p style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--text-secondary)', ...arFont, lineHeight: 1.6 }}>
@@ -3486,9 +3558,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   {editingProduct?.id === p.id ? (
                     <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '24px 0', animation: 'fadeIn 0.3s ease' }}>
                       {editProductComposerStep === 'preview' ? (
-                        <ProductPreviewPanel product={normalizeProductDraftMedia(editingProduct)} onPublish={updateProduct} onBack={() => setEditProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
+                        <ProductPreviewPanel key={editingProduct.id} product={normalizeProductDraftMedia(editingProduct)} onPublish={updateProduct} onBack={() => setEditProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} certificationsCount={(editingProduct.certifications || []).length} />
                       ) : (
-                        <ProductForm data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={editVariantData} setVariantData={setEditVariantData} />
+                        <ProductForm key={editingProduct.id} isEdit certificationsCount={(editingProduct.certifications || []).length} data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={editVariantData} setVariantData={setEditVariantData} />
                       )}
                     </div>
                   ) : (
@@ -3504,12 +3576,42 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           {p.sample_available && <span style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', borderRadius: 10, color: '#5a9a72', letterSpacing: 0.5 }}>{isAr ? 'عينة' : lang === 'zh' ? '样品' : 'SAMPLE'}</span>}
                           {p.category && p.category !== 'other' && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{cats.find(c => c.val === p.category)?.label || p.category}</span>}
                         </div>
-                        <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{p.price_from} {p.currency || 'USD'} · {isAr ? 'MOQ' : lang === 'zh' ? '最小起订量' : 'MOQ'}: {p.moq}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{deriveProductPriceFrom(p) ?? '—'} {p.currency || 'USD'} · {isAr ? 'MOQ' : lang === 'zh' ? '最小起订量' : 'MOQ'}: {p.moq}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
                         <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
-                        <button onClick={() => { setEditingProduct(normalizeProductDraftMedia(p)); setEditProductComposerStep('edit'); setProductSaveMsg(''); if (p.has_variants) loadVariantData(p.id).then(setEditVariantData).catch(console.error); }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
+                        <button onClick={() => {
+                          // Expand stored country/port into the dropdown+other form pair.
+                          const country = expandStoredSelect(p.country_of_origin, COUNTRY_OF_ORIGIN_OPTIONS);
+                          const port    = expandStoredSelect(p.port_of_loading,   PORT_OF_LOADING_OPTIONS);
+                          setEditingProduct(normalizeProductDraftMedia({
+                            ...p,
+                            tiers: emptyTierSet(),
+                            certifications: [],
+                            country_of_origin: country.selectValue || 'China',
+                            country_of_origin_other: country.otherValue,
+                            port_of_loading: port.selectValue,
+                            port_of_loading_other: port.otherValue,
+                            incoterms: Array.isArray(p.incoterms) ? p.incoterms : [],
+                            price_validity_days: p.price_validity_days || 30,
+                          }));
+                          setEditProductCertsSnapshot([]);
+                          setEditProductComposerStep('edit');
+                          setProductSaveMsg('');
+                          loadProductPricingTiers(sb, p.id)
+                            .then(loadedTiers => setEditingProduct(prev => prev && prev.id === p.id ? { ...prev, tiers: loadedTiers } : prev))
+                            .catch(console.error);
+                          // Phase 4 — load the full certification rows so the supplier
+                          // can edit them. The snapshot lets save-time diff deletions.
+                          loadProductCertifications(sb, p.id)
+                            .then(certs => {
+                              setEditingProduct(prev => prev && prev.id === p.id ? { ...prev, certifications: certs } : prev);
+                              setEditProductCertsSnapshot(certs);
+                            })
+                            .catch(err => { console.error('cert load error:', err); setEditProductCertsSnapshot([]); });
+                          if (p.has_variants) loadVariantData(p.id).then(setEditVariantData).catch(console.error);
+                        }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
                         <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
                       </div>
                     </div>
@@ -4010,9 +4112,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 32, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>{t.addProductTitle}</h2>
               {productComposerStep === 'preview' ? (
-                <ProductPreviewPanel product={normalizeProductDraftMedia(product)} onPublish={addProduct} onBack={() => setProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} />
+                <ProductPreviewPanel product={normalizeProductDraftMedia(product)} onPublish={addProduct} onBack={() => setProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} certificationsCount={(product.certifications || []).length} />
               ) : (
-                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={variantData} setVariantData={setVariantData} />
+                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={variantData} setVariantData={setVariantData} certificationsCount={(product.certifications || []).length} />
               )}
               {productSaveMsg && (
                 <p style={{ marginTop: 12, fontSize: 13, color: ([t.productSavedWithFallback, 'تم إضافة المنتج بنجاح', '产品添加成功', 'Product added successfully'].includes(productSaveMsg) ? (productSaveMsg === t.productSavedWithFallback ? '#a08850' : '#5a9a72') : '#a07070'), fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
