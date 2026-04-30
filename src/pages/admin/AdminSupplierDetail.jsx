@@ -68,6 +68,23 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
   const isAr = lang === 'ar';
 
   const getSignedUrl = useCallback(async (rawPath) => {
+    if (!rawPath || typeof rawPath !== 'string') return null;
+    // Tolerate mixed-format legacy entries in factory_images. Two upload
+    // codepaths historically wrote to that column with different formats:
+    //   - the verification flow stores supplier-docs paths (private,
+    //     must be signed)
+    //   - the older settings-tab uploadFactoryImage stored full public
+    //     URLs to product-images (public bucket, no signing required)
+    // Pre-fix, only the first form rendered; the second form fell out
+    // of normalizeSupplierDocStoragePath() as '' and the admin saw
+    // identical "…" placeholders in place of real images. Now: if the
+    // raw value is already a fully-qualified URL to anything other
+    // than supplier-docs, pass it through unchanged so the <img> can
+    // load it directly. Path values and supplier-docs URLs continue
+    // through the normal sign-and-return path below.
+    if (/^https?:\/\//i.test(rawPath) && !rawPath.includes('/supplier-docs/')) {
+      return rawPath;
+    }
     const path = normalizeSupplierDocStoragePath(rawPath);
     if (!path) return null;
     const { data, error } = await sb.storage.from('supplier-docs').createSignedUrl(path, 60 * 30);
