@@ -227,17 +227,6 @@ export default function Suppliers({ lang, user }) {
                   </p>
                 )}
 
-                {/* FACTORY IMAGES */}
-                {s.factory_images?.length > 0 && (
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-                    {s.factory_images.slice(0, 3).map((img, i) => (
-                      <div key={i} style={{ width: 56, height: 40, borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
-                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* TAGS */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                   {s.speciality && s.speciality !== 'other' && (

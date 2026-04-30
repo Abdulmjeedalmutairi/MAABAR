@@ -274,20 +274,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         </div>
 
-        {/* ── Factory images ── */}
-        {supplier.factory_images?.length > 0 && (
-          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
-            <SectionLabel label={isAr ? 'صور المصنع' : lang === 'zh' ? '工厂图片' : 'Factory Images'} isAr={isAr} />
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-              {supplier.factory_images.map((img, i) => (
-                <div key={i} style={{ width: 100, height: 72, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e5de', flexShrink: 0 }}>
-                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ── About ── */}
         {companyDescription && (
           <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
