@@ -10,7 +10,10 @@ import {
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 import { attachSupplierProfiles, fetchSupplierPublicProfileById } from '../lib/profileVisibility';
-import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
+import { PRODUCT_TIER_EMBED, deriveProductPriceFrom, deriveProductPriceRange } from '../lib/productPriceLookup';
+import { loadProductCertifications } from '../lib/productCertifications';
+import { T } from '../lib/supplierDashboardConstants';
+import { formatPriceLocale, formatDateLocale } from '../lib/formatLocale';
 import {
   getProductInquiryQuestion,
   getProductInquiryAllTranslations,
@@ -79,10 +82,10 @@ function createDirectRequestId() {
 // ── Variant UI sub-components ────────────────────────────────────────────────
 
 function OptionSelector({ option, selectedValues, onSelect, lang }) {
-  const optionName = buyerText(option, lang, 'display_name_ar', 'display_name_en');
-  const values = (option.product_option_values || []).slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const optionName = buyerText(option, lang, 'name_ar', 'name_en');
+  const values = (option.product_option_values || []).slice().sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
   const selectedId = selectedValues[option.id];
-  const isColor = option.option_type === 'color_swatch';
+  const isColor = option.input_type === 'color_swatch';
 
   return (
     <div style={{ marginBottom: 18 }}>
@@ -137,12 +140,12 @@ function OptionSelector({ option, selectedValues, onSelect, lang }) {
 
 function TierPricingTable({ tiers, activeQty, lang }) {
   if (!tiers.length) return null;
-  const isAr = lang === 'ar';
+  const tT = T[lang] || T.en;
   const qty = Number(activeQty) || 0;
   return (
     <div style={{ marginBottom: 20 }}>
       <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
-        {isAr ? 'أسعار الكميات' : 'Tiered Pricing'}
+        {tT.tieredPricingTitle.replace(' *', '')}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(tiers.length, 4)}, 1fr)`, gap: 6 }}>
         {tiers.map((tier, i) => {
@@ -158,11 +161,8 @@ function TierPricingTable({ tiers, activeQty, lang }) {
                 {tier.qty_to ? `${tier.qty_from}–${tier.qty_to}` : `${tier.qty_from}+`}
               </p>
               <p style={{ fontSize: 14, fontWeight: isActive ? 600 : 400, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', direction: 'ltr' }}>
-                ${Number(tier.unit_price_usd).toFixed(2)}
+                ${formatPriceLocale(tier.unit_price, lang)}
               </p>
-              {tier.discount_pct > 0 && (
-                <p style={{ fontSize: 9, color: '#2d7a4f', marginTop: 2 }}>-{tier.discount_pct}%</p>
-              )}
             </div>
           );
         })}
@@ -174,29 +174,304 @@ function TierPricingTable({ tiers, activeQty, lang }) {
 function ShippingCards({ options, lang }) {
   if (!options.length) return null;
   const isAr = lang === 'ar';
+  const tT = T[lang] || T.en;
   const methodLabel = (m) => {
-    if (isAr) return m === 'sea' ? 'شحن بحري' : m === 'air' ? 'شحن جوي' : m === 'express' ? 'شحن سريع' : 'شحن بري';
-    return m === 'sea' ? 'Sea' : m === 'air' ? 'Air' : m === 'express' ? 'Express' : 'Land';
+    if (m === 'sea')     return tT.pdShipMethodSea;
+    if (m === 'air')     return tT.pdShipMethodAir;
+    if (m === 'express') return tT.pdShipMethodExpress;
+    return tT.pdShipMethodLand;
   };
   const methodIcon = (m) => m === 'sea' ? '🚢' : m === 'air' ? '✈️' : m === 'express' ? '⚡' : '🚛';
   return (
     <div style={{ marginBottom: 24 }}>
       <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10 }}>
-        {isAr ? 'خيارات الشحن' : 'Shipping Options'}
+        {tT.pdShippingOptionsTitle}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
         {options.map((opt, i) => (
           <div key={i} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
             <p style={{ fontSize: 13, marginBottom: 4 }}>{methodIcon(opt.method)} {methodLabel(opt.method)}</p>
-            {opt.lead_time_days && (
-              <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{opt.lead_time_days} {isAr ? 'يوم' : 'days'}</p>
+            {(opt.lead_time_min_days != null || opt.lead_time_max_days != null) && (
+              <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                {tT.cardLeadTimeFn(
+                  opt.lead_time_min_days != null ? Number(opt.lead_time_min_days) : null,
+                  opt.lead_time_max_days != null ? Number(opt.lead_time_max_days) : null
+                )}
+              </p>
             )}
-            {opt.cost_usd != null && (
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', direction: 'ltr', marginTop: 2 }}>${Number(opt.cost_usd).toFixed(2)}</p>
+            {opt.cost_per_unit_usd != null && (
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', direction: 'ltr', marginTop: 2 }}>${formatPriceLocale(opt.cost_per_unit_usd, lang)}</p>
             )}
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Phase 5B buyer blocks ───────────────────────────────────────────────────
+
+// Localized port label: prefer the T-table translation when the value matches a
+// canonical port code; otherwise return the raw value (covers the supplier's
+// "Other → free text" case).
+function localizedPortLabel(value, tT) {
+  if (!value) return null;
+  const key = `port${value}`;
+  return tT[key] || value;
+}
+
+// Pricing & Trade Terms block — tier table + range header + trade terms grid.
+// Renders a card for ALL products (flat or has_variants) when there is at
+// least one tier OR any trade-term field (incoterm/port/lead-time/validity).
+function PricingTradeTermsBlock({ product, tiers, lang, vfFont, isAr }) {
+  const tT = T[lang] || T.en;
+  const currency = product.currency || 'USD';
+  const range = deriveProductPriceRange(tiers);
+  const incoterms = Array.isArray(product.incoterms) ? product.incoterms.filter(Boolean) : [];
+  const portValue = String(product.port_of_loading || '').trim();
+  const leadMin = product.lead_time_min_days != null ? Number(product.lead_time_min_days) : null;
+  const leadMax = product.lead_time_max_days != null ? Number(product.lead_time_max_days) : null;
+  const negotiable = Boolean(product.lead_time_negotiable);
+  const validityDays = Number.isFinite(parseInt(product.price_validity_days, 10)) ? parseInt(product.price_validity_days, 10) : null;
+
+  const hasTiers = (tiers || []).length > 0;
+  const hasAnyTerm = incoterms.length > 0 || Boolean(portValue) || leadMin !== null || leadMax !== null || validityDays !== null;
+  if (!hasTiers && !hasAnyTerm) return null;
+
+  // Term mini-card
+  const Term = ({ label, children }) => (
+    <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+      <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6, ...vfFont }}>{label}</p>
+      <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5, ...vfFont }}>{children}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ marginBottom: 24, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
+      <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, ...vfFont }}>
+        {tT.buyerBlockPricingTitle}
+      </p>
+
+      {hasTiers && (
+        <>
+          {range.from !== null && (
+            <p style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 12, direction: 'ltr', textAlign: isAr ? 'right' : 'left', ...vfFont }}>
+              {range.from === range.to
+                ? `${formatPriceLocale(range.from, lang)} ${currency}`
+                : `${formatPriceLocale(range.from, lang)} – ${formatPriceLocale(range.to, lang)} ${currency}`}
+              <span style={{ fontSize: 12, color: 'var(--text-disabled)', marginInlineStart: 6 }}>/ {tT.pdPerUnit}</span>
+            </p>
+          )}
+          <TierPricingTable tiers={tiers} activeQty={0} lang={lang} />
+        </>
+      )}
+
+      {hasAnyTerm && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: hasTiers ? 6 : 0 }}>
+          <Term label={tT.buyerCurrencyLabel}>{currency}</Term>
+          {validityDays !== null && (
+            <Term label={tT.buyerPriceValidityLabel}>{tT.priceValidDaysFn(validityDays)}</Term>
+          )}
+          {incoterms.length > 0 && (
+            <Term label={tT.buyerIncotermsLabel}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {incoterms.map((code) => (
+                  <span key={code} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', color: 'var(--text-primary)', ...vfFont }}>
+                    {code}
+                  </span>
+                ))}
+              </div>
+            </Term>
+          )}
+          {portValue && (
+            <Term label={tT.buyerPortOfLoadingLabel}>{localizedPortLabel(portValue, tT)}</Term>
+          )}
+          {(leadMin !== null || leadMax !== null) && (
+            <Term label={tT.buyerLeadTimeLabel}>{tT.leadTimeBuyerFn(leadMin, leadMax, negotiable)}</Term>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Compliance & Certifications block — renders when the product has ≥1 cert.
+// SASO certs get a green "Saudi-ready" badge; all others render as clean cards
+// with optional issued/expiry dates and a Download PDF link.
+function CompliancCertsBlock({ certs, lang, vfFont, isAr }) {
+  const tT = T[lang] || T.en;
+  const list = (certs || []).filter(c => c && (c.cert_type || c.cert_label));
+  if (!list.length) return null;
+
+  return (
+    <div style={{ marginBottom: 24, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
+      <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, ...vfFont }}>
+        {tT.buyerBlockComplianceTitle}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+        {list.map((cert) => {
+          const isSaso = String(cert.cert_type || '').toUpperCase() === 'SASO';
+          return (
+            <div key={cert._key || cert.id} style={{
+              padding: '12px 14px',
+              borderRadius: 10,
+              background: 'var(--bg-raised)',
+              border: `1px solid ${isSaso ? 'rgba(45,122,79,0.3)' : 'var(--border-subtle)'}`,
+              boxShadow: isSaso ? '0 0 0 1px rgba(45,122,79,0.08)' : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: '3px 9px',
+                  borderRadius: 6,
+                  background: isSaso ? 'rgba(45,122,79,0.12)' : 'var(--bg-subtle)',
+                  color: isSaso ? '#2d7a4f' : 'var(--text-secondary)',
+                  letterSpacing: 0.5,
+                  fontFamily: 'monospace',
+                }}>
+                  {cert.cert_type || '—'}
+                </span>
+                {isSaso && (
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.25)', color: '#2d7a4f', ...vfFont }}>
+                    ✓ {tT.certSaudiReadyBadge}
+                  </span>
+                )}
+              </div>
+              {cert.cert_label && (
+                <p style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 6, lineHeight: 1.5, ...vfFont }}>{cert.cert_label}</p>
+              )}
+              {(cert.issued_date || cert.expiry_date) && (
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: cert.cert_file_url ? 8 : 0 }}>
+                  {cert.issued_date && (
+                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', ...vfFont }}>
+                      <span style={{ letterSpacing: 1, textTransform: 'uppercase', marginInlineEnd: 4 }}>{tT.certIssuedShort}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{formatDateLocale(cert.issued_date, lang)}</span>
+                    </p>
+                  )}
+                  {cert.expiry_date && (
+                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', ...vfFont }}>
+                      <span style={{ letterSpacing: 1, textTransform: 'uppercase', marginInlineEnd: 4 }}>{tT.certExpiresShort}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{formatDateLocale(cert.expiry_date, lang)}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              {cert.cert_file_url && (
+                <a
+                  href={cert.cert_file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 11,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border-muted)',
+                    background: 'var(--bg-subtle)',
+                    color: 'var(--text-secondary)',
+                    textDecoration: 'none',
+                    ...vfFont,
+                  }}
+                >
+                  📄 {tT.certDownloadPdf}
+                </a>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Customization block — renders when oem_available || odm_available is true.
+// Surfaces OEM/ODM availability chips, OEM/ODM lead time (if set), and a
+// helper line nudging the buyer to reach out to the supplier.
+function CustomizationBlock({ product, lang, vfFont, isAr }) {
+  const tT = T[lang] || T.en;
+  const oem = Boolean(product.oem_available);
+  const odm = Boolean(product.odm_available);
+  if (!oem && !odm) return null;
+
+  const oemMin = product.oem_lead_time_min_days != null ? Number(product.oem_lead_time_min_days) : null;
+  const oemMax = product.oem_lead_time_max_days != null ? Number(product.oem_lead_time_max_days) : null;
+  const hasOemLeadTime = oemMin !== null || oemMax !== null;
+
+  return (
+    <div style={{ marginBottom: 24, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
+      <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, ...vfFont }}>
+        {tT.buyerBlockCustomizationTitle}
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        {oem && (
+          <span style={{ fontSize: 12, padding: '5px 12px', borderRadius: 999, background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.25)', color: '#2d7a4f', ...vfFont }}>
+            ✓ {tT.oemAvailableLabel}
+          </span>
+        )}
+        {odm && (
+          <span style={{ fontSize: 12, padding: '5px 12px', borderRadius: 999, background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.25)', color: '#2d7a4f', ...vfFont }}>
+            ✓ {tT.odmAvailableLabel}
+          </span>
+        )}
+      </div>
+      {hasOemLeadTime && (
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, ...vfFont }}>
+          <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.2, textTransform: 'uppercase', marginInlineEnd: 8 }}>
+            {tT.oemLeadTimeSection}
+          </span>
+          {tT.buyerOemLeadTimeFn(oemMin, oemMax)}
+        </p>
+      )}
+      <p style={{ fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.6, margin: 0, ...vfFont }}>
+        {tT.customizationContactHelper}
+      </p>
+    </div>
+  );
+}
+
+// Logistics & Shipping block (Phase 5D) — surfaces packaging math the buyer
+// needs to estimate landed cost: CBM, units per carton, gross & net weights.
+// Hidden when none of the four fields are populated. Numeric values render
+// with locale-aware separators via Intl.
+function LogisticsBlock({ product, lang, vfFont }) {
+  const tT = T[lang] || T.en;
+
+  const cbm   = Number.isFinite(parseFloat(product.cbm))             ? parseFloat(product.cbm)             : null;
+  const units = Number.isFinite(parseInt(product.units_per_carton, 10)) ? parseInt(product.units_per_carton, 10) : null;
+  const gross = Number.isFinite(parseFloat(product.gross_weight_kg)) ? parseFloat(product.gross_weight_kg) : null;
+  const net   = Number.isFinite(parseFloat(product.net_weight_kg))   ? parseFloat(product.net_weight_kg)   : null;
+
+  // Each row uses fractionDigits appropriate for its unit. CBM defaults to 4
+  // decimals (cubic meters can be small fractions); units render as integers;
+  // weights render with 2 decimals (kg).
+  const items = [
+    { label: tT.cbmLabel,            value: cbm,   render: (v) => formatPriceLocale(v, lang, { fractionDigits: 4 }) },
+    { label: tT.unitsPerCartonLabel, value: units, render: (v) => formatPriceLocale(v, lang, { fractionDigits: 0 }) },
+    { label: tT.grossWeightLabel,    value: gross, render: (v) => formatPriceLocale(v, lang, { fractionDigits: 2 }) },
+    { label: tT.netWeightLabel,      value: net,   render: (v) => formatPriceLocale(v, lang, { fractionDigits: 2 }) },
+  ].filter(item => item.value !== null && item.value > 0);
+
+  if (!items.length) return null;
+
+  return (
+    <div style={{ marginBottom: 24, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
+      <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, ...vfFont }}>
+        {tT.buyerBlockLogisticsTitle}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 10 }}>
+        {items.map(item => (
+          <div key={item.label} style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)' }}>
+            <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6, ...vfFont }}>{item.label}</p>
+            <p style={{ fontSize: 14, color: 'var(--text-primary)', direction: 'ltr', ...vfFont }}>{item.render(item.value)}</p>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 11, color: 'var(--text-disabled)', lineHeight: 1.6, margin: 0, ...vfFont }}>
+        {tT.buyerLogisticsHelper}
+      </p>
     </div>
   );
 }
@@ -227,6 +502,13 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const [variantVariants, setVariantVariants] = useState([]);
   const [pricingTiers, setPricingTiers] = useState([]);
   const [shippingOptions, setShippingOptions] = useState([]);
+  // Phase 5B — buyer-facing data (loaded for ALL products, not just variants)
+  const [productCerts, setProductCerts] = useState([]);
+  // Phase 5D.5 — does the supplier have ANY certs across ALL their products?
+  // Drives the "Certified" pill on the supplier card so it stays accurate
+  // even when the currently-viewed product itself has no certs but the
+  // supplier has them on a sibling product.
+  const [supplierHasAnyCert, setSupplierHasAnyCert] = useState(false);
   const [selectedValues, setSelectedValues] = useState({});
   const [orderLines, setOrderLines] = useState([]);
   const [variantQtyInput, setVariantQtyInput] = useState('');
@@ -237,19 +519,40 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const isSupplier = profile?.role === 'supplier';
   const inquiryTemplates = getProductInquiryTemplates();
 
+  // Variant-specific data (options/variants/shipping) — only fetched for has_variants products.
+  // Product-level pricing tiers + certifications are loaded by loadProduct for ALL products.
   const loadVariantData = useCallback(async (productId) => {
     setLoadingVariants(true);
-    const [optionsRes, variantsRes, tiersRes, shippingRes] = await Promise.all([
-      sb.from('product_options').select('*, product_option_values(*)').eq('product_id', productId).order('sort_order'),
+    const [optionsRes, variantsRes, shippingRes] = await Promise.all([
+      sb.from('product_options').select('*, product_option_values(*)').eq('product_id', productId).order('display_order'),
       sb.from('product_variants').select('*').eq('product_id', productId).eq('is_active', true).order('created_at'),
-      sb.from('product_pricing_tiers').select('*').eq('product_id', productId).order('qty_from'),
-      sb.from('product_shipping_options').select('*').eq('product_id', productId).eq('enabled', true),
+      sb.from('product_shipping_options').select('*').eq('product_id', productId).eq('is_available', true),
     ]);
     setVariantOptions(optionsRes.data || []);
     setVariantVariants(variantsRes.data || []);
-    setPricingTiers(tiersRes.data || []);
     setShippingOptions(shippingRes.data || []);
     setLoadingVariants(false);
+  }, []);
+
+  // Phase 5B — product-level pricing tiers and certifications.
+  // Loaded for every product the buyer views, regardless of has_variants.
+  // variant_id IS NULL filter excludes per-SKU tier overrides (Phase 2 design).
+  // Phase 5D.5 — also fires a lightweight supplier-wide cert-exists check
+  // so the "Certified" pill on the supplier card reflects the supplier's
+  // catalog (any product), not just the currently-viewed product.
+  const loadBuyerExtras = useCallback(async (productId, supplierId) => {
+    const [tiersRes, certsList, supplierCertsRes] = await Promise.all([
+      sb.from('product_pricing_tiers').select('*').eq('product_id', productId).is('variant_id', null).order('qty_from'),
+      loadProductCertifications(sb, productId),
+      supplierId
+        ? sb.from('product_certifications').select('id, products!inner(supplier_id)').eq('products.supplier_id', supplierId).limit(1)
+        : Promise.resolve({ data: [] }),
+    ]);
+    setPricingTiers(tiersRes.data || []);
+    setProductCerts(certsList || []);
+    const certExists = (supplierCertsRes.data?.length || 0) > 0;
+    console.log('[ProductDetail] supplier_id=' + supplierId + ' has_any_cert=' + certExists);
+    setSupplierHasAnyCert(certExists);
   }, []);
 
   useEffect(() => { loadProduct(); }, [id, profile?.role, user?.id]);
@@ -267,6 +570,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
       if (productWithSupplier?.profiles) {
         setProduct(productWithSupplier);
         setLoading(false);
+        loadBuyerExtras(id, productWithSupplier.supplier_id || productWithSupplier.profiles?.id);
         if (productWithSupplier.has_variants) loadVariantData(id);
         return;
       }
@@ -277,6 +581,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         const ownSupplierProfile = await fetchSupplierPublicProfileById(sb, user.id);
         const p = { ...ownProduct, profiles: ownSupplierProfile || null };
         setProduct(p);
+        loadBuyerExtras(id, ownProduct.supplier_id || user.id);
         if (ownProduct.has_variants) loadVariantData(id);
       } else {
         setProduct(null);
@@ -292,9 +597,14 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const getActiveVariant = useCallback(() => {
     if (!variantVariants.length || !variantOptions.length) return null;
     if (Object.keys(selectedValues).length !== variantOptions.length) return null;
+    // option_values is stored as an array [{option_id, value_id}, ...] (jsonb).
+    // Match every option axis to the supplier-saved combo.
     return variantVariants.find(v => {
-      const ov = v.option_values || {};
-      return variantOptions.every(opt => ov[opt.id] === selectedValues[opt.id]);
+      const ov = Array.isArray(v.option_values) ? v.option_values : [];
+      return variantOptions.every(opt => {
+        const entry = ov.find(o => o && o.option_id === opt.id);
+        return entry && entry.value_id === selectedValues[opt.id];
+      });
     }) || null;
   }, [variantVariants, selectedValues, variantOptions]);
 
@@ -308,7 +618,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     setSelectedValues(prev => ({ ...prev, [optionId]: valueId }));
     // Auto-swap gallery image if first color_swatch option selected
     const opt = variantOptions.find(o => o.id === optionId);
-    if (opt?.option_type === 'color_swatch') {
+    if (opt?.input_type === 'color_swatch') {
       const val = (opt.product_option_values || []).find(v => v.id === valueId);
       if (val?.image_url) setSelectedImage(val.image_url);
     }
@@ -317,20 +627,20 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const addToOrderBuilder = () => {
     const activeVariant = getActiveVariant();
     if (!activeVariant) {
-      alert(isAr ? 'يرجى اختيار جميع الخيارات أولاً' : 'Please select all options first');
+      alert((T[lang] || T.en).pdAlertSelectAllOptions);
       return;
     }
     const qtyNum = parseInt(variantQtyInput, 10);
     if (!qtyNum || qtyNum < 1) {
-      alert(isAr ? 'أدخل كمية صحيحة' : 'Please enter a valid quantity');
+      alert((T[lang] || T.en).pdAlertValidQuantity);
       return;
     }
     if (activeVariant.moq && qtyNum < activeVariant.moq) {
-      alert(isAr ? `الحد الأدنى للطلب ${activeVariant.moq} قطعة` : `Minimum order quantity is ${activeVariant.moq} units`);
+      alert((T[lang] || T.en).pdAlertMinQtyFn(activeVariant.moq));
       return;
     }
     const tier = getApplicableTier(qtyNum);
-    const unitPrice = tier ? Number(tier.unit_price_usd) : Number(activeVariant.price_usd || 0);
+    const unitPrice = tier ? Number(tier.unit_price) : Number(activeVariant.price || 0);
     const label = variantOptions.map(opt => {
       const valId = selectedValues[opt.id];
       const val = (opt.product_option_values || []).find(v => v.id === valId);
@@ -356,13 +666,13 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     if (!user) { nav('/login/buyer'); return; }
     const normalizedQty = String(qty || '').trim();
     if (!normalizedQty || Number.parseInt(normalizedQty, 10) <= 0) {
-      alert(isAr ? 'يرجى تحديد كمية صحيحة' : lang === 'zh' ? '请输入有效数量' : 'Please enter a valid quantity');
+      alert((T[lang] || T.en).pdAlertValidQuantity);
       return;
     }
     if (!product) return;
     const sup = product.profiles || {};
     const supplierId = sup.id || product.supplier_id;
-    if (!supplierId) { alert(isAr ? 'تعذّر تحديد المورد' : lang === 'zh' ? '未找到供应商' : 'Supplier not found'); return; }
+    if (!supplierId) { alert((T[lang] || T.en).pdAlertSupplierNotFound); return; }
     const requestId = createDirectRequestId();
     const productName = product.name_ar || product.name_en || product.name_zh || '';
     const requestPayload = {
@@ -432,7 +742,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const submitVariantOrder = async () => {
     if (!user) { nav('/login/buyer'); return; }
     if (!orderLines.length) {
-      alert(isAr ? 'أضف منتجاً واحداً على الأقل إلى طلبك' : 'Add at least one variant to your order');
+      alert((T[lang] || T.en).pdAlertAddVariant);
       return;
     }
     if (!product) return;
@@ -466,7 +776,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
     const { error: liError } = await sb.from('order_line_items').insert(
       orderLines.map(line => ({
-        request_id: requestId,
+        order_id: requestId,
         product_id: id,
         variant_id: line.variantId,
         quantity: line.qty,
@@ -480,7 +790,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     setSubmittingVariantOrder(false);
     setOrderLines([]);
     setSelectedValues({});
-    alert(isAr ? '✅ تم إرسال طلب عرض السعر! سيتواصل معك المورد قريباً' : '✅ Quote request sent! The supplier will contact you soon.');
+    alert((T[lang] || T.en).pdAlertQuoteSent);
     nav('/dashboard?tab=requests');
   };
 
@@ -491,9 +801,9 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     if (!product) return;
     const sup = product.profiles || {};
     const supplierId = sup.id || product.supplier_id;
-    if (!supplierId) { setSendingSample(false); alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : lang === 'zh' ? '无法识别供应商，请稍后再试' : 'Supplier not found, try again'); return; }
+    if (!supplierId) { setSendingSample(false); alert((T[lang] || T.en).pdAlertSupplierNotFound); return; }
     const maxQty = product.sample_max_qty || 3;
-    if (parseInt(sampleQty, 10) > maxQty) { alert(isAr ? `الحد الأقصى للعينة ${maxQty} قطع` : lang === 'zh' ? `样品最多 ${maxQty} 件` : `Max sample quantity is ${maxQty}`); return; }
+    if (parseInt(sampleQty, 10) > maxQty) { alert((T[lang] || T.en).pdAlertMaxSampleQtyFn(maxQty)); return; }
     setSendingSample(true);
     const total = (parseFloat(product.sample_price || 0) + parseFloat(product.sample_shipping || 0)) * parseInt(sampleQty || 1, 10);
     const activeVariant = getActiveVariant();
@@ -510,7 +820,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     try {
       await fetch(SEND_EMAILS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }, body: JSON.stringify({ type: 'new_sample', data: { recipientUserId: supplierId, productName: product.name_ar || product.name_en || product.name_zh || 'Product', quantity: sampleQty, totalPrice: total, lang } }) });
     } catch (e) { console.error('sample email error:', e); }
-    alert(isAr ? '✅ تم إرسال طلب العينة! سيتواصل معك المورد قريباً' : lang === 'zh' ? '✅ 样品请求已发送，供应商会尽快联系您' : '✅ Sample request sent! The supplier will contact you soon');
+    alert((T[lang] || T.en).pdAlertSampleSent);
     setShowSampleForm(false); setSampleQty('1'); setSampleNote('');
   };
 
@@ -519,9 +829,9 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     if (!product) return;
     const sup = product.profiles || {};
     const supplierId = sup.id || product.supplier_id;
-    if (!supplierId) { alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : lang === 'zh' ? '无法识别供应商，请稍后再试' : 'Supplier not found, try again'); return; }
+    if (!supplierId) { alert((T[lang] || T.en).pdAlertSupplierNotFound); return; }
     const questionText = getProductInquiryQuestion(selectedInquiryTemplate);
-    if (!questionText) { alert(isAr ? 'اختر قالب الاستفسار أولاً' : lang === 'zh' ? '请先选择咨询模板' : 'Please choose an inquiry template first'); return; }
+    if (!questionText) { alert((T[lang] || T.en).pdAlertSelectInquiryTemplate); return; }
     setSendingInquiry(true);
     const inquiryTranslations = getProductInquiryAllTranslations(selectedInquiryTemplate);
     const activeVariant = getActiveVariant();
@@ -537,7 +847,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     try {
       await fetch(SEND_EMAILS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }, body: JSON.stringify({ type: 'product_inquiry', data: { recipientUserId: supplierId, inquiryId: inquiry?.id || '', productName: product.name_ar || product.name_en || product.name_zh || 'Product', buyerName: profile?.company_name || profile?.full_name || user.email?.split('@')[0] || 'Buyer', question: questionText } }) });
     } catch (emailError) { console.error('product inquiry email error:', emailError); }
-    alert(isAr ? '✅ تم إرسال الاستفسار للمورد' : lang === 'zh' ? '✅ 已将咨询发送给供应商' : '✅ Inquiry sent to the supplier');
+    alert((T[lang] || T.en).pdAlertInquirySent);
     setShowInquiryForm(false); setSelectedInquiryTemplate('');
   };
 
@@ -546,7 +856,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     if (!product) return;
     const sup = product.profiles || {};
     const supplierId = sup.id || product.supplier_id;
-    if (!supplierId) { alert(isAr ? 'تعذّر تحديد المورد، حاول لاحقاً' : lang === 'zh' ? '无法识别供应商，请稍后再试' : 'Supplier not found, try again'); return; }
+    if (!supplierId) { alert((T[lang] || T.en).pdAlertSupplierNotFound); return; }
     nav(`/chat/${supplierId}`);
   };
 
@@ -559,7 +869,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
     <div className="product-detail-wrap">
       <div className="product-detail-inner">
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: 60 }}>
-          {isAr ? 'المنتج غير موجود' : lang === 'zh' ? '产品不存在' : 'Product not found'}
+          {(T[lang] || T.en).pdProductNotFound}
         </p>
       </div>
     </div>
@@ -579,26 +889,31 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const productPriceFrom = deriveProductPriceFrom(product);
   const price = buildDisplayPrice({ amount: productPriceFrom, sourceCurrency: product.currency || 'USD', displayCurrency: displayCurrency || product.currency || 'USD', rates: exchangeRates, lang });
   const productSpecs = buildProductSpecs(product, lang);
+  const tT = T[lang] || T.en;
+  // Origin value: localize "China" via the existing per-country T entries; for
+  // any other stored value (free-text "Other" supplier choice) we fall through.
+  const originStored = product.country_of_origin || sup.country || 'China';
+  const originLocalized = tT[`country${String(originStored).replace(/[^A-Za-z]/g, '')}`] || originStored || '—';
   const sourcingHighlights = [
-    { label: isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '起订量' : 'MOQ', value: product.moq || '—' },
-    { label: isAr ? 'بلد المنشأ' : lang === 'zh' ? '原产地' : 'Origin', value: isAr ? ((product.origin || sup.country || 'China') === 'China' ? 'الصين' : (product.origin || sup.country || '—')) : (product.origin || sup.country || 'China') },
-    { label: isAr ? 'مدة التجهيز' : lang === 'zh' ? '备货周期' : 'Lead time', value: product.spec_lead_time_days ? (isAr ? `${product.spec_lead_time_days} يوم` : lang === 'zh' ? `${product.spec_lead_time_days} 天` : `${product.spec_lead_time_days} days`) : '—' },
-    { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制能力' : 'Customization', value: product.spec_customization || (isAr ? 'غير موضح' : lang === 'zh' ? '未说明' : 'Not specified') },
-    { label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', value: product.sample_available ? (isAr ? 'متاحة' : lang === 'zh' ? '可提供' : 'Available') : (isAr ? 'غير متاحة' : lang === 'zh' ? '暂无' : 'Not available') },
-    { label: isAr ? 'التغليف' : lang === 'zh' ? '包装' : 'Packaging', value: product.spec_packaging_details || '—' },
+    { label: tT.pdSourcingMoqLabel,           value: product.moq || '—' },
+    { label: tT.pdOriginLabel, value: originLocalized },
+    { label: tT.pdSourcingLeadTimeLabel,      value: product.spec_lead_time_days ? tT.pdLeadTimeDaysFn(product.spec_lead_time_days) : '—' },
+    { label: tT.pdSourcingCustomizationLabel, value: product.spec_customization || tT.pdCustomizationNotSpecified },
+    { label: tT.pdSourcingSamplesLabel,       value: product.sample_available ? tT.pdSamplesAvailableValue : tT.pdSamplesNotAvailableValue },
+    { label: tT.pdSourcingPackagingLabel,     value: product.spec_packaging_details || '—' },
   ];
 
   const activeVariant = getActiveVariant();
   const variantQtyNum = parseInt(variantQtyInput, 10) || 0;
   const activeTier = getApplicableTier(variantQtyNum);
-  const activeUnitPrice = activeTier ? Number(activeTier.unit_price_usd) : (activeVariant ? Number(activeVariant.price_usd || 0) : null);
+  const activeUnitPrice = activeTier ? Number(activeTier.unit_price) : (activeVariant ? Number(activeVariant.price || 0) : null);
 
   return (
     <div className="product-detail-wrap">
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
       <div className="product-detail-inner">
         <button className="back-btn" onClick={() => nav('/products')}>
-          {isAr ? '← العودة' : lang === 'zh' ? '← 返回' : '← Back'}
+          {tT.pdBackBtn}
         </button>
 
         {/* ─── Gallery ─── */}
@@ -629,46 +944,49 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           <h1 className={`product-detail-name${isAr ? ' ar' : ''}`}>{name}</h1>
           {isReviewedSupplier && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72', fontSize: 11 }}>
-              ✓ {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified supplier'}
+              ✓ {tT.pdVerifiedSupplierPill}
             </span>
           )}
           {product.sample_available && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: '#2d7a4f', fontSize: 11 }}>
-              {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample available'}
+              {tT.pdSampleAvailablePill}
             </span>
           )}
         </div>
 
         {secondaryName && secondaryName !== name && (
           <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: 0, marginBottom: 10 }}>
-            {lang === 'zh' ? `英文 / 其他名称：${secondaryName}` : isAr ? `اسم المصنع / الاسم البديل: ${secondaryName}` : `Factory / alternate name: ${secondaryName}`}
+            {tT.pdAlternateNameFn(secondaryName)}
           </p>
         )}
 
         <p className="product-detail-price">{productPriceFrom ? price.formattedDisplay : '—'}</p>
         {price.isConverted && (
           <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: -12, marginBottom: 22 }}>
-            {isAr ? `السعر الأصلي: ${price.formattedSource}` : lang === 'zh' ? `原始价格：${price.formattedSource}` : `Original price: ${price.formattedSource}`}
+            {tT.pdOriginalPriceFn(price.formattedSource)}
           </p>
         )}
+
+        {/* ─── Phase 5B: Pricing & Trade Terms (tiers + Incoterms + port + lead time + validity) ─── */}
+        <PricingTradeTermsBlock product={product} tiers={pricingTiers} lang={lang} vfFont={{}} isAr={isAr} />
 
         {/* ─── Meta ─── */}
         <div className="product-detail-meta">
           <div>
-            <p className="meta-label">{isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '起订量' : 'Min. Order'}</p>
+            <p className="meta-label">{tT.pdMinOrderLabel}</p>
             <p className="meta-val">{product.moq || '—'}</p>
           </div>
           <div>
-            <p className="meta-label">{isAr ? 'المورد' : lang === 'zh' ? '供应商' : 'Supplier'}</p>
+            <p className="meta-label">{tT.pdSupplierLabel}</p>
             <p className="meta-val">{sup.company_name || '—'}</p>
           </div>
           <div>
-            <p className="meta-label">{isAr ? 'بلد المنشأ' : lang === 'zh' ? '原产地' : 'Origin'}</p>
-            <p className="meta-val">{isAr ? ((product.origin || sup.country || 'China') === 'China' ? 'الصين' : (product.origin || sup.country || '—')) : (product.origin || sup.country || 'China')}</p>
+            <p className="meta-label">{tT.pdOriginLabel}</p>
+            <p className="meta-val">{originLocalized}</p>
           </div>
           {product.sample_available && (
             <div>
-              <p className="meta-label">{isAr ? 'العينة' : lang === 'zh' ? '样品价' : 'Sample'}</p>
+              <p className="meta-label">{tT.pdSampleLabel}</p>
               <p className="meta-val" style={{ color: '#2d7a4f', fontSize: 14 }}>{fmt(product.sample_price)} SAR</p>
             </div>
           )}
@@ -677,14 +995,26 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         {/* ─── Sourcing snapshot ─── */}
         <div style={{ marginBottom: 24, padding: '14px 16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
           <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 6 }}>
-            {isAr ? 'ملخص التوريد' : lang === 'zh' ? '采购摘要' : 'Sourcing snapshot'}
+            {tT.pdSourcingSnapshotTitle}
           </p>
           <p style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-            {isAr ? 'هذه الصفحة تعرض معلومات أقرب لتوقعات المورد الصيني: MOQ، وقت التجهيز، العينات، والتخصيص، مع إشارات ثقة المورد قبل التواصل أو الطلب.' : lang === 'zh' ? '此页面更贴近中国供应商常用展示方式：包含 MOQ、交期、样品、定制与供应商信任信息，便于先判断再沟通。' : 'This page surfaces the details buyers usually expect in a China sourcing flow: MOQ, lead time, samples, customization, and supplier trust before you order or chat.'}
+            {tT.pdSourcingSnapshotBody}
           </p>
         </div>
 
-        {desc && <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.8, marginBottom: 28 }}>{desc}</p>}
+        {desc && <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.8, marginBottom: 8 }}>{desc}</p>}
+
+        {/* Phase 5D: HS code line — small, near description, with native-tooltip explanation */}
+        {product.hs_code && (
+          <p
+            style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 22, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            title={(T[lang] || T.en).buyerHsCodeTooltip}
+          >
+            <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.2, textTransform: 'uppercase' }}>{(T[lang] || T.en).hsCodeLabel}</span>
+            <span style={{ direction: 'ltr', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{product.hs_code}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>ⓘ</span>
+          </p>
+        )}
 
         {/* ─── Sourcing highlights ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 28 }}>
@@ -712,7 +1042,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         {!product.has_variants && Array.isArray(product.attributes) && product.attributes.filter(a => a.name && a.values?.length).length > 0 && (
           <div style={{ marginBottom: 28 }}>
             <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
-              {isAr ? 'الخصائص' : lang === 'zh' ? '产品属性' : 'Attributes'}
+              {tT.pdAttributesTitle}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {product.attributes.filter(a => a.name && a.values?.length).map((attr, i) => (
@@ -729,6 +1059,15 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           </div>
         )}
 
+        {/* ─── Phase 5B: Compliance & Certifications ─── */}
+        <CompliancCertsBlock certs={productCerts} lang={lang} vfFont={{}} isAr={isAr} />
+
+        {/* ─── Phase 5B: Customization (OEM/ODM availability) ─── */}
+        <CustomizationBlock product={product} lang={lang} vfFont={{}} isAr={isAr} />
+
+        {/* ─── Phase 5D: Logistics & Shipping (CBM, units/carton, weights) ─── */}
+        <LogisticsBlock product={product} lang={lang} vfFont={{}} />
+
         {/* ═══════════════════════════════════════════════════════════
             VARIANT SYSTEM (has_variants products only)
         ═══════════════════════════════════════════════════════════ */}
@@ -737,7 +1076,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
             {loadingVariants && (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-disabled)', fontSize: 13 }}>
-                {isAr ? 'جاري تحميل الخيارات…' : 'Loading options…'}
+                {tT.pdLoadingOptions}
               </div>
             )}
 
@@ -746,7 +1085,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                 {/* ── Option selectors ── */}
                 <div style={{ marginBottom: 20, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
                   <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16 }}>
-                    {isAr ? 'اختر المواصفات' : 'Select Options'}
+                    {tT.pdSelectOptions}
                   </p>
                   {variantOptions.map(opt => (
                     <OptionSelector
@@ -766,46 +1105,47 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                         <p style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{activeVariant.sku || '—'}</p>
                       </div>
                       <div>
-                        <p style={{ fontSize: 9, color: 'var(--text-disabled)', letterSpacing: 1.2, marginBottom: 3 }}>{isAr ? 'السعر' : 'Price'}</p>
+                        <p style={{ fontSize: 9, color: 'var(--text-disabled)', letterSpacing: 1.2, marginBottom: 3 }}>{tT.pdPriceLabel}</p>
                         <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)', direction: 'ltr' }}>
-                          {activeUnitPrice !== null ? `$${activeUnitPrice.toFixed(2)}` : '—'}
-                          {activeTier && <span style={{ fontSize: 10, color: '#2d7a4f', marginInlineStart: 6 }}>{isAr ? `(خصم ${activeTier.discount_pct || 0}%)` : `(${activeTier.discount_pct || 0}% off)`}</span>}
+                          {activeUnitPrice !== null ? `$${formatPriceLocale(activeUnitPrice, lang)}` : '—'}
+                          {/* discount_pct column does not exist on product_pricing_tiers — discount chip removed in Phase 5A */}
                         </p>
                       </div>
                       <div>
                         <p style={{ fontSize: 9, color: 'var(--text-disabled)', letterSpacing: 1.2, marginBottom: 3 }}>MOQ</p>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{activeVariant.moq || product.moq || '—'}</p>
                       </div>
-                      {activeVariant.stock_qty != null && (
+                      {activeVariant.stock != null && (
                         <div>
-                          <p style={{ fontSize: 9, color: 'var(--text-disabled)', letterSpacing: 1.2, marginBottom: 3 }}>{isAr ? 'المخزون' : 'Stock'}</p>
-                          <p style={{ fontSize: 12, color: activeVariant.stock_qty > 0 ? '#2d7a4f' : '#c0392b' }}>{activeVariant.stock_qty > 0 ? activeVariant.stock_qty : (isAr ? 'نفد' : 'Out of stock')}</p>
+                          <p style={{ fontSize: 9, color: 'var(--text-disabled)', letterSpacing: 1.2, marginBottom: 3 }}>{tT.pdStockLabel}</p>
+                          <p style={{ fontSize: 12, color: activeVariant.stock > 0 ? '#2d7a4f' : '#c0392b' }}>{activeVariant.stock > 0 ? activeVariant.stock : tT.pdOutOfStock}</p>
                         </div>
                       )}
                     </div>
                   ) : (
                     <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginTop: 8, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                      {isAr ? 'اختر جميع الخيارات لعرض السعر' : 'Select all options to see pricing'}
+                      {tT.pdSelectAllToSeePrice}
                     </p>
                   )}
                 </div>
 
-                {/* ── Tiered pricing table ── */}
-                {pricingTiers.length > 0 && (
-                  <TierPricingTable tiers={pricingTiers} activeQty={variantQtyInput || (orderLines.reduce((s, l) => s + l.qty, 0))} lang={lang} />
-                )}
+                {/* Tier pricing table moved to Phase-5B PricingTradeTermsBlock at the
+                   top of the page (single source of truth for pricing display).
+                   The tier-matching highlight on quantity-typing has been removed
+                   here to avoid rendering the table twice; getApplicableTier still
+                   computes the correct tier price for the order line below. */}
 
                 {/* ── Add to order row ── */}
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                   <div style={{ flex: '0 0 140px' }}>
-                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1, marginBottom: 6 }}>{isAr ? 'الكمية' : 'Quantity'}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1, marginBottom: 6 }}>{tT.pdQuantity}</p>
                     <input
                       type="number"
                       min="1"
                       className="form-input"
                       value={variantQtyInput}
                       onChange={e => setVariantQtyInput(e.target.value)}
-                      placeholder={isAr ? 'مثال: 200' : 'e.g. 200'}
+                      placeholder={tT.pdQuantityPlaceholder}
                       style={{ margin: 0 }}
                     />
                   </div>
@@ -815,19 +1155,19 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                     disabled={!activeVariant || !variantQtyInput}
                     style={{ minHeight: 40, flex: '1 0 auto', maxWidth: 200 }}
                   >
-                    {isAr ? '+ أضف إلى الطلب' : '+ Add to Order'}
+                    {tT.pdAddToOrder}
                   </button>
                 </div>
 
                 {/* ── Order Builder ── */}
                 <div style={{ marginBottom: 24, padding: '18px 20px', borderRadius: 'var(--radius-lg)', border: orderLines.length ? '1px solid var(--border-muted)' : '1px solid var(--border-subtle)', background: orderLines.length ? 'var(--bg-raised)' : 'var(--bg-subtle)' }}>
                   <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
-                    {isAr ? 'ملخص الطلب' : 'Order Summary'}
+                    {tT.pdOrderSummary}
                   </p>
 
                   {orderLines.length === 0 ? (
                     <p style={{ fontSize: 13, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 0', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                      {isAr ? 'لم تضف أي منتج بعد. اختر الخيارات وأضف الكمية.' : 'No variants added yet. Select options and add a quantity.'}
+                      {tT.pdNoVariantsAdded}
                     </p>
                   ) : (
                     <>
@@ -839,21 +1179,21 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                               <p style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'monospace' }}>{line.sku}</p>
                             </div>
                             <div style={{ textAlign: 'center', minWidth: 50 }}>
-                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 2 }}>{isAr ? 'الكمية' : 'Qty'}</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 2 }}>{tT.pdQty}</p>
                               <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{line.qty}</p>
                             </div>
                             <div style={{ textAlign: 'center', minWidth: 70 }}>
-                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 2 }}>{isAr ? 'سعر الوحدة' : 'Unit'}</p>
-                              <p style={{ fontSize: 13, color: 'var(--text-secondary)', direction: 'ltr' }}>${line.unitPrice.toFixed(2)}</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 2 }}>{tT.pdUnit}</p>
+                              <p style={{ fontSize: 13, color: 'var(--text-secondary)', direction: 'ltr' }}>${formatPriceLocale(line.unitPrice, lang)}</p>
                             </div>
                             <div style={{ textAlign: 'center', minWidth: 80 }}>
-                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 2 }}>{isAr ? 'الإجمالي' : 'Total'}</p>
-                              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>${(line.qty * line.unitPrice).toFixed(2)}</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 2 }}>{tT.pdTotal}</p>
+                              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>${formatPriceLocale(line.qty * line.unitPrice, lang)}</p>
                             </div>
                             <button
                               onClick={() => removeOrderLine(line.variantId)}
                               style={{ background: 'none', border: 'none', color: 'var(--text-disabled)', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}
-                              title={isAr ? 'إزالة' : 'Remove'}
+                              title={tT.pdRemove}
                             >×</button>
                           </div>
                         ))}
@@ -862,7 +1202,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                       {/* Grand total */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border-subtle)', marginBottom: 14 }}>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                          {isAr ? `الإجمالي (${orderLines.reduce((s, l) => s + l.qty, 0)} قطعة)` : `Grand Total (${orderLines.reduce((s, l) => s + l.qty, 0)} units)`}
+                          {tT.pdGrandTotalFn(orderLines.reduce((s, l) => s + l.qty, 0))}
                         </p>
                         <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', direction: 'ltr' }}>{formatPriceWithConversion({
                           amount: orderGrandTotal,
@@ -880,7 +1220,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                         onClick={submitVariantOrder}
                         disabled={submittingVariantOrder}
                       >
-                        {submittingVariantOrder ? '…' : isAr ? 'إرسال طلب عرض السعر ←' : 'Request Quote →'}
+                        {submittingVariantOrder ? '…' : tT.pdRequestQuote}
                       </button>
                     </>
                   )}
@@ -899,22 +1239,26 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           <div style={{ marginBottom: 28 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 14 }}>
               <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{isAr ? 'مراجعة مَعبر' : lang === 'zh' ? 'Maabar 审核' : 'Maabar review'}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tT.pdMaabarReviewLabel}</p>
                 <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0 }}>
-                  {isReviewedSupplier ? (isAr ? 'هذا المورد ظاهر للمشترين بعد مراجعة مَعبر.' : lang === 'zh' ? '该供应商已通过 Maabar 审核并向买家展示。' : 'This supplier is visible to buyers after Maabar review.') : (isAr ? 'ملف المورد غير معروض كمورد موثّق.' : lang === 'zh' ? '该供应商尚未以认证状态展示。' : 'This supplier is not currently shown as verified.')}
+                  {isReviewedSupplier ? tT.pdMaabarReviewYes : tT.pdMaabarReviewNo}
                 </p>
               </div>
               <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{isAr ? 'دلائل الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tT.pdTrustSignalsLabel}</p>
                 <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0 }}>
-                  {isAr ? `${supplierTrustSignals.includes('trade_profile_available') ? 'رابط الشركة متوفر' : 'لا يوجد رابط شركة ظاهر'}${supplierTrustSignals.includes('wechat_available') ? ' · WeChat متاح' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · صور منشأة متاحة' : ''}` : lang === 'zh' ? `${supplierTrustSignals.includes('trade_profile_available') ? '已提供店铺/官网链接' : '暂无公开店铺链接'}${supplierTrustSignals.includes('wechat_available') ? ' · 支持 WeChat 沟通' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · 提供工厂图片' : ''}` : `${supplierTrustSignals.includes('trade_profile_available') ? 'trade profile available' : 'no public trade profile shown'}${supplierTrustSignals.includes('wechat_available') ? ' · WeChat available' : ''}${supplierTrustSignals.includes('factory_media_available') ? ' · factory photos available' : ''}`}
+                  {[
+                    supplierTrustSignals.includes('trade_profile_available') ? tT.pdTrustTradeProfile : tT.pdTrustNoTradeProfile,
+                    supplierTrustSignals.includes('wechat_available') ? tT.pdTrustWeChat : null,
+                    supplierTrustSignals.includes('factory_media_available') ? tT.pdTrustFactoryMedia : null,
+                  ].filter(Boolean).join(' · ')}
                 </p>
               </div>
               <div style={{ padding: '16px 18px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{isAr ? 'الهوية التجارية' : lang === 'zh' ? '商业身份' : 'Commercial identity'}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tT.pdCommercialIdentityLabel}</p>
                 <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0 }}>
-                  {supplierMaabarId ? (isAr ? `معرّف المورد: ${supplierMaabarId}` : lang === 'zh' ? `供应商编号：${supplierMaabarId}` : `Supplier ID: ${supplierMaabarId}`) : (isAr ? 'معرّف المورد غير ظاهر بعد' : lang === 'zh' ? '暂无供应商编号' : 'Supplier ID not shown yet')}
-                  {sup.years_experience ? ` · ${isAr ? `${sup.years_experience} سنة خبرة` : lang === 'zh' ? `${sup.years_experience} 年经验` : `${sup.years_experience} years experience`}` : ''}
+                  {supplierMaabarId ? tT.pdSupplierIdFn(supplierMaabarId) : tT.pdSupplierIdMissing}
+                  {sup.years_experience ? ` · ${tT.pdYearsExperienceFn(sup.years_experience)}` : ''}
                 </p>
               </div>
             </div>
@@ -926,12 +1270,17 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                   <p style={{ fontWeight: 500, marginBottom: 0 }}>{sup.company_name || ''}</p>
-                  {isReviewedSupplier && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}</span>}
+                  {isReviewedSupplier && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>✓ {tT.pdVerifiedShort}</span>}
+                  {supplierHasAnyCert && (
+                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(45,122,79,0.06)', border: '1px solid rgba(45,122,79,0.18)', color: '#2d7a4f' }}>
+                      ✓ {tT.supplierCertifiedPill}
+                    </span>
+                  )}
                 </div>
                 <p className="stars" style={{ marginBottom: 4 }}>{stars(Math.round(sup.rating || 0))}</p>
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
                   {[sup.city, sup.country].filter(Boolean).join(', ') || '—'}
-                  {sup.reviews_count ? ` · ${sup.reviews_count} ${isAr ? 'تقييم' : lang === 'zh' ? '条评价' : 'reviews'}` : ''}
+                  {sup.reviews_count ? ` · ${tT.pdReviewsCountFn(sup.reviews_count)}` : ''}
                 </p>
               </div>
               <span style={{ color: 'var(--text-secondary)' }}>→</span>
@@ -939,8 +1288,8 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
 
             {(supplierTrustSignals.length > 0 || supplierMaabarId || sup.trade_link || sup.wechat || sup.whatsapp) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                {supplierMaabarId && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>{isAr ? 'معرّف المورد' : lang === 'zh' ? '供应商编号' : 'Supplier ID'}: {supplierMaabarId}</span>}
-                {sup.trade_link && <a href={sup.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 34, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>{isAr ? 'رابط الشركة / المتجر' : lang === 'zh' ? '官网 / 店铺链接' : 'Company / store link'}</a>}
+                {supplierMaabarId && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>{tT.pdSupplierIdLabel}: {supplierMaabarId}</span>}
+                {sup.trade_link && <a href={sup.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 34, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>{tT.pdCompanyStoreLink}</a>}
                 {sup.wechat && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>WeChat: {sup.wechat}</span>}
                 {sup.whatsapp && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>WhatsApp: {sup.whatsapp}</span>}
               </div>
@@ -962,7 +1311,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         {!isSupplier && (
           <>
             <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 14, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? 'يمكنك الطلب مباشرة من هذه الصفحة أو مراسلة المورد أولاً لتأكيد التغليف، التخصيص، مدة التجهيز، أو الشحن.' : lang === 'zh' ? '您可以直接下单，也可以先联系供应商确认包装、定制、交期或运输方式。' : 'You can order directly from this page, or message the supplier first to confirm packaging, customization, lead time, or shipping terms.'}
+              {tT.pdCtaHelper}
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -972,7 +1321,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                   className="btn-primary"
                   style={{ background: '#1a1a1a', color: '#fff', letterSpacing: 0 }}
                   onClick={() => { setShowBuyForm(!showBuyForm); setShowSampleForm(false); setShowInquiryForm(false); }}>
-                  {isAr ? 'اشترِ الآن' : lang === 'zh' ? '立即下单' : 'Buy Now'}
+                  {tT.pdBuyNowBtn}
                 </button>
               )}
 
@@ -980,7 +1329,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                 className="btn-outline"
                 style={{ borderColor: 'var(--text-primary)', color: 'var(--text-primary)' }}
                 onClick={() => { setShowInquiryForm(!showInquiryForm); setShowBuyForm(false); setShowSampleForm(false); }}>
-                {isAr ? 'استفسار' : lang === 'zh' ? '咨询' : 'Inquiry'}
+                {tT.pdInquiryBtn}
               </button>
 
               {product.sample_available && (
@@ -988,12 +1337,12 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                   className="btn-outline"
                   style={{ borderColor: '#2d7a4f', color: '#2d7a4f' }}
                   onClick={() => { setShowSampleForm(!showSampleForm); setShowBuyForm(false); setShowInquiryForm(false); }}>
-                  {isAr ? `اطلب عينة — ${fmt(product.sample_price)} SAR` : lang === 'zh' ? `申请样品 — ${fmt(product.sample_price)} SAR` : `Request Sample — ${fmt(product.sample_price)} SAR`}
+                  {tT.pdRequestSampleFn(fmt(product.sample_price))}
                 </button>
               )}
 
               <button className="btn-outline" onClick={handleChat}>
-                {isAr ? 'تواصل مع المورد' : lang === 'zh' ? '联系供应商' : 'Contact Supplier'}
+                {tT.pdContactSupplierBtn}
               </button>
             </div>
           </>
@@ -1003,20 +1352,20 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
         {showBuyForm && !product.has_variants && !orderConfirmed && (
           <div className="buy-form">
             <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 20, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-              {isAr ? 'أدخل الكمية' : lang === 'zh' ? '输入数量' : 'Enter Quantity'}
+              {tT.pdBuyModalTitle}
             </h3>
             <div className="form-group">
-              <label className="form-label">{isAr ? 'الكمية *' : lang === 'zh' ? '数量 *' : 'Quantity *'}</label>
-              <input className="form-input" value={qty} onChange={e => setQty(e.target.value)} placeholder={isAr ? 'مثال: 200' : lang === 'zh' ? '例如：200' : 'e.g. 200'} type="number" min="1" />
+              <label className="form-label">{tT.pdBuyModalQtyLabel}</label>
+              <input className="form-input" value={qty} onChange={e => setQty(e.target.value)} placeholder={tT.pdQuantityPlaceholder} type="number" min="1" />
             </div>
             <div className="form-group">
-              <label className="form-label">{isAr ? 'ملاحظة (اختياري)' : lang === 'zh' ? '备注（选填）' : 'Note (optional)'}</label>
-              <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={note} onChange={e => setNote(e.target.value)} placeholder={isAr ? 'مثلاً: التغليف، المواصفات النهائية، علامة خاصة...' : lang === 'zh' ? '例如：包装、最终规格、定制标识…' : 'e.g. packaging, final specs, private label...'} />
+              <label className="form-label">{tT.pdBuyModalNoteLabel}</label>
+              <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={note} onChange={e => setNote(e.target.value)} placeholder={tT.pdBuyModalNotePlaceholder} />
             </div>
-            {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{isAr ? '* سيُطلب منك تسجيل الدخول' : lang === 'zh' ? '* 提交前需要先登录' : '* You\'ll be asked to sign in'}</p>}
+            {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{tT.pdBuyModalSigninWarning}</p>}
             <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn-dark-sm" onClick={submitOrder} disabled={sending}>{sending ? '...' : isAr ? 'إرسال الطلب ←' : lang === 'zh' ? '发送订单 →' : 'Send Order →'}</button>
-              <button className="btn-outline" onClick={() => setShowBuyForm(false)}>{isAr ? 'إلغاء' : lang === 'zh' ? '取消' : 'Cancel'}</button>
+              <button className="btn-dark-sm" onClick={submitOrder} disabled={sending}>{sending ? '...' : tT.pdBuyModalSubmit}</button>
+              <button className="btn-outline" onClick={() => setShowBuyForm(false)}>{tT.pdCancelBtn}</button>
             </div>
           </div>
         )}
@@ -1028,23 +1377,19 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(45,122,79,0.12)', color: '#2d7a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>✓</div>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 500, marginBottom: 8, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                  {isAr ? 'تم إرسال طلبك، بانتظار تأكيد المورد' : lang === 'zh' ? '订单已发送，等待供应商确认' : 'Your order has been sent — awaiting supplier confirmation'}
+                  {tT.pdOrderSentTitle}
                 </h3>
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                  {isAr
-                    ? 'سيتم تأكيد الطلب من المورد خلال 24 ساعة. ستصلك إشعار فور الرد، ثم تنتقل إلى خطوة الدفع.'
-                    : lang === 'zh'
-                      ? '供应商将在 24 小时内确认订单。一旦回复，您会收到通知并进入付款步骤。'
-                      : 'The supplier will confirm within 24 hours. You\'ll receive a notification once they respond, and then proceed to payment.'}
+                  {tT.pdOrderSentBody}
                 </p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <button className="btn-outline" onClick={() => nav('/products')}>
-                {isAr ? 'العودة للمنتجات' : lang === 'zh' ? '返回产品' : 'Back to Products'}
+                {tT.pdBackToProducts}
               </button>
               <button className="btn-outline" onClick={() => nav('/dashboard?tab=requests')}>
-                {isAr ? 'عرض طلباتي' : lang === 'zh' ? '查看我的订单' : 'View My Orders'}
+                {tT.pdViewMyOrders}
               </button>
             </div>
           </div>
@@ -1055,10 +1400,10 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           <div className="buy-form" style={{ borderColor: 'var(--border-muted)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 6, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{isAr ? 'استفسار سريع عن المنتج' : lang === 'zh' ? '产品快捷咨询' : 'Quick Product Inquiry'}</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{isAr ? 'اختر أحد القوالب الجاهزة فقط، وسنرسل الاستفسار داخل مَعبر وعلى إيميل المورد.' : lang === 'zh' ? '请选择下方 3 个固定模板之一。咨询会同步发送到系统内和供应商邮箱。' : 'Choose one of the 3 fixed templates. The inquiry will be sent inside Maabar and to the supplier by email.'}</p>
+                <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 6, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{tT.pdInquiryModalTitle}</h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{tT.pdInquiryModalSubtitle}</p>
               </div>
-              <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', letterSpacing: 1 }}>{isAr ? '3 قوالب' : lang === 'zh' ? '3 个模板' : '3 templates'}</span>
+              <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', letterSpacing: 1 }}>{tT.pdInquiryModalTemplatesCount}</span>
             </div>
             <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
               {inquiryTemplates.map((template) => {
@@ -1070,10 +1415,10 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                 );
               })}
             </div>
-            {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{isAr ? '* سيُطلب منك تسجيل الدخول عند الإرسال' : lang === 'zh' ? '* 发送前需要先登录' : '* You will be asked to sign in before sending'}</p>}
+            {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{tT.pdInquiryModalSigninWarning}</p>}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button className="btn-dark-sm" onClick={submitInquiry} disabled={sendingInquiry}>{sendingInquiry ? '...' : isAr ? 'إرسال الاستفسار ←' : lang === 'zh' ? '发送咨询 →' : 'Send Inquiry →'}</button>
-              <button className="btn-outline" onClick={() => setShowInquiryForm(false)}>{isAr ? 'إلغاء' : lang === 'zh' ? '取消' : 'Cancel'}</button>
+              <button className="btn-dark-sm" onClick={submitInquiry} disabled={sendingInquiry}>{sendingInquiry ? '...' : tT.pdInquirySubmit}</button>
+              <button className="btn-outline" onClick={() => setShowInquiryForm(false)}>{tT.pdCancelBtn}</button>
             </div>
           </div>
         )}
@@ -1083,32 +1428,32 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
           <div className="buy-form" style={{ borderColor: '#2d7a4f', borderWidth: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', color: 'var(--text-primary)' }}>{isAr ? 'طلب عينة' : lang === 'zh' ? '申请样品' : 'Request Sample'}</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{isAr ? `سعر الوحدة: ${fmt(product.sample_price)} ريال + شحن: ${fmt(product.sample_shipping || 0)} ريال` : lang === 'zh' ? `样品单价：${fmt(product.sample_price)} SAR + 运费：${fmt(product.sample_shipping || 0)} SAR` : `Unit: ${fmt(product.sample_price)} SAR + Shipping: ${fmt(product.sample_shipping || 0)} SAR`}</p>
+                <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: isAr ? 'var(--font-ar)' : 'inherit', color: 'var(--text-primary)' }}>{tT.pdSampleModalTitle}</h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>{tT.pdSampleModalSubtitleFn(fmt(product.sample_price), fmt(product.sample_shipping || 0))}</p>
               </div>
-              <span style={{ background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: '#2d7a4f', fontSize: 10, padding: '3px 10px', borderRadius: 20, letterSpacing: 1 }}>{isAr ? 'عينة' : lang === 'zh' ? '样品' : 'SAMPLE'}</span>
+              <span style={{ background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: '#2d7a4f', fontSize: 10, padding: '3px 10px', borderRadius: 20, letterSpacing: 1 }}>{tT.pdSampleBadge}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">{isAr ? `الكمية (max ${product.sample_max_qty || 3})` : lang === 'zh' ? `数量（最多 ${product.sample_max_qty || 3}）` : `Quantity (max ${product.sample_max_qty || 3})`}</label>
+                <label className="form-label">{tT.pdSampleQtyLabelFn(product.sample_max_qty || 3)}</label>
                 <input className="form-input" type="number" min="1" max={product.sample_max_qty || 3} value={sampleQty} onChange={e => setSampleQty(e.target.value)} />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
                 <div style={{ background: 'var(--bg-hover)', padding: '10px 16px', borderRadius: 3, width: '100%' }}>
-                  <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: 1 }}>{isAr ? 'الإجمالي' : lang === 'zh' ? '总计' : 'TOTAL'}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: 1 }}>{tT.pdSampleTotalLabel}</p>
                   <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', fontFamily: 'var(--font-en)' }}>{fmt(sampleTotal)} <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>SAR</span></p>
                 </div>
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">{isAr ? 'ملاحظة' : lang === 'zh' ? '备注' : 'Note'}</label>
-              <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={sampleNote} onChange={e => setSampleNote(e.target.value)} placeholder={isAr ? 'اللون، المواصفات...' : lang === 'zh' ? '颜色、规格…' : 'Color, specs...'} />
+              <label className="form-label">{tT.pdSampleNoteLabel}</label>
+              <textarea className="form-input" rows={2} style={{ resize: 'none' }} value={sampleNote} onChange={e => setSampleNote(e.target.value)} placeholder={tT.pdSampleNotePlaceholder} />
             </div>
             {product.sample_note && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, padding: '10px 14px', background: 'var(--bg-hover)', borderRadius: 3, fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>💬 {product.sample_note}</p>}
-            {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{isAr ? '* سيُطلب منك تسجيل الدخول عند الإرسال' : lang === 'zh' ? '* 提交时需要先登录' : '* You\'ll be asked to sign in when submitting'}</p>}
+            {!user && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>{tT.pdSampleModalSigninWarning}</p>}
             <div style={{ display: 'flex', gap: 12 }}>
-              <button style={{ background: '#2d7a4f', color: '#fff', border: 'none', padding: '11px 24px', fontSize: 13, cursor: 'pointer', borderRadius: 3 }} onClick={submitSample} disabled={sendingSample}>{sendingSample ? '...' : isAr ? 'إرسال طلب العينة ←' : lang === 'zh' ? '发送样品请求 →' : 'Send Sample Request →'}</button>
-              <button className="btn-outline" onClick={() => setShowSampleForm(false)}>{isAr ? 'إلغاء' : lang === 'zh' ? '取消' : 'Cancel'}</button>
+              <button style={{ background: '#2d7a4f', color: '#fff', border: 'none', padding: '11px 24px', fontSize: 13, cursor: 'pointer', borderRadius: 3 }} onClick={submitSample} disabled={sendingSample}>{sendingSample ? '...' : tT.pdSampleSubmit}</button>
+              <button className="btn-outline" onClick={() => setShowSampleForm(false)}>{tT.pdCancelBtn}</button>
             </div>
           </div>
         )}

@@ -157,9 +157,9 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     const stockNum = parseInt(newStock, 10);
     if (isNaN(stockNum) || stockNum < 0) { alert('Invalid stock value.'); return; }
     setSavingVariant(variant.id);
-    const { error } = await sb.from('product_variants').update({ stock_qty: stockNum }).eq('id', variant.id);
+    const { error } = await sb.from('product_variants').update({ stock: stockNum }).eq('id', variant.id);
     if (error) { alert('Error: ' + error.message); setSavingVariant(null); return; }
-    await logAdminAction({ actorId: user.id, action: 'variant_stock_adjusted', entityType: 'product_variant', entityId: variant.id, beforeState: { stock_qty: variant.stock_qty }, afterState: { stock_qty: stockNum }, notes: reason });
+    await logAdminAction({ actorId: user.id, action: 'variant_stock_adjusted', entityType: 'product_variant', entityId: variant.id, beforeState: { stock: variant.stock }, afterState: { stock: stockNum }, notes: reason });
     await loadProductVariants(variant.product_id);
     setVariantAction(null);
     setSavingVariant(null);
@@ -496,16 +496,16 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                               <tbody>
                                 {variants.map(v => {
                                   const basePrice = deriveProductPriceFrom(products.find(pr => pr.id === v.product_id));
-                                  const unusualPrice = basePrice && v.price_usd && v.price_usd > basePrice * 10;
+                                  const unusualPrice = basePrice && v.price && v.price > basePrice * 10;
                                   return (
                                     <tr key={v.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
                                       <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: 'rgba(0,0,0,0.60)', fontSize: 10 }}>{v.sku || '—'}</td>
                                       <td style={{ padding: '8px 10px', color: unusualPrice ? '#c0392b' : 'rgba(0,0,0,0.70)' }}>
-                                        ${Number(v.price_usd || 0).toFixed(2)}
+                                        ${Number(v.price || 0).toFixed(2)}
                                         {unusualPrice && <span style={{ marginInlineStart: 4, fontSize: 9, background: 'rgba(192,57,43,0.1)', color: '#c0392b', padding: '1px 5px', borderRadius: 99 }}>⚠ unusual</span>}
                                       </td>
                                       <td style={{ padding: '8px 10px', color: 'rgba(0,0,0,0.60)' }}>{v.moq || '—'}</td>
-                                      <td style={{ padding: '8px 10px', color: v.stock_qty != null ? (v.stock_qty > 0 ? '#27725a' : '#c0392b') : 'rgba(0,0,0,0.30)' }}>{v.stock_qty ?? '—'}</td>
+                                      <td style={{ padding: '8px 10px', color: v.stock != null ? (v.stock > 0 ? '#27725a' : '#c0392b') : 'rgba(0,0,0,0.30)' }}>{v.stock ?? '—'}</td>
                                       <td style={{ padding: '8px 10px', color: 'rgba(0,0,0,0.60)' }}>{v.lead_time_days ?? '—'}</td>
                                       <td style={{ padding: '8px 10px' }}>
                                         <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 99, background: v.is_active ? 'rgba(39,114,90,0.1)' : 'rgba(0,0,0,0.05)', color: v.is_active ? '#27725a' : 'rgba(0,0,0,0.35)' }}>
@@ -519,7 +519,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                                           {v.is_active ? 'Deactivate' : 'Activate'}
                                         </button>
                                         <button
-                                          onClick={() => setVariantAction({ variantId: v.id, productId: v.product_id, type: 'stock', variant: v, reason: '', value: String(v.stock_qty ?? '') })}
+                                          onClick={() => setVariantAction({ variantId: v.id, productId: v.product_id, type: 'stock', variant: v, reason: '', value: String(v.stock ?? '') })}
                                           style={{ fontSize: 10, padding: '3px 8px', background: 'none', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 6, cursor: 'pointer', color: 'rgba(0,0,0,0.50)', fontFamily: FONT_BODY }}>
                                           Stock
                                         </button>
@@ -585,7 +585,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                               {tiers.map((t, i) => (
                                 <div key={i} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.02)' }}>
                                   <p style={{ fontSize: 10, color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY }}>{t.qty_to ? `${t.qty_from}–${t.qty_to}` : `${t.qty_from}+`}</p>
-                                  <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.70)', fontFamily: FONT_BODY }}>${Number(t.unit_price_usd).toFixed(2)}</p>
+                                  <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.70)', fontFamily: FONT_BODY }}>${Number(t.unit_price).toFixed(2)}</p>
                                 </div>
                               ))}
                             </div>
@@ -598,9 +598,16 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                             <p style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', marginBottom: 6, fontFamily: FONT_BODY }}>Shipping Options</p>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                               {shipping.map((s, i) => (
-                                <div key={i} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: s.enabled ? 'rgba(39,114,90,0.05)' : 'rgba(0,0,0,0.02)' }}>
+                                <div key={i} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.08)', background: s.is_available ? 'rgba(39,114,90,0.05)' : 'rgba(0,0,0,0.02)' }}>
                                   <p style={{ fontSize: 10, color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY, textTransform: 'capitalize' }}>{s.method}</p>
-                                  <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.60)', fontFamily: FONT_BODY }}>{s.lead_time_days ? `${s.lead_time_days}d` : '—'} {s.cost_usd ? `· $${s.cost_usd}` : ''}</p>
+                                  <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.60)', fontFamily: FONT_BODY }}>
+                                    {(s.lead_time_min_days != null || s.lead_time_max_days != null)
+                                      ? (s.lead_time_min_days != null && s.lead_time_max_days != null && s.lead_time_min_days !== s.lead_time_max_days
+                                          ? `${s.lead_time_min_days}–${s.lead_time_max_days}d`
+                                          : `${s.lead_time_min_days ?? s.lead_time_max_days}d`)
+                                      : '—'}
+                                    {s.cost_per_unit_usd != null ? ` · $${Number(s.cost_per_unit_usd).toFixed(2)}` : ''}
+                                  </p>
                                 </div>
                               ))}
                             </div>

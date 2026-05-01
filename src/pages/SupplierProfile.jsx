@@ -6,6 +6,9 @@ import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
+import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
+import { T } from '../lib/supplierDashboardConstants';
+import ProductBuyerCardSummary from '../components/ProductBuyerCardSummary';
 import BrandedLoading from '../components/BrandedLoading';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
@@ -78,7 +81,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     setSupplier(visibleSupplier);
 
     const [{ data: p }, { data: r }] = await Promise.all([
-      sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('supplier_id', id).eq('is_active', true),
+      sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}, ${PRODUCT_CERT_EMBED}`).eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*').eq('supplier_id', id).order('created_at', { ascending: false }),
     ]);
 
@@ -177,6 +180,20 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     </div>
   );
 
+  // Phase 5D — aggregate cert types across all of the supplier's products.
+  // Computed once per render (cheap; products is already in memory).
+  const tT = T[lang] || T.en;
+  const supplierAggregateCertTypes = (() => {
+    const seen = new Set();
+    const ordered = [];
+    for (const p of (products || [])) {
+      for (const code of getProductCertTypes(p)) {
+        if (!seen.has(code)) { seen.add(code); ordered.push(code); }
+      }
+    }
+    return ordered;
+  })();
+
   const detailItems = [
     supplier.business_type ? { label: isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type } : null,
     supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est.', value: supplier.year_established } : null,
@@ -220,20 +237,60 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 {supplier.year_established ? ` · ${supplier.year_established}` : ''}
                 {supplier.rating > 0 ? ` · ${stars(Math.round(supplier.rating || 0))}` : ''}
               </p>
-              {isReviewedSupplier && (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 8,
-                  padding: '3px 10px', background: 'rgba(45,122,79,0.1)',
-                  border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20,
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
-                  <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                    {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified Supplier'}
-                  </span>
-                </div>
-              )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {isReviewedSupplier && (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '3px 10px', background: 'rgba(45,122,79,0.1)',
+                    border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20,
+                  }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
+                    <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified Supplier'}
+                    </span>
+                  </div>
+                )}
+                {supplierAggregateCertTypes.length > 0 && (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '3px 10px', background: 'rgba(45,122,79,0.06)',
+                    border: '1px solid rgba(45,122,79,0.18)', borderRadius: 20,
+                  }}>
+                    <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      ✓ {tT.supplierCertifiedPill}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Phase 5D — aggregate cert types across this supplier's products */}
+          {supplierAggregateCertTypes.length > 0 && (
+            <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 10, background: 'rgba(45,122,79,0.04)', border: '1px solid rgba(45,122,79,0.15)' }}>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {tT.supplierCertsAggregateLabel}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {supplierAggregateCertTypes.map(code => (
+                  <span
+                    key={code}
+                    style={{
+                      fontSize: 11,
+                      padding: '3px 9px',
+                      borderRadius: 999,
+                      background: code === 'SASO' ? 'rgba(45,122,79,0.15)' : 'rgba(45,122,79,0.06)',
+                      border: `1px solid ${code === 'SASO' ? 'rgba(45,122,79,0.35)' : 'rgba(45,122,79,0.18)'}`,
+                      color: '#2d7a4f',
+                      fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                    }}
+                  >
+                    {code === 'SASO' ? `✓ ${code}` : code}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Stats row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
@@ -376,7 +433,12 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                         <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>
                           {isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar}
                         </h3>
-                        <p className="product-card-price">{productPriceFrom ? price.formattedDisplay : '—'}</p>
+                        <ProductBuyerCardSummary
+                          product={p}
+                          displayCurrency={displayCurrency || p.currency || 'USD'}
+                          exchangeRates={exchangeRates}
+                          lang={lang}
+                        />
                         <button className="product-card-buy" onClick={e => { e.stopPropagation(); nav(`/products/${p.id}`); }}>
                           اشتر الآن
                         </button>

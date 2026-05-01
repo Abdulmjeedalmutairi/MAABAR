@@ -24,6 +24,8 @@ import {
 } from '../lib/supplierOnboarding';
 import { shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
+import { T } from '../lib/supplierDashboardConstants';
+import { formatPriceLocale } from '../lib/formatLocale';
 import {
   attachDirectoryProfiles,
   attachSupplierProfiles,
@@ -679,12 +681,13 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         return acc;
       }, {});
 
-      // Fetch order_line_items for variant-based requests
+      // Fetch order_line_items for variant-based requests.
+      // The FK column is `order_id` (referencing requests.id), not `request_id`.
       const { data: allLineItems } = requestIds.length
-        ? await sb.from('order_line_items').select('*, product_variants(sku)').in('request_id', requestIds)
+        ? await sb.from('order_line_items').select('*, product_variants(sku)').in('order_id', requestIds)
         : { data: [] };
       const linesByRequest = (allLineItems || []).reduce((acc, li) => {
-        acc[li.request_id] = [...(acc[li.request_id] || []), li];
+        acc[li.order_id] = [...(acc[li.order_id] || []), li];
         return acc;
       }, {});
 
@@ -725,7 +728,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     const productsRes = await sb
       .from('products')
-      .select(`id, supplier_id, name_ar, name_en, name_zh, currency, spec_lead_time_days, gallery_images, image_url, ${PRODUCT_TIER_EMBED}`)
+      .select(`id, supplier_id, name_ar, name_en, name_zh, currency, spec_lead_time_days, gallery_images, image_url, incoterms, port_of_loading, lead_time_min_days, lead_time_max_days, lead_time_negotiable, country_of_origin, ${PRODUCT_TIER_EMBED}`)
       .in('id', refIds);
     console.log('[loadMyDirectOrders] products query response:', productsRes);
 
@@ -1813,8 +1816,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <div key={li.id || idx} style={{ display: 'flex', gap: 8, fontSize: 11, color: 'var(--text-secondary)', padding: '4px 0', borderBottom: idx < r.lineItems.length - 1 ? '1px solid var(--border-subtle)' : 'none', flexWrap: 'wrap' }}>
                           <span style={{ fontFamily: 'monospace', flex: 1 }}>{li.product_variants?.sku || li.variant_id?.slice(0, 8) || '—'}</span>
                           <span>×{li.quantity}</span>
-                          <span style={{ direction: 'ltr' }}>${Number(li.unit_price_usd).toFixed(2)}/u</span>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>${(li.quantity * li.unit_price_usd).toFixed(2)}</span>
+                          <span style={{ direction: 'ltr' }}>${formatPriceLocale(li.unit_price_usd, lang)}/u</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', direction: 'ltr' }}>${formatPriceLocale(li.quantity * Number(li.unit_price_usd || 0), lang)}</span>
                         </div>
                       ))}
                     </div>
@@ -2310,11 +2313,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           <span>{isAr ? 'المورد:' : lang === 'zh' ? '供应商：' : 'Supplier:'} {supplierName}</span>
                           <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {qty || '—'}</span>
                           {unitPrice > 0 && (
-                            <span style={{ direction: 'ltr' }}>{unitPrice.toFixed(2)} {currency} / unit</span>
+                            <span style={{ direction: 'ltr' }}>{formatPriceLocale(unitPrice, lang)} {currency} / unit</span>
                           )}
                           {totalEstimate > 0 && (
                             <span style={{ direction: 'ltr', fontWeight: 600, color: 'var(--text-primary)' }}>
-                              {isAr ? 'الإجمالي:' : lang === 'zh' ? '总计：' : 'Total:'} {totalEstimate.toFixed(2)} {currency}
+                              {isAr ? 'الإجمالي:' : lang === 'zh' ? '总计：' : 'Total:'} {formatPriceLocale(totalEstimate, lang)} {currency}
                             </span>
                           )}
                         </div>
@@ -2326,6 +2329,57 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         {statusInfo.body}
                       </p>
                     )}
+
+                    {/* Phase 5D — Trade Terms confirmation log: the supplier-side fields the
+                       buyer agreed to when this order was placed. Hidden when none is set. */}
+                    {(() => {
+                      const tT = T[lang] || T.en;
+                      const incoterms = Array.isArray(product.incoterms) ? product.incoterms.filter(Boolean) : [];
+                      const port = String(product.port_of_loading || '').trim();
+                      const country = String(product.country_of_origin || '').trim();
+                      const lmin = product.lead_time_min_days != null ? Number(product.lead_time_min_days) : null;
+                      const lmax = product.lead_time_max_days != null ? Number(product.lead_time_max_days) : null;
+                      const negotiable = Boolean(product.lead_time_negotiable);
+                      const hasAny = incoterms.length > 0 || port || country || lmin !== null || lmax !== null;
+                      if (!hasAny) return null;
+
+                      const portLocalized = port ? (tT[`port${port}`] || port) : null;
+                      const countryLocalized = country ? (tT[`country${country.replace(/[^A-Za-z]/g, '')}`] || country) : null;
+
+                      return (
+                        <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                          <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {tT.buyerOrderTermsTitle}
+                          </p>
+                          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {incoterms.length > 0 && (
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                <span style={{ color: 'var(--text-disabled)', marginInlineEnd: 4 }}>{tT.buyerIncotermsLabel}:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{incoterms.join(' · ')}</span>
+                              </span>
+                            )}
+                            {portLocalized && (
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                <span style={{ color: 'var(--text-disabled)', marginInlineEnd: 4 }}>{tT.buyerPortOfLoadingLabel}:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{portLocalized}</span>
+                              </span>
+                            )}
+                            {(lmin !== null || lmax !== null) && (
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                <span style={{ color: 'var(--text-disabled)', marginInlineEnd: 4 }}>{tT.buyerLeadTimeLabel}:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{tT.leadTimeBuyerFn(lmin, lmax, negotiable)}</span>
+                              </span>
+                            )}
+                            {countryLocalized && (
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                <span style={{ color: 'var(--text-disabled)', marginInlineEnd: 4 }}>{tT.countryOfOriginLabel}:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{countryLocalized}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Tracking panel — visible whenever a tracking number has been uploaded */}
                     {r.tracking_number && ['shipping', 'arrived', 'delivered'].includes(r.status) && (() => {

@@ -8,6 +8,8 @@ import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { attachSupplierProfiles } from '../lib/profileVisibility';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
+import { PRODUCT_CERT_EMBED } from '../lib/productCertLookup';
+import ProductBuyerCardSummary from '../components/ProductBuyerCardSummary';
 
 const CATEGORIES = {
   ar: [
@@ -104,7 +106,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
 
     const { data } = await sb
       .from('products')
-      .select(`*, ${PRODUCT_TIER_EMBED}`)
+      .select(`*, ${PRODUCT_TIER_EMBED}, ${PRODUCT_CERT_EMBED}`)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
@@ -358,13 +360,6 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
           <div className="product-grid">
             {filtered.map((p, idx) => {
               const isReviewedSupplier = isSupplierPubliclyVisible(p.profiles?.status);
-              const price = buildDisplayPrice({
-                amount: deriveProductPriceFrom(p),
-                sourceCurrency: p.currency || 'USD',
-                displayCurrency: uiDisplayCurrency,
-                rates: exchangeRates,
-                lang,
-              });
 
               return (
                 <div
@@ -396,9 +391,12 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                       {getProductDisplayName(p, lang)}
                     </h3>
 
-                    <p className="product-card-price">
-                      {deriveProductPriceFrom(p) ? price.formattedDisplay : '—'}
-                    </p>
+                    <ProductBuyerCardSummary
+                      product={p}
+                      displayCurrency={uiDisplayCurrency}
+                      exchangeRates={exchangeRates}
+                      lang={lang}
+                    />
 
                     <button
                       className="product-card-buy"

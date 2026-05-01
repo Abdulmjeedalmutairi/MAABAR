@@ -1575,13 +1575,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       return;
     }
     if (data) {
-      // Fetch order_line_items for requests that have them
+      // Fetch order_line_items for requests that have them.
+      // order_line_items.order_id references requests.id (per the variants
+      // migration line 248) — the column is `order_id`, not `request_id`.
       const requestIds = data.map(r => r.id);
       const { data: lineItemsData } = requestIds.length
-        ? await sb.from('order_line_items').select('*, product_variants(sku, option_values)').in('request_id', requestIds)
+        ? await sb.from('order_line_items').select('*, product_variants(sku, option_values)').in('order_id', requestIds)
         : { data: [] };
       const linesByRequest = (lineItemsData || []).reduce((acc, li) => {
-        acc[li.request_id] = [...(acc[li.request_id] || []), li];
+        acc[li.order_id] = [...(acc[li.order_id] || []), li];
         return acc;
       }, {});
       setRequests(data.map(r => ({ ...r, lineItems: linesByRequest[r.id] || [] })));
