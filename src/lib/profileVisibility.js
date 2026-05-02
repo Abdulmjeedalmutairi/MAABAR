@@ -11,7 +11,7 @@ export async function fetchSupplierPublicProfileById(sb, id) {
   if (!id) return null;
   const { data } = await sb
     .from('profiles')
-    .select('id, full_name, company_name, role, status, avatar_url, city, country, speciality, maabar_supplier_id, trade_link, bio_ar, bio_en, bio_zh, factory_images, min_order_value, languages, rating, reviews_count, year_established, business_type, customization_support, company_address, company_description, export_markets, deals_completed, certifications, years_experience, completion_rate, company_website, export_years')
+    .select('id, full_name, company_name, role, status, avatar_url, city, country, speciality, maabar_supplier_id, trade_link, bio_ar, bio_en, bio_zh, factory_images, min_order_value, languages, rating, reviews_count, year_established, business_type, customization_support, company_address, company_description, export_markets, certifications, years_experience, completion_rate, company_website, export_years')
     .eq('id', id)
     .single();
   return data || null;

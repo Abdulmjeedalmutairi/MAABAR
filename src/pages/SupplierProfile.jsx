@@ -218,9 +218,10 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   );
 
   // Phase 6A — dynamic stats: only render stats with real data.
+  // Note: deals_completed intentionally omitted — it's a synthesized null::int
+  // in the supplier_public_profiles view, not a real column on profiles.
   const stats = [
     { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
-    supplier.deals_completed ? { label: isAr ? 'صفقات' : lang === 'zh' ? '成交' : 'Deals', value: supplier.deals_completed } : null,
     minOrderText ? { label: isAr ? 'أدنى طلب' : lang === 'zh' ? '最低订单' : 'Min order', value: minOrderText } : null,
     supplier.year_established ? { label: isAr ? 'تأسست' : lang === 'zh' ? '成立' : 'Est.', value: supplier.year_established } : null,
   ].filter(Boolean);
