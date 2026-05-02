@@ -7,10 +7,11 @@ import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
-import { T } from '../lib/supplierDashboardConstants';
+import { T, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
 import { formatPriceLocale } from '../lib/formatLocale';
 import ProductBuyerCardSummary from '../components/ProductBuyerCardSummary';
 import BrandedLoading from '../components/BrandedLoading';
+import TranslatedText from '../components/TranslatedText';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -217,6 +218,14 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     && !companyDescription
   );
 
+  // Phase 6B — factory_images normalization.
+  // The column historically holds two formats:
+  //   (a) full public URLs to product-images bucket  → buyer-renderable
+  //   (b) raw path strings stored in supplier-docs   → private; buyer cannot read
+  // Filter to (a) only so we never render a broken <img> over the cream wrapper.
+  const renderableFactoryImages = (Array.isArray(supplier.factory_images) ? supplier.factory_images : [])
+    .filter((img) => typeof img === 'string' && /^https?:\/\//i.test(img) && !img.includes('/supplier-docs/'));
+
   // Phase 6A — dynamic stats: only render stats with real data.
   // Note: deals_completed intentionally omitted — it's a synthesized null::int
   // in the supplier_public_profiles view, not a real column on profiles.
@@ -227,13 +236,13 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   ].filter(Boolean);
 
   const detailItems = [
-    supplier.business_type ? { label: isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type } : null,
+    supplier.business_type ? { label: isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type, translatable: true } : null,
     supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est.', value: supplier.year_established } : null,
     (supplier.city || supplier.country) ? { label: isAr ? 'الموقع' : lang === 'zh' ? '所在地' : 'Location', value: [supplier.city, supplier.country].filter(Boolean).join(', ') } : null,
-    supplier.company_address ? { label: isAr ? 'العنوان' : lang === 'zh' ? '地址' : 'Address', value: supplier.company_address } : null,
+    supplier.company_address ? { label: isAr ? 'العنوان' : lang === 'zh' ? '地址' : 'Address', value: supplier.company_address, translatable: true } : null,
     supplierLanguages.length > 0 ? { label: isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages', value: supplierLanguages.join(' · ') } : null,
     exportMarkets.length > 0 ? { label: isAr ? 'أسواق التصدير' : lang === 'zh' ? '出口市场' : 'Export markets', value: exportMarkets.join(' · ') } : null,
-    supplier.customization_support ? { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制' : 'Customization', value: supplier.customization_support } : null,
+    supplier.customization_support ? { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制' : 'Customization', value: supplier.customization_support, translatable: true } : null,
     supplier.trade_link ? { label: isAr ? 'الملف التجاري' : lang === 'zh' ? '贸易主页' : 'Trade profile', value: supplier.trade_link, isLink: true } : null,
   ].filter(Boolean);
 
@@ -264,6 +273,17 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
               }}>
                 {supplier.company_name}
               </h1>
+              {/* Phase 6B Task 3 — specialty under company name */}
+              {supplier.speciality && supplier.speciality !== 'other' && (
+                <p style={{
+                  fontSize: 12, color: '#3d3a35', margin: '0 0 4px',
+                  fontWeight: 500,
+                  fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)',
+                  letterSpacing: isAr ? 0 : 0.2,
+                }}>
+                  {getSpecialtyLabel(supplier.speciality, lang)}
+                </p>
+              )}
               <p style={{ fontSize: 12, color: '#6b6560', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {[supplier.city, supplier.country].filter(Boolean).join(' · ')}
                 {supplier.year_established ? ` · ${supplier.year_established}` : ''}
@@ -376,27 +396,38 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         </div>
 
-        {/* ── Factory photos (Phase 6A) ── */}
-        {Array.isArray(supplier.factory_images) && supplier.factory_images.length > 0 && (
+        {/* ── Factory photos (Phase 6A; URL-filter + onError hide added in Phase 6B) ── */}
+        {renderableFactoryImages.length > 0 && (
           <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
             <SectionLabel label={tT.spFactoryPhotosLabel} isAr={isAr} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
-              {supplier.factory_images.slice(0, 6).map((img, index) => (
+              {renderableFactoryImages.slice(0, 6).map((img, index) => (
                 <div key={`${img}-${index}`} style={{ aspectRatio: '4 / 3', borderRadius: 10, overflow: 'hidden', border: '1px solid #e8e5de', background: '#ede8dc' }}>
-                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={img}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      // Runtime safety net: if a URL that passed the filter still
+                      // 404s (e.g. deleted file), hide the whole cell so the cream
+                      // wrapper background doesn't read as "empty box".
+                      const cell = e.currentTarget.parentElement;
+                      if (cell) cell.style.display = 'none';
+                    }}
+                  />
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── About ── */}
+        {/* ── About (Phase 6B: AI translation when source ≠ viewer lang) ── */}
         {companyDescription && (
           <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
             <SectionLabel label={isAr ? 'عن الشركة' : lang === 'zh' ? '公司介绍' : 'About'} isAr={isAr} />
-            <p style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.85, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {companyDescription}
-            </p>
+            <div style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.85, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              <TranslatedText text={companyDescription} lang={lang} />
+            </div>
           </div>
         )}
 
@@ -410,10 +441,15 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                   <p style={{ fontSize: 10, fontFamily: "'Cormorant Garamond', serif", letterSpacing: '1px', textTransform: 'uppercase', color: '#b0ab9e', margin: '0 0 3px' }}>
                     {item.label}
                   </p>
-                  {item.isLink
-                    ? <a href={item.value} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#1a1814', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', textDecoration: 'underline', wordBreak: 'break-all', display: 'block' }}>{item.value}</a>
-                    : <p style={{ fontSize: 13, color: '#1a1814', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{item.value}</p>
-                  }
+                  {item.isLink ? (
+                    <a href={item.value} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#1a1814', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', textDecoration: 'underline', wordBreak: 'break-all', display: 'block' }}>{item.value}</a>
+                  ) : item.translatable ? (
+                    <div style={{ fontSize: 13, color: '#1a1814', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>
+                      <TranslatedText text={String(item.value)} lang={lang} />
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: '#1a1814', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{item.value}</p>
+                  )}
                 </div>
               ))}
             </div>

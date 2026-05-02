@@ -8,6 +8,7 @@ import {
   getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
+import { getSpecialtyLabel } from '../lib/supplierDashboardConstants';
 
 const CATEGORIES = {
   ar: [
@@ -204,6 +205,17 @@ export default function Suppliers({ lang, user }) {
                         }}>✓ {isAr ? 'معتمد' : lang === 'zh' ? '已认证' : 'Verified'}</span>
                       )}
                     </div>
+                    {/* Phase 6B Task 3 — specialty promoted from pills row to under company name */}
+                    {s.speciality && s.speciality !== 'other' && (
+                      <p style={{
+                        fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 4px',
+                        fontWeight: 500,
+                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                        letterSpacing: isAr ? 0 : 0.2,
+                      }}>
+                        {getSpecialtyLabel(s.speciality, lang)}
+                      </p>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ color: '#f5a623', fontSize: 13 }}>{stars(s.rating)}</span>
                       {s.reviews_count > 0 && (
@@ -225,13 +237,8 @@ export default function Suppliers({ lang, user }) {
                   </p>
                 )}
 
-                {/* TAGS */}
+                {/* TAGS — specialty promoted to header in Phase 6B; this row keeps Maabar ID, city, product count, trust signals */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                  {s.speciality && s.speciality !== 'other' && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
-                      {cats.find(c => c.val === s.speciality)?.label || s.speciality}
-                    </span>
-                  )}
                   {supplierMaabarId && isReviewedSupplier && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
                       {isAr ? `معرّف: ${supplierMaabarId}` : lang === 'zh' ? `编号：${supplierMaabarId}` : `ID: ${supplierMaabarId}`}

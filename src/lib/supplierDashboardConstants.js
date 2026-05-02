@@ -326,6 +326,11 @@ export const T = {
     // Phase 6A — buyer-facing supplier profile additions
     spFactoryPhotosLabel: 'صور المصنع',
     spProfileBeingSetup: 'هذا المورد يكمل إعداد ملفه. تابع لاحقاً للاطلاع على المنتجات والشهادات.',
+    // Phase 6B — AI translation pill + toggle on supplier profile free-text fields
+    spAiTranslated: 'ترجمة آلية',
+    spShowOriginal: 'عرض الأصل',
+    spShowTranslation: 'عرض الترجمة',
+    spTranslationUnavailable: 'الترجمة غير متاحة',
     buyerOrderTermsTitle: 'شروط التجارة',
     buyerOrderProductLabel: 'المنتج',
     buyerOrderEmpty: '—',
@@ -660,6 +665,11 @@ export const T = {
     // Phase 6A — buyer-facing supplier profile additions
     spFactoryPhotosLabel: 'Factory Photos',
     spProfileBeingSetup: 'This supplier is still setting up their profile. Check back soon for products and certifications.',
+    // Phase 6B — AI translation pill + toggle on supplier profile free-text fields
+    spAiTranslated: 'AI translated',
+    spShowOriginal: 'Show original',
+    spShowTranslation: 'Show translation',
+    spTranslationUnavailable: 'Translation unavailable',
     buyerOrderTermsTitle: 'Trade Terms',
     buyerOrderProductLabel: 'Product',
     buyerOrderEmpty: '—',
@@ -994,6 +1004,11 @@ export const T = {
     // Phase 6A — buyer-facing supplier profile additions
     spFactoryPhotosLabel: '工厂照片',
     spProfileBeingSetup: '该供应商正在完善资料。请稍后再访问以查看产品与认证。',
+    // Phase 6B — AI translation pill + toggle on supplier profile free-text fields
+    spAiTranslated: 'AI 翻译',
+    spShowOriginal: '显示原文',
+    spShowTranslation: '显示翻译',
+    spTranslationUnavailable: '翻译不可用',
     buyerOrderTermsTitle: '贸易条款',
     buyerOrderProductLabel: '产品',
     buyerOrderEmpty: '—',

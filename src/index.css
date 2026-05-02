@@ -3069,5 +3069,5 @@ input:-webkit-autofill:active {
 .sp-page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 16px 80px;
+  padding: calc(var(--page-top-offset) + 24px) 16px 80px;
 }
