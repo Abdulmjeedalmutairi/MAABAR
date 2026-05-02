@@ -88,8 +88,6 @@ export default function Suppliers({ lang, user }) {
       s.country,
       s.maabar_supplier_id,
       s.trade_link,
-      s.wechat,
-      s.whatsapp,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(q));
@@ -254,11 +252,6 @@ export default function Suppliers({ lang, user }) {
                       {isAr ? 'رابط متجر موثق' : lang === 'zh' ? '店铺链接已提供' : 'Trade link on file'}
                     </span>
                   )}
-                  {trustSignals.includes('wechat_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
-                      WeChat
-                    </span>
-                  )}
                   {trustSignals.includes('factory_media_available') && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
                       {isAr ? 'صور منشأة' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
@@ -276,10 +269,10 @@ export default function Suppliers({ lang, user }) {
                     </div>
                     <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
                       {isAr
-                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'الحساب بانتظار المراجعة'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}${trustSignals.includes('wechat_available') ? ' · WeChat متوفر' : ''}`
+                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'الحساب بانتظار المراجعة'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}`
                         : lang === 'zh'
-                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '等待平台审核'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}${trustSignals.includes('wechat_available') ? ' · 可通过 WeChat 联系' : ''}`
-                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Awaiting review'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}${trustSignals.includes('wechat_available') ? ' · WeChat available' : ''}`}
+                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '等待平台审核'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}`
+                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Awaiting review'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}`}
                     </p>
                   </div>
                 )}

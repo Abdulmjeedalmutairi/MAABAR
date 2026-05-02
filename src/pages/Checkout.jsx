@@ -538,7 +538,6 @@ export default function Checkout({ lang, user, profile }) {
                   {[
                     isReviewedSupplier ? t.reviewedByMaabar : null,
                     supplierTrustSignals.includes('trade_profile_available') ? t.tradeProfile : null,
-                    supplierTrustSignals.includes('wechat_available') ? t.wechatAvailable : null,
                     supplierTrustSignals.includes('factory_media_available') ? t.factoryPhotos : null,
                   ].filter(Boolean).join(' · ')}
                 </p>

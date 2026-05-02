@@ -1961,11 +1961,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                           {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
                                         </span>
                                       )}
-                                      {supplierTrustSignals.includes('wechat_available') && (
-                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
-                                          WeChat
-                                        </span>
-                                      )}
                                       {supplierTrustSignals.includes('factory_media_available') && (
                                         <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                                           {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
@@ -2520,11 +2515,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         {supplierTrustSignals.includes('trade_profile_available') && (
                           <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
                             {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
-                          </span>
-                        )}
-                        {supplierTrustSignals.includes('wechat_available') && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', color: 'var(--text-secondary)' }}>
-                            WeChat
                           </span>
                         )}
                         {supplierTrustSignals.includes('factory_media_available') && (

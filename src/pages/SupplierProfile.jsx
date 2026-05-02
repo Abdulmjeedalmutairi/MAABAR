@@ -8,6 +8,7 @@ import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
 import { T } from '../lib/supplierDashboardConstants';
+import { formatPriceLocale } from '../lib/formatLocale';
 import ProductBuyerCardSummary from '../components/ProductBuyerCardSummary';
 import BrandedLoading from '../components/BrandedLoading';
 
@@ -194,6 +195,36 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     return ordered;
   })();
 
+  // Phase 6A — currency-aware min-order text (stored value treated as SAR
+  // per supplier dashboard label convention).
+  const minOrderText = (() => {
+    if (!supplier.min_order_value) return null;
+    const built = buildDisplayPrice({
+      amount: supplier.min_order_value,
+      sourceCurrency: 'SAR',
+      displayCurrency: displayCurrency || 'SAR',
+      rates: exchangeRates,
+      lang,
+    });
+    return `${formatPriceLocale(built.displayAmount, lang, { fractionDigits: 0 })} ${built.displayCurrency}`;
+  })();
+
+  // Phase 6A — hollow-profile callout: shown when supplier has nothing yet.
+  const isHollowProfile = (
+    products.length === 0
+    && certifications.length === 0
+    && supplierAggregateCertTypes.length === 0
+    && !companyDescription
+  );
+
+  // Phase 6A — dynamic stats: only render stats with real data.
+  const stats = [
+    { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
+    supplier.deals_completed ? { label: isAr ? 'صفقات' : lang === 'zh' ? '成交' : 'Deals', value: supplier.deals_completed } : null,
+    minOrderText ? { label: isAr ? 'أدنى طلب' : lang === 'zh' ? '最低订单' : 'Min order', value: minOrderText } : null,
+    supplier.year_established ? { label: isAr ? 'تأسست' : lang === 'zh' ? '成立' : 'Est.', value: supplier.year_established } : null,
+  ].filter(Boolean);
+
   const detailItems = [
     supplier.business_type ? { label: isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type } : null,
     supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est.', value: supplier.year_established } : null,
@@ -292,28 +323,40 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             </div>
           )}
 
-          {/* Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
-            {[
-              { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
-              { label: isAr ? 'صفقات' : lang === 'zh' ? '成交' : 'Deals', value: supplier.deals_completed || '—' },
-              { label: isAr ? 'أدنى طلب' : lang === 'zh' ? '最低订单' : 'Min order', value: supplier.min_order_value ? `${supplier.min_order_value}$` : '—' },
-              { label: isAr ? 'تأسست' : lang === 'zh' ? '成立' : 'Est.', value: supplier.year_established || '—' },
-            ].map((stat, i) => (
-              <div key={i} style={{
-                padding: '10px 8px', textAlign: 'center',
-                borderRight: i < 3 ? '1px solid rgba(0,0,0,0.06)' : 'none',
-                background: '#ede8dc',
-              }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1814', margin: '0 0 2px', fontFamily: "'Cormorant Garamond', serif", fontVariantNumeric: 'lining-nums' }}>
-                  {stat.value}
-                </p>
-                <p style={{ fontSize: 10, color: '#6b6560', margin: 0, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '0.8px', textTransform: 'uppercase' }}>
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Stats row OR profile-being-setup callout (Phase 6A) */}
+          {isHollowProfile ? (
+            <div style={{
+              padding: '14px 16px',
+              borderRadius: 10,
+              background: 'rgba(0,0,0,0.04)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              marginBottom: 16,
+              fontSize: 13,
+              color: '#6b6560',
+              fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif",
+              lineHeight: 1.6,
+              textAlign: 'center',
+            }}>
+              {tT.spProfileBeingSetup}
+            </div>
+          ) : stats.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.length}, 1fr)`, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+              {stats.map((stat, i) => (
+                <div key={i} style={{
+                  padding: '10px 8px', textAlign: 'center',
+                  borderRight: i < stats.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                  background: '#ede8dc',
+                }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1814', margin: '0 0 2px', fontFamily: "'Cormorant Garamond', serif", fontVariantNumeric: 'lining-nums' }}>
+                    {stat.value}
+                  </p>
+                  <p style={{ fontSize: 10, color: '#6b6560', margin: 0, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '0.8px', textTransform: 'uppercase' }}>
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* CTAs */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -331,6 +374,20 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             )}
           </div>
         </div>
+
+        {/* ── Factory photos (Phase 6A) ── */}
+        {Array.isArray(supplier.factory_images) && supplier.factory_images.length > 0 && (
+          <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <SectionLabel label={tT.spFactoryPhotosLabel} isAr={isAr} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+              {supplier.factory_images.slice(0, 6).map((img, index) => (
+                <div key={`${img}-${index}`} style={{ aspectRatio: '4 / 3', borderRadius: 10, overflow: 'hidden', border: '1px solid #e8e5de', background: '#ede8dc' }}>
+                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── About ── */}
         {companyDescription && (
@@ -440,7 +497,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                           lang={lang}
                         />
                         <button className="product-card-buy" onClick={e => { e.stopPropagation(); nav(`/products/${p.id}`); }}>
-                          اشتر الآن
+                          {tT.pdBuyNowBtn}
                         </button>
                         {p.sample_available && (
                           <button

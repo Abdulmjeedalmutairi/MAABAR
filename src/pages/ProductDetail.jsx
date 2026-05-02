@@ -1249,7 +1249,6 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                 <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0 }}>
                   {[
                     supplierTrustSignals.includes('trade_profile_available') ? tT.pdTrustTradeProfile : tT.pdTrustNoTradeProfile,
-                    supplierTrustSignals.includes('wechat_available') ? tT.pdTrustWeChat : null,
                     supplierTrustSignals.includes('factory_media_available') ? tT.pdTrustFactoryMedia : null,
                   ].filter(Boolean).join(' · ')}
                 </p>
@@ -1286,12 +1285,10 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
               <span style={{ color: 'var(--text-secondary)' }}>→</span>
             </div>
 
-            {(supplierTrustSignals.length > 0 || supplierMaabarId || sup.trade_link || sup.wechat || sup.whatsapp) && (
+            {(supplierTrustSignals.length > 0 || supplierMaabarId || sup.trade_link) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                 {supplierMaabarId && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>{tT.pdSupplierIdLabel}: {supplierMaabarId}</span>}
                 {sup.trade_link && <a href={sup.trade_link} target="_blank" rel="noreferrer" className="btn-outline" style={{ minHeight: 34, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>{tT.pdCompanyStoreLink}</a>}
-                {sup.wechat && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>WeChat: {sup.wechat}</span>}
-                {sup.whatsapp && <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>WhatsApp: {sup.whatsapp}</span>}
               </div>
             )}
 

@@ -488,7 +488,6 @@ export default function PaymentSuccess({ lang, user }) {
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {isReviewedSupplier && <span style={successBadgeStyle('#5a9a72', 'rgba(58,122,82,0.1)', 'rgba(58,122,82,0.2)')}>✓ {t.verifiedSupplier}</span>}
                   {supplierTrustSignals.includes('trade_profile_available') && <span style={successBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>{t.tradeProfile}</span>}
-                  {supplierTrustSignals.includes('wechat_available') && <span style={successBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>{t.wechatAvailable}</span>}
                   {supplierTrustSignals.includes('factory_media_available') && <span style={successBadgeStyle('var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)')}>{t.factoryPhotos}</span>}
                 </div>
               </div>

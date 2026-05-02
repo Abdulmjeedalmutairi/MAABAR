@@ -323,6 +323,9 @@ export const T = {
     buyerHsCodeTooltip: 'رمز النظام المنسّق (HS) المستخدم في الإقرار الجمركي.',
     supplierCertsAggregateLabel: 'منتجات هذا المورد تحمل الشهادات التالية:',
     supplierCertifiedPill: 'حاصل على شهادات',
+    // Phase 6A — buyer-facing supplier profile additions
+    spFactoryPhotosLabel: 'صور المصنع',
+    spProfileBeingSetup: 'هذا المورد يكمل إعداد ملفه. تابع لاحقاً للاطلاع على المنتجات والشهادات.',
     buyerOrderTermsTitle: 'شروط التجارة',
     buyerOrderProductLabel: 'المنتج',
     buyerOrderEmpty: '—',
@@ -654,6 +657,9 @@ export const T = {
     buyerHsCodeTooltip: 'Harmonized System code used for customs declaration.',
     supplierCertsAggregateLabel: 'This supplier offers products with these certifications:',
     supplierCertifiedPill: 'Certified',
+    // Phase 6A — buyer-facing supplier profile additions
+    spFactoryPhotosLabel: 'Factory Photos',
+    spProfileBeingSetup: 'This supplier is still setting up their profile. Check back soon for products and certifications.',
     buyerOrderTermsTitle: 'Trade Terms',
     buyerOrderProductLabel: 'Product',
     buyerOrderEmpty: '—',
@@ -985,6 +991,9 @@ export const T = {
     buyerHsCodeTooltip: 'HS 海关编码，用于报关。',
     supplierCertsAggregateLabel: '此供应商的产品具备以下认证：',
     supplierCertifiedPill: '已认证',
+    // Phase 6A — buyer-facing supplier profile additions
+    spFactoryPhotosLabel: '工厂照片',
+    spProfileBeingSetup: '该供应商正在完善资料。请稍后再访问以查看产品与认证。',
     buyerOrderTermsTitle: '贸易条款',
     buyerOrderProductLabel: '产品',
     buyerOrderEmpty: '—',
