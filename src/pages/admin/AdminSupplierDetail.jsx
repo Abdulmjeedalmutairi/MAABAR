@@ -218,7 +218,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
         await sendMaabarEmail({
           type: 'supplier_approved',
           to: supplier.email,
-          data: { name: supplier.full_name || '', lang: supplier.lang || 'en' },
+          data: { name: supplier.full_name || '', lang: supplier.lang || 'ar' },
         });
       } catch (e) { console.error('approval email error:', e); }
     }

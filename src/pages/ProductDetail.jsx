@@ -1276,7 +1276,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                     </span>
                   )}
                 </div>
-                <p className="stars" style={{ marginBottom: 4 }}>{stars(Math.round(sup.rating || 0))}</p>
+                {sup.rating > 0 && <p className="stars" style={{ marginBottom: 4 }}>{stars(Math.round(sup.rating))}</p>}
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
                   {[sup.city, sup.country].filter(Boolean).join(', ') || '—'}
                   {sup.reviews_count ? ` · ${tT.pdReviewsCountFn(sup.reviews_count)}` : ''}

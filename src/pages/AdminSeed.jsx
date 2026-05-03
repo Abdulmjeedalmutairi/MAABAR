@@ -1242,7 +1242,7 @@ Score is 0-100. Focus on credibility, proof completeness, business identity clar
 
       if (caseItem.email) {
         // نستخدم لغة المورد نفسه لإرسال الإيميل — مش لغة الأدمن
-        const supplierLang = caseItem.lang || caseItem.preferred_language || 'en';
+        const supplierLang = caseItem.lang || caseItem.preferred_language || 'ar';
 
         if (decision === 'approved') {
           await sendMaabarEmail({

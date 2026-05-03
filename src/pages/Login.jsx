@@ -645,7 +645,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
   };
 
-  const termsSections = SECTIONS[lang] || SECTIONS.ar;
+  const termsSections = SECTIONS[effectiveLang] || SECTIONS.ar;
   const termsDir = isAr ? 'rtl' : 'ltr';
   const termsFont = isAr ? 'var(--font-ar)' : 'var(--font-sans)';
 
@@ -1170,7 +1170,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }}>
             <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: isAr || lang === 'zh' ? 0 : 1, color: 'rgba(0,0,0,0.88)', fontFamily: termsFont, margin: 0 }}>
-                {isAr ? 'الشروط والأحكام' : lang === 'zh' ? '条款与条件' : 'Terms & Conditions'}
+                {isAr ? 'الشروط والأحكام' : effectiveLang === 'zh' ? '条款与条件' : 'Terms & Conditions'}
               </p>
               <button onClick={() => setShowTerms(false)} style={{ background: 'none', border: 'none', color: 'rgba(0,0,0,0.45)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
             </div>
@@ -1184,10 +1184,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             </div>
             <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(0,0,0,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <button onClick={() => setShowTerms(false)} style={{ background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.10)', color: 'rgba(0,0,0,0.60)', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: termsFont }}>
-                {isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
+                {isAr ? 'إغلاق' : effectiveLang === 'zh' ? '关闭' : 'Close'}
               </button>
               <button onClick={() => { setAgreedTerms(true); setShowTerms(false); }} style={{ background: '#1a1a1a', border: 'none', color: '#ffffff', padding: '9px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: termsFont }}>
-                {isAr ? 'أوافق' : lang === 'zh' ? '我同意' : 'I agree'}
+                {isAr ? 'أوافق' : effectiveLang === 'zh' ? '我同意' : 'I agree'}
               </button>
             </div>
           </div>

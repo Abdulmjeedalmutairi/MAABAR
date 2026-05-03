@@ -2821,6 +2821,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     ))}
                   </div>
                 </div>
+                {/* Phase 6C Fix 4 — Specialty + Est. year info rows */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-disabled)', ...arFont }}>{isAr ? 'التخصص' : lang === 'zh' ? '专业' : 'Specialty'}</span>
+                    <span style={{ color: 'var(--text-primary)', ...arFont }}>{getSpecialtyLabel(settings.speciality || profile?.speciality, lang) || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-disabled)', ...arFont }}>{isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est. year'}</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{settings.year_established || profile?.year_established || '—'}</span>
+                  </div>
+                </div>
               </div>
 
               {needsVerification && (
