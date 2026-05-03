@@ -358,7 +358,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="*"               element={<NotFound        {...sharedProps} />} />
       </Routes>
 
-      {!isChromelessPage && (!profile || profile?.role === 'buyer') && (
+      {!isChromelessPage && (!user || profile?.role === 'buyer') && (
         <AIHub lang={lang} user={user} profile={profile} />
       )}
     </div>

@@ -4,8 +4,9 @@ import BrandLogo from '../components/BrandLogo';
 import usePageTitle from '../hooks/usePageTitle';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 
-// Deadline: 14 days from now
-const ACCESS_DEADLINE = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+// Deadline: fixed launch target (2026-05-18). Was a sliding 14-day window
+// per page load; switched to a fixed date so every visitor sees the same countdown.
+const ACCESS_DEADLINE = new Date('2026-05-18T00:00:00').toISOString();
 
 function getTimeLeft() {
   const diff = new Date(ACCESS_DEADLINE).getTime() - Date.now();
@@ -61,6 +62,7 @@ const TRANSLATIONS = {
     footerLine1: 'maabar.io · support@maabar.io',
     footerLine2: 'Saudi Arabia × China',
     comingSoon: 'Coming soon on App Store & Google Play',
+    comingSoonLabel: 'Coming soon on',
     languageEnglish: 'English',
     languageChinese: '中文',
     ctaLabels: {
@@ -111,6 +113,7 @@ const TRANSLATIONS = {
     footerLine1: 'maabar.io · support@maabar.io',
     footerLine2: '沙特阿拉伯 × 中国',
     comingSoon: '即将上线 App Store 与 Google Play',
+    comingSoonLabel: '即将上线',
     languageEnglish: 'English',
     languageChinese: '中文',
     ctaLabels: {
@@ -200,6 +203,29 @@ export default function SupplierAccess({ user, profile, lang = 'zh' }) {
                   <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: '0.1em' }}>{l}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* COMING SOON BADGES — visual placeholder, no real store links yet */}
+          <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 14, padding: '16px 24px', marginBottom: 14, textAlign: 'center' }}>
+            <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12 }}>
+              {t.comingSoonLabel}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <a href="#" onClick={(e) => e.preventDefault()} style={{ display: 'inline-flex', lineHeight: 0 }} aria-label="Download on the App Store (coming soon)">
+                <img
+                  src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                  alt="Download on the App Store"
+                  style={{ height: 40, width: 'auto' }}
+                />
+              </a>
+              <a href="#" onClick={(e) => e.preventDefault()} style={{ display: 'inline-flex', lineHeight: 0 }} aria-label="Get it on Google Play (coming soon)">
+                <img
+                  src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                  alt="Get it on Google Play"
+                  style={{ height: 60, width: 'auto' }}
+                />
+              </a>
             </div>
           </div>
 
