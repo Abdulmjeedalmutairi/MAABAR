@@ -482,9 +482,29 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                     <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1814', margin: '0 0 2px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{cert.name}</p>
                     {cert.issuer && <p style={{ fontSize: 12, color: '#6b6560', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{cert.issuer}</p>}
                   </div>
-                  {cert.valid_until && (
-                    <p style={{ fontSize: 11, color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap', fontFamily: "'Cormorant Garamond', serif" }}>{cert.valid_until}</p>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 4, flexShrink: 0 }}>
+                    {cert.valid_until && (
+                      <p style={{ fontSize: 11, color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap', fontFamily: "'Cormorant Garamond', serif" }}>{cert.valid_until}</p>
+                    )}
+                    {/* Phase 6D — buyer link to the uploaded cert PDF/image */}
+                    {cert.file_url && (
+                      <a
+                        href={cert.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          fontSize: 11,
+                          color: '#2d7a4f',
+                          textDecoration: 'none',
+                          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                          whiteSpace: 'nowrap',
+                          letterSpacing: isAr ? 0 : 0.2,
+                        }}
+                      >
+                        {tT.spViewCertificate}
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

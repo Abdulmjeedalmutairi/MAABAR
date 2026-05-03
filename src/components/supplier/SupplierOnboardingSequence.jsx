@@ -30,20 +30,25 @@ import { normalizeProfileList, serializeProfileList } from '../../lib/supplierFo
 // Pre-fill behavior is option (i) from the redesign spec: existing
 // profile values populate every field; the supplier can edit or extend.
 
-function serializeCertifications(certs = []) {
-  if (!Array.isArray(certs)) return '';
-  return certs
-    .map((c) => (typeof c === 'string' ? c : (c && c.name) ? c.name : ''))
-    .filter(Boolean)
-    .join('\n');
-}
-
-function parseCertifications(rawText = '') {
-  return String(rawText || '')
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((name) => ({ name }));
+// Phase 6D — certifications now carry an optional file_url alongside the name.
+// Hydrate any pre-existing profile.certifications (which historically stored
+// just `{ name }` or even a bare string) into the richer row shape used by
+// the multi-entry UI. Stable `_id` per row prevents React-key drift on add/remove.
+function hydrateCerts(rawCerts = []) {
+  if (!Array.isArray(rawCerts)) return [];
+  return rawCerts
+    .map((c) => {
+      const name = typeof c === 'string' ? c : (c && c.name) ? c.name : '';
+      const fileUrl = (c && typeof c === 'object' && c.file_url) ? c.file_url : null;
+      return {
+        _id: Math.random().toString(36).slice(2, 10),
+        name,
+        file_url: fileUrl,
+        uploading: false,
+        error: null,
+      };
+    })
+    .filter((c) => c.name || c.file_url);
 }
 
 const ONBOARDING_INPUT_STYLE = {
@@ -117,7 +122,7 @@ export default function SupplierOnboardingSequence({
   const [yearEstablished, setYearEstablished] = useState(profile?.year_established != null ? String(profile.year_established) : '');
   const [numEmployees, setNumEmployees] = useState(profile?.num_employees != null ? String(profile.num_employees) : '');
   const [exportMarketsRaw, setExportMarketsRaw] = useState(serializeProfileList(profile?.export_markets));
-  const [certificationsRaw, setCertificationsRaw] = useState(serializeCertifications(profile?.certifications));
+  const [certs, setCerts] = useState(() => hydrateCerts(profile?.certifications));
   const [companyWebsite, setCompanyWebsite] = useState(profile?.company_website || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -139,7 +144,12 @@ export default function SupplierOnboardingSequence({
     setSavingProfile(true);
     const yr = yearEstablished ? parseInt(yearEstablished, 10) : null;
     const ne = numEmployees ? parseInt(numEmployees, 10) : null;
-    const certsArray = parseCertifications(certificationsRaw);
+    // Phase 6D — strip ephemeral row state (_id, uploading, error) before persist.
+    // Keep entries that have a name OR a file (don't drop a file the user uploaded
+    // while they're still typing the name).
+    const certsArray = certs
+      .map((c) => ({ name: String(c.name || '').trim(), file_url: c.file_url || null }))
+      .filter((c) => c.name || c.file_url);
     const exportArray = normalizeProfileList(exportMarketsRaw);
     const description = String(companyDescription || '').trim();
     const payload = {
@@ -200,6 +210,44 @@ export default function SupplierOnboardingSequence({
     }
     if (setProfile) setProfile((prev) => ({ ...(prev || {}), ...persistedPayload }));
     setStep('ready');
+  };
+
+  // ── Phase 6D — quality certifications row handlers ──────────────────────
+  const updateCertRow = (id, patch) => {
+    setCerts((prev) => prev.map((c) => (c._id === id ? { ...c, ...patch } : c)));
+  };
+
+  const addCertRow = () => {
+    setCerts((prev) => [
+      ...prev,
+      { _id: Math.random().toString(36).slice(2, 10), name: '', file_url: null, uploading: false, error: null },
+    ]);
+  };
+
+  const removeCertRow = (id) => {
+    // We intentionally do NOT delete the storage object here — orphaned files
+    // in the public supplier-certifications bucket are bounded (≤10 MB each,
+    // small per-supplier counts) and a periodic cleanup is the safer path
+    // than a hard delete that races with the save call.
+    setCerts((prev) => prev.filter((c) => c._id !== id));
+  };
+
+  const removeCertFile = (id) => {
+    updateCertRow(id, { file_url: null, error: null });
+  };
+
+  const uploadCertFile = async (id, file) => {
+    if (!file) return;
+    updateCertRow(id, { uploading: true, error: null });
+    const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+    const path = `${user.id}/cert_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await sb.storage.from('supplier-certifications').upload(path, file, { upsert: true });
+    if (error) {
+      updateCertRow(id, { uploading: false, error: t.certUploadFailed });
+      return;
+    }
+    const { data: { publicUrl } } = sb.storage.from('supplier-certifications').getPublicUrl(path);
+    updateCertRow(id, { uploading: false, file_url: publicUrl, error: null });
   };
 
   const completeOnboarding = async (target) => {
@@ -384,17 +432,201 @@ export default function SupplierOnboardingSequence({
               {t.onbProfileFieldExportMarketsHint}
             </p>
 
-            <VfField label={t.onbProfileFieldCertifications} delay={0.3}>
-              <textarea
-                style={{ ...ONBOARDING_INPUT_STYLE, resize: 'vertical', minHeight: 70, lineHeight: 1.7 }}
-                rows={3}
-                value={certificationsRaw}
-                onChange={(e) => setCertificationsRaw(e.target.value)}
-              />
-            </VfField>
-            <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: "'Tajawal', sans-serif", fontWeight: 300, marginTop: 6 }}>
-              {t.onbProfileFieldCertificationsHint}
-            </p>
+            {/* Phase 6D — multi-entry quality certifications with optional file upload */}
+            <div className="vf-fu" style={{ animationDelay: '0.3s' }}>
+              <label className="vf-label">{t.onbProfileFieldCertifications}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 10 }}>
+                {certs.map((cert) => (
+                  <div
+                    key={cert._id}
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: VF_C.paper,
+                      border: `1px solid ${VF_C.ink10}`,
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder={t.certNamePlaceholder}
+                      value={cert.name}
+                      onChange={(e) => updateCertRow(cert._id, { name: e.target.value })}
+                      style={{
+                        flex: '1 1 180px',
+                        minWidth: 0,
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: `1px solid ${VF_C.ink10}`,
+                        outline: 'none',
+                        fontSize: 14,
+                        color: VF_C.ink,
+                        fontFamily: "'Tajawal', sans-serif",
+                        fontWeight: 400,
+                        padding: '6px 0 7px',
+                      }}
+                    />
+
+                    {cert.uploading ? (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: VF_C.ink60,
+                          fontFamily: "'Tajawal', sans-serif",
+                          padding: '5px 10px',
+                          letterSpacing: 0.3,
+                        }}
+                      >
+                        {t.certUploadingLabel}
+                      </span>
+                    ) : cert.file_url ? (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px 4px 8px',
+                          borderRadius: 999,
+                          background: VF_C.sageBg,
+                          border: `1px solid ${VF_C.sageBr}`,
+                          color: VF_C.sage,
+                          fontSize: 11,
+                          fontFamily: "'Tajawal', sans-serif",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <VfChk size={11} />
+                        <a
+                          href={cert.file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: VF_C.sage, textDecoration: 'none' }}
+                        >
+                          {t.certUploadedLabel}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => removeCertFile(cert._id)}
+                          aria-label={t.certUploadedLabel}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: VF_C.sage,
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: 14,
+                            lineHeight: 1,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ) : (
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          border: `1px solid ${VF_C.ink10}`,
+                          background: VF_C.cream,
+                          color: VF_C.ink60,
+                          fontSize: 12,
+                          fontFamily: "'Tajawal', sans-serif",
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t.certUploadBtn}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files && e.target.files[0];
+                            if (file) uploadCertFile(cert._id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+
+                    {cert.file_url && !cert.uploading && (
+                      <label
+                        style={{
+                          fontSize: 11,
+                          color: VF_C.ink60,
+                          fontFamily: "'Tajawal', sans-serif",
+                          textDecoration: 'underline',
+                          textDecorationColor: VF_C.ink10,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t.certReplaceBtn}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files && e.target.files[0];
+                            if (file) uploadCertFile(cert._id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => removeCertRow(cert._id)}
+                      style={{
+                        marginInlineStart: 'auto',
+                        background: 'none',
+                        border: 'none',
+                        color: VF_C.ink30,
+                        cursor: 'pointer',
+                        padding: '4px 6px',
+                        fontSize: 18,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+
+                    {cert.error && (
+                      <p style={{ flexBasis: '100%', margin: 0, fontSize: 11, color: '#a07070', fontFamily: "'Tajawal', sans-serif" }}>
+                        {cert.error}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={addCertRow}
+                style={{
+                  background: 'none',
+                  border: `1px dashed ${VF_C.ink10}`,
+                  borderRadius: 8,
+                  color: VF_C.ink60,
+                  fontSize: 12,
+                  fontFamily: "'Tajawal', sans-serif",
+                  fontWeight: 400,
+                  padding: '8px 14px',
+                  cursor: 'pointer',
+                }}
+              >
+                {t.certAddBtn}
+              </button>
+
+              <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: "'Tajawal', sans-serif", fontWeight: 300, marginTop: 8 }}>
+                {t.certFileTypesHint}
+              </p>
+            </div>
 
             {profileError && (
               <div className="vf-fi" style={{ marginTop: 18, padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(160,112,112,0.2)', background: 'rgba(160,112,112,0.07)' }}>
