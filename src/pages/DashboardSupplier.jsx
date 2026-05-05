@@ -2783,55 +2783,107 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </>
               ) : (
                 <>
-              {/* ── Supplier identity card ── */}
-              <div className="supplier-identity-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h2 style={{ fontSize: isAr ? 22 : 24, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, ...arFont, letterSpacing: isAr ? 0 : -0.3 }}>
-                      {settings.company_name || profile?.company_name || name}
-                    </h2>
-                    {(settings.city || settings.country) && (
-                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, ...arFont }}>
-                        {[settings.city, settings.country].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                      {supplierMaabarId && (
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '3px 10px', fontFamily: 'var(--font-sans)', letterSpacing: 0.5 }}>
-                          {supplierMaabarId}
-                        </span>
-                      )}
-                      {supplierState.isApprovedStage && (
-                        <span style={{ fontSize: 11, color: '#5a9a72', background: 'rgba(80,180,120,0.10)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 999, padding: '3px 10px', fontWeight: 600, ...arFont }}>
-                          {isAr ? '✓ مورد موثّق' : lang === 'zh' ? '✓ 认证供应商' : '✓ Verified'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
-                    {[
-                      { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', value: stats.products ?? '—' },
-                      { label: isAr ? 'العروض' : lang === 'zh' ? '报价' : 'Offers', value: stats.offers ?? '—' },
-                      { label: isAr ? 'التقييم' : lang === 'zh' ? '评分' : 'Rating', value: profile?.rating ? `${profile.rating}` : '—' },
-                    ].map(({ label, value }) => (
-                      <div key={label} style={{ textAlign: 'center' }}>
-                        <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</p>
-                        <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 2, letterSpacing: 0.5, textTransform: lang === 'zh' ? 'none' : 'uppercase', ...arFont }}>{label}</p>
+              {/* ── Supplier identity card ──
+                  Cover photo flush to top; padding/overflow overridden so the
+                  cover image stays clipped to the card's rounded corners. */}
+              <div className="supplier-identity-card" style={{ padding: 0, overflow: 'hidden' }}>
+                {(() => {
+                  const company    = settings.company_name || profile?.company_name || name || '';
+                  const initials   = company.trim().split(/\s+/).map(w => (w[0] || '').toUpperCase()).filter(Boolean).slice(0, 2).join('') || '·';
+                  const firstLetter = company.trim()[0]?.toUpperCase() || '·';
+                  const cover      = (settings.factory_images || [])[0] || null;
+                  const specialty  = getSpecialtyLabel(settings.speciality || profile?.speciality, lang) || '';
+                  const yearEst    = settings.year_established || profile?.year_established || '';
+                  const cityLine   = [settings.city, settings.country].filter(Boolean).join(' · ');
+                  const estLabel   = isAr ? 'تأسست' : lang === 'zh' ? '成立于' : 'Est.';
+                  return (
+                    <>
+                      {/* Cover photo */}
+                      <div style={{
+                        width: '100%', height: 160, background: '#FAF8F5',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}>
+                        {cover
+                          ? <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ fontSize: 48, color: 'var(--text-disabled)', fontWeight: 300, letterSpacing: 4 }}>{initials}</span>}
                       </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Phase 6C Fix 4 — Specialty + Est. year info rows */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, fontSize: 12 }}>
-                    <span style={{ color: 'var(--text-disabled)', ...arFont }}>{isAr ? 'التخصص' : lang === 'zh' ? '专业' : 'Specialty'}</span>
-                    <span style={{ color: 'var(--text-primary)', ...arFont }}>{getSpecialtyLabel(settings.speciality || profile?.speciality, lang) || '—'}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, fontSize: 12 }}>
-                    <span style={{ color: 'var(--text-disabled)', ...arFont }}>{isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est. year'}</span>
-                    <span style={{ color: 'var(--text-primary)' }}>{settings.year_established || profile?.year_established || '—'}</span>
-                  </div>
-                </div>
+
+                      {/* Body */}
+                      <div style={{ padding: '0 24px 20px' }}>
+                        {/* Avatar overlapping cover bottom */}
+                        <div style={{
+                          width: 64, height: 64, borderRadius: '50%',
+                          border: '3px solid #fff', background: '#fff',
+                          marginTop: -32, marginBottom: 14, overflow: 'hidden',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {settings.avatar_url
+                            ? <img src={settings.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)' }}>{firstLetter}</span>}
+                        </div>
+
+                        {/* Company name */}
+                        <h2 style={{ fontSize: isAr ? 22 : 24, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont, letterSpacing: isAr ? 0 : -0.3 }}>
+                          {company || '—'}
+                        </h2>
+
+                        {/* Verified pill */}
+                        {supplierState.isApprovedStage && (
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, color: '#5a9a72', background: 'rgba(80,180,120,0.10)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 999, padding: '3px 10px', fontWeight: 600, ...arFont, display: 'inline-block' }}>
+                              {isAr ? '✓ مورد موثّق' : lang === 'zh' ? '✓ 认证供应商' : '✓ Verified'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Specialty */}
+                        {specialty && (
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, ...arFont }}>
+                            {specialty}
+                          </p>
+                        )}
+
+                        {/* Est. year */}
+                        {yearEst && (
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, ...arFont }}>
+                            {estLabel} {yearEst}
+                          </p>
+                        )}
+
+                        {/* City · Country */}
+                        {cityLine && (
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, ...arFont }}>
+                            {cityLine}
+                          </p>
+                        )}
+
+                        {/* MS-ID pill */}
+                        {supplierMaabarId && (
+                          <div style={{ marginBottom: 12 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '3px 10px', fontFamily: 'var(--font-sans)', letterSpacing: 0.5 }}>
+                              {supplierMaabarId}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Stats row: Products / Offers / Rating */}
+                        <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                          {[
+                            { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', value: stats.products ?? '—' },
+                            { label: isAr ? 'العروض'  : lang === 'zh' ? '报价' : 'Offers',   value: stats.offers   ?? '—' },
+                            { label: isAr ? 'التقييم' : lang === 'zh' ? '评分' : 'Rating',   value: profile?.rating ? `${profile.rating}` : '—' },
+                          ].map(({ label, value }) => (
+                            <div key={label} style={{ flex: 1, textAlign: 'center' }}>
+                              <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 2, letterSpacing: 0.5, textTransform: lang === 'zh' ? 'none' : 'uppercase', ...arFont }}>{label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {needsVerification && (
