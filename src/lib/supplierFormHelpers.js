@@ -116,6 +116,7 @@ export function buildSettingsState(profile = {}, displayCurrency = 'USD') {
     company_description: getCompanyDescription(profile),
     preferred_display_currency: profile.preferred_display_currency || displayCurrency || 'USD',
     avatar_url: profile.avatar_url || '',
+    cover_photo_url: profile.cover_photo_url || '',
     factory_images: Array.isArray(profile.factory_images) ? profile.factory_images : [],
     certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
   };

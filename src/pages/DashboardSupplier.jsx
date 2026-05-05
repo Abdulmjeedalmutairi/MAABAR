@@ -274,6 +274,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [editOfferForm, setEditOfferForm]     = useState({});
   const [savingEditOffer, setSavingEditOffer] = useState(false);
   const [uploadingLogo, setUploadingLogo]   = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingFactory, setUploadingFactory] = useState(false);
   const [samples, setSamples] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
@@ -379,7 +380,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const imageRef = useRef(null); const videoRef = useRef(null);
   const editImageRef = useRef(null); const editVideoRef = useRef(null);
-  const logoRef = useRef(null); const factoryRef = useRef(null);
+  const logoRef = useRef(null); const coverRef = useRef(null); const factoryRef = useRef(null);
   const saveDraftFirstRunRef = useRef(true);
   const draftSaveTimerRef = useRef(null);
   const profileInitRef = useRef(null);
@@ -1205,6 +1206,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
     if (!error) { const url = STORAGE_URL + path; await sb.from('profiles').update({ avatar_url: url }).eq('id', user.id); setSettings(prev => ({ ...prev, avatar_url: url })); }
     setUploadingLogo(false);
+  };
+
+  // Cover photo — single image, optional. Mirrors uploadLogo: writes the
+  // URL straight to profiles so this works independently of the larger
+  // settings save flow. Migration 20260506000001 adds the column.
+  const uploadCoverPhoto = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    setUploadingCover(true);
+    const path = `${user.id}/cover_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
+    if (!error) { const url = STORAGE_URL + path; await sb.from('profiles').update({ cover_photo_url: url }).eq('id', user.id); setSettings(prev => ({ ...prev, cover_photo_url: url })); }
+    setUploadingCover(false);
+  };
+  const removeCoverPhoto = async () => {
+    await sb.from('profiles').update({ cover_photo_url: null }).eq('id', user.id);
+    setSettings(prev => ({ ...prev, cover_photo_url: '' }));
   };
 
   const uploadFactoryImage = async (e) => {
@@ -2789,24 +2806,25 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <div className="supplier-identity-card" style={{ padding: 0, overflow: 'hidden' }}>
                 {(() => {
                   const company    = settings.company_name || profile?.company_name || name || '';
-                  const initials   = company.trim().split(/\s+/).map(w => (w[0] || '').toUpperCase()).filter(Boolean).slice(0, 2).join('') || '·';
                   const firstLetter = company.trim()[0]?.toUpperCase() || '·';
-                  const cover      = (settings.factory_images || [])[0] || null;
+                  // Cover photo is now driven exclusively by profiles.cover_photo_url
+                  // (migration 20260506000001). When unset, fall back to plain
+                  // cream so the supplier has full control over what shows here.
+                  const cover      = settings.cover_photo_url || profile?.cover_photo_url || null;
                   const specialty  = getSpecialtyLabel(settings.speciality || profile?.speciality, lang) || '';
                   const yearEst    = settings.year_established || profile?.year_established || '';
                   const cityLine   = [settings.city, settings.country].filter(Boolean).join(' · ');
                   const estLabel   = isAr ? 'تأسست' : lang === 'zh' ? '成立于' : 'Est.';
                   return (
                     <>
-                      {/* Cover photo */}
+                      {/* Cover photo — image when set, else plain cream fill */}
                       <div style={{
                         width: '100%', height: 160, background: '#FAF8F5',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                         overflow: 'hidden',
                       }}>
-                        {cover
-                          ? <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 48, color: 'var(--text-disabled)', fontWeight: 300, letterSpacing: 4 }}>{initials}</span>}
+                        {cover && (
+                          <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
                       </div>
 
                       {/* Body */}
@@ -4877,6 +4895,44 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
                     {isAr ? 'الهوية البصرية' : lang === 'zh' ? '品牌素材' : 'Visual Identity'}
                   </p>
+
+                  {/* Cover photo — full-width preview above the logo/factory grid */}
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>
+                      {isAr ? 'صورة الغلاف' : lang === 'zh' ? '封面图片' : 'Cover Photo'}
+                    </p>
+                    {settings.cover_photo_url ? (
+                      <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e5de' }}>
+                        <img src={settings.cover_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button
+                          onClick={removeCoverPhoto}
+                          title={isAr ? 'إزالة' : lang === 'zh' ? '移除' : 'Remove'}
+                          style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                        <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadCoverPhoto} />
+                        <button
+                          onClick={() => coverRef.current?.click()}
+                          style={{ position: 'absolute', bottom: 6, right: 6, background: '#1a1814', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontFamily: "'Tajawal', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
+                          {uploadingCover
+                            ? (isAr ? 'جاري الرفع...' : lang === 'zh' ? '上传中...' : 'Uploading...')
+                            : (isAr ? 'تغيير الغلاف' : lang === 'zh' ? '更换封面' : 'Change cover')}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadCoverPhoto} />
+                        <div
+                          onClick={() => coverRef.current?.click()}
+                          style={{ width: '100%', height: 100, borderRadius: 8, border: '1px dashed #c8c4bc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s', fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif" }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = '#1a1814'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = '#c8c4bc'}>
+                          {uploadingCover
+                            ? (isAr ? 'جاري الرفع...' : lang === 'zh' ? '上传中...' : 'Uploading...')
+                            : (isAr ? '+ رفع صورة الغلاف' : lang === 'zh' ? '+ 上传封面' : '+ Upload cover photo')}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div>
                       <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>{t.logo}</p>
