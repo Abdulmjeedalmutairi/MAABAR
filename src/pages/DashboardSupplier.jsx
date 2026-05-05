@@ -2885,19 +2885,37 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           </div>
                         )}
 
-                        {/* Stats row: Products / Offers / Rating */}
-                        <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-                          {[
+                        {/* Stats row — Phase 7 redesign:
+                            Drop Offers tile (zero on a fresh dashboard reads
+                            negative). Drop Rating tile when null/0. Add Years
+                            experience and a static "✓ Responsive" tile for
+                            verified suppliers. Mirrors mobile SupplierHomeScreen. */}
+                        {(() => {
+                          const yearsExpRaw = Number(profile?.years_experience);
+                          const yrsSuffix   = isAr ? 'سنة' : lang === 'zh' ? '年' : 'yrs';
+                          const tiles = [
                             { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', value: stats.products ?? '—' },
-                            { label: isAr ? 'العروض'  : lang === 'zh' ? '报价' : 'Offers',   value: stats.offers   ?? '—' },
-                            { label: isAr ? 'التقييم' : lang === 'zh' ? '评分' : 'Rating',   value: profile?.rating ? `${profile.rating}` : '—' },
-                          ].map(({ label, value }) => (
-                            <div key={label} style={{ flex: 1, textAlign: 'center' }}>
-                              <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</p>
-                              <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 2, letterSpacing: 0.5, textTransform: lang === 'zh' ? 'none' : 'uppercase', ...arFont }}>{label}</p>
+                            Number.isFinite(yearsExpRaw) && yearsExpRaw > 0
+                              ? { label: isAr ? 'الخبرة' : lang === 'zh' ? '经验' : 'Experience', value: `${yearsExpRaw} ${yrsSuffix}` }
+                              : null,
+                            profile?.rating > 0
+                              ? { label: isAr ? 'التقييم' : lang === 'zh' ? '评分' : 'Rating', value: `${profile.rating}` }
+                              : null,
+                            supplierState.isApprovedStage
+                              ? { label: isAr ? 'متجاوب' : lang === 'zh' ? '响应及时' : 'Responsive', value: '✓' }
+                              : null,
+                          ].filter(Boolean);
+                          return (
+                            <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+                              {tiles.map(({ label, value }) => (
+                                <div key={label} style={{ flex: 1, textAlign: 'center' }}>
+                                  <p style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</p>
+                                  <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 2, letterSpacing: 0.5, textTransform: lang === 'zh' ? 'none' : 'uppercase', ...arFont }}>{label}</p>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })()}
                       </div>
                     </>
                   );

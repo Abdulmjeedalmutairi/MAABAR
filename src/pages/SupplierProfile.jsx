@@ -16,6 +16,23 @@ import TranslatedText from '../components/TranslatedText';
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 
+// Some legacy supplier rows have profiles.certifications stored as a JSON
+// string instead of a jsonb array (double-encoded by an earlier upload
+// path). Normalize both shapes so the buyer-facing card never sees a raw
+// string. Returns [] for anything we can't make sense of.
+function parseCerts(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function SectionLabel({ label, isAr }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -54,7 +71,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const companyDescription = supplier?.company_description || supplier?.bio_en || supplier?.bio_ar || supplier?.bio_zh || '';
   const supplierLanguages = Array.isArray(supplier?.languages) ? supplier.languages : [];
   const exportMarkets = Array.isArray(supplier?.export_markets) ? supplier.export_markets : [];
-  const certifications = Array.isArray(supplier?.certifications) ? supplier.certifications : [];
+  const certifications = parseCerts(supplier?.certifications);
 
   useEffect(() => { loadSupplier(); }, [id, user?.id]);
 
@@ -78,6 +95,26 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
       setReviews([]);
       setLoading(false);
       return;
+    }
+
+    // Phase 7 — supplemental fetch for trade-info fields not exposed by
+    // supplier_public_profiles (port_of_loading, lead_time_min/max_days,
+    // sample_available). The verified-supplier branch of the profiles
+    // SELECT RLS policy permits this for any authenticated user. Errors
+    // are swallowed so missing columns (un-applied migrations) don't
+    // break profile loading.
+    const { data: extra, error: extraErr } = await sb
+      .from('profiles')
+      .select('port_of_loading, lead_time_min_days, lead_time_max_days, sample_available')
+      .eq('id', id)
+      .maybeSingle();
+    if (extra && !extraErr) {
+      visibleSupplier.port_of_loading    = extra.port_of_loading    || null;
+      visibleSupplier.lead_time_min_days = extra.lead_time_min_days ?? null;
+      visibleSupplier.lead_time_max_days = extra.lead_time_max_days ?? null;
+      visibleSupplier.sample_available   = extra.sample_available   ?? null;
+    } else if (extraErr) {
+      console.log('[SupplierProfile] supplemental fetch error (non-fatal):', extraErr.message);
     }
 
     setSupplier(visibleSupplier);
@@ -226,20 +263,52 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const renderableFactoryImages = (Array.isArray(supplier.factory_images) ? supplier.factory_images : [])
     .filter((img) => typeof img === 'string' && /^https?:\/\//i.test(img) && !img.includes('/supplier-docs/'));
 
-  // Phase 6A — dynamic stats: only render stats with real data.
-  // Note: deals_completed intentionally omitted — it's a synthesized null::int
-  // in the supplier_public_profiles view, not a real column on profiles.
+  // Phase 7 — stats row redesign:
+  //   • Drop Offers tile (matches mobile — zero on a fresh profile reads
+  //     as negative signal).
+  //   • Drop Min order / Est. tiles — both are surfaced in detailItems
+  //     below + Est. is shown inline under the company name already.
+  //   • Add Years experience tile when supplier.years_experience > 0.
+  //   • Add static "✓ Responsive" tile for verified suppliers.
+  const yearsExp = Number(supplier.years_experience);
+  const yrsSuffix = isAr ? 'سنة' : lang === 'zh' ? '年' : 'yrs';
   const stats = [
     { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
-    minOrderText ? { label: isAr ? 'أدنى طلب' : lang === 'zh' ? '最低订单' : 'Min order', value: minOrderText } : null,
-    supplier.year_established ? { label: isAr ? 'تأسست' : lang === 'zh' ? '成立' : 'Est.', value: supplier.year_established } : null,
+    Number.isFinite(yearsExp) && yearsExp > 0
+      ? { label: isAr ? 'الخبرة' : lang === 'zh' ? '经验' : 'Experience', value: `${yearsExp} ${yrsSuffix}` }
+      : null,
+    supplier.rating > 0
+      ? { label: isAr ? 'التقييم' : lang === 'zh' ? '评分' : 'Rating', value: `${supplier.rating}` }
+      : null,
+    isReviewedSupplier
+      ? { label: isAr ? 'متجاوب' : lang === 'zh' ? '响应及时' : 'Responsive', value: '✓' }
+      : null,
   ].filter(Boolean);
+
+  // Phase 7 — Trade-info expansion:
+  // min_order_value moved here from the stats row, plus port/lead-time/
+  // sample_available pulled from the supplemental fetch above. lead-time
+  // collapses min/max bounds into one "X-Y days" string.
+  let leadTimeText = '';
+  const lmin = supplier.lead_time_min_days;
+  const lmax = supplier.lead_time_max_days;
+  if (Number.isFinite(lmin) && Number.isFinite(lmax)) leadTimeText = `${lmin}-${lmax}`;
+  else if (Number.isFinite(lmin)) leadTimeText = String(lmin);
+  else if (Number.isFinite(lmax)) leadTimeText = String(lmax);
+  if (leadTimeText) {
+    const dayLabel = isAr ? 'يوم' : lang === 'zh' ? '天' : 'days';
+    leadTimeText = `${leadTimeText} ${dayLabel}`;
+  }
 
   const detailItems = [
     supplier.business_type ? { label: isAr ? 'نوع النشاط' : lang === 'zh' ? '企业类型' : 'Business type', value: supplier.business_type, translatable: true } : null,
     supplier.year_established ? { label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Est.', value: supplier.year_established } : null,
     (supplier.city || supplier.country) ? { label: isAr ? 'الموقع' : lang === 'zh' ? '所在地' : 'Location', value: [supplier.city, supplier.country].filter(Boolean).join(', ') } : null,
     supplier.company_address ? { label: isAr ? 'العنوان' : lang === 'zh' ? '地址' : 'Address', value: supplier.company_address, translatable: true } : null,
+    minOrderText ? { label: isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '最小起订量' : 'Min. Order', value: minOrderText } : null,
+    supplier.port_of_loading ? { label: isAr ? 'ميناء الشحن' : lang === 'zh' ? '装货港' : 'Port of Loading', value: supplier.port_of_loading } : null,
+    leadTimeText ? { label: isAr ? 'مدة التصنيع' : lang === 'zh' ? '生产交期' : 'Lead Time', value: leadTimeText } : null,
+    supplier.sample_available === true ? { label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', value: isAr ? 'متاح ✓' : lang === 'zh' ? '可提供 ✓' : 'Available ✓' } : null,
     supplierLanguages.length > 0 ? { label: isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages', value: supplierLanguages.join(' · ') } : null,
     exportMarkets.length > 0 ? { label: isAr ? 'أسواق التصدير' : lang === 'zh' ? '出口市场' : 'Export markets', value: exportMarkets.join(' · ') } : null,
     supplier.customization_support ? { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制' : 'Customization', value: supplier.customization_support, translatable: true } : null,
