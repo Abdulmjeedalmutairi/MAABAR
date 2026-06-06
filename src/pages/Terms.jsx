@@ -6,7 +6,6 @@ import { SECTIONS } from '../lib/terms';
 const CR_NUMBER = '7042243308';
 const CONTACT_EMAIL = 'info@maabar.io';
 const WEBSITE_URL = 'https://maabar.io';
-const LAST_UPDATED_ISO = '2026-04-01';
 
 const T = {
   ar: {
@@ -14,7 +13,6 @@ const T = {
     title: 'الشروط والأحكام',
     intro: 'تم إعداد هذه الصفحة بصياغة عربية مرجعية، مع إبقائها جاهزة لبنية متعددة اللغات داخل الموقع. باستخدام مَعبر فإنك توافق على هذه الشروط والأحكام.',
     referenceNote: 'النسخة العربية هي المرجع الأساسي لهذه الصفحة في الوقت الحالي.',
-    updatedLabel: 'آخر تحديث',
     companyLabel: 'السجل التجاري',
     emailLabel: 'البريد الإلكتروني',
     websiteLabel: 'الموقع الإلكتروني',
@@ -24,7 +22,6 @@ const T = {
     title: 'Terms & Conditions',
     intro: 'This page is structured for multilingual support while keeping the Arabic legal wording as the primary reference source for now. By using Maabar, you agree to these terms and conditions.',
     referenceNote: 'For now, the Arabic version remains the primary reference of this page.',
-    updatedLabel: 'Last updated',
     companyLabel: 'CR Number',
     emailLabel: 'Email',
     websiteLabel: 'Website',
@@ -34,28 +31,17 @@ const T = {
     title: '条款与条件',
     intro: '此页面已按多语言结构准备，但目前仍以阿拉伯语法律文本作为主要参考来源。使用 Maabar 即表示您同意这些条款与条件。',
     referenceNote: '当前页面仍以阿拉伯语版本作为主要参考。',
-    updatedLabel: '最后更新',
     companyLabel: '商业登记号',
     emailLabel: '邮箱',
     websiteLabel: '网站',
   },
 };
 
-function formatLastUpdated(lang) {
-  const locale = lang === 'ar' ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : 'en-GB';
-  return new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(`${LAST_UPDATED_ISO}T00:00:00`));
-}
-
 export default function Terms({ lang }) {
   const isAr = lang === 'ar';
   const t = T[lang] || T.ar;
   const sections = SECTIONS[lang] || SECTIONS.ar;
   const metaItems = [
-    { label: t.updatedLabel, value: formatLastUpdated(lang) },
     { label: t.companyLabel, value: CR_NUMBER },
     { label: t.emailLabel, value: CONTACT_EMAIL },
     { label: t.websiteLabel, value: WEBSITE_URL },
@@ -83,7 +69,7 @@ export default function Terms({ lang }) {
       </section>
 
       <section className="terms-meta-wrap" style={{ padding: '32px 60px 24px' }}>
-        <div className="terms-meta-grid" style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
+        <div className="terms-meta-grid" style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
           {metaItems.map((item) => (
             <div key={item.label} style={{ border: '1px solid var(--border-subtle)', borderRadius: 22, background: 'var(--bg-raised)', padding: 20 }}>
               <p style={{ margin: '0 0 8px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
