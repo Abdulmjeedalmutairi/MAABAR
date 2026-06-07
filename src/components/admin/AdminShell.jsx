@@ -29,23 +29,23 @@ function MaabarAdminLogo() {
     <div dir="ltr" style={{ userSelect: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
         <span style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: 'var(--font-sans)',
           fontSize: 15, fontWeight: 500, letterSpacing: '0.2em',
-          color: 'rgba(0,0,0,0.88)', textTransform: 'uppercase',
+          color: 'var(--ink)', textTransform: 'uppercase',
         }}>
           MAABAR
         </span>
-        <span style={{ color: '#d4cfc6', fontSize: 14, fontWeight: 300 }}>|</span>
+        <span style={{ color: 'var(--border-strong)', fontSize: 14, fontWeight: 300 }}>|</span>
         <span style={{
-          fontFamily: "'Cairo', sans-serif",
-          fontSize: 14, fontWeight: 600, color: '#6b6560',
+          fontFamily: 'var(--font-ar)',
+          fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)',
           letterSpacing: 0,
         }}>
           مَعبر
         </span>
         <span style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 11, color: '#b0ab9e', letterSpacing: 0.3,
+          fontFamily: 'var(--font-sans)',
+          fontSize: 11, color: 'var(--text-muted)', letterSpacing: 0.3,
         }}>
           迈巴尔
         </span>
@@ -53,9 +53,9 @@ function MaabarAdminLogo() {
       <div style={{ marginTop: 3 }}>
         <span style={{
           display: 'inline-block',
-          fontFamily: "'Tajawal', sans-serif",
+          fontFamily: 'var(--font-sans)',
           fontSize: 9, fontWeight: 700, letterSpacing: '0.18em',
-          color: '#fff', background: '#1a1814',
+          color: 'var(--on-dark)', background: 'var(--ink)',
           padding: '1px 7px', borderRadius: 3,
           textTransform: 'uppercase',
         }}>
@@ -75,11 +75,11 @@ function NavItem({ item, isActive, lang, onClick }) {
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         width: '100%', padding: '0 12px', border: 'none',
-        background: isActive ? '#1a1814' : 'transparent',
-        borderRadius: 7, cursor: 'pointer',
-        color: isActive ? '#fff' : item.phase === 2 ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.62)',
+        background: isActive ? 'var(--ink)' : 'transparent',
+        borderRadius: 'var(--radius-control)', cursor: 'pointer',
+        color: isActive ? 'var(--on-dark)' : item.phase === 2 ? 'var(--text-disabled)' : 'var(--text-secondary)',
         fontSize: 13, fontWeight: isActive ? 600 : 400,
-        fontFamily: isAr ? "'Tajawal', sans-serif" : "'Tajawal', sans-serif",
+        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
         minHeight: 40, transition: 'background 0.12s, color 0.12s',
         textAlign: isAr ? 'right' : 'left',
       }}
@@ -88,7 +88,7 @@ function NavItem({ item, isActive, lang, onClick }) {
       {item.phase === 2 && (
         <span style={{
           fontSize: 8, letterSpacing: 0.8, opacity: 0.5,
-          fontFamily: "'Tajawal', sans-serif", fontWeight: 400,
+          fontFamily: 'var(--font-sans)', fontWeight: 400,
         }}>
           SOON
         </span>
@@ -118,7 +118,7 @@ export default function AdminShell({ children, user, profile, lang }) {
   const SidebarInner = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 12px 16px' }}>
       {/* Logo */}
-      <div style={{ padding: '0 4px 20px', borderBottom: '1px solid rgba(0,0,0,0.07)', marginBottom: 10 }}>
+      <div style={{ padding: '0 4px 20px', borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
         <MaabarAdminLogo />
       </div>
 
@@ -136,18 +136,18 @@ export default function AdminShell({ children, user, profile, lang }) {
       </div>
 
       {/* User footer */}
-      <div style={{ borderTop: '1px solid rgba(0,0,0,0.07)', paddingTop: 12, marginTop: 12 }}>
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
         <div style={{ padding: '0 6px 10px', direction: isAr ? 'rtl' : 'ltr' }}>
           <p style={{
-            margin: 0, fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.75)',
-            fontFamily: "'Tajawal', sans-serif",
+            margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text-primary)',
+            fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {displayName}
           </p>
           <p style={{
-            margin: '1px 0 0', fontSize: 9, color: 'rgba(0,0,0,0.35)',
-            fontFamily: "'Tajawal', sans-serif", textTransform: 'uppercase', letterSpacing: 0.8,
+            margin: '1px 0 0', fontSize: 9, color: 'var(--text-disabled)',
+            fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: 0.8,
           }}>
             {(profile?.role || '').replace('_', ' ')}
           </p>
@@ -156,12 +156,12 @@ export default function AdminShell({ children, user, profile, lang }) {
           onClick={handleSignOut}
           style={{
             width: '100%', padding: '8px 12px', background: 'transparent',
-            border: '1px solid rgba(0,0,0,0.09)', borderRadius: 7, cursor: 'pointer',
-            color: 'rgba(0,0,0,0.40)', fontSize: 12, minHeight: 40,
-            fontFamily: "'Tajawal', sans-serif", transition: 'all 0.15s',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius-control)', cursor: 'pointer',
+            color: 'var(--text-secondary)', fontSize: 12, minHeight: 40,
+            fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = 'rgba(0,0,0,0.65)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(0,0,0,0.40)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hero)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
         >
           {isAr ? 'تسجيل الخروج' : 'Sign out'}
         </button>
@@ -172,16 +172,16 @@ export default function AdminShell({ children, user, profile, lang }) {
   return (
     <>
       <style>{`
-        .a-shell { display: flex; min-height: 100dvh; background: var(--bg-base, #FAF8F5); }
+        .a-shell { display: flex; min-height: 100dvh; background: var(--bg-page); }
 
         /* Desktop sidebar */
         .a-sidebar {
           width: 216px; position: fixed; top: 0; bottom: 0;
-          background: var(--bg-raised, #fff);
-          border-right: 1px solid rgba(0,0,0,0.07);
+          background: var(--surface);
+          border-right: 1px solid var(--border);
           z-index: 100; overflow-y: auto; display: flex; flex-direction: column;
         }
-        .a-sidebar.rtl { right: 0; left: auto; border-right: none; border-left: 1px solid rgba(0,0,0,0.07); }
+        .a-sidebar.rtl { right: 0; left: auto; border-right: none; border-left: 1px solid var(--border); }
         .a-sidebar.ltr { left: 0; right: auto; }
         .a-content { flex: 1; min-width: 0; overflow-x: hidden; }
         .a-content.ltr { margin-left: 216px; }
@@ -198,8 +198,8 @@ export default function AdminShell({ children, user, profile, lang }) {
           .a-topbar {
             display: flex; align-items: center; justify-content: space-between;
             position: fixed; top: 0; left: 0; right: 0; height: 58px;
-            background: var(--bg-raised, #fff);
-            border-bottom: 1px solid rgba(0,0,0,0.07);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
             padding: 0 16px; z-index: 200;
           }
           .a-content { padding-top: 58px; padding-bottom: 62px; }
@@ -209,7 +209,7 @@ export default function AdminShell({ children, user, profile, lang }) {
           }
           .a-drawer {
             position: fixed; top: 0; bottom: 0; width: 270px; max-width: 88vw;
-            background: var(--bg-raised, #fff);
+            background: var(--surface);
             z-index: 301; overflow-y: auto;
             transition: transform 0.24s cubic-bezier(0.4,0,0.2,1);
           }
@@ -219,8 +219,8 @@ export default function AdminShell({ children, user, profile, lang }) {
           .a-drawer.rtl.open { transform: translateX(0); }
           .a-bottom-nav {
             display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 58px;
-            background: var(--bg-raised, #fff);
-            border-top: 1px solid rgba(0,0,0,0.07); z-index: 200;
+            background: var(--surface);
+            border-top: 1px solid var(--border); z-index: 200;
             padding-bottom: env(safe-area-inset-bottom, 0px);
           }
         }
@@ -228,19 +228,19 @@ export default function AdminShell({ children, user, profile, lang }) {
         .a-hamburger {
           background: none; border: none; cursor: pointer; padding: 8px;
           min-width: 44px; min-height: 44px; display: flex; align-items: center;
-          justify-content: center; border-radius: 6px; transition: background 0.12s;
-          color: rgba(0,0,0,0.6);
+          justify-content: center; border-radius: var(--radius-control); transition: background 0.12s;
+          color: var(--text-secondary);
         }
-        .a-hamburger:hover { background: rgba(0,0,0,0.05); }
+        .a-hamburger:hover { background: var(--bg-hero); }
 
         .a-bnav-btn {
           flex: 1; display: flex; flex-direction: column; align-items: center;
           justify-content: center; background: none; border: none; cursor: pointer;
           min-height: 58px; padding: 6px 4px; gap: 2px; transition: background 0.12s;
         }
-        .a-bnav-btn:active { background: rgba(0,0,0,0.04); }
+        .a-bnav-btn:active { background: var(--bg-hero); }
         .a-bnav-label {
-          font-size: 10px; font-family: 'Tajawal', sans-serif; font-weight: 500;
+          font-size: 10px; font-family: var(--font-sans); font-weight: 500;
           letter-spacing: 0.2px; line-height: 1;
         }
       `}</style>
@@ -294,13 +294,13 @@ export default function AdminShell({ children, user, profile, lang }) {
                 onClick={() => handleNav(item.path)}
               >
                 <span className="a-bnav-label" style={{
-                  color: isActive ? '#1a1814' : 'rgba(0,0,0,0.35)',
+                  color: isActive ? 'var(--ink)' : 'var(--text-disabled)',
                   fontWeight: isActive ? 700 : 400,
                 }}>
                   {isAr ? item.arLabel : item.enLabel}
                 </span>
                 {isActive && (
-                  <span style={{ width: 16, height: 2, borderRadius: 1, background: '#1a1814', marginTop: 2 }} />
+                  <span style={{ width: 16, height: 2, borderRadius: 1, background: 'var(--ink)', marginTop: 2 }} />
                 )}
               </button>
             );

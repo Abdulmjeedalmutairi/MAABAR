@@ -66,10 +66,10 @@ export function SaveFeedbackCard({ feedback, isAr = false }) {
   if (!feedback?.title) return null;
 
   const tones = {
-    success: { border: 'rgba(80,180,120,0.22)', background: 'rgba(80,180,120,0.08)', title: '#78b08f', body: '#9ec7ad', meta: '#78b08f' },
-    warning: { border: 'rgba(255,192,87,0.22)', background: 'rgba(255,192,87,0.08)', title: '#d8b46f', body: 'var(--text-secondary)', meta: '#d8b46f' },
-    error: { border: 'rgba(214,106,106,0.22)', background: 'rgba(214,106,106,0.08)', title: '#d88787', body: '#cf9a9a', meta: '#d88787' },
-    neutral: { border: 'rgba(0,0,0,0.08)', background: 'var(--bg-subtle)', title: 'var(--text-primary)', body: 'var(--text-secondary)', meta: 'var(--text-disabled)' },
+    success: { border: 'rgba(45,122,79,0.22)', background: 'rgba(45,122,79,0.08)', title: 'var(--green)', body: 'var(--green)', meta: 'var(--green)' },
+    warning: { border: 'rgba(160,136,80,0.22)', background: 'rgba(160,136,80,0.08)', title: 'var(--warn)', body: 'var(--text-secondary)', meta: 'var(--warn)' },
+    error: { border: 'rgba(224,92,92,0.22)', background: 'rgba(224,92,92,0.08)', title: 'var(--red)', body: 'var(--red)', meta: 'var(--red)' },
+    neutral: { border: 'var(--border)', background: 'var(--bg-subtle)', title: 'var(--text-primary)', body: 'var(--text-secondary)', meta: 'var(--text-disabled)' },
   };
   const palette = tones[feedback.tone] || tones.neutral;
 
@@ -83,7 +83,7 @@ export function SaveFeedbackCard({ feedback, isAr = false }) {
           )}
         </div>
         {feedback.meta && (
-          <span style={{ alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', fontSize: 11, color: palette.meta, whiteSpace: 'nowrap' }}>
+          <span style={{ alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border)', background: 'var(--bg-subtle)', fontSize: 11, color: palette.meta, whiteSpace: 'nowrap' }}>
             {feedback.meta}
           </span>
         )}
@@ -102,10 +102,10 @@ export function SupplierJourneyStepper({ steps, isAr, lang }) {
   };
 
   const stateStyles = {
-    completed: { border: '1px solid rgba(80,180,120,0.22)', background: 'rgba(80,180,120,0.08)', color: '#78b08f' },
-    current: { border: '1px solid rgba(0,0,0,0.15)', background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.88)' },
-    under_review: { border: '1px solid rgba(255,192,87,0.22)', background: 'rgba(255,192,87,0.09)', color: '#d8b46f' },
-    verified: { border: '1px solid rgba(80,180,120,0.26)', background: 'rgba(80,180,120,0.12)', color: '#8ad1a3' },
+    completed: { border: '1px solid rgba(45,122,79,0.22)', background: 'rgba(45,122,79,0.08)', color: 'var(--green)' },
+    current: { border: '1px solid var(--border-strong)', background: 'var(--bg-hero)', color: 'var(--text-primary)' },
+    under_review: { border: '1px solid rgba(160,136,80,0.22)', background: 'rgba(160,136,80,0.09)', color: 'var(--warn)' },
+    verified: { border: '1px solid rgba(45,122,79,0.26)', background: 'rgba(45,122,79,0.12)', color: 'var(--green)' },
     upcoming: { border: '1px solid var(--border-subtle)', background: 'var(--bg-base)', color: 'var(--text-disabled)' },
   };
 
