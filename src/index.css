@@ -46,10 +46,10 @@ body { background: #FAF8F5 !important; }
   --border-subtle:  rgba(0,0,0,0.06);
   --border-muted:   rgba(0,0,0,0.07);
   --border-default: rgba(0,0,0,0.07);
-  --border-strong:  rgba(0,0,0,0.12);
+  --border-strong:  #D8D0BE;     /* warm taupe (SupplierProfile ref) */
 
   --text-primary:   rgba(0,0,0,0.88);
-  --text-secondary: rgba(0,0,0,0.45);
+  --text-secondary: #6B6560;     /* warm secondary (SupplierProfile ref) */
   --text-tertiary:  rgba(0,0,0,0.30);
   --text-disabled:  rgba(0,0,0,0.25);
 
@@ -68,15 +68,40 @@ body { background: #FAF8F5 !important; }
   --panel-sheen-strong: none;
   --accent-shadow: 0 4px 20px rgba(0,0,0,0.08);
 
-  --green: #2D6A4F;
+  --green: #2D7A4F;
   --red:   #e05c5c;
   --amber: #e8a020;
+
+  /* ===== WARM TAUPE SYSTEM — SupplierProfile.jsx reference ===== */
+  /* Backgrounds */
+  --bg-page:        #F5F3EF;
+  --bg-hero:        #EDE8DC;
+  --surface:        #FAF9F7;
+  --surface-raised: #FFFFFF;
+  --avatar-bg:      #D8D0BE;
+  /* Text */
+  --ink:            #1A1814;
+  --ink-soft:       #3D3A35;
+  --text-muted:     #B0AB9E;
+  --on-dark:        #FFFFFF;
+  /* Accents */
+  --warn:           #A08850;
+  --star:           #F5A623;
+  /* Borders */
+  --border:         #E8E5DE;
+  /* Radius (warm system) */
+  --radius-card:    14px;
+  --radius-panel:   10px;
+  --radius-control: 8px;
+  --radius-pill:    20px;
+  --radius-chip:    999px;
+  --radius-full:    50%;
 
   /* InterNum is restricted by @font-face unicode-range to digits only;
      it precedes the body font in every stack so digits get Inter while
      letters fall through to Cormorant / Cairo. */
   --font-sans: 'InterNum', 'Cormorant Garamond', Georgia, serif;
-  --font-ar:   'InterNum', 'Cairo', sans-serif;
+  --font-ar:   'InterNum', 'Tajawal', sans-serif;
   --font-num:  'InterNum', 'Cormorant Garamond', system-ui, sans-serif;
 
   --space-1:  4px;
