@@ -1,5 +1,5 @@
 import usePageTitle from '../hooks/usePageTitle';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import IdeaToProduct from '../components/IdeaToProduct';
 import Footer from '../components/Footer';
@@ -26,6 +26,7 @@ const T = {
         num: '02',
         title: 'موردون معتمدون',
         desc: 'الموردون الذين يستقبلون الطلبات في معبر يمرّون بعملية تحقق قبل الدخول للمنصة.',
+        badge: '✓ تحقق ميداني من المصنع',
       },
       {
         num: '03',
@@ -43,11 +44,11 @@ const T = {
       },
       {
         t: 'معبر يرتبه ويراجعه',
-        d: 'الـ AI يجهز brief أوضح، ثم يراجعه الأدمن سريعاً ويحدد إن كان يحتاج استيضاحاً أو جاهزاً للمطابقة.',
+        d: 'نجهّز طلبك بشكل واضح ونراجعه داخلياً قبل إرساله.',
       },
       {
-        t: 'نرسله للموردين المناسبين فقط',
-        d: 'لا يتم broadcast للجميع. معبر يختار الموردين المطابقين فقط ثم يجمع الردود ويتفاوض عليها.',
+        t: 'يصل للمورد المناسب فقط',
+        d: 'نختار الموردين المطابقين لطلبك ونجمع عروضهم — كل مورد تحقق منه ميدانياً قبل دخوله المنصة.',
       },
       {
         t: 'تستلم العروض المختارة لك',
@@ -79,32 +80,6 @@ const T = {
         d: 'تفاصيل العرض والتكلفة والخطوات تكون أوضح قبل أن تمضي في الصفقة.',
       },
     ],
-    toolsLabel: 'أدوات تساعدك قبل الشراء',
-    toolsTitle: 'قيمة إضافية قبل أن تطلب',
-    toolsIntro: 'معبر لا يكتفي بإرسال الطلبات. هناك أدوات تساعدك على تقييم الفكرة والمنتج والتكلفة قبل الشراء.',
-    tools: [
-      {
-        title: 'العلامة الخاصة والتصنيع حسب الطلب',
-        desc: 'إذا كنت تريد منتجاً باسمك أو مواصفاتك، تستطيع استخدام معبر للوصول إلى تصنيع خاص يناسب مشروعك.',
-      },
-      {
-        title: 'حاسبة تكلفة ذكية',
-        desc: 'افهم تكلفة الاستيراد بشكل أذكى قبل اتخاذ القرار، بدل الاعتماد على تقديرات عامة.',
-      },
-      {
-        title: 'تحليل فرصة السوق والمنتج',
-        desc: 'قيّم المنتج بشكل أفضل قبل الشراء عبر أدوات تساعدك على قراءة الفرصة السوقية والاتجاهات.',
-      },
-    ],
-    audienceLabel: 'لمن معبر؟',
-    audienceTitle: 'من يناسبه معبر',
-    audienceIntro: 'إذا كنت ضمن واحدة من هذه الحالات، فمعبر بُني لك.',
-    audiences: [
-      'تاجر يستورد من الصين بشكل مستمر أو يريد البدء',
-      'صاحب علامة خاصة يبحث عن تصنيع باسمه',
-      'شخص يبحث عن موردين معتمدين بدل البحث العشوائي',
-      'من يريد تصنيع منتج مخصص بمواصفات خاصة',
-    ],
     finalCtaLabel: 'ابدأ الآن',
     finalCtaTitle: 'جاهز تبدأ طلباً مُداراً بشكل أوضح؟',
     finalCtaText: 'ابدأ بالمسار المُدار إذا كنت تريد أن يتولى معبر المراجعة والمطابقة والتفاوض، أو افتح المسار المباشر إذا كنت تريد إدارة الطلب بنفسك.',
@@ -131,6 +106,7 @@ const T = {
         num: '02',
         title: 'Verified suppliers',
         desc: 'Suppliers receiving requests on Maabar go through a verification process before joining the platform.',
+        badge: '✓ Factory-verified',
       },
       {
         num: '03',
@@ -148,11 +124,11 @@ const T = {
       },
       {
         t: 'Maabar prepares and reviews it',
-        d: 'AI structures the brief, then the admin team quickly reviews it before outreach.',
+        d: 'We structure your request clearly and review it internally before sending it.',
       },
       {
-        t: 'It goes only to matching suppliers',
-        d: 'The request is not broadcast to everyone. Maabar sends it only to relevant suppliers and negotiates on the replies.',
+        t: 'It reaches only the right supplier',
+        d: 'We select the suppliers that match your request and gather their offers — every supplier is field-verified before joining the platform.',
       },
       {
         t: 'Receive the selected offers',
@@ -184,32 +160,6 @@ const T = {
         d: 'Offer details, costs, and next steps are clearer before you move ahead with a deal.',
       },
     ],
-    toolsLabel: 'Tools that help before purchase',
-    toolsTitle: 'Extra value before you buy',
-    toolsIntro: 'Maabar does more than route requests. It gives traders tools to evaluate product direction, demand, and costs before purchasing.',
-    tools: [
-      {
-        title: 'Private label and custom manufacturing',
-        desc: 'If you want a product under your own brand or with your own specs, Maabar supports that path from the start.',
-      },
-      {
-        title: 'Smart cost calculator',
-        desc: 'Estimate import economics more clearly before making a sourcing decision.',
-      },
-      {
-        title: 'Market and product opportunity analysis',
-        desc: 'Assess whether a product is worth pursuing with tools that help you read market potential before buying.',
-      },
-    ],
-    audienceLabel: 'Who is Maabar for?',
-    audienceTitle: 'Who Maabar is built for',
-    audienceIntro: 'If you see yourself in one of these cases, Maabar is likely a strong fit.',
-    audiences: [
-      'Traders importing from China',
-      'Private label business owners',
-      'People looking for verified suppliers',
-      'Businesses that want custom manufacturing',
-    ],
     finalCtaLabel: 'Start now',
     finalCtaTitle: 'Ready to start with managed sourcing?',
     finalCtaText: 'Choose the managed path if you want Maabar to review, match, and negotiate for you, or use the direct path if you want to manage the RFQ yourself.',
@@ -236,6 +186,7 @@ const T = {
         num: '02',
         title: '认证供应商',
         desc: '在 Maabar 接收需求的供应商进入平台前都要经过审核。',
+        badge: '✓ 工厂实地核查',
       },
       {
         num: '03',
@@ -245,19 +196,23 @@ const T = {
     ],
     howLabel: '如何运作',
     howTitle: 'Maabar 如何运作',
-    howIntro: '流程保持简单，清晰分为三步。',
+    howIntro: '流程清晰且有条理：我们整理您的需求、进行内部审核、精准匹配供应商，最后把最佳 3 个报价集中呈现。',
     steps: [
       {
         t: '发布您的需求',
-        d: '提交您需要的产品或定制生产信息。',
+        d: '清晰填写所需产品或定制、数量、规格与优先级。',
       },
       {
-        t: '接收并比较报价',
-        d: '并排查看价格、规格和条款，再做选择。',
+        t: 'Maabar 整理并审核',
+        d: '我们把您的需求整理清晰，并在发送前进行内部审核。',
       },
       {
-        t: '放心完成交易',
-        d: '更清晰地推进协议、付款和执行流程。',
+        t: '仅送达匹配的供应商',
+        d: '我们筛选与您需求匹配的供应商并收集其报价——每位供应商在进入平台前都经过工厂实地核查。',
+      },
+      {
+        t: '接收为您筛选的报价',
+        d: '最佳 3 个报价会清晰呈现在同一需求页，供您选择或要求进一步谈判。',
       },
     ],
     trustLabel: '建立在信任之上',
@@ -285,32 +240,6 @@ const T = {
         d: '在继续交易之前，报价细节、成本和下一步信息会更清楚。',
       },
     ],
-    toolsLabel: '采购前可用的工具',
-    toolsTitle: '下单前的额外价值',
-    toolsIntro: 'Maabar 不只是转发需求，它还提供帮助您在采购前判断产品方向、成本和市场机会的工具。',
-    tools: [
-      {
-        title: '自有品牌与定制生产',
-        desc: '如果您想做自己的品牌，或按自己的规格生产产品，Maabar 可以从一开始支持这条路径。',
-      },
-      {
-        title: '智能成本计算器',
-        desc: '在做采购决定前，更清楚地预估进口成本结构。',
-      },
-      {
-        title: '市场与产品机会分析',
-        desc: '在下单前先评估某个产品是否值得推进，帮助您更理性地判断市场潜力。',
-      },
-    ],
-    audienceLabel: 'Maabar 适合谁？',
-    audienceTitle: '谁适合使用 Maabar',
-    audienceIntro: '如果您属于以下情况之一，Maabar 很可能适合您。',
-    audiences: [
-      '从中国进口的贸易商',
-      '自有品牌经营者',
-      '正在寻找认证供应商的人',
-      '需要定制生产的企业或项目方',
-    ],
     finalCtaLabel: '立即开始',
     finalCtaTitle: '准备好从托管采购开始了吗？',
     finalCtaText: '如果您希望 Maabar 负责审核、匹配与谈判，请使用托管路径；如果您想自己管理需求，则使用直接发布路径。',
@@ -325,8 +254,31 @@ export default function Home({ lang, user }) {
   const isAr = lang === 'ar';
   usePageTitle('home', lang);
   const [ideaOpen, setIdeaOpen] = useState(false);
+  const rootRef = useRef(null);
 
   useEffect(() => () => setIdeaOpen(false), []);
+
+  // Scroll-reveal: fade-in + slide-up once on enter (no libraries).
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const els = root.querySelectorAll('.reveal');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [lang]);
 
   const arFont = isAr ? { fontFamily: 'var(--font-ar)' } : {};
   const startOptions = [
@@ -370,13 +322,13 @@ export default function Home({ lang, user }) {
   ];
 
   return (
-    <div>
+    <div ref={rootRef}>
       <RoleIntroTour lang={lang} user={user} />
 
       <section id="hero">
         <div className="hero-bg" />
         <div className="hero-overlay" />
-        <div className="hero-content">
+        <div className="hero-content reveal">
           <p className="hero-tag">{t.tag}</p>
           {isAr ? (
             <h1 className="hero-title-ar">لا تبحث — معبر يبحث لك</h1>
@@ -410,7 +362,7 @@ export default function Home({ lang, user }) {
           background: 'var(--surface)',
           padding: '28px clamp(20px, 4vw, 34px)',
         }}>
-          <div style={{ marginBottom: 18 }}>
+          <div className="reveal" style={{ marginBottom: 18 }}>
             <p className="section-label">{isAr ? 'اختر كيف تريد أن تبدأ' : lang === 'zh' ? '选择您希望如何开始' : 'Choose how you want to start'}</p>
             <h2 className="sec-title" style={{ ...arFont, marginBottom: 10 }}>{isAr ? '3 مسارات واضحة حسب نوع طلبك' : lang === 'zh' ? '按需求类型开始的 3 条清晰路径' : '3 clear starting paths depending on your request'}</h2>
             <p className={`section-intro${isAr ? ' ar' : ''}`} style={{ marginBottom: 0 }}>
@@ -423,8 +375,9 @@ export default function Home({ lang, user }) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
-            {startOptions.map((option) => (
-              <div key={option.key} style={{
+            {startOptions.map((option, i) => (
+              <div key={option.key} className="reveal" style={{
+                transitionDelay: `${i * 80}ms`,
                 borderRadius: 'var(--radius-card)',
                 border: option.featured ? '1px solid var(--border-strong)' : '1px solid var(--border)',
                 background: option.featured ? 'var(--bg-hero)' : 'var(--surface)',
@@ -449,28 +402,33 @@ export default function Home({ lang, user }) {
       </section>
 
       <section id="strengths">
-        <p className="section-label">{t.whyLabel}</p>
-        <h2 className="sec-title" style={arFont}>{t.whyTitle}</h2>
-        <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.whyIntro}</p>
+        <div className="reveal">
+          <p className="section-label">{t.whyLabel}</p>
+          <h2 className="sec-title" style={arFont}>{t.whyTitle}</h2>
+          <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.whyIntro}</p>
+        </div>
 
         <div className="strengths-grid">
           {t.strengths.map((s, i) => (
-            <div key={i} className={`strength-item${i === 0 ? ' strength-item-featured' : ''}`}>
+            <div key={i} className={`strength-item reveal${i === 0 ? ' strength-item-featured' : ''}`} style={{ transitionDelay: `${i * 80}ms` }}>
               <p className="strength-num">{s.num}</p>
               <h3 className="strength-title" style={arFont}>{s.title}</h3>
               <p className="strength-desc" style={arFont}>{s.desc}</p>
+              {s.badge && <span className={`strength-badge${isAr ? ' ar' : ''}`}>{s.badge}</span>}
             </div>
           ))}
         </div>
       </section>
 
       <section id="how">
-        <p className="section-label">{t.howLabel}</p>
-        <h2 className="sec-title" style={arFont}>{t.howTitle}</h2>
-        <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.howIntro}</p>
+        <div className="reveal">
+          <p className="section-label">{t.howLabel}</p>
+          <h2 className="sec-title" style={arFont}>{t.howTitle}</h2>
+          <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.howIntro}</p>
+        </div>
         <div className="steps">
           {t.steps.map((s, i) => (
-            <div key={i} className="step">
+            <div key={i} className="step reveal" style={{ transitionDelay: `${i * 80}ms` }}>
               <div className="step-num">0{i + 1}</div>
               <h3 className={`step-t${isAr ? ' ar' : ''}`}>{s.t}</h3>
               <p className={`step-d${isAr ? ' ar' : ''}`}>{s.d}</p>
@@ -480,14 +438,14 @@ export default function Home({ lang, user }) {
       </section>
 
       <section id="trust">
-        <div className="section-heading-centered">
+        <div className="section-heading-centered reveal">
           <p className="section-label">{t.trustLabel}</p>
           <h2 className="sec-title" style={arFont}>{t.trustTitle}</h2>
           <p className={`section-intro centered${isAr ? ' ar' : ''}`}>{t.trustIntro}</p>
         </div>
         <div className="trust-grid">
           {t.trusts.map((tr, i) => (
-            <div key={i} className="trust-item">
+            <div key={i} className="trust-item reveal" style={{ transitionDelay: `${i * 80}ms` }}>
               <p className="trust-num">{tr.num}</p>
               <h3 className={`trust-t${isAr ? ' ar' : ''}`}>{tr.t}</h3>
               <p className={`trust-d${isAr ? ' ar' : ''}`}>{tr.d}</p>
@@ -496,36 +454,8 @@ export default function Home({ lang, user }) {
         </div>
       </section>
 
-      <section id="tools" className="tools-section">
-        <p className="section-label">{t.toolsLabel}</p>
-        <h2 className="sec-title" style={arFont}>{t.toolsTitle}</h2>
-        <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.toolsIntro}</p>
-        <div className="tools-grid">
-          {t.tools.map((tool) => (
-            <div key={tool.title} className="tool-card">
-              <h3 className={`tool-title${isAr ? ' ar' : ''}`}>{tool.title}</h3>
-              <p className={`tool-desc${isAr ? ' ar' : ''}`}>{tool.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="audience" className="audience-section">
-        <p className="section-label">{t.audienceLabel}</p>
-        <h2 className="sec-title" style={arFont}>{t.audienceTitle}</h2>
-        <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.audienceIntro}</p>
-        <div className="audience-grid">
-          {t.audiences.map((item, index) => (
-            <div key={item} className="audience-card">
-              <span className="audience-badge">0{index + 1}</span>
-              <p className={`audience-text${isAr ? ' ar' : ''}`}>{item}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section id="home-cta" className="home-cta-section">
-        <div className="home-cta-card">
+        <div className="home-cta-card reveal">
           <p className="section-label">{t.finalCtaLabel}</p>
           <h2 className="sec-title" style={arFont}>{t.finalCtaTitle}</h2>
           <p className={`section-intro centered${isAr ? ' ar' : ''}`}>{t.finalCtaText}</p>
