@@ -206,15 +206,15 @@ function Bubble({ role, children, isAr }) {
       <div style={{
         maxWidth: '86%',
         padding: '14px 16px',
-        borderRadius: 16,
-        background: isUser ? '#E8E3D8' : '#FFFFFF',
-        color: isUser ? '#141414' : 'rgba(0,0,0,0.88)',
-        border: `1px solid ${isUser ? 'rgba(232,227,216,0.35)' : 'rgba(0,0,0,0.07)'}`,
+        borderRadius: 'var(--radius-card)',
+        background: isUser ? 'var(--bg-hero)' : 'var(--surface-raised)',
+        color: isUser ? 'var(--ink)' : 'var(--text-primary)',
+        border: `1px solid ${isUser ? 'var(--border)' : 'var(--border)'}`,
         fontSize: 14,
         lineHeight: 1.9,
         fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
         whiteSpace: 'pre-wrap',
-        boxShadow: isUser ? '0 8px 30px rgba(0,0,0,0.12)' : 'none',
+        boxShadow: 'none',
       }}>
         {children}
       </div>
@@ -246,10 +246,10 @@ function getInitialMessages(language = 'ar', representativeName = 'سلمان') 
 function TypingBubble() {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-      <div style={{ maxWidth: '86%', padding: '14px 16px', borderRadius: 16, background: '#FFFFFF', color: 'rgba(0,0,0,0.88)', border: '1px solid rgba(0,0,0,0.07)' }}>
+      <div style={{ maxWidth: '86%', padding: '14px 16px', borderRadius: 'var(--radius-card)', background: 'var(--surface-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {[0, 1, 2].map((dot) => (
-            <span key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(0,0,0,0.25)', display: 'inline-block', opacity: 0.35, animation: `maabarTyping 1.2s ${dot * 0.15}s infinite ease-in-out` }} />
+            <span key={dot} style={{ width: 8, height: 8, borderRadius: 'var(--radius-full)', background: 'var(--text-disabled)', display: 'inline-block', opacity: 0.35, animation: `maabarTyping 1.2s ${dot * 0.15}s infinite ease-in-out` }} />
           ))}
         </div>
       </div>
@@ -260,16 +260,16 @@ function TypingBubble() {
 function ReportRow({ label, value, isAr }) {
   if (!value) return null;
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-      <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{label}</span>
-      <span style={{ color: 'rgba(0,0,0,0.88)', fontSize: 13, fontWeight: 500, textAlign: isAr ? 'left' : 'right', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{label}</span>
+      <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500, textAlign: isAr ? 'left' : 'right', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{value}</span>
     </div>
   );
 }
 
 function FormLabel({ children, isAr }) {
   return (
-    <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 11, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+    <p style={{ color: 'var(--text-secondary)', fontSize: 11, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
       {children}
     </p>
   );
@@ -282,10 +282,10 @@ function FieldInput({ isAr, as = 'input', ...props }) {
       {...props}
       style={{
         width: '100%',
-        background: '#FAF8F5',
-        color: 'rgba(0,0,0,0.88)',
-        border: '1px solid rgba(0,0,0,0.10)',
-        borderRadius: 12,
+        background: 'var(--bg-page)',
+        color: 'var(--text-primary)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-panel)',
         padding: '12px 14px',
         fontSize: 16,
         lineHeight: 1.8,
@@ -597,13 +597,13 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
         onClick={() => setMinimized(false)}
         style={{
           position: 'fixed', bottom: 24, left: 24, zIndex: 2000,
-          background: '#FFFFFF', color: 'rgba(0,0,0,0.88)', border: '1px solid rgba(0,0,0,0.10)',
-          padding: '12px 18px', borderRadius: 14, cursor: 'pointer', fontSize: 12,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: 10,
+          background: 'var(--surface-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)',
+          padding: '12px 18px', borderRadius: 'var(--radius-card)', cursor: 'pointer', fontSize: 12,
+          display: 'flex', alignItems: 'center', gap: 10,
           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
         }}
       >
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1a1a1a', display: 'inline-block' }} />
+        <span style={{ width: 8, height: 8, borderRadius: 'var(--radius-full)', background: 'var(--ink)', display: 'inline-block' }} />
         {t.minimized}
       </div>
     );
@@ -612,19 +612,19 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
   return (
     <div style={{ position: 'fixed', top: isMobile ? 'var(--vv-top)' : 0, left: 0, right: 0, height: isMobile ? 'var(--app-dvh)' : '100dvh', background: 'rgba(4,4,6,0.72)', zIndex: 2000, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 18, overflow: 'hidden' }}>
       <style>{`@keyframes maabarTyping { 0%, 80%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-3px); opacity: 1; } }`}</style>
-      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : 760, height: isMobile ? '100%' : 'min(88vh, 860px)', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.07)', borderRadius: isMobile ? 0 : 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: isMobile ? 'none' : '0 30px 80px rgba(0,0,0,0.15)' }}>
-        <div style={{ padding: '20px 24px', background: '#FAF8F5', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
+      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : 760, height: isMobile ? '100%' : 'min(88vh, 860px)', background: 'var(--surface-raised)', border: '1px solid var(--border)', borderRadius: isMobile ? 0 : 'var(--radius-card)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px 24px', background: 'var(--bg-page)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
           <div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: 'rgba(0,0,0,0.88)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.title}</p>
-            <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.subtitle}</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.title}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.subtitle}</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setMinimized(true)} style={{ background: 'none', border: '1px solid rgba(0,0,0,0.10)', color: 'rgba(0,0,0,0.88)', fontSize: 14, cursor: 'pointer', padding: '4px 12px', borderRadius: 10 }}>—</button>
-            <button onClick={() => { if (phase === 'report') persistFlowDraft({ nextPhase: 'report' }); else clearIdeaFlowDraft(); if (onClose) onClose(); }} style={{ background: 'none', border: 'none', color: 'rgba(0,0,0,0.88)', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
+            <button onClick={() => setMinimized(true)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 14, cursor: 'pointer', padding: '4px 12px', borderRadius: 'var(--radius-panel)' }}>—</button>
+            <button onClick={() => { if (phase === 'report') persistFlowDraft({ nextPhase: 'report' }); else clearIdeaFlowDraft(); if (onClose) onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
           </div>
         </div>
 
-        <div ref={bodyRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: isMobile ? '18px 14px' : '24px 22px', display: 'flex', flexDirection: 'column', gap: 14, background: '#FAF8F5', direction: isAr ? 'rtl' : 'ltr' }}>
+        <div ref={bodyRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: isMobile ? '18px 14px' : '24px 22px', display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--bg-page)', direction: isAr ? 'rtl' : 'ltr' }}>
           {messages.map((message) => (
             <Bubble key={message.id} role={message.role} isAr={isAr}>{message.content}</Bubble>
           ))}
@@ -632,8 +632,8 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
           {isTyping && <TypingBubble />}
 
           {phase === 'report' && result && (
-            <div style={{ marginTop: 8, padding: 18, background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 18 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', marginBottom: 16 }}>{t.report}</p>
+            <div style={{ marginTop: 8, padding: 18, background: 'var(--surface-raised)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)' }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 16 }}>{t.report}</p>
               <ReportRow label={t.reportFields.product} value={lang === 'zh' ? result.product_name_zh : (isAr ? result.product_name_ar : result.product_name_en)} isAr={isAr} />
               <ReportRow label={t.reportFields.factory} value={result.factory_type} isAr={isAr} />
               <ReportRow label={t.reportFields.city} value={result.city} isAr={isAr} />
@@ -641,15 +641,15 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
               <ReportRow label={t.reportFields.timeline} value={result.timeline} isAr={isAr} />
               <ReportRow label={t.reportFields.category} value={CAT_LABEL[lang]?.[result.category] || result.category} isAr={isAr} />
               <div style={{ paddingTop: 14 }}>
-                <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reportFields.specs}</p>
-                <div style={{ padding: '12px 14px', background: '#FAF8F5', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 12, color: 'rgba(0,0,0,0.88)', fontSize: 13, lineHeight: 1.9, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reportFields.specs}</p>
+                <div style={{ padding: '12px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: 'var(--radius-panel)', color: 'var(--text-primary)', fontSize: 13, lineHeight: 1.9, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {result.specs || result.request_description}
                 </div>
               </div>
 
-              <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(0,0,0,0.07)' }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(0,0,0,0.45)', marginBottom: 10 }}>{t.review}</p>
-                <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, lineHeight: 1.8, marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reviewHint}</p>
+              <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid var(--border)' }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>{t.review}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.8, marginBottom: 16, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reviewHint}</p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                   <div>
@@ -673,10 +673,10 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                         onChange={(event) => updateReviewDraft('budget_currency', event.target.value)}
                         style={{
                           width: 90,
-                          background: '#FAF8F5',
-                          color: 'rgba(0,0,0,0.88)',
-                          border: '1px solid rgba(0,0,0,0.10)',
-                          borderRadius: 12,
+                          background: 'var(--bg-page)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-panel)',
                           padding: '12px 10px',
                           fontSize: 14,
                           outline: 'none',
@@ -701,11 +701,11 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                         style={{
                           padding: '7px 14px',
                           fontSize: 12,
-                          borderRadius: 20,
+                          borderRadius: 'var(--radius-pill)',
                           cursor: 'pointer',
-                          background: reviewDraft.category === value ? '#1a1a1a' : 'transparent',
-                          color: reviewDraft.category === value ? '#ffffff' : 'rgba(0,0,0,0.45)',
-                          border: '1px solid rgba(0,0,0,0.10)',
+                          background: reviewDraft.category === value ? 'var(--ink)' : 'transparent',
+                          color: reviewDraft.category === value ? 'var(--on-dark)' : 'var(--text-secondary)',
+                          border: '1px solid var(--border)',
                           fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                         }}
                       >
@@ -732,11 +732,11 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                           style={{
                             padding: '7px 12px',
                             fontSize: 12,
-                            borderRadius: 20,
+                            borderRadius: 'var(--radius-pill)',
                             cursor: 'pointer',
-                            background: String(reviewDraft.payment_plan) === String(value) ? '#1a1a1a' : 'transparent',
-                            color: String(reviewDraft.payment_plan) === String(value) ? '#ffffff' : 'rgba(0,0,0,0.45)',
-                            border: '1px solid rgba(0,0,0,0.10)',
+                            background: String(reviewDraft.payment_plan) === String(value) ? 'var(--ink)' : 'transparent',
+                            color: String(reviewDraft.payment_plan) === String(value) ? 'var(--on-dark)' : 'var(--text-secondary)',
+                            border: '1px solid var(--border)',
                             fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                           }}
                         >
@@ -749,8 +749,8 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                     <FormLabel isAr={isAr}>{t.reviewFields.sampleRequirement}</FormLabel>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {Object.entries(SAMPLE_LABEL[lang] || SAMPLE_LABEL.en).map(([value, label]) => (
-                        <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'rgba(0,0,0,0.45)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          <input type="radio" name="idea-sample-requirement" checked={reviewDraft.sample_requirement === value} onChange={() => updateReviewDraft('sample_requirement', value)} style={{ accentColor: '#1a1a1a' }} />
+                        <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <input type="radio" name="idea-sample-requirement" checked={reviewDraft.sample_requirement === value} onChange={() => updateReviewDraft('sample_requirement', value)} style={{ accentColor: 'var(--ink)' }} />
                           {label}
                         </label>
                       ))}
@@ -758,16 +758,16 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                   </div>
                 </div>
 
-                <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 11, lineHeight: 1.8, marginTop: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.8, marginTop: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {t.requestPreviewNote}
                 </p>
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-                <button onClick={submitRequest} disabled={submitting} style={{ flex: 1, minWidth: 180, background: '#1a1a1a', color: '#ffffff', border: 'none', padding: '14px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: submitting ? 0.65 : 1 }}>
+                <button onClick={submitRequest} disabled={submitting} style={{ flex: 1, minWidth: 180, background: 'var(--ink)', color: 'var(--on-dark)', border: 'none', padding: '14px 16px', borderRadius: 'var(--radius-panel)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: submitting ? 0.65 : 1 }}>
                   {user ? t.submit : t.loginSubmit}
                 </button>
-                <button onClick={resetAll} style={{ flex: 1, minWidth: 160, background: 'transparent', color: 'rgba(0,0,0,0.88)', border: '1px solid rgba(0,0,0,0.10)', padding: '14px 16px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <button onClick={resetAll} style={{ flex: 1, minWidth: 160, background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '14px 16px', borderRadius: 'var(--radius-panel)', fontSize: 13, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {t.newChat}
                 </button>
               </div>
@@ -782,7 +782,7 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
         </div>
 
         {phase !== 'report' && (
-          <div style={{ padding: isMobile ? '14px 12px calc(14px + env(safe-area-inset-bottom))' : 18, borderTop: '1px solid rgba(0,0,0,0.07)', background: '#FFFFFF' }}>
+          <div style={{ padding: isMobile ? '14px 12px calc(14px + env(safe-area-inset-bottom))' : 18, borderTop: '1px solid var(--border)', background: 'var(--surface-raised)' }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <textarea
                 value={draftText}
@@ -801,10 +801,10 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                 style={{
                   flex: 1,
                   resize: 'none',
-                  background: '#FAF8F5',
-                  color: 'rgba(0,0,0,0.88)',
-                  border: '1px solid rgba(0,0,0,0.10)',
-                  borderRadius: 14,
+                  background: 'var(--bg-page)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-card)',
                   padding: '14px 16px',
                   outline: 'none',
                   fontSize: 16,
@@ -813,7 +813,7 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                   direction: isAr ? 'rtl' : 'ltr',
                 }}
               />
-              <button onClick={handleSend} disabled={!draftText.trim() || isTyping} style={{ minWidth: 112, background: draftText.trim() && !isTyping ? '#1a1a1a' : 'rgba(0,0,0,0.10)', color: draftText.trim() && !isTyping ? '#ffffff' : 'rgba(0,0,0,0.25)', border: 'none', padding: '14px 18px', borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: draftText.trim() && !isTyping ? 'pointer' : 'default', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              <button onClick={handleSend} disabled={!draftText.trim() || isTyping} style={{ minWidth: 112, background: draftText.trim() && !isTyping ? 'var(--ink)' : 'var(--border)', color: draftText.trim() && !isTyping ? 'var(--on-dark)' : 'var(--text-disabled)', border: 'none', padding: '14px 18px', borderRadius: 'var(--radius-card)', fontSize: 13, fontWeight: 700, cursor: draftText.trim() && !isTyping ? 'pointer' : 'default', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {t.send}
               </button>
             </div>
@@ -821,7 +821,7 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
               <button
                 onClick={generateReport}
                 disabled={isTyping}
-                style={{ marginTop: 10, width: '100%', background: 'transparent', color: 'rgba(0,0,0,0.45)', border: '1px solid rgba(0,0,0,0.10)', padding: '12px 14px', borderRadius: 14, fontSize: 12, cursor: isTyping ? 'default' : 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: isTyping ? 0.5 : 1 }}>
+                style={{ marginTop: 10, width: '100%', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '12px 14px', borderRadius: 'var(--radius-card)', fontSize: 12, cursor: isTyping ? 'default' : 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: isTyping ? 0.5 : 1 }}>
                 {isAr ? 'حوّل المحادثة إلى تقرير احترافي' : lang === 'zh' ? '将对话整理成专业报告' : 'Turn this conversation into a professional brief'}
               </button>
             )}
