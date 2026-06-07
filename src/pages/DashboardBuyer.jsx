@@ -156,7 +156,7 @@ function StatusTimeline({ status, isAr }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 360, position: 'relative' }}>
         {/* connector track */}
         <div style={{ position: 'absolute', top: 7, left: 7, right: 7, height: 1, background: 'var(--border-subtle)', zIndex: 0 }} />
-        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(90,154,114,0.55)', width: `calc(${(current / (TIMELINE_STEPS.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
+        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(45,122,79,0.55)', width: `calc(${(current / (TIMELINE_STEPS.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
         {TIMELINE_STEPS.map((step, i) => {
           const done    = i < current;
           const active  = i === current;
@@ -165,14 +165,14 @@ function StatusTimeline({ status, isAr }) {
             <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
               <div style={{
                 width: 14, height: 14, borderRadius: '50%', marginBottom: 6, flexShrink: 0,
-                background: done ? 'rgba(90,154,114,0.7)' : active ? 'var(--text-primary)' : 'var(--bg-raised)',
-                border: active ? '2px solid var(--text-primary)' : done ? '2px solid rgba(90,154,114,0.7)' : '2px solid var(--border-default)',
-                boxShadow: active ? '0 0 0 3px rgba(26,24,20,0.12)' : 'none',
+                background: done ? 'rgba(45,122,79,0.7)' : active ? 'var(--text-primary)' : 'var(--bg-raised)',
+                border: active ? '2px solid var(--text-primary)' : done ? '2px solid rgba(45,122,79,0.7)' : '2px solid var(--border-default)',
+                boxShadow: 'none',
                 transition: 'all 0.3s',
               }} />
               <p style={{
                 fontSize: 9, lineHeight: 1.3, textAlign: 'center',
-                color: done ? 'rgba(90,154,114,0.9)' : active ? 'var(--text-primary)' : 'var(--text-disabled)',
+                color: done ? 'rgba(45,122,79,0.9)' : active ? 'var(--text-primary)' : 'var(--text-disabled)',
                 fontWeight: active ? 600 : 400,
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
                 whiteSpace: 'nowrap',
@@ -190,8 +190,8 @@ function StatusTimeline({ status, isAr }) {
 /* ─── PaymentBadge ───────────────────────── */
 function PaymentBadge({ label, amount, currency, badgeState, isAr }) {
   const colors = {
-    paid:    { bg: 'rgba(90,154,114,0.07)', border: 'rgba(90,154,114,0.3)',  text: '#5a9a72' },
-    due:     { bg: 'rgba(180,120,30,0.07)', border: 'rgba(180,120,30,0.3)',  text: '#b4781e' },
+    paid:    { bg: 'rgba(45,122,79,0.07)', border: 'rgba(45,122,79,0.3)',  text: 'var(--green)' },
+    due:     { bg: 'rgba(160,136,80,0.07)', border: 'rgba(160,136,80,0.3)',  text: 'var(--warn)' },
     pending: { bg: 'var(--bg-subtle)',       border: 'var(--border-subtle)',   text: 'var(--text-disabled)' },
   };
   const c = colors[badgeState] || colors.pending;
@@ -284,14 +284,14 @@ function TrackingCard({ request, isAr }) {
 /* ─── PendingBanner ──────────────────────── */
 function PendingBanner({ action, isAr, onGo }) {
   const styles = {
-    supplier_confirmed: { border: 'rgba(90,154,114,0.35)',  bg: 'rgba(90,154,114,0.05)',  dot: '#5a9a72' },
-    ready_to_ship:      { border: 'rgba(180,120,30,0.35)',  bg: 'rgba(180,120,30,0.05)',  dot: '#b4781e' },
-    arrived:            { border: 'rgba(60,100,180,0.35)',  bg: 'rgba(60,100,180,0.04)',  dot: '#4a6bbf' },
+    supplier_confirmed: { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.05)',  dot: 'var(--green)' },
+    ready_to_ship:      { border: 'rgba(160,136,80,0.35)',  bg: 'rgba(160,136,80,0.05)',  dot: 'var(--warn)' },
+    arrived:            { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
     offers:             { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
     managed_shortlist:  { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
     messages:           { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
     payment_sent:       { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    delivery:           { border: 'rgba(60,100,180,0.35)',  bg: 'rgba(60,100,180,0.04)',  dot: '#4a6bbf' },
+    delivery:           { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
   };
   const s = styles[action.type] || styles.offers;
   const title = (() => {
@@ -329,7 +329,7 @@ function TopSubTabs({ tabs, active, onSelect, isAr }) {
     <div className="db-mobile-subtabs" style={{ gap: 6, marginBottom: 16, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
       {tabs.map(t => (
         <button key={t.id} onClick={() => onSelect(t.id)} style={{
-          padding: '5px 13px', borderRadius: 999,
+          padding: '5px 13px', borderRadius: 'var(--radius-chip)',
           border: `1px solid ${active === t.id ? 'var(--text-primary)' : 'var(--border-subtle)'}`,
           background: active === t.id ? 'var(--text-primary)' : 'none',
           color: active === t.id ? 'var(--bg-base)' : 'var(--text-secondary)',
@@ -373,7 +373,7 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
           borderBottom: 'none',
           borderRadius: '16px 16px 0 0',
           padding: '16px 20px 8px',
-          boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+          borderTop: '1px solid var(--border)',
           animation: 'slideUp 0.2s ease',
         }}>
           {[
@@ -419,7 +419,7 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
               <span style={{
                 position: 'absolute', top: 6, insetInlineEnd: '18%',
                 width: 14, height: 14, borderRadius: '50%',
-                background: '#c0392b', color: '#fff',
+                background: 'var(--red)', color: 'var(--on-dark)',
                 fontSize: 8, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{item.badge > 9 ? '9+' : item.badge}</span>
@@ -1481,7 +1481,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-raised)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-subtle)'}>
                     <p style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8, fontWeight: 500 }}>{s.label}</p>
-                    <p style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? '#c0392b' : 'var(--text-primary)' }}>{s.value}</p>
+                    <p style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? 'var(--red)' : 'var(--text-primary)' }}>{s.value}</p>
                   </div>
                 ))}
               </div>
@@ -1540,7 +1540,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.3, flex: 1, minWidth: 0 }}>
                             {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
                           </p>
-                          <span style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)', flexShrink: 0 }}>
+                          <span style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)', flexShrink: 0 }}>
                             {isAr ? (STATUS_AR[r.status] || r.status) : (STATUS_EN[r.status] || r.status)}
                           </span>
                         </div>
@@ -1622,7 +1622,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     ].map((s, i) => (
                       <div key={i} style={{ flex: 1, padding: '12px 14px', background: 'var(--bg-subtle)', borderRight: i < 2 ? '1px solid var(--border-subtle)' : 'none' }}>
                         <p style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 5, fontWeight: 500 }}>{s.label}</p>
-                        <p style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? '#c0392b' : 'var(--text-secondary)' }}>{s.value}</p>
+                        <p style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? 'var(--red)' : 'var(--text-secondary)' }}>{s.value}</p>
                       </div>
                     ))}
                   </div>
@@ -1752,7 +1752,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   animation: `fadeIn 0.35s ease ${idx * 0.04}s both`,
                   scrollMarginTop: 110,
                   background: isFocusedRequest ? 'var(--bg-subtle)' : 'transparent',
-                  boxShadow: isFocusedRequest ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : 'none',
+                  boxShadow: 'none',
                   borderRadius: isFocusedRequest ? 'var(--radius-lg)' : 0,
                 }}>
                   {/* ── Card header: category tag + title + time ── */}
@@ -1760,12 +1760,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {(r.category_ar || r.category_en || r.category) && (
-                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 999 }}>
+                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-chip)' }}>
                             {isAr ? (r.category_ar || r.category) : (r.category_en || r.category)}
                           </span>
                         )}
                         {managed && (
-                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 999 }}>
+                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-chip)' }}>
                             {isAr ? 'طلب مُدار' : 'Managed'}
                           </span>
                         )}
@@ -1793,14 +1793,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           {isAr ? 'تعديل' : 'Edit'}
                         </button>
                         <button onClick={() => deleteRequest(r)}
-                          style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
+                          style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '3px 8px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 24 }}>
                           {isAr ? 'حذف' : 'Delete'}
                         </button>
                       </div>
                     )}
                     {['paid','ready_to_ship','shipping','arrived','delivered'].includes(r.status) && (
                       <a href={`mailto:support@maabar.io?subject=${encodeURIComponent((isAr ? 'مشكلة في طلب: ' : 'Issue with order: ') + (r.title_ar || r.title_en || r.id))}&body=${encodeURIComponent((isAr ? 'رقم الطلب: ' : 'Order ID: ') + r.id)}`}
-                        style={{ fontSize: 10, color: '#a07070', textDecoration: 'none', border: '1px solid rgba(138,58,58,0.25)', padding: '3px 8px', borderRadius: 'var(--radius-md)', flexShrink: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        style={{ fontSize: 10, color: 'var(--red)', textDecoration: 'none', border: '1px solid rgba(224,92,92,0.25)', padding: '3px 8px', borderRadius: 'var(--radius-md)', flexShrink: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                         {isAr ? 'إبلاغ' : 'Report'}
                       </a>
                     )}
@@ -1830,7 +1830,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         {acceptedOffer.profiles?.company_name || '—'}
                       </span>
                       {isSupplierPubliclyVisible(acceptedOffer.profiles?.status) && (
-                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)' }}>
                           ✓ {isAr ? 'موثّق' : 'Verified'}
                         </span>
                       )}
@@ -1863,7 +1863,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       ? (isAr ? 'اختر العرض المناسب، اطلب تفاوضاً، أو اطلب من معبر إعادة البحث.' : 'Choose the right offer, request negotiation, or ask Maabar to search again.')
                       : (isAr ? 'معبر يجهّز الـ brief ويطابق الموردين المناسبين قبل إظهار أفضل 3 عروض لك.' : 'Maabar is matching suitable suppliers before showing your top 3 here.');
                     return (
-                      <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)' }}>
+                      <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{title}</p>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{body}</p>
                       </div>
@@ -1912,9 +1912,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                 position: 'absolute', top: 10,
                                 insetInlineEnd: 10,
                                 fontSize: 9, padding: '2px 8px',
-                                background: 'rgba(58,122,82,0.12)',
-                                border: '1px solid rgba(58,122,82,0.2)',
-                                color: '#5a9a72', borderRadius: 20,
+                                background: 'rgba(45,122,79,0.12)',
+                                border: '1px solid rgba(45,122,79,0.2)',
+                                color: 'var(--green)', borderRadius: 'var(--radius-pill)',
                               }}>
                                 {isAr ? 'الأقل إجمالاً' : lang === 'zh' ? '总价最低' : 'Lowest Total'}
                               </span>
@@ -1932,14 +1932,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                         {o.profiles?.company_name || '—'}
                                       </p>
                                       {isReviewedSupplier && (
-                                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)' }}>
                                           ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
                                         </span>
                                       )}
                                     </div>
                                     {o.profiles?.rating > 0 && (
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
-                                        <span style={{ color: '#a08050', fontSize: 11 }}>{'★'.repeat(Math.round(o.profiles.rating))}{'☆'.repeat(5 - Math.round(o.profiles.rating))}</span>
+                                        <span style={{ color: 'var(--warn)', fontSize: 11 }}>{'★'.repeat(Math.round(o.profiles.rating))}{'☆'.repeat(5 - Math.round(o.profiles.rating))}</span>
                                         <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>{o.profiles.rating.toFixed(1)} ({o.profiles.reviews_count || 0})</span>
                                       </div>
                                     )}
@@ -1957,12 +1957,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                   {supplierTrustSignals.length > 0 && (
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                                       {supplierTrustSignals.includes('trade_profile_available') && (
-                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.18)', color: 'var(--green)' }}>
                                           {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
                                         </span>
                                       )}
                                       {supplierTrustSignals.includes('factory_media_available') && (
-                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                                           {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                                         </span>
                                       )}
@@ -2026,7 +2026,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                 {isAr ? 'قبول' : lang === 'zh' ? '接受报价' : 'Accept'}
                               </button>
                               <button onClick={() => rejectOffer(o.id, o.supplier_id, r.id)}
-                                style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '7px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
+                                style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '7px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 34, width: '100%' }}>
                                 {isAr ? 'رفض' : lang === 'zh' ? '拒绝' : 'Reject'}
                               </button>
                               <button onClick={() => nav(`/supplier/${o.supplier_id}`)} className="btn-outline"
@@ -2058,7 +2058,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                     const btnPrimary = { padding: '11px 18px', fontSize: 13, minHeight: 44, width: '100%', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.5 };
                     const btnOutline = { ...btnPrimary, background: 'none', border: '1px solid var(--border-muted)', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: 'var(--radius-md)' };
-                    const btnDanger  = { ...btnPrimary, background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', cursor: 'pointer', borderRadius: 'var(--radius-md)' };
+                    const btnDanger  = { ...btnPrimary, background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', cursor: 'pointer', borderRadius: 'var(--radius-md)' };
 
                     return (
                       <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 0', borderTop: '1px solid var(--border-subtle)' }}>
@@ -2131,14 +2131,14 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                         {r.status === 'arrived' && (
                           <button onClick={() => confirmDelivery(r.id, o.supplier_id, o.profiles?.company_name)} className="btn-primary"
-                            style={{ ...btnPrimary, background: 'rgba(58,122,82,0.9)', borderColor: 'transparent' }}>
+                            style={{ ...btnPrimary, background: 'rgba(45,122,79,0.9)', borderColor: 'transparent' }}>
                             {isAr ? 'تأكيد الاستلام' : 'Confirm Delivery'}
                           </button>
                         )}
 
                         {r.status === 'delivered' && (
                           <>
-                            <p style={{ fontSize: 12, color: '#5a9a72', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            <p style={{ fontSize: 12, color: 'var(--green)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {isAr ? 'تم التسليم ✓' : 'Delivered ✓'}
                             </p>
                             {!submittedReviewIds.has(r.id) && (
@@ -2223,56 +2223,56 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 const statusInfo = (() => {
                   if (r.status === 'pending_supplier_confirmation') return {
                     label: isAr ? 'بانتظار تأكيد المورد' : lang === 'zh' ? '等待供应商确认' : 'Awaiting Supplier',
-                    color: '#b4781e',
-                    bg: 'rgba(180,120,30,0.05)',
-                    border: 'rgba(180,120,30,0.30)',
+                    color: 'var(--warn)',
+                    bg: 'rgba(160,136,80,0.05)',
+                    border: 'rgba(160,136,80,0.30)',
                     body: isAr ? 'سيؤكد المورد طلبك خلال 24 ساعة. ستصلك إشعار فور الرد.' : lang === 'zh' ? '供应商将在 24 小时内确认订单，回复后您会收到通知。' : 'The supplier will confirm within 24 hours. You will be notified once they respond.',
                   };
                   if (r.status === 'supplier_confirmed') return {
                     label: isAr ? 'تم التأكيد — ادفع الآن' : lang === 'zh' ? '已确认 — 请立即付款' : 'Confirmed — Pay Now',
-                    color: '#2d7a4f',
+                    color: 'var(--green)',
                     bg: 'rgba(45,122,79,0.06)',
                     border: 'rgba(45,122,79,0.35)',
                     body: isAr ? 'أكد المورد جاهزيته لتنفيذ طلبك. أكمل الدفع الكامل ليبدأ بالتجهيز.' : lang === 'zh' ? '供应商已确认接单。请完成全额付款，供应商将立即开始备货。' : 'Supplier confirmed. Pay the full amount to start preparation.',
                   };
                   if (r.status === 'supplier_rejected') return {
                     label: isAr ? 'رفض المورد' : lang === 'zh' ? '供应商已拒绝' : 'Supplier Declined',
-                    color: '#a07070',
-                    bg: 'rgba(138,58,58,0.05)',
-                    border: 'rgba(138,58,58,0.30)',
+                    color: 'var(--red)',
+                    bg: 'rgba(224,92,92,0.05)',
+                    border: 'rgba(224,92,92,0.30)',
                     body: isAr ? 'لم يتمكن المورد من تنفيذ طلبك. يمكنك تصفح موردين آخرين.' : lang === 'zh' ? '供应商无法接受此订单。您可以浏览其他供应商。' : 'The supplier could not fulfill this order. You can browse other suppliers.',
                   };
                   if (r.status === 'paid') return {
                     label: isAr ? 'تم الدفع — في انتظار التجهيز' : lang === 'zh' ? '已付款 — 等待备货' : 'Paid — Awaiting Preparation',
-                    color: '#2d7a4f',
+                    color: 'var(--green)',
                     bg: 'rgba(45,122,79,0.05)',
                     border: 'rgba(45,122,79,0.25)',
                     body: isAr ? 'تم استلام دفعتك. المورد سيبدأ التجهيز ويرسل رقم التتبع قريباً.' : lang === 'zh' ? '已收到您的付款。供应商将开始备货，并尽快提供物流单号。' : 'Payment received. The supplier will prepare your order and share tracking shortly.',
                   };
                   if (r.status === 'ready_to_ship') return {
                     label: isAr ? 'الشحنة جاهزة' : lang === 'zh' ? '准备发货' : 'Ready to Ship',
-                    color: '#b4781e',
-                    bg: 'rgba(180,120,30,0.05)',
-                    border: 'rgba(180,120,30,0.30)',
+                    color: 'var(--warn)',
+                    bg: 'rgba(160,136,80,0.05)',
+                    border: 'rgba(160,136,80,0.30)',
                     body: isAr ? 'المورد جهّز الشحنة وسيرسل رقم التتبع قريباً.' : lang === 'zh' ? '供应商已备货完毕，物流单号将很快提供。' : 'The supplier has prepared your shipment. Tracking will appear here shortly.',
                   };
                   if (r.status === 'shipping') return {
                     label: isAr ? 'في الطريق إليك' : lang === 'zh' ? '运输中' : 'On the Way',
-                    color: '#b4781e',
-                    bg: 'rgba(180,120,30,0.05)',
-                    border: 'rgba(180,120,30,0.30)',
+                    color: 'var(--warn)',
+                    bg: 'rgba(160,136,80,0.05)',
+                    border: 'rgba(160,136,80,0.30)',
                     body: isAr ? 'الشحنة في الطريق. تابع رقم التتبع، وأكد الاستلام عند الوصول.' : lang === 'zh' ? '货物正在运送途中。请使用物流单号跟踪，到货后请确认。' : 'Your shipment is on the way. Track it below and mark it as arrived once it lands.',
                   };
                   if (r.status === 'arrived') return {
                     label: isAr ? 'وصلت — أكد الاستلام' : lang === 'zh' ? '已到货 — 请确认收货' : 'Arrived — Confirm Delivery',
-                    color: '#4a6bbf',
-                    bg: 'rgba(60,100,180,0.05)',
-                    border: 'rgba(60,100,180,0.30)',
+                    color: 'var(--green)',
+                    bg: 'rgba(45,122,79,0.05)',
+                    border: 'rgba(45,122,79,0.30)',
                     body: isAr ? 'وصلت الشحنة. عند فحصها وتأكيد سلامتها، أكد الاستلام لتحرير المبلغ للمورد.' : lang === 'zh' ? '货物已到达。检查无误后请确认收货，款项将放给供应商。' : 'The shipment arrived. After inspection, confirm delivery to release the payment to the supplier.',
                   };
                   if (r.status === 'delivered') return {
                     label: isAr ? 'مكتمل ✓' : lang === 'zh' ? '已完成 ✓' : 'Completed ✓',
-                    color: '#2d7a4f',
+                    color: 'var(--green)',
                     bg: 'rgba(45,122,79,0.04)',
                     border: 'rgba(45,122,79,0.25)',
                     body: isAr ? `تم التسليم بنجاح في ${relativeTime(r.updated_at, isAr)}. تم تحويل المبلغ للمورد.` : lang === 'zh' ? `订单已于 ${relativeTime(r.updated_at, isAr)} 完成交付，款项已放给供应商。` : `Delivered ${relativeTime(r.updated_at, isAr)}. Payout has been released to the supplier.`,
@@ -2296,7 +2296,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       )}
                       <div style={{ flex: 1, minWidth: 200 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: `1px solid ${statusInfo.border}`, color: statusInfo.color, letterSpacing: 0.4, fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'var(--bg-raised)', border: `1px solid ${statusInfo.border}`, color: statusInfo.color, letterSpacing: 0.4, fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                             {statusInfo.label}
                           </span>
                           <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{relativeTime(r.created_at, isAr)}</span>
@@ -2392,7 +2392,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                               {isAr ? 'رقم التتبع:' : lang === 'zh' ? '物流单号：' : 'Tracking #:'} <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-en)', fontWeight: 600, direction: 'ltr', display: 'inline-block' }}>{r.tracking_number}</strong>
                             </span>
-                            <a href={trackUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#4a6bbf', textDecoration: 'none', borderBottom: '1px dashed #4a6bbf', paddingBottom: 1 }}>
+                            <a href={trackUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--green)', textDecoration: 'none', borderBottom: '1px dashed var(--green)', paddingBottom: 1 }}>
                               {isAr ? 'تتبع الشحنة ↗' : lang === 'zh' ? '查看跟踪 ↗' : 'Track Shipment ↗'}
                             </a>
                           </div>
@@ -2423,12 +2423,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <button
                           onClick={() => confirmDirectDelivery(r)}
                           disabled={Boolean(directOrderActioning[r.id]) || !product?.supplier_id}
-                          style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3, background: '#2d7a4f', color: '#ffffff', border: 'none', borderRadius: 'var(--radius-md)', cursor: directOrderActioning[r.id] ? 'not-allowed' : 'pointer' }}>
+                          style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3, background: 'var(--green)', color: 'var(--on-dark)', border: 'none', borderRadius: 'var(--radius-md)', cursor: directOrderActioning[r.id] ? 'not-allowed' : 'pointer' }}>
                           {directOrderActioning[r.id] === 'confirming_delivery' ? '…' : isAr ? 'تأكيد الاستلام' : lang === 'zh' ? '确认收货' : 'Confirm Delivery'}
                         </button>
                       )}
                       {r.status === 'delivered' && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.30)', borderRadius: 'var(--radius-md)', color: '#2d7a4f', fontSize: 12, fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.30)', borderRadius: 'var(--radius-md)', color: 'var(--green)', fontSize: 12, fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           ✓ {isAr ? `مكتمل · ${relativeTime(r.updated_at, isAr)}` : lang === 'zh' ? `已完成 · ${relativeTime(r.updated_at, isAr)}` : `Completed · ${relativeTime(r.updated_at, isAr)}`}
                         </span>
                       )}
@@ -2485,7 +2485,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'المورد:' : lang === 'zh' ? '供应商：' : 'Supplier:'} {supplierName}</p>
                           {isReviewedSupplier && (
-                            <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 999, background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72' }}>
+                            <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 'var(--radius-chip)', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)' }}>
                               ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
                             </span>
                           )}
@@ -2500,7 +2500,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                           </p>
                         )}
                       </div>
-                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, background: s.status === 'approved' ? 'rgba(58,122,82,0.1)' : s.status === 'rejected' ? 'rgba(160,112,112,0.1)' : 'var(--bg-subtle)', color: s.status === 'approved' ? '#5a9a72' : s.status === 'rejected' ? '#a07070' : 'var(--text-secondary)' }}>
+                      <span style={{ fontSize: 11, padding: '5px 10px', borderRadius: 'var(--radius-chip)', background: s.status === 'approved' ? 'rgba(45,122,79,0.1)' : s.status === 'rejected' ? 'rgba(224,92,92,0.1)' : 'var(--bg-subtle)', color: s.status === 'approved' ? 'var(--green)' : s.status === 'rejected' ? 'var(--red)' : 'var(--text-secondary)' }}>
                         {s.status === 'approved' ? (isAr ? 'تمت الموافقة' : lang === 'zh' ? '已批准' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوضة' : lang === 'zh' ? '已拒绝' : 'Rejected') : (isAr ? 'قيد المراجعة' : lang === 'zh' ? '审核中' : 'Pending')}
                       </span>
                     </div>
@@ -2508,17 +2508,17 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     {(supplierTrustSignals.length > 0 || s.profiles?.rating > 0) && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                         {s.profiles?.rating > 0 && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-chip)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                             ★ {s.profiles.rating.toFixed(1)}{s.profiles?.reviews_count ? ` · ${s.profiles.reviews_count}` : ''}
                           </span>
                         )}
                         {supplierTrustSignals.includes('trade_profile_available') && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.18)', color: '#5a9a72' }}>
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-chip)', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.18)', color: 'var(--green)' }}>
                             {isAr ? 'رابط شركة' : lang === 'zh' ? '店铺链接' : 'Trade link'}
                           </span>
                         )}
                         {supplierTrustSignals.includes('factory_media_available') && (
-                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-chip)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
                             {isAr ? 'صور مصنع' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                           </span>
                         )}
@@ -2608,7 +2608,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.8, margin: 0, fontFamily: 'var(--font-ar)' }}>{inquiry.question_text}</p>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 6 }}>
-                        <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? '#5a9a72' : 'var(--text-secondary)' }}>
+                        <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? 'var(--green)' : 'var(--text-secondary)' }}>
                           {statusLabel}
                         </span>
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
@@ -2760,7 +2760,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   {savingSettings ? '...' : isAr ? 'حفظ التغييرات' : 'Save Changes'}
                 </button>
                 {settingsSaved && (
-                  <p style={{ color: '#5a9a72', fontSize: 13, marginTop: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  <p style={{ color: 'var(--green)', fontSize: 13, marginTop: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {isAr ? 'تم حفظ التغييرات ✓' : 'Changes saved ✓'}
                   </p>
                 )}
@@ -2790,7 +2790,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
             padding: '36px 32px',
             width: '100%', maxWidth: 400,
             animation: 'slideUp 0.25s ease',
-            boxShadow: 'var(--shadow-md)',
+            boxShadow: 'none',
           }}>
             <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
               {isAr ? 'تقييم المورد' : 'Rate Supplier'}
@@ -2807,7 +2807,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               {[1, 2, 3, 4, 5].map(star => (
                 <button key={star} onClick={() => setReviewRating(star)} style={{
                   fontSize: 32, background: 'none', border: 'none', cursor: 'pointer',
-                  color: star <= reviewRating ? '#a08050' : 'var(--border-default)',
+                  color: star <= reviewRating ? 'var(--warn)' : 'var(--border-default)',
                   transition: 'all 0.15s',
                   transform: star <= reviewRating ? 'scale(1.1)' : 'scale(1)',
                 }}>★</button>
@@ -2857,7 +2857,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
             padding: '36px 32px',
             width: '100%', maxWidth: 480,
             animation: 'slideUp 0.25s ease',
-            boxShadow: 'var(--shadow-md)',
+            boxShadow: 'none',
           }}>
             <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
               {isAr ? 'تعديل الطلب' : 'Edit Request'}
@@ -2920,7 +2920,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
             padding: '36px 32px',
             width: '100%', maxWidth: 400,
             animation: 'slideUp 0.25s ease',
-            boxShadow: 'var(--shadow-md)',
+            boxShadow: 'none',
           }}>
             <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
               {isAr ? 'إلغاء الطلب' : 'Cancel Request'}
@@ -2935,7 +2935,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 ? 'سيتم إلغاء الطلب وإعادته للحالة المفتوحة. هل تريد المتابعة؟'
                 : 'This will cancel the accepted offer and re-open the request. Are you sure?'}
             </p>
-            <p style={{ fontSize: 12, color: '#a07070', marginBottom: 20, padding: '10px 14px', background: 'rgba(138,58,58,0.08)', border: '1px solid rgba(138,58,58,0.2)', borderRadius: 'var(--radius-md)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: 'var(--red)', marginBottom: 20, padding: '10px 14px', background: 'rgba(224,92,92,0.08)', border: '1px solid rgba(224,92,92,0.2)', borderRadius: 'var(--radius-md)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.6 }}>
               {isAr
                 ? 'تنبيه: بمجرد إتمام الدفع، لا يمكن الإلغاء واسترداد المبلغ.'
                 : 'Note: Once payment is made, the order cannot be cancelled or refunded.'}
@@ -2943,7 +2943,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => cancelRequest(cancelConfirmReq)}
-                style={{ flex: 1, padding: '11px', fontSize: 12, minHeight: 44, background: 'none', border: '1px solid rgba(138,58,58,0.4)', color: '#a07070', cursor: 'pointer', borderRadius: 'var(--radius-md)' }}>
+                style={{ flex: 1, padding: '11px', fontSize: 12, minHeight: 44, background: 'none', border: '1px solid rgba(224,92,92,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 'var(--radius-md)' }}>
                 {isAr ? 'نعم، إلغاء الطلب' : 'Yes, Cancel Request'}
               </button>
               <button onClick={() => setCancelConfirmReq(null)} className="btn-outline"
