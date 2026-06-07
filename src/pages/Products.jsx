@@ -44,7 +44,7 @@ const CATEGORIES = {
 /* ─── Skeleton ───────────────────────────── */
 const SkeletonCard = () => (
   <div style={{
-    background: '#faf9f7', border: '1px solid #e8e5de',
+    background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 12, overflow: 'hidden',
   }}>
     <div style={{ width: '100%', aspectRatio: '1/1', background: 'var(--bg-raised)' }} />
@@ -292,7 +292,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
               border: '1px solid',
               borderColor: capabilityFilters.sample ? 'rgba(45,122,79,0.25)' : 'var(--border-subtle)',
               background: capabilityFilters.sample ? 'rgba(45,122,79,0.08)' : 'transparent',
-              color: capabilityFilters.sample ? '#2d7a4f' : 'var(--text-secondary)',
+              color: capabilityFilters.sample ? 'var(--green)' : 'var(--text-secondary)',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
             {isAr ? 'عينة متاحة' : lang === 'zh' ? '可提供样品' : 'Sample available'}
@@ -308,8 +308,8 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
               cursor: 'pointer',
               border: '1px solid',
               borderColor: capabilityFilters.customization ? 'rgba(0,0,0,0.15)' : 'var(--border-subtle)',
-              background: capabilityFilters.customization ? '#1a1a1a' : 'transparent',
-              color: capabilityFilters.customization ? '#ffffff' : 'var(--text-secondary)',
+              background: capabilityFilters.customization ? 'var(--ink)' : 'transparent',
+              color: capabilityFilters.customization ? 'var(--on-dark)' : 'var(--text-secondary)',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
             {isAr ? 'تخصيص / علامة خاصة' : lang === 'zh' ? 'OEM / 定制' : 'OEM / customization'}
@@ -379,10 +379,10 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{
                           width: 6, height: 6, borderRadius: '50%',
-                          background: '#2d7a4f', flexShrink: 0, display: 'inline-block',
+                          background: 'var(--green)', flexShrink: 0, display: 'inline-block',
                         }} />
-                        <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>
-                          مورد موثّق
+                        <span style={{ fontSize: 10, color: 'var(--green)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified supplier'}
                         </span>
                       </div>
                     )}
@@ -402,7 +402,7 @@ export default function Products({ lang, user, profile, displayCurrency, exchang
                       className="product-card-buy"
                       onClick={e => { e.stopPropagation(); nav(`/products/${p.id}`); }}
                     >
-                      اشتر الآن
+                      {isAr ? 'اشتر الآن' : lang === 'zh' ? '立即购买' : 'Buy now'}
                     </button>
                   </div>
                 </div>

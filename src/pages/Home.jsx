@@ -405,10 +405,9 @@ export default function Home({ lang, user }) {
 
       <section style={{ maxWidth: 1280, margin: '-34px auto 0', padding: '0 24px 12px', position: 'relative', zIndex: 2 }}>
         <div style={{
-          borderRadius: 28,
-          border: '1px solid rgba(0,0,0,0.07)',
-          background: 'var(--bg-subtle)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          borderRadius: 'var(--radius-card)',
+          border: '1px solid var(--border)',
+          background: 'var(--surface)',
           padding: '28px clamp(20px, 4vw, 34px)',
         }}>
           <div style={{ marginBottom: 18 }}>
@@ -426,11 +425,9 @@ export default function Home({ lang, user }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
             {startOptions.map((option) => (
               <div key={option.key} style={{
-                borderRadius: 24,
-                border: option.featured ? '1px solid rgba(0,0,0,0.15)' : '1px solid var(--border-subtle)',
-                background: option.featured
-                  ? 'linear-gradient(180deg, rgba(0,0,0,0.06), transparent)'
-                  : 'var(--bg-subtle)',
+                borderRadius: 'var(--radius-card)',
+                border: option.featured ? '1px solid var(--border-strong)' : '1px solid var(--border)',
+                background: option.featured ? 'var(--bg-hero)' : 'var(--surface)',
                 padding: '20px 20px 18px',
                 display: 'grid',
                 gap: 12,

@@ -41,7 +41,7 @@ const CATEGORIES = {
 };
 
 const SkeletonCard = () => (
-  <div style={{ background: 'var(--bg-raised)', padding: 24, borderRadius: 4, border: '1px solid var(--border-default)' }}>
+  <div style={{ background: 'var(--surface)', padding: 24, borderRadius: 'var(--radius-card)', border: '1px solid var(--border)' }}>
     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
       <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-hover)', flexShrink: 0, animation: 'pulse 1.5s ease infinite' }} />
       <div style={{ flex: 1 }}>
@@ -175,12 +175,12 @@ export default function Suppliers({ lang, user }) {
               <div key={s.id}
                 onClick={() => nav(`/supplier/${s.id}`)}
                 style={{
-                  background: 'var(--bg-raised)', border: '1px solid var(--border-default)',
-                  borderRadius: 4, padding: 24, cursor: 'pointer',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-card)', padding: 24, cursor: 'pointer',
                   transition: 'all 0.2s', animation: `fadeIn 0.4s ease ${idx * 0.05}s both`,
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}>
 
                 {/* HEADER */}
                 <div style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
@@ -198,9 +198,9 @@ export default function Suppliers({ lang, user }) {
                         <span title={isAr ? 'مورد معتمد من فريق مَعبر' : 'Verified by Maabar team'} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 3,
                           padding: '2px 7px', borderRadius: 20,
-                          background: 'rgba(58,122,82,0.1)',
-                          border: '1px solid rgba(58,122,82,0.25)',
-                          color: '#5a9a72',
+                          background: 'rgba(45,122,79,0.1)',
+                          border: '1px solid rgba(45,122,79,0.25)',
+                          color: 'var(--green)',
                           fontSize: 10, fontWeight: 600, flexShrink: 0,
                         }}>✓ {isAr ? 'معتمد' : lang === 'zh' ? '已认证' : 'Verified'}</span>
                       )}
@@ -217,12 +217,12 @@ export default function Suppliers({ lang, user }) {
                       </p>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ color: '#f5a623', fontSize: 13 }}>{stars(s.rating)}</span>
+                      <span style={{ color: 'var(--star)', fontSize: 13 }}>{stars(s.rating)}</span>
                       {s.reviews_count > 0 && (
                         <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>({s.reviews_count})</span>
                       )}
                       {(s.reviews?.length > 0 || s.reviews_count > 0) && (
-                        <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72', borderRadius: 20 }}>
+                        <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)', borderRadius: 20 }}>
                           {s.reviews_count || s.reviews?.length} {isAr ? 'صفقة مكتملة' : lang === 'zh' ? '笔交易' : 'deals'}
                         </span>
                       )}
@@ -240,7 +240,7 @@ export default function Suppliers({ lang, user }) {
                 {/* TAGS — specialty promoted to header in Phase 6B; this row keeps Maabar ID, city, product count, trust signals */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                   {supplierMaabarId && isReviewedSupplier && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
                       {isAr ? `معرّف: ${supplierMaabarId}` : lang === 'zh' ? `编号：${supplierMaabarId}` : `ID: ${supplierMaabarId}`}
                     </span>
                   )}
@@ -255,7 +255,7 @@ export default function Suppliers({ lang, user }) {
                     </span>
                   )}
                   {trustSignals.includes('trade_profile_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.18)', borderRadius: 20, color: '#5a9a72', letterSpacing: 0.6 }}>
+                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.18)', borderRadius: 20, color: 'var(--green)', letterSpacing: 0.6 }}>
                       {isAr ? 'رابط متجر موثق' : lang === 'zh' ? '店铺链接已提供' : 'Trade link on file'}
                     </span>
                   )}
@@ -296,7 +296,7 @@ export default function Suppliers({ lang, user }) {
                       onClick={e => { e.stopPropagation(); nav(`/chat/${s.id}`); }}
                       style={{
                         padding: '6px 12px', fontSize: 11, cursor: 'pointer',
-                        background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)',
+                        background: 'var(--bg-subtle)', border: '1px solid var(--border)',
                         color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)',
                         transition: 'all 0.15s', letterSpacing: 0.5,
                         fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
