@@ -1954,7 +1954,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           value_zh: val.value_zh || '',
           value_en: val.value_en || '',
           value_ar: val.value_ar || '',
-          color_hex: val.color_hex || '#4A90D9',
+          color_hex: val.color_hex || 'var(--green)',
           image_url: val.image_url || null,
         }))),
     }));
@@ -2402,23 +2402,23 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const SupplierStatusTimeline = ({ step }) => {
     const steps = lang === 'zh' ? SUPPLIER_STEPS_ZH : isAr ? SUPPLIER_STEPS_AR : SUPPLIER_STEPS_EN;
-    const SAGE = '#2D6A4F';
+    const SAGE = 'var(--green)';
     return (
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
         {steps.map((label, i) => {
           const done    = i < step;
           const current = i === step;
           const future  = i > step;
-          const dotColor   = done ? SAGE : current ? 'var(--text-primary)' : 'rgba(0,0,0,0.10)';
-          const leftLine   = i <= step ? SAGE : 'rgba(0,0,0,0.08)';
-          const rightLine  = i < step  ? SAGE : 'rgba(0,0,0,0.08)';
+          const dotColor   = done ? SAGE : current ? 'var(--text-primary)' : 'var(--border)';
+          const leftLine   = i <= step ? SAGE : 'var(--border)';
+          const rightLine  = i < step  ? SAGE : 'var(--border)';
           return (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 46 }}>
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 {i > 0 && <div style={{ flex: 1, height: 1, background: leftLine }} />}
                 <div style={{
-                  width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0,
-                  ...(current ? { boxShadow: `0 0 0 3px rgba(0,0,0,0.10), 0 0 0 5px rgba(0,0,0,0.04)` } : {}),
+                  width: 8, height: 8, borderRadius: 'var(--radius-full)', background: dotColor, flexShrink: 0,
+                  ...(current ? { borderColor: 'var(--border-strong)' } : {}),
                 }} />
                 {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: rightLine }} />}
               </div>
@@ -2426,7 +2426,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 fontSize: 9, marginTop: 5, textAlign: 'center', whiteSpace: 'nowrap',
                 color: future ? 'var(--text-disabled)' : done ? SAGE : 'var(--text-primary)',
                 fontWeight: current ? 600 : done ? 500 : 400,
-                fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)',
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
               }}>{label}</p>
             </div>
           );
@@ -2438,7 +2438,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const SupplierPaymentPills = ({ requestStatus, paymentPlan }) => {
     const plan = paymentPlan || 50;
     const rest = 100 - plan;
-    const tf = "'Tajawal', sans-serif";
+    const tf = 'var(--font-ar)';
 
     // State helpers
     const inst1State = (() => {
@@ -2453,7 +2453,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     const PILL_STYLES = {
       black: { background: 'var(--text-primary)', color: 'var(--bg-base)',           border: '1px solid var(--text-primary)' },
-      amber: { background: 'transparent',         color: '#8B6914',                  border: '1px solid rgba(139,105,20,0.40)' },
+      amber: { background: 'transparent',         color: 'var(--warn)',                  border: '1px solid rgba(160,136,80,0.40)' },
       grey:  { background: 'transparent',         color: 'var(--text-tertiary)',      border: '1px solid var(--border-subtle)' },
     };
 
@@ -2466,7 +2466,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const Pill = ({ pct, state, suffix }) => (
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 5,
-        fontSize: 10, padding: '3px 10px', borderRadius: 20,
+        fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)',
         fontFamily: isAr ? tf : 'var(--font-sans)',
         letterSpacing: isAr ? 0 : 0.3,
         ...PILL_STYLES[state],
@@ -2570,17 +2570,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginBottom: 16, lineHeight: 1.7, ...arFont, maxWidth: 420 }}>{t.desc}</p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
             <span style={{ color: 'var(--text-disabled)' }}>{t.supplierStageLabel}</span>
             <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{getSupplierStageLabel(supplierState.stage, lang)}</strong>
           </span>
           {supplierState.isApprovedStage && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, border: '1px solid rgba(80,180,120,0.22)', background: 'rgba(80,180,120,0.10)', color: '#8ad1a3', fontSize: 11 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius-chip)', border: '1px solid rgba(45,122,79,0.22)', background: 'rgba(45,122,79,0.10)', color: 'var(--green)', fontSize: 11 }}>
               <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified supplier'}</strong>
             </span>
           )}
           {supplierMaabarId && supplierState.isApprovedStage && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: 11 }}>
               <span style={{ color: 'var(--text-secondary)' }}>{t.supplierIdLabel}</span>
               <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
             </span>
@@ -2609,7 +2609,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </span>
                 )}
                 {tab.badge && (
-                  <span style={{ position: 'absolute', top: 6, right: 2, background: 'rgba(224,70,70,0.10)', border: '1px solid rgba(224,70,70,0.28)', color: '#e04646', fontSize: 8, fontWeight: 700, borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.badge}</span>
+                  <span style={{ position: 'absolute', top: 6, right: 2, background: 'rgba(224,92,92,0.10)', border: '1px solid rgba(224,92,92,0.28)', color: 'var(--red)', fontSize: 8, fontWeight: 700, borderRadius: 'var(--radius-full)', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.badge}</span>
                 )}
               </button>
             );
@@ -2679,7 +2679,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <div style={{
                 padding: '28px 28px 24px',
                 borderRadius: 'var(--radius-xl)',
-                border: '1px solid rgba(0,0,0,0.08)',
+                border: '1px solid var(--border)',
                 background: 'var(--bg-subtle)',
               }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
@@ -2712,7 +2712,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             <div style={section}>
               {isOnboardingLimited ? (
                 <>
-                  <div style={{ marginBottom: 24, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-xl)' }}>
+                  <div style={{ marginBottom: 24, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <div style={{ maxWidth: 720 }}>
                         <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
@@ -2728,7 +2728,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ minWidth: 220, maxWidth: 280, flex: '1 1 220px' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 8, ...arFont }}>{t.onboardingProgress}</p>
                         <p style={{ fontSize: 32, color: 'var(--text-primary)', marginBottom: 6 }}>{profileReadiness.completedRequiredCount}/{profileReadiness.totalRequiredCount}</p>
-                        <div style={{ width: '100%', height: 8, borderRadius: 999, background: 'rgba(0,0,0,0.07)', overflow: 'hidden', marginBottom: 10 }}>
+                        <div style={{ width: '100%', height: 8, borderRadius: 'var(--radius-chip)', background: 'var(--border)', overflow: 'hidden', marginBottom: 10 }}>
                           <div style={{ width: `${supplierState.isUnderReviewStage || supplierState.isApprovedStage ? 100 : profileReadiness.progressPercent}%`, height: '100%', background: 'var(--text-primary)' }} />
                         </div>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, ...arFont }}>
@@ -2785,7 +2785,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         isAr ? 'الرسائل' : lang === 'zh' ? '消息' : 'Messages',
                         isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples',
                       ].map((item) => (
-                        <span key={item} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.3 }}>
+                        <span key={item} style={{ padding: '6px 10px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.3 }}>
                           {item} · {isAr ? 'مقفل' : lang === 'zh' ? '锁定' : 'Locked'}
                         </span>
                       ))}
@@ -2819,7 +2819,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     <>
                       {/* Cover photo — image when set, else plain cream fill */}
                       <div style={{
-                        width: '100%', height: 160, background: '#FAF8F5',
+                        width: '100%', height: 160, background: 'var(--bg-page)',
                         overflow: 'hidden',
                       }}>
                         {cover && (
@@ -2831,8 +2831,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ padding: '0 24px 20px' }}>
                         {/* Avatar overlapping cover bottom */}
                         <div style={{
-                          width: 64, height: 64, borderRadius: '50%',
-                          border: '3px solid #fff', background: '#fff',
+                          width: 64, height: 64, borderRadius: 'var(--radius-full)',
+                          border: '3px solid var(--surface-raised)', background: 'var(--surface-raised)',
                           marginTop: -32, marginBottom: 14, overflow: 'hidden',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
@@ -2849,7 +2849,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {/* Verified pill */}
                         {supplierState.isApprovedStage && (
                           <div style={{ marginBottom: 8 }}>
-                            <span style={{ fontSize: 11, color: '#5a9a72', background: 'rgba(80,180,120,0.10)', border: '1px solid rgba(80,180,120,0.22)', borderRadius: 999, padding: '3px 10px', fontWeight: 600, ...arFont, display: 'inline-block' }}>
+                            <span style={{ fontSize: 11, color: 'var(--green)', background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.22)', borderRadius: 'var(--radius-chip)', padding: '3px 10px', fontWeight: 600, ...arFont, display: 'inline-block' }}>
                               {isAr ? '✓ مورد موثّق' : lang === 'zh' ? '✓ 认证供应商' : '✓ Verified'}
                             </span>
                           </div>
@@ -2879,7 +2879,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {/* MS-ID pill */}
                         {supplierMaabarId && (
                           <div style={{ marginBottom: 12 }}>
-                            <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '3px 10px', fontFamily: 'var(--font-sans)', letterSpacing: 0.5 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--bg-hero)', border: '1px solid var(--border)', borderRadius: 'var(--radius-chip)', padding: '3px 10px', fontFamily: 'var(--font-sans)', letterSpacing: 0.5 }}>
                               {supplierMaabarId}
                             </span>
                           </div>
@@ -2923,7 +2923,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               </div>
 
               {needsVerification && (
-                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'var(--bg-subtle)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
                     {t.verificationCtaTitle}
                   </p>
@@ -2936,7 +2936,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
               )}
               {showUploadProductsBanner && (
-                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(139,105,20,0.06)', border: '1px solid rgba(139,105,20,0.22)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(160,136,80,0.06)', border: '1px solid rgba(160,136,80,0.22)', borderRadius: 'var(--radius-lg)' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
                     {t.uploadProductsBannerTitle}
                   </p>
@@ -2947,7 +2947,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
               )}
               {needsPayoutSetup && (
-                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(80,180,120,0.06)', border: '1px solid rgba(80,180,120,0.18)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ marginBottom: 32, padding: '20px 24px', background: 'rgba(45,122,79,0.06)', border: '1px solid rgba(45,122,79,0.18)', borderRadius: 'var(--radius-lg)' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
                     {t.payoutCtaTitle}
                   </p>
@@ -2966,13 +2966,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     {closedOffers.map((o, i) => (
                       <div key={`closed-${i}`}
                         onClick={() => { setActiveTab('offers'); setTimeout(() => document.getElementById(`offer-${o.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150); }}
-                        style={{ background: 'rgba(45,106,79,0.06)', border: '1px solid rgba(45,106,79,0.22)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', cursor: 'pointer', transition: 'opacity 0.15s' }}
+                        style={{ background: 'rgba(45,122,79,0.06)', border: '1px solid rgba(45,122,79,0.22)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', cursor: 'pointer', transition: 'opacity 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.opacity = '0.78'}
                         onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: '#2D6A4F', marginBottom: 3, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr ? 'عرضك قُبل — أكّد جاهزيتك' : lang === 'zh' ? '报价已通过 — 请确认就绪' : 'Offer accepted — confirm readiness'}
                         </p>
-                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {getTitle(o.requests)} · <span style={{ fontVariantNumeric: 'lining-nums' }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} USD</span>
                         </p>
                       </div>
@@ -2980,20 +2980,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     {paidOffers.map((o, i) => (
                       <div key={`paid-${i}`}
                         onClick={() => { setActiveTab('offers'); setTimeout(() => document.getElementById(`offer-${o.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150); }}
-                        style={{ background: 'rgba(139,105,20,0.06)', border: '1px solid rgba(139,105,20,0.22)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', cursor: 'pointer', transition: 'opacity 0.15s' }}
+                        style={{ background: 'rgba(160,136,80,0.06)', border: '1px solid rgba(160,136,80,0.22)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', cursor: 'pointer', transition: 'opacity 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.opacity = '0.78'}
                         onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: '#8B6914', marginBottom: 3, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--warn)', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr ? 'الدفعة الأولى وصلت — ابدأ الإنتاج' : lang === 'zh' ? '首付款已到账 — 开始生产' : 'First payment received — start production'}
                         </p>
-                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {getTitle(o.requests)} · <span style={{ fontVariantNumeric: 'lining-nums' }}>{getOfferEstimatedTotal(o, o.requests).toFixed(2)} USD</span>
                         </p>
                       </div>
                     ))}
                     {rejectedOffers.map((o, i) => (
                       <div key={`rej-${i}`} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <p style={{ fontSize: 13, color: '#a07070', ...arFont }}>{t.offerRejected}: {getTitle(o.requests)}</p>
+                        <p style={{ fontSize: 13, color: 'var(--red)', ...arFont }}>{t.offerRejected}: {getTitle(o.requests)}</p>
                         <button onClick={() => dismissRejected(o.id)} className="btn-outline" style={{ padding: '5px 12px', fontSize: 10, minHeight: 30 }}>{isAr ? 'تجاهل' : lang === 'zh' ? '忽略' : 'Dismiss'}</button>
                       </div>
                     ))}
@@ -3080,7 +3080,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               </h2>
               <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
                 {cats.map(c => (
-                  <button key={c.val} onClick={() => setActiveCat(c.val)} style={{ padding: '6px 14px', fontSize: 12, borderRadius: 20, cursor: 'pointer', transition: 'all 0.15s', background: activeCat === c.val ? 'var(--bg-raised)' : 'transparent', color: activeCat === c.val ? 'var(--text-primary)' : 'var(--text-disabled)', border: '1px solid', borderColor: activeCat === c.val ? 'var(--border-muted)' : 'var(--border-subtle)', ...arFont, minHeight: 32 }}>{c.label}</button>
+                  <button key={c.val} onClick={() => setActiveCat(c.val)} style={{ padding: '6px 14px', fontSize: 12, borderRadius: 'var(--radius-pill)', cursor: 'pointer', transition: 'all 0.15s', background: activeCat === c.val ? 'var(--bg-raised)' : 'transparent', color: activeCat === c.val ? 'var(--text-primary)' : 'var(--text-disabled)', border: '1px solid', borderColor: activeCat === c.val ? 'var(--border-muted)' : 'var(--border-subtle)', ...arFont, minHeight: 32 }}>{c.label}</button>
                 ))}
               </div>
 
@@ -3099,7 +3099,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             ? (isAr ? 'وصلته عروض' : lang === 'zh' ? '已有报价' : 'Offers received')
                             : (isAr ? 'مفتوح' : lang === 'zh' ? '开放中' : 'Open')}
                         </span>
-                        {r.category && r.category !== 'other' && <span style={{ fontSize: 10, padding: '2px 8px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-disabled)' }}>{cats.find(c => c.val === r.category)?.label || r.category}</span>}
+                        {r.category && r.category !== 'other' && <span style={{ fontSize: 10, padding: '2px 8px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-pill)', color: 'var(--text-disabled)' }}>{cats.find(c => c.val === r.category)?.label || r.category}</span>}
                         <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.created_at)}</span>
                       </div>
                       <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 6, color: 'var(--text-primary)', ...arFont }}>{getTitle(r)}</h3>
@@ -3169,7 +3169,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {(r.budget_per_unit || r.payment_plan || r.sample_requirement) && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
                           {r.budget_per_unit && (
-                            <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>
+                            <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>
                               {isAr ? 'ميزانية تقريبية: ' : lang === 'zh' ? '预算参考：' : 'Budget hint: '}
                               {formatPriceWithConversion({
                                 amount: parseFloat(r.budget_per_unit),
@@ -3180,8 +3180,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                               })}
                             </span>
                           )}
-                          {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}% 定金，${100 - r.payment_plan}% 发货前` : `Payment plan: ${r.payment_plan}%`}</span>}
-                          {r.sample_requirement && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `العينة: ${r.sample_requirement === 'required' ? 'إلزامية' : r.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة'}` : lang === 'zh' ? `样品：${r.sample_requirement === 'required' ? '必须提供' : r.sample_requirement === 'preferred' ? '建议提供' : '无需样品'}` : `Sample: ${r.sample_requirement === 'required' ? 'Required' : r.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed'}`}</span>}
+                          {r.payment_plan && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `خطة الدفع: ${r.payment_plan}%` : lang === 'zh' ? `付款计划：${r.payment_plan}% 定金，${100 - r.payment_plan}% 发货前` : `Payment plan: ${r.payment_plan}%`}</span>}
+                          {r.sample_requirement && <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>{isAr ? `العينة: ${r.sample_requirement === 'required' ? 'إلزامية' : r.sample_requirement === 'preferred' ? 'مفضلة' : 'غير مطلوبة'}` : lang === 'zh' ? `样品：${r.sample_requirement === 'required' ? '必须提供' : r.sample_requirement === 'preferred' ? '建议提供' : '无需样品'}` : `Sample: ${r.sample_requirement === 'required' ? 'Required' : r.sample_requirement === 'preferred' ? 'Preferred' : 'Not needed'}`}</span>}
                         </div>
                       )}
                       <div className="form-grid">
@@ -3319,7 +3319,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   : getTitle(r);
                 const buyerName = r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader');
                 const acting = directOrderActioning[r.id];
-                const countdownColor = cd.expired ? '#a07070' : cd.hours < 4 ? '#b4781e' : '#5a9a72';
+                const countdownColor = cd.expired ? 'var(--red)' : cd.hours < 4 ? 'var(--warn)' : 'var(--green)';
                 const countdownLabel = cd.expired
                   ? (isAr ? 'انتهت المهلة' : lang === 'zh' ? '已超时' : 'Expired')
                   : (isAr ? `متبقّي ${cd.hours} ساعة ${cd.mins} دقيقة` : lang === 'zh' ? `剩余 ${cd.hours} 小时 ${cd.mins} 分钟` : `${cd.hours}h ${cd.mins}m left`);
@@ -3329,7 +3329,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
                       <div style={{ flex: 1, minWidth: 220 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(58,122,82,0.08)', border: '1px solid rgba(58,122,82,0.2)', color: '#5a9a72', letterSpacing: 0.4 }}>
+                          <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)', letterSpacing: 0.4 }}>
                             {isAr ? 'شراء مباشر' : lang === 'zh' ? '直接采购' : 'Direct Purchase'}
                           </span>
                           <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.created_at)}</span>
@@ -3375,7 +3375,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <button
                         onClick={() => rejectDirectOrder(r)}
                         disabled={Boolean(acting) || cd.expired}
-                        style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '8px 16px', fontSize: 12, cursor: (acting || cd.expired) ? 'not-allowed' : 'pointer', borderRadius: 'var(--radius-md)', minHeight: 38, opacity: cd.expired ? 0.5 : 1, ...arFont }}>
+                        style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '8px 16px', fontSize: 12, cursor: (acting || cd.expired) ? 'not-allowed' : 'pointer', borderRadius: 'var(--radius-md)', minHeight: 38, opacity: cd.expired ? 0.5 : 1, ...arFont }}>
                         {acting === 'rejecting' ? '...' : isAr ? 'رفض الطلب' : lang === 'zh' ? '拒绝订单' : 'Reject Order'}
                       </button>
                       {r.buyer_id && (
@@ -3430,7 +3430,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
                         <div style={{ flex: 1, minWidth: 220 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.28)', color: '#2d7a4f', letterSpacing: 0.4, fontWeight: 600 }}>
+                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.28)', color: 'var(--green)', letterSpacing: 0.4, fontWeight: 600 }}>
                               {isAr ? 'مدفوع — جاهز للشحن' : lang === 'zh' ? '已付款 — 准备发货' : 'Paid — Ready to Ship'}
                             </span>
                           </div>
@@ -3446,7 +3446,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           </span>
                           <span style={{ fontSize: 12, color: 'var(--text-primary)', ...arFont }}>{fmtDate(paymentDate)}</span>
                           {paymentAmount > 0 && (
-                            <span style={{ fontSize: 14, fontWeight: 600, color: '#2d7a4f', direction: 'ltr', marginTop: 4 }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--green)', direction: 'ltr', marginTop: 4 }}>
                               {paymentAmount.toFixed(2)} {paymentCurrency}
                             </span>
                           )}
@@ -3526,16 +3526,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   const statusLabel = isArrived
                     ? (isAr ? 'وصلت — التاجر يفحص' : lang === 'zh' ? '已到货 — 买家正在验收' : 'Arrived — Buyer Inspecting')
                     : (isAr ? 'في الطريق' : lang === 'zh' ? '运输中' : 'In Transit');
-                  const statusColor = isArrived ? '#4a6bbf' : '#b4781e';
-                  const statusBg = isArrived ? 'rgba(60,100,180,0.05)' : 'rgba(180,120,30,0.05)';
-                  const statusBorder = isArrived ? 'rgba(60,100,180,0.30)' : 'rgba(180,120,30,0.30)';
+                  const statusColor = isArrived ? 'var(--green)' : 'var(--warn)';
+                  const statusBg = isArrived ? 'rgba(45,122,79,0.05)' : 'rgba(160,136,80,0.05)';
+                  const statusBorder = isArrived ? 'rgba(45,122,79,0.30)' : 'rgba(160,136,80,0.30)';
 
                   return (
                     <div key={`shipping-${r.id}`} style={{ marginBottom: 12, border: `1px solid ${statusBorder}`, background: statusBg, borderRadius: 'var(--radius-lg)', padding: '18px 22px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
                         <div style={{ flex: 1, minWidth: 220 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'var(--bg-raised)', border: `1px solid ${statusBorder}`, color: statusColor, letterSpacing: 0.4, fontWeight: 600, ...arFont }}>
+                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'var(--bg-raised)', border: `1px solid ${statusBorder}`, color: statusColor, letterSpacing: 0.4, fontWeight: 600, ...arFont }}>
                               {statusLabel}
                             </span>
                             <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.created_at)}</span>
@@ -3557,7 +3557,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             {isAr ? 'رقم التتبع:' : lang === 'zh' ? '物流单号：' : 'Tracking #:'} <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-en)', fontWeight: 600, direction: 'ltr', display: 'inline-block' }}>{trackingNumber}</strong>
                           </span>
                           {trackUrl && (
-                            <a href={trackUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#4a6bbf', textDecoration: 'none', borderBottom: '1px dashed #4a6bbf', paddingBottom: 1 }}>
+                            <a href={trackUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--green)', textDecoration: 'none', borderBottom: '1px dashed var(--green)', paddingBottom: 1 }}>
                               {isAr ? 'تتبع الشحنة ↗' : lang === 'zh' ? '查看跟踪 ↗' : 'Track Shipment ↗'}
                             </a>
                           )}
@@ -3608,7 +3608,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                         <div style={{ flex: 1, minWidth: 220 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.28)', color: '#2d7a4f', letterSpacing: 0.4, fontWeight: 600, ...arFont }}>
+                            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.28)', color: 'var(--green)', letterSpacing: 0.4, fontWeight: 600, ...arFont }}>
                               ✓ {isAr ? 'مكتمل' : lang === 'zh' ? '已完成' : 'Completed'}
                             </span>
                           </div>
@@ -3624,7 +3624,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           </span>
                           <span style={{ fontSize: 12, color: 'var(--text-primary)', ...arFont }}>{fmtDate(deliveryDate)}</span>
                           {paymentAmount > 0 && (
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#2d7a4f', direction: 'ltr', marginTop: 4 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--green)', direction: 'ltr', marginTop: 4 }}>
                               {paymentAmount.toFixed(2)} {paymentCurrency}
                             </span>
                           )}
@@ -3672,15 +3672,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ flex: 1, minWidth: 140 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                           <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', ...arFont }}>{lang === 'zh' ? p.name_zh || p.name_en : lang === 'ar' ? p.name_ar || p.name_en : p.name_en || p.name_ar}</p>
-                          {getProductGalleryImages(p).length > 1 && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{lang === 'zh' ? `${getProductGalleryImages(p).length} 图` : `${getProductGalleryImages(p).length} IMG`}</span>}
-                          {p.video_url && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{lang === 'zh' ? '视频' : 'VIDEO'}</span>}
-                          {p.sample_available && <span style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(58,122,82,0.1)', border: '1px solid rgba(58,122,82,0.2)', borderRadius: 10, color: '#5a9a72', letterSpacing: 0.5 }}>{isAr ? 'عينة' : lang === 'zh' ? '样品' : 'SAMPLE'}</span>}
-                          {p.category && p.category !== 'other' && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 10, color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{cats.find(c => c.val === p.category)?.label || p.category}</span>}
+                          {getProductGalleryImages(p).length > 1 && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-panel)', color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{lang === 'zh' ? `${getProductGalleryImages(p).length} 图` : `${getProductGalleryImages(p).length} IMG`}</span>}
+                          {p.video_url && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-panel)', color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{lang === 'zh' ? '视频' : 'VIDEO'}</span>}
+                          {p.sample_available && <span style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 'var(--radius-panel)', color: 'var(--green)', letterSpacing: 0.5 }}>{isAr ? 'عينة' : lang === 'zh' ? '样品' : 'SAMPLE'}</span>}
+                          {p.category && p.category !== 'other' && <span style={{ fontSize: 9, padding: '2px 7px', background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-panel)', color: 'var(--text-disabled)', letterSpacing: 0.5 }}>{cats.find(c => c.val === p.category)?.label || p.category}</span>}
                         </div>
                         <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{deriveProductPriceFrom(p) ?? '—'} {p.currency || 'USD'} · {isAr ? 'MOQ' : lang === 'zh' ? '最小起订量' : 'MOQ'}: {p.moq}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, border: '1px solid', borderColor: p.is_active ? 'rgba(58,122,82,0.3)' : 'var(--border-subtle)', color: p.is_active ? '#5a9a72' : 'var(--text-disabled)', background: p.is_active ? 'rgba(58,122,82,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
+                        <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', border: '1px solid', borderColor: p.is_active ? 'rgba(45,122,79,0.3)' : 'var(--border-subtle)', color: p.is_active ? 'var(--green)' : 'var(--text-disabled)', background: p.is_active ? 'rgba(45,122,79,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
                         <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
                         <button onClick={() => {
                           // Expand stored country/port into the dropdown+other form pair.
@@ -3713,7 +3713,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             .catch(err => { console.error('cert load error:', err); setEditProductCertsSnapshot([]); });
                           if (p.has_variants) loadVariantData(p.id).then(setEditVariantData).catch(console.error);
                         }} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.edit}</button>
-                        <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
+                        <button onClick={() => deleteProduct(p.id)} style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '5px 10px', fontSize: 10, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{t.delete}</button>
                       </div>
                     </div>
                   )}
@@ -3753,7 +3753,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         {category && (
-                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>
+                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)' }}>
                             {category}
                           </span>
                         )}
@@ -3762,18 +3762,18 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         )}
                       </div>
                       {!isAccepted && (
-                        <span style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: o.status === 'rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: o.status === 'rejected' ? '#a07070' : 'var(--text-disabled)' }}>
+                        <span style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 'var(--radius-pill)', border: '1px solid', borderColor: o.status === 'rejected' ? 'rgba(224,92,92,0.3)' : 'var(--border-subtle)', color: o.status === 'rejected' ? 'var(--red)' : 'var(--text-disabled)' }}>
                           {OFFER_STATUS[lang]?.[o.status] || o.status}
                         </span>
                       )}
                     </div>
-                    <h3 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', lineHeight: 1.4 }}>{getTitle(o.requests)}</h3>
+                    <h3 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.4 }}>{getTitle(o.requests)}</h3>
 
                     {/* ── Section 2: buyer name + verified badge (accepted only) ── */}
                     {isAccepted && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>{buyerName}</span>
-                        <span style={{ fontSize: 10, color: '#2D6A4F', background: 'rgba(45,106,79,0.08)', border: '1px solid rgba(45,106,79,0.22)', borderRadius: 999, padding: '2px 8px', fontWeight: 600, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{buyerName}</span>
+                        <span style={{ fontSize: 10, color: 'var(--green)', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.22)', borderRadius: 'var(--radius-chip)', padding: '2px 8px', fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr ? 'موثّق' : lang === 'zh' ? '认证' : 'Verified'}
                         </span>
                       </div>
@@ -3829,7 +3829,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     {isAccepted && o.requests?.payment_plan && (
                       <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginBottom: 3 }}>{isAr ? 'خطة الدفع' : lang === 'zh' ? '付款计划' : 'Payment Plan'}</p>
-                        <p style={{ fontSize: 12, color: 'var(--text-primary)', fontVariantNumeric: 'lining-nums', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <p style={{ fontSize: 12, color: 'var(--text-primary)', fontVariantNumeric: 'lining-nums', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr
                             ? `${o.requests.payment_plan}٪ مقدم + ${100 - o.requests.payment_plan}٪ عند الشحن`
                             : lang === 'zh'
@@ -3846,7 +3846,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           {isAr ? 'تفاصيل الشحنة' : lang === 'zh' ? '物流信息' : 'Shipment'}
                         </p>
                         {o.requests?.shipping_company && (
-                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                             {isAr ? 'شركة الشحن: ' : lang === 'zh' ? '承运商：' : 'Carrier: '}{o.requests.shipping_company}
                           </p>
                         )}
@@ -3894,10 +3894,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             style={{ padding: '5px 12px', fontSize: 11, minHeight: 32 }}>
                             {t.edit}
                           </button>
-                          <button onClick={() => cancelOffer(o)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 32 }}>
+                          <button onClick={() => cancelOffer(o)} style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 32 }}>
                             {isAr ? 'إلغاء العرض' : lang === 'zh' ? '取消报价' : 'Cancel Offer'}
                           </button>
-                          <button onClick={() => deleteOffer(o)} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 32 }}>
+                          <button onClick={() => deleteOffer(o)} style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '5px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 32 }}>
                             {t.delete}
                           </button>
                         </div>
@@ -3908,7 +3908,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button
                             className="btn-primary"
-                            style={{ minHeight: 40, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', fontSize: 13 }}
+                            style={{ minHeight: 40, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontSize: 13 }}
                             onClick={async () => {
                               await sb.from('requests').update({ status: 'supplier_confirmed' }).eq('id', o.request_id);
                               await sb.from('notifications').insert({
@@ -3925,7 +3925,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             {isAr ? 'جاهز للمتابعة — أبلغ التاجر' : lang === 'zh' ? '已就绪 — 通知买家' : 'Ready — notify buyer'}
                           </button>
                           {o.requests?.buyer_id && (
-                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 40, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 40, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {t.contactTrader}
                             </button>
                           )}
@@ -3935,11 +3935,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {/* Section 7a: supplier_confirmed — waiting for buyer first payment */}
                       {isAccepted && reqStatus === 'supplier_confirmed' && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', flex: 1 }}>
+                          <p style={{ fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', flex: 1 }}>
                             {isAr ? 'في انتظار دفع التاجر' : lang === 'zh' ? '等待买家付款' : 'Awaiting buyer payment'}
                           </p>
                           {o.requests?.buyer_id && (
-                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {t.contactTrader}
                             </button>
                           )}
@@ -3949,8 +3949,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {/* Section 7b: paid — first payment received, add tracking */}
                       {isAccepted && reqStatus === 'paid' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <div style={{ padding: '14px 16px', background: 'rgba(45,106,79,0.05)', border: '1px solid rgba(45,106,79,0.20)', borderRadius: 'var(--radius-lg)' }}>
-                            <p style={{ fontSize: 12, fontWeight: 600, color: '#2D6A4F', marginBottom: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                          <div style={{ padding: '14px 16px', background: 'rgba(45,122,79,0.05)', border: '1px solid rgba(45,122,79,0.20)', borderRadius: 'var(--radius-lg)' }}>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', marginBottom: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {isAr ? 'جاهز للشحن — أضف رقم التتبع' : lang === 'zh' ? '准备发货 — 添加追踪号' : 'Ready to ship — add tracking number'}
                             </p>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -3967,7 +3967,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             </div>
                           </div>
                           {o.requests?.buyer_id && (
-                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, alignSelf: 'flex-start', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, alignSelf: 'flex-start', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {t.contactTrader}
                             </button>
                           )}
@@ -3993,11 +3993,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {/* Section 7c: shipping — awaiting second payment */}
                       {isAccepted && reqStatus === 'shipping' && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <p style={{ fontSize: 12, color: '#8B6914', fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)', flex: 1 }}>
+                          <p style={{ fontSize: 12, color: 'var(--warn)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', flex: 1 }}>
                             {isAr ? 'في انتظار دفعة التاجر الثانية' : lang === 'zh' ? '等待买家支付尾款' : 'Awaiting second payment from buyer'}
                           </p>
                           {o.requests?.buyer_id && (
-                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                            <button className="btn-outline" onClick={() => nav(`/chat/${o.requests.buyer_id}`)} style={{ minHeight: 38, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                               {t.contactTrader}
                             </button>
                           )}
@@ -4006,7 +4006,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                       {/* Section 7d: arrived / delivered — order complete, no button */}
                       {isAccepted && ['arrived', 'delivered'].includes(reqStatus) && (
-                        <p style={{ fontSize: 13, color: '#2D6A4F', fontWeight: 600, fontFamily: isAr ? "'Tajawal', sans-serif" : 'var(--font-sans)' }}>
+                        <p style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                           {isAr ? '✓ الطلب مكتمل — تم تحويل كامل المبلغ' : lang === 'zh' ? '✓ 订单已完成 — 全款已转账' : '✓ Order complete — full amount transferred'}
                         </p>
                       )}
@@ -4038,7 +4038,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3 }}>{senderName}</p>
                       <p style={{ fontSize: 12, color: 'var(--text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 380 }}>{m.content}</p>
                     </div>
-                    {!m.is_read && <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, opacity: 0.8 }} />}
+                    {!m.is_read && <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--accent)', flexShrink: 0, opacity: 0.8 }} />}
                   </div>
                 );
               })}
@@ -4073,12 +4073,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {s.notes && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, ...arFont }}>{s.notes}</p>}
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, border: '1px solid', borderColor: s.status==='approved' ? 'rgba(58,122,82,0.3)' : s.status==='rejected' ? 'rgba(138,58,58,0.3)' : 'var(--border-subtle)', color: s.status==='approved' ? '#5a9a72' : s.status==='rejected' ? '#a07070' : 'var(--text-disabled)' }}>
+                      <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)', border: '1px solid', borderColor: s.status==='approved' ? 'rgba(45,122,79,0.3)' : s.status==='rejected' ? 'rgba(224,92,92,0.3)' : 'var(--border-subtle)', color: s.status==='approved' ? 'var(--green)' : s.status==='rejected' ? 'var(--red)' : 'var(--text-disabled)' }}>
                         {s.status === 'approved' ? (isAr ? 'مقبول' : lang === 'zh' ? '已通过' : 'Approved') : s.status === 'rejected' ? (isAr ? 'مرفوض' : lang === 'zh' ? '已拒绝' : 'Rejected') : (isAr ? 'قيد المراجعة' : lang === 'zh' ? '审核中' : 'Pending')}
                       </span>
                       {s.status === 'pending' && <>
                         <button onClick={() => updateSampleStatus(s.id, 'approved')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 28, padding: '4px 12px' }}>{isAr ? 'قبول' : lang === 'zh' ? '通过' : 'Approve'}</button>
-                        <button onClick={() => updateSampleStatus(s.id, 'rejected')} style={{ background: 'none', border: '1px solid rgba(138,58,58,0.3)', color: '#a07070', padding: '4px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{isAr ? 'رفض' : lang === 'zh' ? '拒绝' : 'Reject'}</button>
+                        <button onClick={() => updateSampleStatus(s.id, 'rejected')} style={{ background: 'none', border: '1px solid rgba(224,92,92,0.3)', color: 'var(--red)', padding: '4px 12px', fontSize: 11, cursor: 'pointer', borderRadius: 'var(--radius-md)', minHeight: 28 }}>{isAr ? 'رفض' : lang === 'zh' ? '拒绝' : 'Reject'}</button>
                       </>}
                     </div>
                   </div>
@@ -4123,7 +4123,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         </p>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 6 }}>
-                        <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? '#5a9a72' : 'var(--text-secondary)' }}>
+                        <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)', color: inquiry.status === 'answered' ? 'var(--green)' : 'var(--text-secondary)' }}>
                           {statusLabel}
                         </span>
                         <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>{new Date(inquiry.updated_at || inquiry.created_at).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
@@ -4186,7 +4186,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     </p>
                     <div>
                       <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
-                        {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 16, color: s <= Math.round(myReviews.reduce((sum,r)=>sum+r.rating,0)/myReviews.length) ? '#a08050' : 'var(--border-default)' }}>★</span>)}
+                        {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 16, color: s <= Math.round(myReviews.reduce((sum,r)=>sum+r.rating,0)/myReviews.length) ? 'var(--warn)' : 'var(--border-default)' }}>★</span>)}
                       </div>
                       <p style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 1 }}>{myReviews.length} {isAr ? 'تقييم' : lang === 'zh' ? '条评价' : 'reviews'}</p>
                     </div>
@@ -4196,7 +4196,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader')}</p>
                         <div style={{ display: 'flex', gap: 1 }}>
-                          {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 12, color: s <= r.rating ? '#a08050' : 'var(--border-default)' }}>★</span>)}
+                          {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 12, color: s <= r.rating ? 'var(--warn)' : 'var(--border-default)' }}>★</span>)}
                         </div>
                       </div>
                       {r.comment && <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, ...arFont }}>{r.comment}</p>}
@@ -4218,7 +4218,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={variantData} setVariantData={setVariantData} certificationsCount={(product.certifications || []).length} />
               )}
               {productSaveMsg && (
-                <p style={{ marginTop: 12, fontSize: 13, color: ([t.productSavedWithFallback, 'تم إضافة المنتج بنجاح', '产品添加成功', 'Product added successfully'].includes(productSaveMsg) ? (productSaveMsg === t.productSavedWithFallback ? '#a08850' : '#5a9a72') : '#a07070'), fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <p style={{ marginTop: 12, fontSize: 13, color: ([t.productSavedWithFallback, 'تم إضافة المنتج بنجاح', '产品添加成功', 'Product added successfully'].includes(productSaveMsg) ? (productSaveMsg === t.productSavedWithFallback ? 'var(--warn)' : 'var(--green)') : 'var(--red)'), fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {productSaveMsg}
                 </p>
               )}
@@ -4228,7 +4228,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           {/* ── VERIFICATION ── */}
          {/* ── VERIFICATION ── */}
           {activeTab === 'verification' && (
-            <div style={{ ...section, background: '#FAF8F5', minHeight: '100vh' }}>
+            <div style={{ ...section, background: 'var(--bg-page)', minHeight: '100vh' }}>
               <style>{VF_CSS}</style>
 
               {/* Progress bar */}
@@ -4243,17 +4243,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 {isVerificationLocked && !showVfSuccess && (
                   <div>
                     <div className="vf-fu" style={{ marginBottom: 36 }}>
-                      <p style={{ fontSize: 11, color: VF_C.amber, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 12 }}>
+                      <p style={{ fontSize: 11, color: VF_C.amber, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 12 }}>
                         VERIFICATION_UNDER_REVIEW
                       </p>
-                      <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 300, color: VF_C.ink, letterSpacing: -0.8, lineHeight: 1.2, marginBottom: 14 }}>
+                      <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 38, fontWeight: 300, color: VF_C.ink, letterSpacing: -0.8, lineHeight: 1.2, marginBottom: 14 }}>
                         {isAr ? 'التحقق الآن' : lang === 'zh' ? '认证正在' : 'Verification'}
                         <br />
                         <em style={{ fontStyle: 'italic', color: VF_C.ink60 }}>
                           {isAr ? 'تحت المراجعة' : lang === 'zh' ? '审核中' : 'Under Review'}
                         </em>
                       </h1>
-                      <p style={{ fontSize: 15, lineHeight: 1.9, color: VF_C.ink60, fontWeight: 300, fontFamily: 'Tajawal, sans-serif' }}>
+                      <p style={{ fontSize: 15, lineHeight: 1.9, color: VF_C.ink60, fontWeight: 300, fontFamily: 'var(--font-ar)' }}>
                         {isAr
                           ? 'تم استلام التحقق بنجاح. لن يظهر النموذج القابل للتعديل مرة أخرى أثناء المراجعة.'
                           : lang === 'zh'
@@ -4268,10 +4268,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                     {/* Submitted data */}
                     <div className="vf-fu" style={{ marginBottom: 28, animationDelay: '0.14s' }}>
-                      <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 10 }}>
+                      <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 10 }}>
                         {isAr ? 'البيانات المُرسلة' : lang === 'zh' ? '已提交资料' : 'Submitted data'}
                       </p>
-                      <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', overflow: 'hidden' }}>
                         {[
                           [isAr ? 'اسم الشركة' : lang === 'zh' ? '公司名称' : 'Company', settings.company_name || '—'],
                           [isAr ? 'المدينة / الدولة' : lang === 'zh' ? '城市 / 国家' : 'City / Country', `${settings.city || '—'} · ${settings.country || '—'}`],
@@ -4285,8 +4285,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           ...(verificationVideos.length > 0 ? [[isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory video', `${verificationVideos.length} ${isAr ? 'فيديو ✓' : lang === 'zh' ? '个 ✓' : 'video ✓'}`]] : []),
                         ].map(([k, v]) => (
                           <div key={k} className="vf-info-row">
-                            <span style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, flexShrink: 0 }}>{k}</span>
-                            <span style={{ fontSize: 13, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{v}</span>
+                            <span style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, flexShrink: 0 }}>{k}</span>
+                            <span style={{ fontSize: 13, color: VF_C.ink, fontFamily: 'var(--font-ar)', fontWeight: 400 }}>{v}</span>
                           </div>
                         ))}
                       </div>
@@ -4294,7 +4294,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                     {/* Locked features */}
                     <div className="vf-fu" style={{ marginBottom: 28, animationDelay: '0.2s' }}>
-                      <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 10 }}>
+                      <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 10 }}>
                         {isAr ? 'مقفل حتى الاعتماد' : lang === 'zh' ? '通过前保持锁定' : 'Locked until approval'}
                       </p>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -4304,7 +4304,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           isAr ? 'تقديم العروض'   : lang === 'zh' ? '提交报价'  : 'Submit offers',
                           isAr ? 'الرسائل'         : lang === 'zh' ? '消息'      : 'Messages',
                         ].map(f => (
-                          <span key={f} style={{ padding: '7px 14px', borderRadius: 99, border: `1px solid ${VF_C.ink10}`, background: VF_C.paper, fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                          <span key={f} style={{ padding: '7px 14px', borderRadius: 'var(--radius-chip)', border: `1px solid ${VF_C.ink10}`, background: VF_C.paper, fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                             {f} · {isAr ? 'مقفل' : lang === 'zh' ? '锁定' : 'Locked'}
                           </span>
                         ))}
@@ -4313,7 +4313,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                     {/* What's next */}
                     <div className="vf-fu" style={{ marginBottom: 24, animationDelay: '0.26s' }}>
-                      <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', overflow: 'hidden' }}>
                         {[
                           { title: isAr ? 'راقب بريدك الإلكتروني' : lang === 'zh' ? '关注邮箱通知' : 'Watch your email',
                             body:  isAr ? 'ستصلك رسالة فور اعتماد حسابك من فريق مَعبر' : lang === 'zh' ? '账户通过后系统会自动发邮件通知您' : 'You will get an email as soon as your account is approved' },
@@ -4323,10 +4323,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             body:  isAr ? 'تواصل معنا على support@maabar.io' : lang === 'zh' ? '联系我们：support@maabar.io' : 'Contact us at support@maabar.io' },
                         ].map(({ title, body }, i) => (
                           <div key={i} className="vf-next-item" style={{ borderBottom: i < 2 ? `1px solid ${VF_C.ink05}` : 'none' }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: VF_C.ink10, marginTop: 7, flexShrink: 0 }} />
+                            <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: VF_C.ink10, marginTop: 7, flexShrink: 0 }} />
                             <div>
-                              <p style={{ fontSize: 14, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 500, marginBottom: 3 }}>{title}</p>
-                              <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, lineHeight: 1.6 }}>{body}</p>
+                              <p style={{ fontSize: 14, color: VF_C.ink, fontFamily: 'var(--font-ar)', fontWeight: 500, marginBottom: 3 }}>{title}</p>
+                              <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, lineHeight: 1.6 }}>{body}</p>
                             </div>
                           </div>
                         ))}
@@ -4334,8 +4334,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     </div>
 
                     {/* Amber note */}
-                    <div className="vf-fu" style={{ animationDelay: '0.32s', padding: '14px 18px', borderRadius: 10, background: VF_C.amberBg, border: `1px solid ${VF_C.amberBr}` }}>
-                      <p style={{ fontSize: 13, color: VF_C.amber, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, lineHeight: 1.7 }}>
+                    <div className="vf-fu" style={{ animationDelay: '0.32s', padding: '14px 18px', borderRadius: 'var(--radius-panel)', background: VF_C.amberBg, border: `1px solid ${VF_C.amberBr}` }}>
+                      <p style={{ fontSize: 13, color: VF_C.amber, fontFamily: 'var(--font-ar)', fontWeight: 400, lineHeight: 1.7 }}>
                         {isAr
                           ? 'يتم حفظ ملفاتك داخل تخزين خاص ولا تُعرض بروابط عامة. بياناتك في أمان.'
                           : lang === 'zh'
@@ -4349,20 +4349,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 {/* ── SUCCESS SCREEN ── */}
                 {showVfSuccess && (
                   <div className="vf-fi" style={{ textAlign: 'center', paddingTop: 8 }}>
-                    <div style={{ width: 68, height: 68, borderRadius: '50%', background: VF_C.sageBg, border: `1.5px solid ${VF_C.sageBr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', animation: 'vf-ringPulse 1.2s ease 0.4s' }}>
+                    <div style={{ width: 68, height: 68, borderRadius: 'var(--radius-full)', background: VF_C.sageBg, border: `1.5px solid ${VF_C.sageBr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', animation: 'vf-ringPulse 1.2s ease 0.4s' }}>
                       <VfChk size={28} color={VF_C.sage} />
                     </div>
-                    <p style={{ fontSize: 11, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 12 }}>
+                    <p style={{ fontSize: 11, color: VF_C.sage, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 12 }}>
                       {isAr ? 'تم الإرسال بنجاح' : lang === 'zh' ? '提交成功' : 'Submitted successfully'}
                     </p>
-                    <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 40, fontWeight: 300, color: VF_C.ink, letterSpacing: -1, lineHeight: 1.15, marginBottom: 16 }}>
+                    <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 40, fontWeight: 300, color: VF_C.ink, letterSpacing: -1, lineHeight: 1.15, marginBottom: 16 }}>
                       {isAr ? 'طلبك في أيدي' : lang === 'zh' ? '您的申请已交到' : 'Your request is in the hands of'}
                       <br />
                       <em style={{ fontStyle: 'italic', color: VF_C.ink60 }}>
                         {isAr ? 'فريق مَعبر' : lang === 'zh' ? 'Maabar 团队' : 'the Maabar team'}
                       </em>
                     </h1>
-                    <p style={{ fontSize: 15, lineHeight: 1.9, color: VF_C.ink60, fontWeight: 300, maxWidth: 340, margin: '0 auto 36px', fontFamily: 'Tajawal, sans-serif' }}>
+                    <p style={{ fontSize: 15, lineHeight: 1.9, color: VF_C.ink60, fontWeight: 300, maxWidth: 340, margin: '0 auto 36px', fontFamily: 'var(--font-ar)' }}>
                       {isAr
                         ? 'سنراجع طلبك ونتواصل معك خلال 72 ساعة.'
                         : lang === 'zh'
@@ -4372,7 +4372,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     <div style={{ marginBottom: 36 }}>
                       <VfStepBadges currentState="success" isAr={isAr} lang={lang} />
                     </div>
-                    <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', padding: '0 20px', textAlign: isAr ? 'right' : 'left', marginBottom: 32 }}>
+                    <div style={{ background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', overflow: 'hidden', padding: '0 20px', textAlign: isAr ? 'right' : 'left', marginBottom: 32 }}>
                       {[
                         { title: isAr ? 'راقب بريدك الإلكتروني' : lang === 'zh' ? '关注邮箱' : 'Watch your email',
                           body:  isAr ? 'ستصلك رسالة فور اعتماد حسابك' : lang === 'zh' ? '账户通过后会收到邮件' : 'You will be notified when approved' },
@@ -4382,10 +4382,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           body:  'support@maabar.io' },
                       ].map(({ title, body }, i) => (
                         <div key={i} style={{ display: 'flex', gap: 14, padding: '16px 0', borderBottom: i < 2 ? `1px solid ${VF_C.ink05}` : 'none', alignItems: 'flex-start' }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: VF_C.ink10, marginTop: 7, flexShrink: 0 }} />
+                          <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: VF_C.ink10, marginTop: 7, flexShrink: 0 }} />
                           <div>
-                            <p style={{ fontSize: 14, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 500, marginBottom: 3 }}>{title}</p>
-                            <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, lineHeight: 1.6 }}>{body}</p>
+                            <p style={{ fontSize: 14, color: VF_C.ink, fontFamily: 'var(--font-ar)', fontWeight: 500, marginBottom: 3 }}>{title}</p>
+                            <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, lineHeight: 1.6 }}>{body}</p>
                           </div>
                         </div>
                       ))}
@@ -4403,14 +4403,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   <div>
                     <VfDotStepper step={verificationStep} />
                     <div className="vf-fu" style={{ marginBottom: 36 }}>
-                      <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 300, color: VF_C.ink, letterSpacing: -0.8, lineHeight: 1.2, marginBottom: 6 }}>
+                      <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 38, fontWeight: 300, color: VF_C.ink, letterSpacing: -0.8, lineHeight: 1.2, marginBottom: 6 }}>
                         {verificationStep === 1
                           ? (isAr ? 'بيانات الشركة'      : lang === 'zh' ? '公司资料' : 'Company Profile')
                           : verificationStep === 2
                             ? (isAr ? 'ملفات التحقق'      : lang === 'zh' ? '认证文件' : 'Verification Files')
                             : (isAr ? 'المراجعة النهائية' : lang === 'zh' ? '最终确认' : 'Final Review')}
                       </h1>
-                      <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                      <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                         {verificationStep === 1
                           ? (isAr ? 'معلومات شركتك — تُحفظ مباشرة في حسابك' : lang === 'zh' ? '公司信息将直接保存到您的账户' : 'Company info — saved directly to your account')
                           : verificationStep === 2
@@ -4421,8 +4421,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                     {/* Draft saved note */}
                     {verificationDraftSavedLabel && (
-                      <div style={{ marginBottom: 18, padding: '10px 16px', borderRadius: 10, border: `1px solid ${VF_C.ink10}`, background: VF_C.paper }}>
-                        <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                      <div style={{ marginBottom: 18, padding: '10px 16px', borderRadius: 'var(--radius-panel)', border: `1px solid ${VF_C.ink10}`, background: VF_C.paper }}>
+                        <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                           {isAr ? `يتم حفظ المسودة محلياً. آخر حفظ: ${verificationDraftSavedLabel}` : lang === 'zh' ? `草稿已自动保存。最近保存：${verificationDraftSavedLabel}` : `Draft saved locally. Last saved: ${verificationDraftSavedLabel}`}
                         </p>
                       </div>
@@ -4430,8 +4430,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                     {/* Error / success messages */}
                     {verificationMsg && (
-                      <div className="vf-fi" style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, border: `1px solid ${verificationSaved ? VF_C.sageBr : 'rgba(160,112,112,0.2)'}`, background: verificationSaved ? VF_C.sageBg : 'rgba(160,112,112,0.07)' }}>
-                        <p style={{ fontSize: 13, color: verificationSaved ? VF_C.sage : '#a07070', fontFamily: 'Tajawal, sans-serif', fontWeight: 400, lineHeight: 1.7 }}>{verificationMsg}</p>
+                      <div className="vf-fi" style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 'var(--radius-panel)', border: `1px solid ${verificationSaved ? VF_C.sageBr : 'rgba(224,92,92,0.2)'}`, background: verificationSaved ? VF_C.sageBg : 'rgba(224,92,92,0.07)' }}>
+                        <p style={{ fontSize: 13, color: verificationSaved ? VF_C.sage : 'var(--red)', fontFamily: 'var(--font-ar)', fontWeight: 400, lineHeight: 1.7 }}>{verificationMsg}</p>
                       </div>
                     )}
 
@@ -4439,8 +4439,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     {verificationStep === 1 && (
                       <div>
                         {settingsMsg && (
-                          <div className="vf-fi" style={{ marginBottom: 20, padding: '11px 16px', borderRadius: 10, background: settingsMsgType === 'success' ? VF_C.sageBg : 'rgba(160,112,112,0.07)', border: `1px solid ${settingsMsgType === 'success' ? VF_C.sageBr : 'rgba(160,112,112,0.2)'}` }}>
-                            <p style={{ fontSize: 13, color: settingsMsgType === 'success' ? VF_C.sage : '#a07070', fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{settingsMsg}</p>
+                          <div className="vf-fi" style={{ marginBottom: 20, padding: '11px 16px', borderRadius: 'var(--radius-panel)', background: settingsMsgType === 'success' ? VF_C.sageBg : 'rgba(224,92,92,0.07)', border: `1px solid ${settingsMsgType === 'success' ? VF_C.sageBr : 'rgba(224,92,92,0.2)'}` }}>
+                            <p style={{ fontSize: 13, color: settingsMsgType === 'success' ? VF_C.sage : 'var(--red)', fontFamily: 'var(--font-ar)', fontWeight: 400 }}>{settingsMsg}</p>
                           </div>
                         )}
 
@@ -4529,32 +4529,32 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                         {/* License */}
                         <div className="vf-fu" style={{ animationDelay: '0.2s', marginBottom: 12 }}>
-                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 8 }}>
                             {isAr ? 'رخصة الأعمال أو هوية المنشأة *' : lang === 'zh' ? '营业执照或企业证明 *' : 'Business License or Company ID *'}
                           </p>
                           {verification.license_photo ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 'var(--radius-panel)', background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
                               <VfChk size={13} />
-                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'var(--font-ar)', flex: 1, fontWeight: 400 }}>
                                 {isAr ? 'رخصة الأعمال — مرفوعة' : lang === 'zh' ? '营业执照 — 已上传' : 'License — uploaded'}
                               </p>
-                              <button onClick={() => openVerificationDoc(verification.license_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <button onClick={() => openVerificationDoc(verification.license_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
                               </button>
-                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'استبدال' : lang === 'zh' ? '更换' : 'Replace'}
                                 <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'license'); e.target.value = ''; }} />
                               </label>
                             </div>
                           ) : (
-                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
                               {uploadingVerificationDoc.license
-                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)' }}>...</p>
                                 : <>
-                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 4 }}>
                                       {isAr ? 'رفع الملف' : lang === 'zh' ? '上传文件' : 'Upload file'}
                                     </p>
-                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                                       PDF {isAr ? 'أو صورة' : lang === 'zh' ? '或图片' : 'or image'} · 10MB
                                     </p>
                                   </>
@@ -4566,32 +4566,32 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                         {/* Legal Representative ID — required */}
                         <div className="vf-fu" style={{ animationDelay: '0.22s', marginBottom: 12 }}>
-                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
-                            {t.legalRepIdLabel}<span style={{ color: 'var(--error, #e53e3e)', marginInlineStart: 4 }}>*</span>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 8 }}>
+                            {t.legalRepIdLabel}<span style={{ color: 'var(--error, var(--red))', marginInlineStart: 4 }}>*</span>
                           </p>
                           {verification.legal_rep_id_photo ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 'var(--radius-panel)', background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
                               <VfChk size={13} />
-                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'var(--font-ar)', flex: 1, fontWeight: 400 }}>
                                 {isAr ? 'هوية الممثل القانوني — مرفوعة' : lang === 'zh' ? '法定代表人身份证 — 已上传' : 'Legal Rep. ID — uploaded'}
                               </p>
-                              <button onClick={() => openVerificationDoc(verification.legal_rep_id_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <button onClick={() => openVerificationDoc(verification.legal_rep_id_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
                               </button>
-                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'استبدال' : lang === 'zh' ? '更换' : 'Replace'}
                                 <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'legal_rep_id'); e.target.value = ''; }} />
                               </label>
                             </div>
                           ) : (
-                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
                               {uploadingVerificationDoc.legal_rep_id
-                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)' }}>...</p>
                                 : <>
-                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 4 }}>
                                       {isAr ? 'رفع الملف' : lang === 'zh' ? '上传文件' : 'Upload file'}
                                     </p>
-                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                                       PDF {isAr ? 'أو صورة' : lang === 'zh' ? '或图片' : 'or image'} · 10MB
                                     </p>
                                   </>
@@ -4603,32 +4603,32 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                         {/* Factory/Office Address Proof — required */}
                         <div className="vf-fu" style={{ animationDelay: '0.24s', marginBottom: 12 }}>
-                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
-                            {t.addressProofLabel}<span style={{ color: 'var(--error, #e53e3e)', marginInlineStart: 4 }}>*</span>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 8 }}>
+                            {t.addressProofLabel}<span style={{ color: 'var(--error, var(--red))', marginInlineStart: 4 }}>*</span>
                           </p>
                           {verification.address_proof_photo ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 'var(--radius-panel)', background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
                               <VfChk size={13} />
-                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'var(--font-ar)', flex: 1, fontWeight: 400 }}>
                                 {isAr ? 'إثبات عنوان المصنع — مرفوع' : lang === 'zh' ? '工厂/办公室地址证明 — 已上传' : 'Address proof — uploaded'}
                               </p>
-                              <button onClick={() => openVerificationDoc(verification.address_proof_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <button onClick={() => openVerificationDoc(verification.address_proof_photo)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
                               </button>
-                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <label style={{ color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'استبدال' : lang === 'zh' ? '更换' : 'Replace'}
                                 <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={async e => { await uploadVerificationDoc(e.target.files?.[0], 'address_proof'); e.target.value = ''; }} />
                               </label>
                             </div>
                           ) : (
-                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', padding: '26px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s', background: VF_C.paper }}>
                               {uploadingVerificationDoc.address_proof
-                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)' }}>...</p>
                                 : <>
-                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 4 }}>
                                       {isAr ? 'رفع الملف' : lang === 'zh' ? '上传文件' : 'Upload file'}
                                     </p>
-                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                                       PDF {isAr ? 'أو صورة' : lang === 'zh' ? '或图片' : 'or image'} · 10MB
                                     </p>
                                   </>
@@ -4640,29 +4640,29 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                         {/* Factory images */}
                         <div className="vf-fu" style={{ animationDelay: '0.25s', marginBottom: 12 }}>
-                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 8 }}>
                             {isAr ? 'صور المصنع أو المستودع *' : lang === 'zh' ? '工厂或仓库照片 *' : 'Factory or Warehouse Photos *'}
                             <span style={{ fontSize: 11, color: VF_C.ink30, fontWeight: 300, marginRight: 6 }}>{verificationImages.length}/{VERIFICATION_IMAGE_LIMIT}</span>
                           </p>
                           {verificationImages.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {verificationImages.map((item, i) => (
-                                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 'var(--radius-panel)', background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
                                   <VfChk size={13} />
-                                  <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                                  <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'var(--font-ar)', flex: 1, fontWeight: 400 }}>
                                     {isAr ? `صورة ${i + 1}` : lang === 'zh' ? `图片 ${i + 1}` : `Image ${i + 1}`}
                                   </p>
-                                  <button onClick={() => openVerificationDoc(item)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                  <button onClick={() => openVerificationDoc(item)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                     {isAr ? 'عرض' : lang === 'zh' ? '查看' : 'View'}
                                   </button>
-                                  <button onClick={() => removeVerificationMedia('image', item)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                                  <button onClick={() => removeVerificationMedia('image', item)} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                     {isAr ? 'حذف' : lang === 'zh' ? '删除' : 'Remove'}
                                   </button>
                                 </div>
                               ))}
                               {verificationImages.length < VERIFICATION_IMAGE_LIMIT && (
-                                <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '14px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
-                                  <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>
+                                <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', padding: '14px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
+                                  <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400 }}>
                                     + {isAr ? 'إضافة صورة' : lang === 'zh' ? '添加图片' : 'Add image'}
                                   </p>
                                   <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => { await uploadVerificationMedia(e.target.files, 'image'); e.target.value = ''; }} />
@@ -4670,14 +4670,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                               )}
                             </div>
                           ) : (
-                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 10, padding: '26px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
+                            <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', padding: '26px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
                               {uploadingVerificationDoc.images
-                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif' }}>...</p>
+                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)' }}>...</p>
                                 : <>
-                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 4 }}>
+                                    <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 4 }}>
                                       {isAr ? 'صور المصنع أو المستودع' : lang === 'zh' ? '工厂或仓库照片' : 'Factory or warehouse photos'}
                                     </p>
-                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300 }}>
+                                    <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300 }}>
                                       {isAr ? 'حتى 5 صور · JPG أو PNG' : lang === 'zh' ? '最多 5 张 · JPG 或 PNG' : 'Up to 5 photos · JPG or PNG'}
                                     </p>
                                   </>
@@ -4689,30 +4689,30 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                         {/* Factory video — required */}
                         <div className="vf-fu" style={{ animationDelay: '0.3s', marginBottom: 12 }}>
-                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 400, marginBottom: 8 }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 8 }}>
                             {isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory Video'}
-                            <span style={{ color: 'var(--error, #e53e3e)', marginRight: 4 }}>*</span>
+                            <span style={{ color: 'var(--error, var(--red))', marginRight: 4 }}>*</span>
                           </p>
                           {verificationVideos.length > 0 ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 'var(--radius-panel)', background: VF_C.sageBg, border: `1px solid ${VF_C.sageBr}` }}>
                               <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill={VF_C.sage} /></svg>
-                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'Tajawal, sans-serif', flex: 1, fontWeight: 400 }}>
+                              <p style={{ fontSize: 13, color: VF_C.sage, fontFamily: 'var(--font-ar)', flex: 1, fontWeight: 400 }}>
                                 {isAr ? 'فيديو المصنع — مرفوع' : lang === 'zh' ? '工厂视频 — 已上传' : 'Factory video — uploaded'}
                               </p>
-                              <button onClick={() => removeVerificationMedia('video', verificationVideos[0])} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'Tajawal, sans-serif', cursor: 'pointer' }}>
+                              <button onClick={() => removeVerificationMedia('video', verificationVideos[0])} style={{ background: 'none', border: 'none', color: VF_C.ink30, fontSize: 12, fontFamily: 'var(--font-ar)', cursor: 'pointer' }}>
                                 {isAr ? 'حذف' : lang === 'zh' ? '删除' : 'Remove'}
                               </button>
                             </div>
                           ) : (
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 10, border: `1px dashed ${VF_C.ink10}`, background: VF_C.paper, cursor: 'pointer' }}>
-                              <div style={{ width: 34, height: 34, borderRadius: 8, background: VF_C.ink05, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 'var(--radius-panel)', border: `1px dashed ${VF_C.ink10}`, background: VF_C.paper, cursor: 'pointer' }}>
+                              <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-control)', background: VF_C.ink05, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill={VF_C.ink30} /></svg>
                               </div>
                               <div>
-                                <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>
+                                <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400 }}>
                                   {isAr ? 'رفع فيديو' : lang === 'zh' ? '上传视频' : 'Upload video'}
                                 </p>
-                                <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, marginTop: 2 }}>
+                                <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, marginTop: 2 }}>
                                   {isAr ? 'جولة في المصنع · MP4 · حتى 50MB' : lang === 'zh' ? '工厂参观视频 · MP4 · 最大 50MB' : 'Factory tour · MP4 · Max 50MB'}
                                 </p>
                               </div>
@@ -4722,8 +4722,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         </div>
 
                         {/* Privacy note — visible below all upload fields */}
-                        <div className="vf-fu" style={{ animationDelay: '0.34s', marginTop: 18, marginBottom: 6, padding: '12px 16px', borderRadius: 10, background: VF_C.paper, border: `1px solid ${VF_C.ink10}` }}>
-                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, lineHeight: 1.7, margin: 0 }}>
+                        <div className="vf-fu" style={{ animationDelay: '0.34s', marginTop: 18, marginBottom: 6, padding: '12px 16px', borderRadius: 'var(--radius-panel)', background: VF_C.paper, border: `1px solid ${VF_C.ink10}` }}>
+                          <p style={{ fontSize: 12, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, lineHeight: 1.7, margin: 0 }}>
                             {t.verificationPrivacyNote}
                           </p>
                         </div>
@@ -4752,7 +4752,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     {/* ── STEP 3 ── */}
                     {verificationStep === 3 && (
                       <div>
-                        <div className="vf-fu" style={{ animationDelay: '0s', background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
+                        <div className="vf-fu" style={{ animationDelay: '0s', background: VF_C.white, border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', overflow: 'hidden', marginBottom: 24 }}>
                           {[
                             [isAr ? 'اسم الشركة'       : lang === 'zh' ? '公司名称'   : 'Company',       settings.company_name || '—'],
                             [isAr ? 'المدينة / الدولة'  : lang === 'zh' ? '城市 / 国家' : 'City / Country', `${settings.city || '—'} · ${settings.country || '—'}`],
@@ -4768,8 +4768,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             ...(verificationVideos.length > 0 ? [[isAr ? 'فيديو المصنع' : lang === 'zh' ? '工厂视频' : 'Factory video', isAr ? 'مرفوع ✓' : lang === 'zh' ? '已上传 ✓' : 'Uploaded ✓']] : []),
                           ].map(([k, v], i, arr) => (
                             <div key={k} className="vf-review-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${VF_C.ink05}` : 'none' }}>
-                              <span style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'Tajawal, sans-serif', fontWeight: 300, flexShrink: 0 }}>{k}</span>
-                              <span style={{ fontSize: 13, color: VF_C.ink, fontFamily: 'Tajawal, sans-serif', fontWeight: 400 }}>{v}</span>
+                              <span style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, flexShrink: 0 }}>{k}</span>
+                              <span style={{ fontSize: 13, color: VF_C.ink, fontFamily: 'var(--font-ar)', fontWeight: 400 }}>{v}</span>
                             </div>
                           ))}
                         </div>
@@ -4851,11 +4851,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         {isAr ? 'جاري حفظ بيانات الدفعات...' : lang === 'zh' ? '正在保存收款信息…' : 'Saving payout details...'}
                       </p>
                     ) : payoutError ? (
-                      <p style={{ margin: 0, fontSize: 12, color: '#a07070', ...arFont }}>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--red)', ...arFont }}>
                         {payoutError}
                       </p>
                     ) : hasSavedPayoutRecord && !isPayoutDirty ? (
-                      <p style={{ margin: 0, fontSize: 12, color: '#5a9a72', ...arFont }}>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--green)', ...arFont }}>
                         {isAr
                           ? `تم حفظ بيانات الدفعات بنجاح${resolvedPayoutSavedAt ? ` · آخر حفظ ${formatDraftSavedAt(resolvedPayoutSavedAt, lang)}` : ''}`
                           : lang === 'zh'
@@ -4875,7 +4875,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
           {/* ── SETTINGS ── */}
           {activeTab === 'settings' && (
-            <div style={{ ...section, background: '#f5f3ef', paddingBottom: 60 }}>
+            <div style={{ ...section, background: 'var(--bg-page)', paddingBottom: 60 }}>
               <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 26 : 32, fontWeight: 300, marginBottom: 24, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : -0.5 }}>
                 {t.settingsTitle}
@@ -4884,8 +4884,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 760 }}>
 
                 {/* ── Card 1: Verification status ── */}
-                <div style={{ background: '#ede8dc', border: '1px solid #d8d0be', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 14 }}>
+                <div style={{ background: 'var(--bg-hero)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 14 }}>
                     {isAr ? 'حالة التحقق' : lang === 'zh' ? '验证状态' : 'Verification Status'}
                   </p>
                   <h3 style={{ fontSize: isAr ? 18 : 20, fontWeight: 400, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : -0.2 }}>
@@ -4895,10 +4895,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     {verificationStatusBody}
                   </p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.22)', color: '#2d7a4f', fontFamily: "'Tajawal', sans-serif" }}>
+                    <span style={{ padding: '5px 12px', borderRadius: 'var(--radius-chip)', fontSize: 11, background: 'rgba(45,122,79,0.10)', border: '1px solid rgba(45,122,79,0.22)', color: 'var(--green)', fontFamily: 'var(--font-ar)' }}>
                       {isAr ? `اكتمال الملف: ${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}` : lang === 'zh' ? `资料完成度：${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}` : `Profile: ${profileReadiness.completedRequiredCount}/${profileReadiness.totalRequiredCount}`}
                     </span>
-                    <span style={{ padding: '5px 12px', borderRadius: 999, fontSize: 11, background: 'rgba(217,148,0,0.08)', border: '1px solid rgba(217,148,0,0.22)', color: '#b07800', fontFamily: "'Tajawal', sans-serif" }}>
+                    <span style={{ padding: '5px 12px', borderRadius: 'var(--radius-chip)', fontSize: 11, background: 'rgba(160,136,80,0.08)', border: '1px solid rgba(160,136,80,0.22)', color: 'var(--warn)', fontFamily: 'var(--font-ar)' }}>
                       {supplierState.isApprovedStage
                         ? (isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified')
                         : supplierState.isUnderReviewStage
@@ -4909,27 +4909,27 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
 
                 {/* ── Card 2: Visual identity ── */}
-                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 18 }}>
                     {isAr ? 'الهوية البصرية' : lang === 'zh' ? '品牌素材' : 'Visual Identity'}
                   </p>
 
                   {/* Cover photo — full-width preview above the logo/factory grid */}
                   <div style={{ marginBottom: 20 }}>
-                    <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', marginBottom: 12 }}>
                       {isAr ? 'صورة الغلاف' : lang === 'zh' ? '封面图片' : 'Cover Photo'}
                     </p>
                     {settings.cover_photo_url ? (
-                      <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e5de' }}>
+                      <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 'var(--radius-control)', overflow: 'hidden', border: '1px solid var(--border)' }}>
                         <img src={settings.cover_photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button
                           onClick={removeCoverPhoto}
                           title={isAr ? 'إزالة' : lang === 'zh' ? '移除' : 'Remove'}
-                          style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                          style={{ position: 'absolute', top: 6, right: 6, background: 'var(--ink)', color: 'var(--on-dark)', border: 'none', width: 22, height: 22, borderRadius: 'var(--radius-full)', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                         <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadCoverPhoto} />
                         <button
                           onClick={() => coverRef.current?.click()}
-                          style={{ position: 'absolute', bottom: 6, right: 6, background: '#1a1814', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontFamily: "'Tajawal', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
+                          style={{ position: 'absolute', bottom: 6, right: 6, background: 'var(--ink)', color: 'var(--on-dark)', border: 'none', borderRadius: 'var(--radius-control)', padding: '5px 10px', fontSize: 11, fontFamily: 'var(--font-ar)', fontWeight: 500, cursor: 'pointer' }}>
                           {uploadingCover
                             ? (isAr ? 'جاري الرفع...' : lang === 'zh' ? '上传中...' : 'Uploading...')
                             : (isAr ? 'تغيير الغلاف' : lang === 'zh' ? '更换封面' : 'Change cover')}
@@ -4940,9 +4940,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadCoverPhoto} />
                         <div
                           onClick={() => coverRef.current?.click()}
-                          style={{ width: '100%', height: 100, borderRadius: 8, border: '1px dashed #c8c4bc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s', fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif" }}
-                          onMouseEnter={e => e.currentTarget.style.borderColor = '#1a1814'}
-                          onMouseLeave={e => e.currentTarget.style.borderColor = '#c8c4bc'}>
+                          style={{ width: '100%', height: 100, borderRadius: 'var(--radius-control)', border: '1px dashed var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)' }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--ink)'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}>
                           {uploadingCover
                             ? (isAr ? 'جاري الرفع...' : lang === 'zh' ? '上传中...' : 'Uploading...')
                             : (isAr ? '+ رفع صورة الغلاف' : lang === 'zh' ? '+ 上传封面' : '+ Upload cover photo')}
@@ -4953,9 +4953,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div>
-                      <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>{t.logo}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', marginBottom: 12 }}>{t.logo}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#e8e5de', border: '1px solid #d8d5ce', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-full)', background: 'var(--border)', border: '1px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                           {settings.avatar_url
                             ? <img src={settings.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             : <span style={{ fontSize: 20, opacity: 0.3 }}>◻</span>}
@@ -4964,22 +4964,22 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           <input ref={logoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadLogo} />
                           <button
                             onClick={() => logoRef.current?.click()}
-                            style={{ background: '#1a1814', color: '#ffffff', border: 'none', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontFamily: "'Tajawal', sans-serif", fontWeight: 500, cursor: 'pointer', marginBottom: 6, display: 'block' }}>
+                            style={{ background: 'var(--ink)', color: 'var(--on-dark)', border: 'none', borderRadius: 'var(--radius-control)', padding: '7px 14px', fontSize: 12, fontFamily: 'var(--font-ar)', fontWeight: 500, cursor: 'pointer', marginBottom: 6, display: 'block' }}>
                             {uploadingLogo ? t.uploadingLogo : t.uploadLogo}
                           </button>
-                          <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif" }}>
+                          <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)' }}>
                             {isAr ? 'JPG أو PNG · حتى 5MB' : lang === 'zh' ? 'JPG 或 PNG · 最大 5MB' : 'JPG or PNG · Max 5MB'}
                           </p>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <p style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginBottom: 12 }}>{t.factoryImages}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', marginBottom: 12 }}>{t.factoryImages}</p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {(settings.factory_images || []).map((img, i) => (
-                          <div key={i} style={{ width: 64, height: 64, borderRadius: 8, overflow: 'hidden', position: 'relative', flexShrink: 0, border: '1px solid #e8e5de' }}>
+                          <div key={i} style={{ width: 64, height: 64, borderRadius: 'var(--radius-control)', overflow: 'hidden', position: 'relative', flexShrink: 0, border: '1px solid var(--border)' }}>
                             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <button onClick={() => removeFactoryImage(img)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', width: 16, height: 16, borderRadius: '50%', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                            <button onClick={() => removeFactoryImage(img)} style={{ position: 'absolute', top: 3, right: 3, background: 'var(--ink)', color: 'var(--on-dark)', border: 'none', width: 16, height: 16, borderRadius: 'var(--radius-full)', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                           </div>
                         ))}
                         {(settings.factory_images || []).length < 3 && (
@@ -4987,12 +4987,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             <input ref={factoryRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadFactoryImage} />
                             <div
                               onClick={() => factoryRef.current?.click()}
-                              style={{ width: 64, height: 64, borderRadius: 8, border: '1px dashed #c8c4bc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
-                              onMouseEnter={e => e.currentTarget.style.borderColor = '#1a1814'}
-                              onMouseLeave={e => e.currentTarget.style.borderColor = '#c8c4bc'}>
+                              style={{ width: 64, height: 64, borderRadius: 'var(--radius-control)', border: '1px dashed var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--ink)'}
+                              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}>
                               {uploadingFactory
-                                ? <span style={{ fontSize: 10, color: '#b0ab9e' }}>...</span>
-                                : <span style={{ fontSize: 20, color: '#b0ab9e' }}>+</span>}
+                                ? <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>...</span>
+                                : <span style={{ fontSize: 20, color: 'var(--text-muted)' }}>+</span>}
                             </div>
                           </>
                         )}
@@ -5002,17 +5002,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
 
                 {/* ── Card 3: Company info ── */}
-                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 18 }}>
                     {isAr ? 'معلومات الشركة' : lang === 'zh' ? '公司信息' : 'Company Info'}
                   </p>
                   <div className="settings-form-grid">
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.companyName} *</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.companyName} *</label>
                       <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_name || ''} onChange={e => setSettings(prev => ({ ...prev, company_name: e.target.value }))} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'نوع النشاط التجاري' : lang === 'zh' ? '企业类型' : 'Business type'}
                       </label>
                       <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.business_type || ''} onChange={e => setSettings(prev => ({ ...prev, business_type: e.target.value }))}>
@@ -5024,34 +5024,34 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.speciality}</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.speciality}</label>
                       <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.speciality || ''} onChange={e => setSettings(prev => ({ ...prev, speciality: e.target.value }))}>
                         <option value="">{isAr ? 'اختر' : lang === 'zh' ? '请选择' : 'Select'}</option>
                         {CATEGORIES[lang]?.filter(c => c.val !== 'all').map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Year established'}
                       </label>
                       <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.year_established || ''} onChange={e => setSettings(prev => ({ ...prev, year_established: e.target.value }))} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.city} *</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.city} *</label>
                       <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.city || ''} onChange={e => setSettings(prev => ({ ...prev, city: e.target.value }))} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.country} *</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.country} *</label>
                       <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.country || ''} onChange={e => setSettings(prev => ({ ...prev, country: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'عنوان الشركة' : lang === 'zh' ? '公司地址' : 'Company address'}
                       </label>
                       <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.company_address || ''} onChange={e => setSettings(prev => ({ ...prev, company_address: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'موقع الشركة الإلكتروني' : lang === 'zh' ? '公司官网链接' : 'Company website URL'}
                       </label>
                       <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.company_website || ''} onChange={e => setSettings(prev => ({ ...prev, company_website: e.target.value }))} />
@@ -5060,25 +5060,25 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
 
                 {/* ── Card 4: Contact details ── */}
-                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 18 }}>
                     {isAr ? 'بيانات التواصل' : lang === 'zh' ? '联系方式' : 'Contact Details'}
                   </p>
                   <div className="settings-form-grid">
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.whatsapp}</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.whatsapp}</label>
                       <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="tel" value={settings.whatsapp || ''} onChange={e => setSettings(prev => ({ ...prev, whatsapp: e.target.value }))} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.wechat}</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.wechat}</label>
                       <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="text" value={settings.wechat || ''} onChange={e => setSettings(prev => ({ ...prev, wechat: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages'}
                       </label>
                       <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.languages || ''} onChange={e => setSettings(prev => ({ ...prev, languages: e.target.value }))} />
-                      <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 6 }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', marginTop: 6 }}>
                         {isAr ? 'اكتبها مفصولة بفواصل أو أسطر جديدة' : lang === 'zh' ? '可用逗号或换行分隔' : 'Separate with commas or line breaks'}
                       </p>
                     </div>
@@ -5086,19 +5086,19 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
 
                 {/* ── Card 5: Commercial details ── */}
-                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 18 }}>
                     {isAr ? 'التفاصيل التجارية' : lang === 'zh' ? '商业资料' : 'Commercial Details'}
                   </p>
                   <div className="settings-form-grid">
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'الحد الأدنى لقيمة الطلب (USD)' : lang === 'zh' ? '最低订单金额 (USD)' : 'Minimum order value (USD)'}
                       </label>
                       <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="number" value={settings.min_order_value || ''} onChange={e => setSettings(prev => ({ ...prev, min_order_value: e.target.value }))} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'عملة العرض' : lang === 'zh' ? '显示货币' : 'Display currency'}
                       </label>
                       <select className="settings-select" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr', width: '100%' }} value={settings.preferred_display_currency || 'USD'} onChange={e => setSettings(prev => ({ ...prev, preferred_display_currency: e.target.value }))}>
@@ -5106,7 +5106,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'دعم التخصيص' : lang === 'zh' ? '定制支持' : 'Customization support'}
                       </label>
                       <select className="settings-select" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', width: '100%' }} value={settings.customization_support || ''} onChange={e => setSettings(prev => ({ ...prev, customization_support: e.target.value }))}>
@@ -5118,15 +5118,15 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </select>
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>{t.tradeLink} *</label>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>{t.tradeLink} *</label>
                       <input className="settings-input" style={{ fontFamily: 'var(--font-sans)', direction: 'ltr' }} type="url" value={settings.trade_link || ''} onChange={e => setSettings(prev => ({ ...prev, trade_link: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 6 }}>
                         {isAr ? 'الأسواق التي تصدّرون إليها' : lang === 'zh' ? '出口市场' : 'Export markets'}
                       </label>
                       <input className="settings-input" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }} type="text" value={settings.export_markets || ''} onChange={e => setSettings(prev => ({ ...prev, export_markets: e.target.value }))} />
-                      <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 6 }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', marginTop: 6 }}>
                         {isAr ? 'اكتب الدول أو المناطق مفصولة بفواصل' : lang === 'zh' ? '填写国家或地区，逗号分隔' : 'List countries or regions, separated by commas'}
                       </p>
                     </div>
@@ -5134,11 +5134,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 </div>
 
                 {/* ── Card 6: Company description ── */}
-                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 18 }}>
                     {isAr ? 'وصف الشركة' : lang === 'zh' ? '公司介绍' : 'Company Description'}
                   </p>
-                  <label style={{ fontSize: 12, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", display: 'block', marginBottom: 8 }}>
+                  <label style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', display: 'block', marginBottom: 8 }}>
                     {isAr ? 'اكتب نبذة عن شركتك' : lang === 'zh' ? '请介绍您的公司' : 'Tell buyers about your company'}
                   </label>
                   <textarea
@@ -5149,14 +5149,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     onChange={e => setSettings(prev => ({ ...prev, company_description: e.target.value }))}
                     dir={isAr ? 'rtl' : 'ltr'}
                   />
-                  <p style={{ fontSize: 11, color: '#b0ab9e', fontFamily: "'Tajawal', sans-serif", marginTop: 8 }}>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-ar)', marginTop: 8 }}>
                     {isAr ? 'يمكنك الكتابة بأي لغة' : lang === 'zh' ? '可使用任意语言填写' : 'You can write in any language'}
                   </p>
                 </div>
 
                 {/* ── Card 7: Certifications ── */}
-                <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: '22px 20px' }}>
-                  <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', marginBottom: 18 }}>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-card)', padding: '22px 20px' }}>
+                  <p style={{ fontSize: 10, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 18 }}>
                     {isAr ? 'شهادات الجودة' : lang === 'zh' ? '质量认证' : 'Quality Certifications'}
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
@@ -5210,7 +5210,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                               certifications: (prev.certifications || []).filter((_, j) => j !== i),
                             }));
                           }}
-                          style={{ background: 'none', border: 'none', color: '#b0ab9e', cursor: 'pointer', fontSize: 16, padding: '8px 4px', flexShrink: 0, lineHeight: 1 }}>
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16, padding: '8px 4px', flexShrink: 0, lineHeight: 1 }}>
                           ×
                         </button>
                       </div>
@@ -5218,7 +5218,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </div>
                   <button
                     onClick={() => setSettings(prev => ({ ...prev, certifications: [...(prev.certifications || []), { name: '', issuer: '', valid_until: '' }] }))}
-                    style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#1a1814', cursor: 'pointer', fontFamily: "'Tajawal', sans-serif", fontWeight: 600, textDecoration: 'underline' }}>
+                    style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--ink)', cursor: 'pointer', fontFamily: 'var(--font-ar)', fontWeight: 600, textDecoration: 'underline' }}>
                     {isAr ? '+ إضافة شهادة' : lang === 'zh' ? '+ 添加认证' : '+ Add certification'}
                   </button>
                 </div>
@@ -5227,7 +5227,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 <button
                   onClick={saveSettings}
                   disabled={savingSettings}
-                  style={{ background: '#1a1814', color: '#ffffff', border: 'none', borderRadius: 8, padding: '13px 32px', fontFamily: "'Tajawal', sans-serif", fontSize: 14, fontWeight: 600, cursor: savingSettings ? 'default' : 'pointer', alignSelf: 'flex-start', fontVariantNumeric: 'lining-nums', opacity: savingSettings ? 0.7 : 1 }}>
+                  style={{ background: 'var(--ink)', color: 'var(--on-dark)', border: 'none', borderRadius: 'var(--radius-control)', padding: '13px 32px', fontFamily: 'var(--font-ar)', fontSize: 14, fontWeight: 600, cursor: savingSettings ? 'default' : 'pointer', alignSelf: 'flex-start', fontVariantNumeric: 'lining-nums', opacity: savingSettings ? 0.7 : 1 }}>
                   {settingsPrimaryButtonLabel}
                 </button>
 
@@ -5313,13 +5313,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           padding: 24, animation: 'fadeIn 0.2s ease',
         }}>
           <div style={{
-            background: 'var(--bg-overlay)',
-            border: '1px solid var(--border-muted)',
-            borderRadius: 'var(--radius-xl)',
+            background: 'var(--surface)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-card)',
             padding: '36px 32px',
             width: '100%', maxWidth: 440,
             animation: 'slideUp 0.25s ease',
-            boxShadow: 'var(--shadow-md)',
+            boxShadow: 'none',
           }}>
             <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>
               {isAr ? 'تعديل العرض' : lang === 'zh' ? '编辑报价' : 'Edit Offer'}
