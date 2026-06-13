@@ -1282,11 +1282,10 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       supplier_id: reviewModal.supplierId, buyer_id: user.id,
       request_id: reviewModal.requestId, rating: reviewRating, comment: reviewComment || '',
     });
-    const { data: reviews } = await sb.from('reviews').select('rating').eq('supplier_id', reviewModal.supplierId);
-    if (reviews?.length > 0) {
-      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-      await sb.from('profiles').update({ rating: avg, reviews_count: reviews.length }).eq('id', reviewModal.supplierId);
-    }
+    // profiles.rating/reviews_count are guard-protected and not directly
+    // updatable by a buyer under RLS. Recompute server-side via SECURITY
+    // DEFINER RPC, which averages the authoritative reviews table.
+    await sb.rpc('recalc_supplier_rating', { p_supplier_id: reviewModal.supplierId });
     setSubmittingReview(false);
     setSubmittedReviewIds(prev => new Set([...prev, reviewModal.requestId]));
     setReviewModal(null);

@@ -97,25 +97,14 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
       return;
     }
 
-    // Phase 7 — supplemental fetch for trade-info fields not exposed by
-    // supplier_public_profiles (port_of_loading, lead_time_min/max_days,
-    // sample_available). The verified-supplier branch of the profiles
-    // SELECT RLS policy permits this for any authenticated user. Errors
-    // are swallowed so missing columns (un-applied migrations) don't
-    // break profile loading.
-    const { data: extra, error: extraErr } = await sb
-      .from('profiles')
-      .select('port_of_loading, lead_time_min_days, lead_time_max_days, sample_available')
-      .eq('id', id)
-      .maybeSingle();
-    if (extra && !extraErr) {
-      visibleSupplier.port_of_loading    = extra.port_of_loading    || null;
-      visibleSupplier.lead_time_min_days = extra.lead_time_min_days ?? null;
-      visibleSupplier.lead_time_max_days = extra.lead_time_max_days ?? null;
-      visibleSupplier.sample_available   = extra.sample_available   ?? null;
-    } else if (extraErr) {
-      console.log('[SupplierProfile] supplemental fetch error (non-fatal):', extraErr.message);
-    }
+    // (Removed) A former supplemental fetch read port_of_loading /
+    // lead_time_min_days / lead_time_max_days / sample_available from
+    // public.profiles. Those columns live on public.products (and
+    // sample_available does not exist), never on profiles, so the query always
+    // errored and was silently swallowed — it never populated anything. Dropped
+    // as part of the RLS hardening to remove a dead base-table read. To surface
+    // supplier-level trade fields, add the columns to profiles and to
+    // supplier_public_profiles first.
 
     setSupplier(visibleSupplier);
 

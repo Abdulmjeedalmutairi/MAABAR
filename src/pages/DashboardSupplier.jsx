@@ -1701,7 +1701,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
     // Ping every admin so someone can review this managed offer.
     try {
-      const { data: admins } = await sb.from('profiles').select('id').in('role', ['admin', 'super_admin']);
+      // Admin rows are not readable by a supplier under RLS — resolve admin
+      // recipient ids via SECURITY DEFINER RPC (returns [{ id }]).
+      const { data: admins } = await sb.rpc('get_admin_user_ids');
       if (admins?.length) {
         const rows = admins.map((a) => ({
           user_id: a.id,
