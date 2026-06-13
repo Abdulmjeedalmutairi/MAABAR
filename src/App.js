@@ -45,6 +45,7 @@ import Suppliers from './pages/Suppliers';
 import Chat from './pages/Chat';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import FAQ from './pages/FAQ';
 import FAQTraders from './pages/FAQTraders';
 import FAQSuppliers from './pages/FAQSuppliers';
@@ -327,6 +328,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
         <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
+        <Route path="/privacy"        element={<Privacy         {...sharedProps} />} />
         <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
         <Route path="/faq/traders"    element={<FAQTraders      {...sharedProps} />} />
         <Route path="/faq/suppliers"  element={<FAQSuppliers    {...sharedProps} />} />
