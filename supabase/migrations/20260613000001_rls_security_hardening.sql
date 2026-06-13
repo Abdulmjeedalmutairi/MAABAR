@@ -297,11 +297,12 @@ grant execute on function public.get_admin_user_ids()         to authenticated;
 
 -- ──────────────────────────────────────────────────────────────────────────
 -- (6) reviews table RLS.
---     Previously had no RLS/policies in any migration (effectively open). Lock
---     it down with the standard ownership model (owner column = buyer_id, as
---     written by DashboardBuyer.jsx submitReview):
+--     Previously had no RLS/policies in any migration (effectively open). The
+--     reviews table is not defined in this repo; the reviewer/owner column is
+--     reviewer_id (confirmed against the live DB — note the app code still uses
+--     "buyer_id", which must be reconciled separately; see NOTE 5).
 --       • read   : anyone — reviews are shown on the public supplier profile.
---       • insert : a user may create only their OWN review (buyer_id = auth.uid()).
+--       • insert : a user may create only their OWN review (reviewer_id = auth.uid()).
 --       • update : only the author's own rows.
 --       • delete : only the author's own rows.
 --     recalc_supplier_rating() reads this table as SECURITY DEFINER, so the
@@ -321,22 +322,22 @@ create policy reviews_insert_own
   on public.reviews
   for insert
   to authenticated
-  with check (buyer_id = auth.uid());
+  with check (reviewer_id = auth.uid());
 
 drop policy if exists reviews_update_own on public.reviews;
 create policy reviews_update_own
   on public.reviews
   for update
   to authenticated
-  using (buyer_id = auth.uid())
-  with check (buyer_id = auth.uid());
+  using (reviewer_id = auth.uid())
+  with check (reviewer_id = auth.uid());
 
 drop policy if exists reviews_delete_own on public.reviews;
 create policy reviews_delete_own
   on public.reviews
   for delete
   to authenticated
-  using (buyer_id = auth.uid());
+  using (reviewer_id = auth.uid());
 
 commit;
 
@@ -404,6 +405,16 @@ commit;
 --     signInWithPassword with the session active and queries the caller's OWN
 --     row (.eq('id', data.user.id)); the self/admin SELECT policy permits it.
 --
--- public.reviews RLS is now handled explicitly in section (6): public read,
--- author-only insert/update/delete (owner column buyer_id). submitReview()'s
--- insert satisfies reviews_insert_own (buyer_id = auth.uid()).
+-- ════════════════════════════════════════════════════════════════════════════
+-- NOTE 5 — reviews owner column is reviewer_id; APP CODE STILL USES buyer_id
+-- ════════════════════════════════════════════════════════════════════════════
+-- Section (6) locks public.reviews on reviewer_id (the real column). The app
+-- still references a non-existent buyer_id, so the review feature is currently
+-- broken independent of RLS and must be reconciled to reviewer_id:
+--   • src/pages/DashboardBuyer.jsx  submitReview() insert  { buyer_id: ... }
+--                                   + existing-review SELECT .eq('buyer_id', …)
+--   • src/pages/DashboardSupplier.jsx:692
+--       attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles')
+-- These edits are NOT in this migration's companion commit — fix them so the
+-- insert satisfies reviews_insert_own (reviewer_id = auth.uid()) and author
+-- names render.

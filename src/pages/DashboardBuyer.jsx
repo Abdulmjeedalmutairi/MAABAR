@@ -1270,7 +1270,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     const { data: existingReview } = await sb.from('reviews')
       .select('id')
       .eq('supplier_id', reviewModal.supplierId)
-      .eq('buyer_id', user.id)
+      .eq('reviewer_id', user.id)
       .eq('request_id', reviewModal.requestId)
       .maybeSingle();
     if (existingReview) {
@@ -1279,7 +1279,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     }
     setSubmittingReview(true);
     await sb.from('reviews').insert({
-      supplier_id: reviewModal.supplierId, buyer_id: user.id,
+      supplier_id: reviewModal.supplierId, reviewer_id: user.id,
       request_id: reviewModal.requestId, rating: reviewRating, comment: reviewComment || '',
     });
     // profiles.rating/reviews_count are guard-protected and not directly

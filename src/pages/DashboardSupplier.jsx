@@ -689,7 +689,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
   const loadMyReviews = async () => {
     const { data } = await sb.from('reviews').select('*').eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setMyReviews(await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles'));
+    if (data) setMyReviews(await attachDirectoryProfiles(sb, data, 'reviewer_id', 'profiles'));
   };
 
   const updateSampleStatus = async (sampleId, status) => {
