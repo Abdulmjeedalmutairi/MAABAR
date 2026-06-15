@@ -889,9 +889,9 @@ async function handleSupabaseAuthHook(body: any, authHeader: string | null, head
   const tokenHash = email_data.token_hash || email_data.token;
   if (!tokenHash) throw new Error('Missing token_hash in email_data');
 
-  const redirectTo = userRole === 'supplier'
+  const redirectTo = email_data.redirect_to || (userRole === 'supplier'
     ? 'https://maabar.io/auth/callback?role=supplier&next=%2Fdashboard'
-    : 'https://maabar.io/auth/callback?next=%2Fdashboard';
+    : 'https://maabar.io/auth/callback?next=%2Fdashboard');
 
   const baseUrl = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
   const confirmUrl = `${baseUrl}/auth/v1/verify?token=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(actionType)}&redirect_to=${encodeURIComponent(redirectTo)}`;
