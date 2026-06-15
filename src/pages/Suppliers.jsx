@@ -8,37 +8,7 @@ import {
   getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
-import { getSpecialtyLabel } from '../lib/supplierDashboardConstants';
-
-const CATEGORIES = {
-  ar: [
-    { val: 'all', label: 'الكل' },
-    { val: 'electronics', label: 'إلكترونيات' },
-    { val: 'furniture', label: 'أثاث' },
-    { val: 'clothing', label: 'ملابس' },
-    { val: 'building', label: 'مواد بناء' },
-    { val: 'food', label: 'غذاء' },
-    { val: 'other', label: 'أخرى' },
-  ],
-  en: [
-    { val: 'all', label: 'All' },
-    { val: 'electronics', label: 'Electronics' },
-    { val: 'furniture', label: 'Furniture' },
-    { val: 'clothing', label: 'Clothing' },
-    { val: 'building', label: 'Building Materials' },
-    { val: 'food', label: 'Food' },
-    { val: 'other', label: 'Other' },
-  ],
-  zh: [
-    { val: 'all', label: '全部' },
-    { val: 'electronics', label: '电子产品' },
-    { val: 'furniture', label: '家具' },
-    { val: 'clothing', label: '服装' },
-    { val: 'building', label: '建材' },
-    { val: 'food', label: '食品' },
-    { val: 'other', label: '其他' },
-  ],
-};
+import { getSpecialtyLabel, UI_CATEGORIES as CATEGORIES } from '../lib/supplierDashboardConstants';
 
 const SkeletonCard = () => (
   <div style={{ background: 'var(--surface)', padding: 24, borderRadius: 'var(--radius-card)', border: '1px solid var(--border)' }}>

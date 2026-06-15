@@ -79,6 +79,11 @@ export const CATEGORIES = {
   ],
 };
 
+// Full trilingual {val,label} lists for UI pickers/filters. Includes the
+// synthetic 'all' row first (use directly for filters; for forms that select a
+// real category, filter out c.val === 'all').
+export const UI_CATEGORIES = CATEGORIES;
+
 // Map a raw category/specialty code (e.g. 'home_decor', 'auto_parts')
 // to its translated label using the CATEGORIES table above. Falls back
 // to the raw code if no entry is found, and returns '' for empty input.

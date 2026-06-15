@@ -12,6 +12,7 @@ import {
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { buildManagedBriefRow, generateManagedBriefWithAI } from '../lib/managedSourcing';
 import { buildTranslatedRequestFields, translateTextToAllLanguages } from '../lib/requestTranslation';
+import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
 import {
   DISPLAY_CURRENCIES,
   DEFAULT_DISPLAY_CURRENCY,
@@ -79,32 +80,8 @@ const translateRequestText = async (text, sourceLang, targetLang) => {
   }
 };
 
-const CATEGORIES = {
-  ar: [
-    { val: 'electronics', label: 'إلكترونيات' },
-    { val: 'furniture',   label: 'أثاث' },
-    { val: 'clothing',    label: 'ملابس' },
-    { val: 'building',    label: 'مواد بناء' },
-    { val: 'food',        label: 'غذاء' },
-    { val: 'other',       label: 'أخرى' },
-  ],
-  en: [
-    { val: 'electronics', label: 'Electronics' },
-    { val: 'furniture',   label: 'Furniture' },
-    { val: 'clothing',    label: 'Clothing' },
-    { val: 'building',    label: 'Building Materials' },
-    { val: 'food',        label: 'Food' },
-    { val: 'other',       label: 'Other' },
-  ],
-  zh: [
-    { val: 'electronics', label: '电子产品' },
-    { val: 'furniture',   label: '家具' },
-    { val: 'clothing',    label: '服装' },
-    { val: 'building',    label: '建材' },
-    { val: 'food',        label: '食品' },
-    { val: 'other',       label: '其他' },
-  ],
-};
+// Category options come from lib/supplierDashboardConstants UI_CATEGORIES
+// (trilingual, 23 — 'all' filtered out below for the form selector).
 
 /* ─── Skeleton ───────────────────────────── */
 const SkeletonCard = () => (
@@ -162,7 +139,7 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
     console.log('Requests page - lang:', lang, 'isSupplier:', isSupplier, 'profile role:', profile?.role, 'isAr:', isAr, 'isZh:', isZh);
   }, [lang, isSupplier, profile, isAr, isZh]);
   const isManagedMode = String(newReq.sourcing_mode || 'direct').toLowerCase() === 'managed';
-  const cats       = CATEGORIES[lang] || CATEGORIES.ar;
+  const cats       = (UI_CATEGORIES[lang] || UI_CATEGORIES.ar).filter(c => c.val !== 'all');
 
   // Load request draft from sessionStorage on mount (buyer)
   useEffect(() => {

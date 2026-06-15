@@ -11,6 +11,7 @@ import {
 } from '../lib/ideaToProductFlow';
 import { buildTranslatedRequestFields } from '../lib/requestTranslation';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
+import { UI_CATEGORIES, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
 import {
   DISPLAY_CURRENCIES,
   DEFAULT_DISPLAY_CURRENCY,
@@ -21,11 +22,8 @@ const SAUDI_REPRESENTATIVE_NAMES = [
   'سلمان', 'فيصل', 'تركي', 'عبدالعزيز', 'سعود', 'نورة', 'العنود', 'الجوهرة', 'ريم', 'لولوة'
 ];
 
-const CAT_LABEL = {
-  ar: { electronics: 'إلكترونيات', furniture: 'أثاث', clothing: 'ملابس', building: 'مواد بناء', food: 'غذاء', other: 'أخرى' },
-  en: { electronics: 'Electronics', furniture: 'Furniture', clothing: 'Clothing', building: 'Building Materials', food: 'Food', other: 'Other' },
-  zh: { electronics: '电子产品', furniture: '家具', clothing: '服装', building: '建材', food: '食品', other: '其他' },
-};
+// Category labels/options come from lib/supplierDashboardConstants
+// (UI_CATEGORIES — trilingual, 23; getSpecialtyLabel for single-code display).
 
 const PAYMENT_PLAN_LABEL = {
   ar: {
@@ -639,7 +637,7 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
               <ReportRow label={t.reportFields.city} value={result.city} isAr={isAr} />
               <ReportRow label={t.reportFields.moq} value={result.moq} isAr={isAr} />
               <ReportRow label={t.reportFields.timeline} value={result.timeline} isAr={isAr} />
-              <ReportRow label={t.reportFields.category} value={CAT_LABEL[lang]?.[result.category] || result.category} isAr={isAr} />
+              <ReportRow label={t.reportFields.category} value={getSpecialtyLabel(result.category, lang)} isAr={isAr} />
               <div style={{ paddingTop: 14 }}>
                 <p style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.reportFields.specs}</p>
                 <div style={{ padding: '12px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: 'var(--radius-panel)', color: 'var(--text-primary)', fontSize: 13, lineHeight: 1.9, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -693,7 +691,7 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
                 <div style={{ marginTop: 12 }}>
                   <FormLabel isAr={isAr}>{t.reviewFields.category}</FormLabel>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {Object.entries(CAT_LABEL[lang] || CAT_LABEL.en).map(([value, label]) => (
+                    {(UI_CATEGORIES[lang] || UI_CATEGORIES.en).filter(c => c.val !== 'all').map(({ val: value, label }) => (
                       <button
                         key={value}
                         type="button"
