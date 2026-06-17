@@ -4,7 +4,7 @@
 -- Synthetic demo-safe data only — no real companies, licenses, or documents.
 --
 -- Contents: 50 suppliers (verified, MS-009001..MS-009050, across all 23 categories),
---           5 traders, 200 products (4/supplier, is_active=true), 30 open requests.
+--           5 traders, 200 products (4/supplier, is_active=true, price in product_pricing_tiers), 30 open requests.
 -- Demo logins: demo-supplier@maabar.io / Demo1234!   demo-trader@maabar.io / Demo1234!
 -- ============================================================================
 begin;
@@ -45,12 +45,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'demo-supplier@maabar.io', 'supplier', 'verified', 'Lina Zhou', 'Maabar Demo Manufacturing Co., Ltd.', 'Guangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'demo-supplier@maabar.io', 'supplier', 'verified', 'Lina Zhou', 'Maabar Demo Manufacturing Co., Ltd.', 'Guangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 2: Shenzhen Apex Electronics Co., Ltd. [electronics] MS-009002
@@ -87,12 +87,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-02@example.com', 'supplier', 'verified', 'Amy Chen', 'Shenzhen Apex Electronics Co., Ltd.', 'Shenzhen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-02@example.com', 'supplier', 'verified', 'Amy Chen', 'Shenzhen Apex Electronics Co., Ltd.', 'Shenzhen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 3: Yiwu Sino Home Appliance Co., Ltd. [home_appliances] MS-009003
@@ -129,12 +129,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-03@example.com', 'supplier', 'verified', 'Kevin Wang', 'Yiwu Sino Home Appliance Co., Ltd.', 'Yiwu', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-03@example.com', 'supplier', 'verified', 'Kevin Wang', 'Yiwu Sino Home Appliance Co., Ltd.', 'Yiwu', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 4: Ningbo GrandEast Home Appliance Co., Ltd. [home_appliances] MS-009004
@@ -171,12 +171,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-04@example.com', 'supplier', 'verified', 'Grace Li', 'Ningbo GrandEast Home Appliance Co., Ltd.', 'Ningbo', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-04@example.com', 'supplier', 'verified', 'Grace Li', 'Ningbo GrandEast Home Appliance Co., Ltd.', 'Ningbo', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 5: Foshan Nova Furniture Co., Ltd. [furniture] MS-009005
@@ -213,12 +213,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-05@example.com', 'supplier', 'verified', 'Tony Huang', 'Foshan Nova Furniture Co., Ltd.', 'Foshan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-05@example.com', 'supplier', 'verified', 'Tony Huang', 'Foshan Nova Furniture Co., Ltd.', 'Foshan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 6: Dongguan Orient Furniture Co., Ltd. [furniture] MS-009006
@@ -255,12 +255,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-06@example.com', 'supplier', 'verified', 'Cindy Wu', 'Dongguan Orient Furniture Co., Ltd.', 'Dongguan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-06@example.com', 'supplier', 'verified', 'Cindy Wu', 'Dongguan Orient Furniture Co., Ltd.', 'Dongguan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 7: Xiamen Summit Office Furniture Co., Ltd. [office_furniture] MS-009007
@@ -297,12 +297,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-07@example.com', 'supplier', 'verified', 'Jack Lin', 'Xiamen Summit Office Furniture Co., Ltd.', 'Xiamen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-07@example.com', 'supplier', 'verified', 'Jack Lin', 'Xiamen Summit Office Furniture Co., Ltd.', 'Xiamen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 8: Hangzhou Pacific Office Furniture Co., Ltd. [office_furniture] MS-009008
@@ -339,12 +339,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-08@example.com', 'supplier', 'verified', 'Fiona Yang', 'Hangzhou Pacific Office Furniture Co., Ltd.', 'Hangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-08@example.com', 'supplier', 'verified', 'Fiona Yang', 'Hangzhou Pacific Office Furniture Co., Ltd.', 'Hangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 9: Suzhou Golden Bedroom Furniture Co., Ltd. [bedroom_furniture] MS-009009
@@ -381,12 +381,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-09@example.com', 'supplier', 'verified', 'Leo Zhang', 'Suzhou Golden Bedroom Furniture Co., Ltd.', 'Suzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-09@example.com', 'supplier', 'verified', 'Leo Zhang', 'Suzhou Golden Bedroom Furniture Co., Ltd.', 'Suzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 10: Qingdao Evergreen Bedroom Furniture Co., Ltd. [bedroom_furniture] MS-009010
@@ -423,12 +423,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-10@example.com', 'supplier', 'verified', 'Nancy Xu', 'Qingdao Evergreen Bedroom Furniture Co., Ltd.', 'Qingdao', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-10@example.com', 'supplier', 'verified', 'Nancy Xu', 'Qingdao Evergreen Bedroom Furniture Co., Ltd.', 'Qingdao', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 11: Guangzhou Skyline Kitchen Furniture Co., Ltd. [kitchen_furniture] MS-009011
@@ -465,12 +465,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-11@example.com', 'supplier', 'verified', 'Daniel Chen', 'Guangzhou Skyline Kitchen Furniture Co., Ltd.', 'Guangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-11@example.com', 'supplier', 'verified', 'Daniel Chen', 'Guangzhou Skyline Kitchen Furniture Co., Ltd.', 'Guangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 12: Shenzhen Unison Kitchen Furniture Co., Ltd. [kitchen_furniture] MS-009012
@@ -507,12 +507,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-12@example.com', 'supplier', 'verified', 'Sophie Zhao', 'Shenzhen Unison Kitchen Furniture Co., Ltd.', 'Shenzhen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-12@example.com', 'supplier', 'verified', 'Sophie Zhao', 'Shenzhen Unison Kitchen Furniture Co., Ltd.', 'Shenzhen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 13: Yiwu Brightway Outdoor Furniture Co., Ltd. [outdoor_furniture] MS-009013
@@ -549,12 +549,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-13@example.com', 'supplier', 'verified', 'Bruce Tan', 'Yiwu Brightway Outdoor Furniture Co., Ltd.', 'Yiwu', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-13@example.com', 'supplier', 'verified', 'Bruce Tan', 'Yiwu Brightway Outdoor Furniture Co., Ltd.', 'Yiwu', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 14: Ningbo EastPort Outdoor Furniture Co., Ltd. [outdoor_furniture] MS-009014
@@ -591,12 +591,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-14@example.com', 'supplier', 'verified', 'Helen Guo', 'Ningbo EastPort Outdoor Furniture Co., Ltd.', 'Ningbo', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-14@example.com', 'supplier', 'verified', 'Helen Guo', 'Ningbo EastPort Outdoor Furniture Co., Ltd.', 'Ningbo', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 15: Foshan Crownway Home Décor Co., Ltd. [home_decor] MS-009015
@@ -633,12 +633,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-15@example.com', 'supplier', 'verified', 'Victor Sun', 'Foshan Crownway Home Décor Co., Ltd.', 'Foshan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-15@example.com', 'supplier', 'verified', 'Victor Sun', 'Foshan Crownway Home Décor Co., Ltd.', 'Foshan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 16: Dongguan Maxwell Home Décor Co., Ltd. [home_decor] MS-009016
@@ -675,12 +675,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-16@example.com', 'supplier', 'verified', 'Emily Deng', 'Dongguan Maxwell Home Décor Co., Ltd.', 'Dongguan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-16@example.com', 'supplier', 'verified', 'Emily Deng', 'Dongguan Maxwell Home Décor Co., Ltd.', 'Dongguan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 17: Xiamen Silkroad Apparel Co., Ltd. [clothing] MS-009017
@@ -717,12 +717,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-17@example.com', 'supplier', 'verified', 'Ryan Ma', 'Xiamen Silkroad Apparel Co., Ltd.', 'Xiamen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-17@example.com', 'supplier', 'verified', 'Ryan Ma', 'Xiamen Silkroad Apparel Co., Ltd.', 'Xiamen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 18: Hangzhou Harbor Apparel Co., Ltd. [clothing] MS-009018
@@ -759,12 +759,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-18@example.com', 'supplier', 'verified', 'Coco Liang', 'Hangzhou Harbor Apparel Co., Ltd.', 'Hangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-18@example.com', 'supplier', 'verified', 'Coco Liang', 'Hangzhou Harbor Apparel Co., Ltd.', 'Hangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 19: Suzhou Vanguard Building Materials Co., Ltd. [building] MS-009019
@@ -801,12 +801,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-19@example.com', 'supplier', 'verified', 'Sam Feng', 'Suzhou Vanguard Building Materials Co., Ltd.', 'Suzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-19@example.com', 'supplier', 'verified', 'Sam Feng', 'Suzhou Vanguard Building Materials Co., Ltd.', 'Suzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 20: Qingdao Pinnacle Building Materials Co., Ltd. [building] MS-009020
@@ -843,12 +843,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-20@example.com', 'supplier', 'verified', 'Iris Cao', 'Qingdao Pinnacle Building Materials Co., Ltd.', 'Qingdao', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-20@example.com', 'supplier', 'verified', 'Iris Cao', 'Qingdao Pinnacle Building Materials Co., Ltd.', 'Qingdao', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 21: Guangzhou Trinity Food Co., Ltd. [food] MS-009021
@@ -885,12 +885,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-21@example.com', 'supplier', 'verified', 'Lina Zhou', 'Guangzhou Trinity Food Co., Ltd.', 'Guangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-21@example.com', 'supplier', 'verified', 'Lina Zhou', 'Guangzhou Trinity Food Co., Ltd.', 'Guangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 22: Shenzhen Zenith Food Co., Ltd. [food] MS-009022
@@ -927,12 +927,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-22@example.com', 'supplier', 'verified', 'Amy Chen', 'Shenzhen Zenith Food Co., Ltd.', 'Shenzhen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-22@example.com', 'supplier', 'verified', 'Amy Chen', 'Shenzhen Zenith Food Co., Ltd.', 'Shenzhen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 23: Yiwu Cardinal Beauty Co., Ltd. [beauty] MS-009023
@@ -969,12 +969,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-23@example.com', 'supplier', 'verified', 'Kevin Wang', 'Yiwu Cardinal Beauty Co., Ltd.', 'Yiwu', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-23@example.com', 'supplier', 'verified', 'Kevin Wang', 'Yiwu Cardinal Beauty Co., Ltd.', 'Yiwu', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 24: Ningbo Meridian Beauty Co., Ltd. [beauty] MS-009024
@@ -1011,12 +1011,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-24@example.com', 'supplier', 'verified', 'Grace Li', 'Ningbo Meridian Beauty Co., Ltd.', 'Ningbo', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-24@example.com', 'supplier', 'verified', 'Grace Li', 'Ningbo Meridian Beauty Co., Ltd.', 'Ningbo', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 25: Foshan Falcon Sports Co., Ltd. [sports] MS-009025
@@ -1053,12 +1053,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-25@example.com', 'supplier', 'verified', 'Tony Huang', 'Foshan Falcon Sports Co., Ltd.', 'Foshan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-25@example.com', 'supplier', 'verified', 'Tony Huang', 'Foshan Falcon Sports Co., Ltd.', 'Foshan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 26: Dongguan Volt Sports Co., Ltd. [sports] MS-009026
@@ -1095,12 +1095,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-26@example.com', 'supplier', 'verified', 'Cindy Wu', 'Dongguan Volt Sports Co., Ltd.', 'Dongguan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-26@example.com', 'supplier', 'verified', 'Cindy Wu', 'Dongguan Volt Sports Co., Ltd.', 'Dongguan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 27: Xiamen Apex Toys Co., Ltd. [toys] MS-009027
@@ -1137,12 +1137,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-27@example.com', 'supplier', 'verified', 'Jack Lin', 'Xiamen Apex Toys Co., Ltd.', 'Xiamen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-27@example.com', 'supplier', 'verified', 'Jack Lin', 'Xiamen Apex Toys Co., Ltd.', 'Xiamen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 28: Hangzhou Sino Toys Co., Ltd. [toys] MS-009028
@@ -1179,12 +1179,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-28@example.com', 'supplier', 'verified', 'Fiona Yang', 'Hangzhou Sino Toys Co., Ltd.', 'Hangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-28@example.com', 'supplier', 'verified', 'Fiona Yang', 'Hangzhou Sino Toys Co., Ltd.', 'Hangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 29: Suzhou GrandEast Auto Parts Co., Ltd. [auto_parts] MS-009029
@@ -1221,12 +1221,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-29@example.com', 'supplier', 'verified', 'Leo Zhang', 'Suzhou GrandEast Auto Parts Co., Ltd.', 'Suzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-29@example.com', 'supplier', 'verified', 'Leo Zhang', 'Suzhou GrandEast Auto Parts Co., Ltd.', 'Suzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 30: Qingdao Nova Auto Parts Co., Ltd. [auto_parts] MS-009030
@@ -1263,12 +1263,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-30@example.com', 'supplier', 'verified', 'Nancy Xu', 'Qingdao Nova Auto Parts Co., Ltd.', 'Qingdao', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-30@example.com', 'supplier', 'verified', 'Nancy Xu', 'Qingdao Nova Auto Parts Co., Ltd.', 'Qingdao', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 31: Guangzhou Orient Car Accessories Co., Ltd. [car_accessories] MS-009031
@@ -1305,12 +1305,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-31@example.com', 'supplier', 'verified', 'Daniel Chen', 'Guangzhou Orient Car Accessories Co., Ltd.', 'Guangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-31@example.com', 'supplier', 'verified', 'Daniel Chen', 'Guangzhou Orient Car Accessories Co., Ltd.', 'Guangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 32: Shenzhen Summit Car Accessories Co., Ltd. [car_accessories] MS-009032
@@ -1347,12 +1347,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-32@example.com', 'supplier', 'verified', 'Sophie Zhao', 'Shenzhen Summit Car Accessories Co., Ltd.', 'Shenzhen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-32@example.com', 'supplier', 'verified', 'Sophie Zhao', 'Shenzhen Summit Car Accessories Co., Ltd.', 'Shenzhen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 33: Yiwu Pacific Tire Co., Ltd. [tires] MS-009033
@@ -1389,12 +1389,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-33@example.com', 'supplier', 'verified', 'Bruce Tan', 'Yiwu Pacific Tire Co., Ltd.', 'Yiwu', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-33@example.com', 'supplier', 'verified', 'Bruce Tan', 'Yiwu Pacific Tire Co., Ltd.', 'Yiwu', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 34: Ningbo Golden Tire Co., Ltd. [tires] MS-009034
@@ -1431,12 +1431,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-34@example.com', 'supplier', 'verified', 'Helen Guo', 'Ningbo Golden Tire Co., Ltd.', 'Ningbo', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-34@example.com', 'supplier', 'verified', 'Helen Guo', 'Ningbo Golden Tire Co., Ltd.', 'Ningbo', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 35: Foshan Evergreen Lubricants Co., Ltd. [lubricants] MS-009035
@@ -1473,12 +1473,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-35@example.com', 'supplier', 'verified', 'Victor Sun', 'Foshan Evergreen Lubricants Co., Ltd.', 'Foshan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-35@example.com', 'supplier', 'verified', 'Victor Sun', 'Foshan Evergreen Lubricants Co., Ltd.', 'Foshan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 36: Dongguan Skyline Lubricants Co., Ltd. [lubricants] MS-009036
@@ -1515,12 +1515,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-36@example.com', 'supplier', 'verified', 'Emily Deng', 'Dongguan Skyline Lubricants Co., Ltd.', 'Dongguan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-36@example.com', 'supplier', 'verified', 'Emily Deng', 'Dongguan Skyline Lubricants Co., Ltd.', 'Dongguan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 37: Xiamen Unison Medical Co., Ltd. [health] MS-009037
@@ -1557,12 +1557,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-37@example.com', 'supplier', 'verified', 'Ryan Ma', 'Xiamen Unison Medical Co., Ltd.', 'Xiamen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-37@example.com', 'supplier', 'verified', 'Ryan Ma', 'Xiamen Unison Medical Co., Ltd.', 'Xiamen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 38: Hangzhou Brightway Medical Co., Ltd. [health] MS-009038
@@ -1599,12 +1599,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-38@example.com', 'supplier', 'verified', 'Coco Liang', 'Hangzhou Brightway Medical Co., Ltd.', 'Hangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-38@example.com', 'supplier', 'verified', 'Coco Liang', 'Hangzhou Brightway Medical Co., Ltd.', 'Hangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 39: Suzhou EastPort Packaging Co., Ltd. [packaging] MS-009039
@@ -1641,12 +1641,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-39@example.com', 'supplier', 'verified', 'Sam Feng', 'Suzhou EastPort Packaging Co., Ltd.', 'Suzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-39@example.com', 'supplier', 'verified', 'Sam Feng', 'Suzhou EastPort Packaging Co., Ltd.', 'Suzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 40: Qingdao Crownway Packaging Co., Ltd. [packaging] MS-009040
@@ -1683,12 +1683,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-40@example.com', 'supplier', 'verified', 'Iris Cao', 'Qingdao Crownway Packaging Co., Ltd.', 'Qingdao', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-40@example.com', 'supplier', 'verified', 'Iris Cao', 'Qingdao Crownway Packaging Co., Ltd.', 'Qingdao', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 41: Guangzhou Maxwell Gifts Co., Ltd. [gifts] MS-009041
@@ -1725,12 +1725,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-41@example.com', 'supplier', 'verified', 'Lina Zhou', 'Guangzhou Maxwell Gifts Co., Ltd.', 'Guangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-41@example.com', 'supplier', 'verified', 'Lina Zhou', 'Guangzhou Maxwell Gifts Co., Ltd.', 'Guangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 42: Shenzhen Silkroad Gifts Co., Ltd. [gifts] MS-009042
@@ -1767,12 +1767,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-42@example.com', 'supplier', 'verified', 'Amy Chen', 'Shenzhen Silkroad Gifts Co., Ltd.', 'Shenzhen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-42@example.com', 'supplier', 'verified', 'Amy Chen', 'Shenzhen Silkroad Gifts Co., Ltd.', 'Shenzhen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 43: Yiwu Harbor Agriculture Co., Ltd. [agriculture] MS-009043
@@ -1809,12 +1809,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-43@example.com', 'supplier', 'verified', 'Kevin Wang', 'Yiwu Harbor Agriculture Co., Ltd.', 'Yiwu', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-43@example.com', 'supplier', 'verified', 'Kevin Wang', 'Yiwu Harbor Agriculture Co., Ltd.', 'Yiwu', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 44: Ningbo Vanguard Agriculture Co., Ltd. [agriculture] MS-009044
@@ -1851,12 +1851,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-44@example.com', 'supplier', 'verified', 'Grace Li', 'Ningbo Vanguard Agriculture Co., Ltd.', 'Ningbo', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-44@example.com', 'supplier', 'verified', 'Grace Li', 'Ningbo Vanguard Agriculture Co., Ltd.', 'Ningbo', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 45: Foshan Pinnacle Industrial Supplies Co., Ltd. [other] MS-009045
@@ -1893,12 +1893,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-45@example.com', 'supplier', 'verified', 'Tony Huang', 'Foshan Pinnacle Industrial Supplies Co., Ltd.', 'Foshan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-45@example.com', 'supplier', 'verified', 'Tony Huang', 'Foshan Pinnacle Industrial Supplies Co., Ltd.', 'Foshan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 46: Dongguan Trinity Industrial Supplies Co., Ltd. [other] MS-009046
@@ -1935,12 +1935,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-46@example.com', 'supplier', 'verified', 'Cindy Wu', 'Dongguan Trinity Industrial Supplies Co., Ltd.', 'Dongguan', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-46@example.com', 'supplier', 'verified', 'Cindy Wu', 'Dongguan Trinity Industrial Supplies Co., Ltd.', 'Dongguan', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 47: Xiamen Zenith Electronics Co., Ltd. [electronics] MS-009047
@@ -1977,12 +1977,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-47@example.com', 'supplier', 'verified', 'Jack Lin', 'Xiamen Zenith Electronics Co., Ltd.', 'Xiamen', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-47@example.com', 'supplier', 'verified', 'Jack Lin', 'Xiamen Zenith Electronics Co., Ltd.', 'Xiamen', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 48: Hangzhou Cardinal Home Appliance Co., Ltd. [home_appliances] MS-009048
@@ -2019,12 +2019,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-48@example.com', 'supplier', 'verified', 'Fiona Yang', 'Hangzhou Cardinal Home Appliance Co., Ltd.', 'Hangzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-48@example.com', 'supplier', 'verified', 'Fiona Yang', 'Hangzhou Cardinal Home Appliance Co., Ltd.', 'Hangzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 49: Suzhou Meridian Furniture Co., Ltd. [furniture] MS-009049
@@ -2061,12 +2061,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-49@example.com', 'supplier', 'verified', 'Leo Zhang', 'Suzhou Meridian Furniture Co., Ltd.', 'Suzhou', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-49@example.com', 'supplier', 'verified', 'Leo Zhang', 'Suzhou Meridian Furniture Co., Ltd.', 'Suzhou', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- supplier 50: Qingdao Falcon Office Furniture Co., Ltd. [office_furniture] MS-009050
@@ -2103,12 +2103,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-supplier-50@example.com', 'supplier', 'verified', 'Nancy Xu', 'Qingdao Falcon Office Furniture Co., Ltd.', 'Qingdao', 'China', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-supplier-50@example.com', 'supplier', 'verified', 'Nancy Xu', 'Qingdao Falcon Office Furniture Co., Ltd.', 'Qingdao', 'China')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- ── 2. Trader accounts (auth user + identity + profile shell) ────────────────
@@ -2146,12 +2146,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'demo-trader@maabar.io', 'buyer', 'active', 'Demo Trader', 'Maabar Demo Trading Est.', 'Riyadh', 'Saudi Arabia', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'demo-trader@maabar.io', 'buyer', 'active', 'Demo Trader', 'Maabar Demo Trading Est.', 'Riyadh', 'Saudi Arabia')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- trader 2: Najd Retail Group
@@ -2188,12 +2188,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-trader-2@example.com', 'buyer', 'active', 'Abdullah Al-Qahtani', 'Najd Retail Group', 'Riyadh', 'Saudi Arabia', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-trader-2@example.com', 'buyer', 'active', 'Abdullah Al-Qahtani', 'Najd Retail Group', 'Riyadh', 'Saudi Arabia')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- trader 3: Red Sea Import House
@@ -2230,12 +2230,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-trader-3@example.com', 'buyer', 'active', 'Sara Al-Harbi', 'Red Sea Import House', 'Jeddah', 'Saudi Arabia', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-trader-3@example.com', 'buyer', 'active', 'Sara Al-Harbi', 'Red Sea Import House', 'Jeddah', 'Saudi Arabia')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- trader 4: Gulf Eastern Traders
@@ -2272,12 +2272,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-trader-4@example.com', 'buyer', 'active', 'Faisal Al-Otaibi', 'Gulf Eastern Traders', 'Dammam', 'Saudi Arabia', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-trader-4@example.com', 'buyer', 'active', 'Faisal Al-Otaibi', 'Gulf Eastern Traders', 'Dammam', 'Saudi Arabia')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- trader 5: Haramain Supplies Co.
@@ -2314,12 +2314,12 @@ begin
       'email', now(), now(), now(), gen_random_uuid());
   end if;
 
-  insert into public.profiles (id, email, role, status, full_name, company_name, city, country, is_seed)
-  values (v_user_id, 'seed-trader-5@example.com', 'buyer', 'active', 'Noura Al-Shehri', 'Haramain Supplies Co.', 'Mecca', 'Saudi Arabia', true)
+  insert into public.profiles (id, email, role, status, full_name, company_name, city, country)
+  values (v_user_id, 'seed-trader-5@example.com', 'buyer', 'active', 'Noura Al-Shehri', 'Haramain Supplies Co.', 'Mecca', 'Saudi Arabia')
   on conflict (id) do update set
     email = excluded.email, role = excluded.role, status = excluded.status,
     full_name = excluded.full_name, company_name = excluded.company_name,
-    city = excluded.city, country = excluded.country, is_seed = true;
+    city = excluded.city, country = excluded.country;
 end $$;
 
 -- ── 3. Rich supplier profiles (by email) ─────────────────────────────────────
@@ -2346,6 +2346,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-electronics-factory-1-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-factory-1-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-factory-1-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-electronics-factory-1-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 11,
   reg_number = 'DEMO-0001',
@@ -2376,6 +2377,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-electronics-factory-2-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-factory-2-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-factory-2-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-electronics-factory-2-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 24,
   reg_number = 'DEMO-0002',
@@ -2406,6 +2408,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-home_appliances-factory-3-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-factory-3-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-factory-3-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-home_appliances-factory-3-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 37,
   reg_number = 'DEMO-0003',
@@ -2436,6 +2439,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-home_appliances-factory-4-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-factory-4-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-factory-4-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-home_appliances-factory-4-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 50,
   reg_number = 'DEMO-0004',
@@ -2466,6 +2470,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-furniture-factory-5-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-factory-5-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-factory-5-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-furniture-factory-5-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 23,
   reg_number = 'DEMO-0005',
@@ -2496,6 +2501,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-furniture-factory-6-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-factory-6-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-factory-6-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-furniture-factory-6-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 36,
   reg_number = 'DEMO-0006',
@@ -2526,6 +2532,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-office_furniture-factory-7-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-factory-7-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-factory-7-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-office_furniture-factory-7-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 49,
   reg_number = 'DEMO-0007',
@@ -2556,6 +2563,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-office_furniture-factory-8-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-factory-8-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-factory-8-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-office_furniture-factory-8-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 22,
   reg_number = 'DEMO-0008',
@@ -2586,6 +2594,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-bedroom_furniture-factory-9-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-factory-9-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-factory-9-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-bedroom_furniture-factory-9-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 35,
   reg_number = 'DEMO-0009',
@@ -2616,6 +2625,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-bedroom_furniture-factory-10-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-factory-10-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-factory-10-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-bedroom_furniture-factory-10-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 48,
   reg_number = 'DEMO-0010',
@@ -2646,6 +2656,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-kitchen_furniture-factory-11-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-factory-11-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-factory-11-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-kitchen_furniture-factory-11-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 21,
   reg_number = 'DEMO-0011',
@@ -2676,6 +2687,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-kitchen_furniture-factory-12-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-factory-12-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-factory-12-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-kitchen_furniture-factory-12-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 34,
   reg_number = 'DEMO-0012',
@@ -2706,6 +2718,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-outdoor_furniture-factory-13-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-factory-13-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-factory-13-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-outdoor_furniture-factory-13-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 47,
   reg_number = 'DEMO-0013',
@@ -2736,6 +2749,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-outdoor_furniture-factory-14-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-factory-14-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-factory-14-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-outdoor_furniture-factory-14-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 20,
   reg_number = 'DEMO-0014',
@@ -2766,6 +2780,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-home_decor-factory-15-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-factory-15-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-factory-15-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-home_decor-factory-15-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 33,
   reg_number = 'DEMO-0015',
@@ -2796,6 +2811,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-home_decor-factory-16-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-factory-16-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-factory-16-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-home_decor-factory-16-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 46,
   reg_number = 'DEMO-0016',
@@ -2826,6 +2842,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-clothing-factory-17-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-factory-17-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-factory-17-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-clothing-factory-17-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 19,
   reg_number = 'DEMO-0017',
@@ -2856,6 +2873,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-clothing-factory-18-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-factory-18-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-factory-18-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-clothing-factory-18-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 32,
   reg_number = 'DEMO-0018',
@@ -2886,6 +2904,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-building-factory-19-1/1200/900', 'https://picsum.photos/seed/maabar-building-factory-19-2/1200/900', 'https://picsum.photos/seed/maabar-building-factory-19-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-building-factory-19-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 45,
   reg_number = 'DEMO-0019',
@@ -2916,6 +2935,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-building-factory-20-1/1200/900', 'https://picsum.photos/seed/maabar-building-factory-20-2/1200/900', 'https://picsum.photos/seed/maabar-building-factory-20-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-building-factory-20-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 18,
   reg_number = 'DEMO-0020',
@@ -2946,6 +2966,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-food-factory-21-1/1200/900', 'https://picsum.photos/seed/maabar-food-factory-21-2/1200/900', 'https://picsum.photos/seed/maabar-food-factory-21-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-food-factory-21-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 31,
   reg_number = 'DEMO-0021',
@@ -2976,6 +2997,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-food-factory-22-1/1200/900', 'https://picsum.photos/seed/maabar-food-factory-22-2/1200/900', 'https://picsum.photos/seed/maabar-food-factory-22-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-food-factory-22-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 44,
   reg_number = 'DEMO-0022',
@@ -3006,6 +3028,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-beauty-factory-23-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-factory-23-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-factory-23-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-beauty-factory-23-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 17,
   reg_number = 'DEMO-0023',
@@ -3036,6 +3059,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-beauty-factory-24-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-factory-24-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-factory-24-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-beauty-factory-24-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 30,
   reg_number = 'DEMO-0024',
@@ -3066,6 +3090,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-sports-factory-25-1/1200/900', 'https://picsum.photos/seed/maabar-sports-factory-25-2/1200/900', 'https://picsum.photos/seed/maabar-sports-factory-25-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-sports-factory-25-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 43,
   reg_number = 'DEMO-0025',
@@ -3096,6 +3121,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-sports-factory-26-1/1200/900', 'https://picsum.photos/seed/maabar-sports-factory-26-2/1200/900', 'https://picsum.photos/seed/maabar-sports-factory-26-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-sports-factory-26-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 16,
   reg_number = 'DEMO-0026',
@@ -3126,6 +3152,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-toys-factory-27-1/1200/900', 'https://picsum.photos/seed/maabar-toys-factory-27-2/1200/900', 'https://picsum.photos/seed/maabar-toys-factory-27-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-toys-factory-27-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 29,
   reg_number = 'DEMO-0027',
@@ -3156,6 +3183,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-toys-factory-28-1/1200/900', 'https://picsum.photos/seed/maabar-toys-factory-28-2/1200/900', 'https://picsum.photos/seed/maabar-toys-factory-28-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-toys-factory-28-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 42,
   reg_number = 'DEMO-0028',
@@ -3186,6 +3214,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-auto_parts-factory-29-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-factory-29-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-factory-29-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-auto_parts-factory-29-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 15,
   reg_number = 'DEMO-0029',
@@ -3216,6 +3245,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-auto_parts-factory-30-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-factory-30-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-factory-30-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-auto_parts-factory-30-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 28,
   reg_number = 'DEMO-0030',
@@ -3246,6 +3276,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-car_accessories-factory-31-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-factory-31-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-factory-31-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-car_accessories-factory-31-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 41,
   reg_number = 'DEMO-0031',
@@ -3276,6 +3307,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-car_accessories-factory-32-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-factory-32-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-factory-32-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-car_accessories-factory-32-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 14,
   reg_number = 'DEMO-0032',
@@ -3306,6 +3338,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-tires-factory-33-1/1200/900', 'https://picsum.photos/seed/maabar-tires-factory-33-2/1200/900', 'https://picsum.photos/seed/maabar-tires-factory-33-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-tires-factory-33-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 27,
   reg_number = 'DEMO-0033',
@@ -3336,6 +3369,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-tires-factory-34-1/1200/900', 'https://picsum.photos/seed/maabar-tires-factory-34-2/1200/900', 'https://picsum.photos/seed/maabar-tires-factory-34-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-tires-factory-34-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 40,
   reg_number = 'DEMO-0034',
@@ -3366,6 +3400,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-lubricants-factory-35-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-factory-35-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-factory-35-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-lubricants-factory-35-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 13,
   reg_number = 'DEMO-0035',
@@ -3396,6 +3431,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-lubricants-factory-36-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-factory-36-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-factory-36-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-lubricants-factory-36-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 26,
   reg_number = 'DEMO-0036',
@@ -3426,6 +3462,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-health-factory-37-1/1200/900', 'https://picsum.photos/seed/maabar-health-factory-37-2/1200/900', 'https://picsum.photos/seed/maabar-health-factory-37-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-health-factory-37-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 39,
   reg_number = 'DEMO-0037',
@@ -3456,6 +3493,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-health-factory-38-1/1200/900', 'https://picsum.photos/seed/maabar-health-factory-38-2/1200/900', 'https://picsum.photos/seed/maabar-health-factory-38-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-health-factory-38-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 12,
   reg_number = 'DEMO-0038',
@@ -3486,6 +3524,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-packaging-factory-39-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-factory-39-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-factory-39-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-packaging-factory-39-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 25,
   reg_number = 'DEMO-0039',
@@ -3516,6 +3555,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-packaging-factory-40-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-factory-40-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-factory-40-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-packaging-factory-40-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 38,
   reg_number = 'DEMO-0040',
@@ -3546,6 +3586,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-gifts-factory-41-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-factory-41-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-factory-41-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-gifts-factory-41-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 11,
   reg_number = 'DEMO-0041',
@@ -3576,6 +3617,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-gifts-factory-42-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-factory-42-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-factory-42-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-gifts-factory-42-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 24,
   reg_number = 'DEMO-0042',
@@ -3606,6 +3648,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-agriculture-factory-43-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-factory-43-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-factory-43-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-agriculture-factory-43-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 37,
   reg_number = 'DEMO-0043',
@@ -3636,6 +3679,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-agriculture-factory-44-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-factory-44-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-factory-44-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-agriculture-factory-44-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 50,
   reg_number = 'DEMO-0044',
@@ -3666,6 +3710,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-other-factory-45-1/1200/900', 'https://picsum.photos/seed/maabar-other-factory-45-2/1200/900', 'https://picsum.photos/seed/maabar-other-factory-45-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-other-factory-45-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 23,
   reg_number = 'DEMO-0045',
@@ -3696,6 +3741,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-other-factory-46-1/1200/900', 'https://picsum.photos/seed/maabar-other-factory-46-2/1200/900', 'https://picsum.photos/seed/maabar-other-factory-46-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-other-factory-46-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 36,
   reg_number = 'DEMO-0046',
@@ -3726,6 +3772,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-electronics-factory-47-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-factory-47-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-factory-47-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-electronics-factory-47-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 49,
   reg_number = 'DEMO-0047',
@@ -3756,6 +3803,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-home_appliances-factory-48-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-factory-48-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-factory-48-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-home_appliances-factory-48-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 22,
   reg_number = 'DEMO-0048',
@@ -3786,6 +3834,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-furniture-factory-49-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-factory-49-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-factory-49-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-furniture-factory-49-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 35,
   reg_number = 'DEMO-0049',
@@ -3816,6 +3865,7 @@ update public.profiles set
   factory_images = array['https://picsum.photos/seed/maabar-office_furniture-factory-50-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-factory-50-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-factory-50-3/1200/900']::text[],
   factory_photo = 'https://picsum.photos/seed/maabar-office_furniture-factory-50-1/1200/900',
   preferred_display_currency = 'USD',
+  onboarding_completed = true,
   rating = 4.3,
   reviews_count = 48,
   reg_number = 'DEMO-0050',
@@ -3833,2703 +3883,4303 @@ update public.profiles set company_name = 'Haramain Supplies Co.', city = 'Mecca
 -- ── 5. Products (4 per supplier, is_active=true) ─────────────────────────────
 -- products for Maabar Demo Manufacturing Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سماعات لاسلكية برو', 'Wireless Earbuds Pro', '无线耳机Pro', 8, 'USD', 'electronics', 100,
+select p.id, 'سماعات لاسلكية برو', 'Wireless Earbuds Pro', '无线耳机Pro', 'USD', 'electronics', 100,
   'Wireless Earbuds Pro — export-grade Electronics from Maabar Demo Manufacturing Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سماعات لاسلكية برو — منتج إلكترونيات للتصدير من Maabar Demo Manufacturing Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-1-1-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-1-1-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-1-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 12.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'demo-supplier@maabar.io'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Wireless Earbuds Pro'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'demo-supplier@maabar.io'
+  and lower(pr.name_en) = lower('Wireless Earbuds Pro')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شاحن سريع 65 واط', '65W Fast Charger', '65W快充', 17, 'USD', 'electronics', 110,
+select p.id, 'شاحن سريع 65 واط', '65W Fast Charger', '65W快充', 'USD', 'electronics', 110,
   '65W Fast Charger — export-grade Electronics from Maabar Demo Manufacturing Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شاحن سريع 65 واط — منتج إلكترونيات للتصدير من Maabar Demo Manufacturing Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-1-2-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-1-2-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-2-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'demo-supplier@maabar.io'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('65W Fast Charger'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'demo-supplier@maabar.io'
+  and lower(pr.name_en) = lower('65W Fast Charger')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'باور بانك 20000', 'Power Bank 20000mAh', '20000mAh充电宝', 26, 'USD', 'electronics', 120,
+select p.id, 'باور بانك 20000', 'Power Bank 20000mAh', '20000mAh充电宝', 'USD', 'electronics', 120,
   'Power Bank 20000mAh — export-grade Electronics from Maabar Demo Manufacturing Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'باور بانك 20000 — منتج إلكترونيات للتصدير من Maabar Demo Manufacturing Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-1-3-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-1-3-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-3-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 39.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'demo-supplier@maabar.io'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Power Bank 20000mAh'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 26
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'demo-supplier@maabar.io'
+  and lower(pr.name_en) = lower('Power Bank 20000mAh')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكبر صوت بلوتوث', 'Portable Bluetooth Speaker', '便携蓝牙音箱', 35, 'USD', 'electronics', 130,
+select p.id, 'مكبر صوت بلوتوث', 'Portable Bluetooth Speaker', '便携蓝牙音箱', 'USD', 'electronics', 130,
   'Portable Bluetooth Speaker — export-grade Electronics from Maabar Demo Manufacturing Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكبر صوت بلوتوث — منتج إلكترونيات للتصدير من Maabar Demo Manufacturing Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-1-4-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-1-4-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-4-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-1-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'demo-supplier@maabar.io'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Portable Bluetooth Speaker'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 35
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'demo-supplier@maabar.io'
+  and lower(pr.name_en) = lower('Portable Bluetooth Speaker')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Shenzhen Apex Electronics Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سماعات لاسلكية برو', 'Wireless Earbuds Pro', '无线耳机Pro', 8, 'USD', 'electronics', 100,
+select p.id, 'سماعات لاسلكية برو', 'Wireless Earbuds Pro', '无线耳机Pro', 'USD', 'electronics', 100,
   'Wireless Earbuds Pro — export-grade Electronics from Shenzhen Apex Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سماعات لاسلكية برو — منتج إلكترونيات للتصدير من Shenzhen Apex Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-2-1-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-2-1-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-1-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 12.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-02@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Wireless Earbuds Pro'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-02@example.com'
+  and lower(pr.name_en) = lower('Wireless Earbuds Pro')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شاحن سريع 65 واط', '65W Fast Charger', '65W快充', 17, 'USD', 'electronics', 110,
+select p.id, 'شاحن سريع 65 واط', '65W Fast Charger', '65W快充', 'USD', 'electronics', 110,
   '65W Fast Charger — export-grade Electronics from Shenzhen Apex Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شاحن سريع 65 واط — منتج إلكترونيات للتصدير من Shenzhen Apex Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-2-2-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-2-2-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-2-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-02@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('65W Fast Charger'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-02@example.com'
+  and lower(pr.name_en) = lower('65W Fast Charger')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'باور بانك 20000', 'Power Bank 20000mAh', '20000mAh充电宝', 26, 'USD', 'electronics', 120,
+select p.id, 'باور بانك 20000', 'Power Bank 20000mAh', '20000mAh充电宝', 'USD', 'electronics', 120,
   'Power Bank 20000mAh — export-grade Electronics from Shenzhen Apex Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'باور بانك 20000 — منتج إلكترونيات للتصدير من Shenzhen Apex Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-2-3-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-2-3-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-3-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 39.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-02@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Power Bank 20000mAh'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 26
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-02@example.com'
+  and lower(pr.name_en) = lower('Power Bank 20000mAh')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكبر صوت بلوتوث', 'Portable Bluetooth Speaker', '便携蓝牙音箱', 35, 'USD', 'electronics', 130,
+select p.id, 'مكبر صوت بلوتوث', 'Portable Bluetooth Speaker', '便携蓝牙音箱', 'USD', 'electronics', 130,
   'Portable Bluetooth Speaker — export-grade Electronics from Shenzhen Apex Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكبر صوت بلوتوث — منتج إلكترونيات للتصدير من Shenzhen Apex Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-2-4-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-2-4-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-4-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-2-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-02@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Portable Bluetooth Speaker'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 35
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-02@example.com'
+  and lower(pr.name_en) = lower('Portable Bluetooth Speaker')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Yiwu Sino Home Appliance Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'غلاية كهربائية 1.8 لتر', '1.8L Electric Kettle', '1.8L电热水壶', 18, 'USD', 'home_appliances', 50,
+select p.id, 'غلاية كهربائية 1.8 لتر', '1.8L Electric Kettle', '1.8L电热水壶', 'USD', 'home_appliances', 50,
   '1.8L Electric Kettle — export-grade Home Appliances from Yiwu Sino Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'غلاية كهربائية 1.8 لتر — منتج أجهزة منزلية للتصدير من Yiwu Sino Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-3-1-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-3-1-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-1-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 27.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-03@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('1.8L Electric Kettle'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 18
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-03@example.com'
+  and lower(pr.name_en) = lower('1.8L Electric Kettle')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'قلاية هوائية رقمية', 'Digital Air Fryer', '数字空气炸锅', 32, 'USD', 'home_appliances', 55,
+select p.id, 'قلاية هوائية رقمية', 'Digital Air Fryer', '数字空气炸锅', 'USD', 'home_appliances', 55,
   'Digital Air Fryer — export-grade Home Appliances from Yiwu Sino Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'قلاية هوائية رقمية — منتج أجهزة منزلية للتصدير من Yiwu Sino Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-3-2-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-3-2-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-2-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-03@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Digital Air Fryer'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 32
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-03@example.com'
+  and lower(pr.name_en) = lower('Digital Air Fryer')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خلاط عمودي 1000 واط', 'Stand Mixer 1000W', '1000W厨师机', 46, 'USD', 'home_appliances', 60,
+select p.id, 'خلاط عمودي 1000 واط', 'Stand Mixer 1000W', '1000W厨师机', 'USD', 'home_appliances', 60,
   'Stand Mixer 1000W — export-grade Home Appliances from Yiwu Sino Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خلاط عمودي 1000 واط — منتج أجهزة منزلية للتصدير من Yiwu Sino Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-3-3-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-3-3-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-3-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 69.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-03@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Stand Mixer 1000W'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 46
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-03@example.com'
+  and lower(pr.name_en) = lower('Stand Mixer 1000W')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكنسة روبوت', 'Robot Vacuum Cleaner', '扫地机器人', 60, 'USD', 'home_appliances', 65,
+select p.id, 'مكنسة روبوت', 'Robot Vacuum Cleaner', '扫地机器人', 'USD', 'home_appliances', 65,
   'Robot Vacuum Cleaner — export-grade Home Appliances from Yiwu Sino Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكنسة روبوت — منتج أجهزة منزلية للتصدير من Yiwu Sino Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-3-4-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-3-4-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-4-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-3-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-03@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Robot Vacuum Cleaner'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 60
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-03@example.com'
+  and lower(pr.name_en) = lower('Robot Vacuum Cleaner')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Ningbo GrandEast Home Appliance Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'غلاية كهربائية 1.8 لتر', '1.8L Electric Kettle', '1.8L电热水壶', 18, 'USD', 'home_appliances', 50,
+select p.id, 'غلاية كهربائية 1.8 لتر', '1.8L Electric Kettle', '1.8L电热水壶', 'USD', 'home_appliances', 50,
   '1.8L Electric Kettle — export-grade Home Appliances from Ningbo GrandEast Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'غلاية كهربائية 1.8 لتر — منتج أجهزة منزلية للتصدير من Ningbo GrandEast Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-4-1-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-4-1-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-1-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 27.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-04@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('1.8L Electric Kettle'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 18
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-04@example.com'
+  and lower(pr.name_en) = lower('1.8L Electric Kettle')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'قلاية هوائية رقمية', 'Digital Air Fryer', '数字空气炸锅', 32, 'USD', 'home_appliances', 55,
+select p.id, 'قلاية هوائية رقمية', 'Digital Air Fryer', '数字空气炸锅', 'USD', 'home_appliances', 55,
   'Digital Air Fryer — export-grade Home Appliances from Ningbo GrandEast Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'قلاية هوائية رقمية — منتج أجهزة منزلية للتصدير من Ningbo GrandEast Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-4-2-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-4-2-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-2-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-04@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Digital Air Fryer'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 32
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-04@example.com'
+  and lower(pr.name_en) = lower('Digital Air Fryer')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خلاط عمودي 1000 واط', 'Stand Mixer 1000W', '1000W厨师机', 46, 'USD', 'home_appliances', 60,
+select p.id, 'خلاط عمودي 1000 واط', 'Stand Mixer 1000W', '1000W厨师机', 'USD', 'home_appliances', 60,
   'Stand Mixer 1000W — export-grade Home Appliances from Ningbo GrandEast Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خلاط عمودي 1000 واط — منتج أجهزة منزلية للتصدير من Ningbo GrandEast Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-4-3-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-4-3-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-3-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 69.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-04@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Stand Mixer 1000W'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 46
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-04@example.com'
+  and lower(pr.name_en) = lower('Stand Mixer 1000W')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكنسة روبوت', 'Robot Vacuum Cleaner', '扫地机器人', 60, 'USD', 'home_appliances', 65,
+select p.id, 'مكنسة روبوت', 'Robot Vacuum Cleaner', '扫地机器人', 'USD', 'home_appliances', 65,
   'Robot Vacuum Cleaner — export-grade Home Appliances from Ningbo GrandEast Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكنسة روبوت — منتج أجهزة منزلية للتصدير من Ningbo GrandEast Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-4-4-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-4-4-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-4-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-4-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-04@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Robot Vacuum Cleaner'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 60
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-04@example.com'
+  and lower(pr.name_en) = lower('Robot Vacuum Cleaner')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Foshan Nova Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كنبة قماش 3 مقاعد', '3-Seater Fabric Sofa', '三人布艺沙发', 140, 'USD', 'furniture', 20,
+select p.id, 'كنبة قماش 3 مقاعد', '3-Seater Fabric Sofa', '三人布艺沙发', 'USD', 'furniture', 20,
   '3-Seater Fabric Sofa — export-grade Furniture from Foshan Nova Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كنبة قماش 3 مقاعد — منتج أثاث للتصدير من Foshan Nova Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-5-1-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-5-1-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-1-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 210.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-05@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Seater Fabric Sofa'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 140
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-05@example.com'
+  and lower(pr.name_en) = lower('3-Seater Fabric Sofa')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم طعام 6 كراسي', '6-Seat Dining Set', '六人餐桌套装', 230, 'USD', 'furniture', 22,
+select p.id, 'طقم طعام 6 كراسي', '6-Seat Dining Set', '六人餐桌套装', 'USD', 'furniture', 22,
   '6-Seat Dining Set — export-grade Furniture from Foshan Nova Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم طعام 6 كراسي — منتج أثاث للتصدير من Foshan Nova Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-5-2-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-5-2-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-2-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-05@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('6-Seat Dining Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 230
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-05@example.com'
+  and lower(pr.name_en) = lower('6-Seat Dining Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة بأبواب منزلقة', 'Sliding-Door Wardrobe', '移门衣柜', 320, 'USD', 'furniture', 24,
+select p.id, 'خزانة بأبواب منزلقة', 'Sliding-Door Wardrobe', '移门衣柜', 'USD', 'furniture', 24,
   'Sliding-Door Wardrobe — export-grade Furniture from Foshan Nova Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة بأبواب منزلقة — منتج أثاث للتصدير من Foshan Nova Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-5-3-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-5-3-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-3-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 32,
   true, 480.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-05@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Sliding-Door Wardrobe'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 320
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-05@example.com'
+  and lower(pr.name_en) = lower('Sliding-Door Wardrobe')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة قهوة عصرية', 'Modern Coffee Table', '现代茶几', 410, 'USD', 'furniture', 26,
+select p.id, 'طاولة قهوة عصرية', 'Modern Coffee Table', '现代茶几', 'USD', 'furniture', 26,
   'Modern Coffee Table — export-grade Furniture from Foshan Nova Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة قهوة عصرية — منتج أثاث للتصدير من Foshan Nova Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-5-4-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-5-4-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-4-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-5-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 33,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-05@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Modern Coffee Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 410
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-05@example.com'
+  and lower(pr.name_en) = lower('Modern Coffee Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Dongguan Orient Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كنبة قماش 3 مقاعد', '3-Seater Fabric Sofa', '三人布艺沙发', 140, 'USD', 'furniture', 20,
+select p.id, 'كنبة قماش 3 مقاعد', '3-Seater Fabric Sofa', '三人布艺沙发', 'USD', 'furniture', 20,
   '3-Seater Fabric Sofa — export-grade Furniture from Dongguan Orient Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كنبة قماش 3 مقاعد — منتج أثاث للتصدير من Dongguan Orient Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-6-1-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-6-1-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-1-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 210.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-06@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Seater Fabric Sofa'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 140
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-06@example.com'
+  and lower(pr.name_en) = lower('3-Seater Fabric Sofa')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم طعام 6 كراسي', '6-Seat Dining Set', '六人餐桌套装', 230, 'USD', 'furniture', 22,
+select p.id, 'طقم طعام 6 كراسي', '6-Seat Dining Set', '六人餐桌套装', 'USD', 'furniture', 22,
   '6-Seat Dining Set — export-grade Furniture from Dongguan Orient Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم طعام 6 كراسي — منتج أثاث للتصدير من Dongguan Orient Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-6-2-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-6-2-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-2-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-06@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('6-Seat Dining Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 230
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-06@example.com'
+  and lower(pr.name_en) = lower('6-Seat Dining Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة بأبواب منزلقة', 'Sliding-Door Wardrobe', '移门衣柜', 320, 'USD', 'furniture', 24,
+select p.id, 'خزانة بأبواب منزلقة', 'Sliding-Door Wardrobe', '移门衣柜', 'USD', 'furniture', 24,
   'Sliding-Door Wardrobe — export-grade Furniture from Dongguan Orient Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة بأبواب منزلقة — منتج أثاث للتصدير من Dongguan Orient Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-6-3-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-6-3-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-3-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 32,
   true, 480.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-06@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Sliding-Door Wardrobe'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 320
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-06@example.com'
+  and lower(pr.name_en) = lower('Sliding-Door Wardrobe')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة قهوة عصرية', 'Modern Coffee Table', '现代茶几', 410, 'USD', 'furniture', 26,
+select p.id, 'طاولة قهوة عصرية', 'Modern Coffee Table', '现代茶几', 'USD', 'furniture', 26,
   'Modern Coffee Table — export-grade Furniture from Dongguan Orient Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة قهوة عصرية — منتج أثاث للتصدير من Dongguan Orient Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-6-4-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-6-4-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-4-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-6-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 33,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-06@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Modern Coffee Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 410
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-06@example.com'
+  and lower(pr.name_en) = lower('Modern Coffee Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Xiamen Summit Office Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرسي مكتب مريح', 'Ergonomic Office Chair', '人体工学办公椅', 80, 'USD', 'office_furniture', 15,
+select p.id, 'كرسي مكتب مريح', 'Ergonomic Office Chair', '人体工学办公椅', 'USD', 'office_furniture', 15,
   'Ergonomic Office Chair — export-grade Office Furniture from Xiamen Summit Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرسي مكتب مريح — منتج أثاث مكتبي للتصدير من Xiamen Summit Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-7-1-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-7-1-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-1-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   true, 120.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-07@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Ergonomic Office Chair'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 80
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-07@example.com'
+  and lower(pr.name_en) = lower('Ergonomic Office Chair')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكتب تنفيذي', 'Executive Office Desk', '行政办公桌', 140, 'USD', 'office_furniture', 17,
+select p.id, 'مكتب تنفيذي', 'Executive Office Desk', '行政办公桌', 'USD', 'office_furniture', 17,
   'Executive Office Desk — export-grade Office Furniture from Xiamen Summit Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكتب تنفيذي — منتج أثاث مكتبي للتصدير من Xiamen Summit Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-7-2-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-7-2-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-2-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 29,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-07@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Executive Office Desk'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 140
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-07@example.com'
+  and lower(pr.name_en) = lower('Executive Office Desk')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة ملفات 3 أدراج', '3-Drawer Filing Cabinet', '三抽文件柜', 200, 'USD', 'office_furniture', 19,
+select p.id, 'خزانة ملفات 3 أدراج', '3-Drawer Filing Cabinet', '三抽文件柜', 'USD', 'office_furniture', 19,
   '3-Drawer Filing Cabinet — export-grade Office Furniture from Xiamen Summit Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة ملفات 3 أدراج — منتج أثاث مكتبي للتصدير من Xiamen Summit Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-7-3-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-7-3-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-3-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 300.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-07@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Drawer Filing Cabinet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 200
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-07@example.com'
+  and lower(pr.name_en) = lower('3-Drawer Filing Cabinet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة اجتماعات', 'Conference Meeting Table', '会议桌', 260, 'USD', 'office_furniture', 21,
+select p.id, 'طاولة اجتماعات', 'Conference Meeting Table', '会议桌', 'USD', 'office_furniture', 21,
   'Conference Meeting Table — export-grade Office Furniture from Xiamen Summit Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة اجتماعات — منتج أثاث مكتبي للتصدير من Xiamen Summit Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-7-4-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-7-4-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-4-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-7-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-07@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Conference Meeting Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 260
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-07@example.com'
+  and lower(pr.name_en) = lower('Conference Meeting Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Hangzhou Pacific Office Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرسي مكتب مريح', 'Ergonomic Office Chair', '人体工学办公椅', 80, 'USD', 'office_furniture', 15,
+select p.id, 'كرسي مكتب مريح', 'Ergonomic Office Chair', '人体工学办公椅', 'USD', 'office_furniture', 15,
   'Ergonomic Office Chair — export-grade Office Furniture from Hangzhou Pacific Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرسي مكتب مريح — منتج أثاث مكتبي للتصدير من Hangzhou Pacific Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-8-1-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-8-1-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-1-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   true, 120.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-08@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Ergonomic Office Chair'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 80
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-08@example.com'
+  and lower(pr.name_en) = lower('Ergonomic Office Chair')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكتب تنفيذي', 'Executive Office Desk', '行政办公桌', 140, 'USD', 'office_furniture', 17,
+select p.id, 'مكتب تنفيذي', 'Executive Office Desk', '行政办公桌', 'USD', 'office_furniture', 17,
   'Executive Office Desk — export-grade Office Furniture from Hangzhou Pacific Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكتب تنفيذي — منتج أثاث مكتبي للتصدير من Hangzhou Pacific Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-8-2-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-8-2-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-2-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 29,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-08@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Executive Office Desk'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 140
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-08@example.com'
+  and lower(pr.name_en) = lower('Executive Office Desk')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة ملفات 3 أدراج', '3-Drawer Filing Cabinet', '三抽文件柜', 200, 'USD', 'office_furniture', 19,
+select p.id, 'خزانة ملفات 3 أدراج', '3-Drawer Filing Cabinet', '三抽文件柜', 'USD', 'office_furniture', 19,
   '3-Drawer Filing Cabinet — export-grade Office Furniture from Hangzhou Pacific Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة ملفات 3 أدراج — منتج أثاث مكتبي للتصدير من Hangzhou Pacific Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-8-3-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-8-3-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-3-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 300.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-08@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Drawer Filing Cabinet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 200
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-08@example.com'
+  and lower(pr.name_en) = lower('3-Drawer Filing Cabinet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة اجتماعات', 'Conference Meeting Table', '会议桌', 260, 'USD', 'office_furniture', 21,
+select p.id, 'طاولة اجتماعات', 'Conference Meeting Table', '会议桌', 'USD', 'office_furniture', 21,
   'Conference Meeting Table — export-grade Office Furniture from Hangzhou Pacific Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة اجتماعات — منتج أثاث مكتبي للتصدير من Hangzhou Pacific Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-8-4-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-8-4-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-4-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-8-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-08@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Conference Meeting Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 260
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-08@example.com'
+  and lower(pr.name_en) = lower('Conference Meeting Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Suzhou Golden Bedroom Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سرير منجد', 'Upholstered Bed Frame', '软包床架', 120, 'USD', 'bedroom_furniture', 12,
+select p.id, 'سرير منجد', 'Upholstered Bed Frame', '软包床架', 'USD', 'bedroom_furniture', 12,
   'Upholstered Bed Frame — export-grade Bedroom Furniture from Suzhou Golden Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سرير منجد — منتج أثاث غرف النوم للتصدير من Suzhou Golden Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-1-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-9-1-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-1-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 180.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-09@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Upholstered Bed Frame'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 120
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-09@example.com'
+  and lower(pr.name_en) = lower('Upholstered Bed Frame')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كومودينو جانبي', 'Bedside Nightstand', '床头柜', 190, 'USD', 'bedroom_furniture', 13,
+select p.id, 'كومودينو جانبي', 'Bedside Nightstand', '床头柜', 'USD', 'bedroom_furniture', 13,
   'Bedside Nightstand — export-grade Bedroom Furniture from Suzhou Golden Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كومودينو جانبي — منتج أثاث غرف النوم للتصدير من Suzhou Golden Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-2-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-9-2-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-2-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-09@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Bedside Nightstand'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 190
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-09@example.com'
+  and lower(pr.name_en) = lower('Bedside Nightstand')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'تسريحة بمرآة', 'Dresser with Mirror', '带镜梳妆台', 260, 'USD', 'bedroom_furniture', 14,
+select p.id, 'تسريحة بمرآة', 'Dresser with Mirror', '带镜梳妆台', 'USD', 'bedroom_furniture', 14,
   'Dresser with Mirror — export-grade Bedroom Furniture from Suzhou Golden Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'تسريحة بمرآة — منتج أثاث غرف النوم للتصدير من Suzhou Golden Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-3-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-9-3-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-3-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 32,
   true, 390.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-09@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Dresser with Mirror'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 260
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-09@example.com'
+  and lower(pr.name_en) = lower('Dresser with Mirror')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مرتبة إسفنجية', 'Memory Foam Mattress', '记忆棉床垫', 330, 'USD', 'bedroom_furniture', 15,
+select p.id, 'مرتبة إسفنجية', 'Memory Foam Mattress', '记忆棉床垫', 'USD', 'bedroom_furniture', 15,
   'Memory Foam Mattress — export-grade Bedroom Furniture from Suzhou Golden Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مرتبة إسفنجية — منتج أثاث غرف النوم للتصدير من Suzhou Golden Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-4-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-9-4-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-4-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-9-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 33,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-09@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Memory Foam Mattress'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 330
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-09@example.com'
+  and lower(pr.name_en) = lower('Memory Foam Mattress')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Qingdao Evergreen Bedroom Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سرير منجد', 'Upholstered Bed Frame', '软包床架', 120, 'USD', 'bedroom_furniture', 12,
+select p.id, 'سرير منجد', 'Upholstered Bed Frame', '软包床架', 'USD', 'bedroom_furniture', 12,
   'Upholstered Bed Frame — export-grade Bedroom Furniture from Qingdao Evergreen Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سرير منجد — منتج أثاث غرف النوم للتصدير من Qingdao Evergreen Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-1-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-10-1-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-1-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 180.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-10@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Upholstered Bed Frame'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 120
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-10@example.com'
+  and lower(pr.name_en) = lower('Upholstered Bed Frame')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كومودينو جانبي', 'Bedside Nightstand', '床头柜', 190, 'USD', 'bedroom_furniture', 13,
+select p.id, 'كومودينو جانبي', 'Bedside Nightstand', '床头柜', 'USD', 'bedroom_furniture', 13,
   'Bedside Nightstand — export-grade Bedroom Furniture from Qingdao Evergreen Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كومودينو جانبي — منتج أثاث غرف النوم للتصدير من Qingdao Evergreen Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-2-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-10-2-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-2-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-10@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Bedside Nightstand'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 190
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-10@example.com'
+  and lower(pr.name_en) = lower('Bedside Nightstand')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'تسريحة بمرآة', 'Dresser with Mirror', '带镜梳妆台', 260, 'USD', 'bedroom_furniture', 14,
+select p.id, 'تسريحة بمرآة', 'Dresser with Mirror', '带镜梳妆台', 'USD', 'bedroom_furniture', 14,
   'Dresser with Mirror — export-grade Bedroom Furniture from Qingdao Evergreen Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'تسريحة بمرآة — منتج أثاث غرف النوم للتصدير من Qingdao Evergreen Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-3-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-10-3-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-3-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 32,
   true, 390.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-10@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Dresser with Mirror'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 260
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-10@example.com'
+  and lower(pr.name_en) = lower('Dresser with Mirror')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مرتبة إسفنجية', 'Memory Foam Mattress', '记忆棉床垫', 330, 'USD', 'bedroom_furniture', 15,
+select p.id, 'مرتبة إسفنجية', 'Memory Foam Mattress', '记忆棉床垫', 'USD', 'bedroom_furniture', 15,
   'Memory Foam Mattress — export-grade Bedroom Furniture from Qingdao Evergreen Bedroom Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مرتبة إسفنجية — منتج أثاث غرف النوم للتصدير من Qingdao Evergreen Bedroom Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-4-1/1200/900', array['https://picsum.photos/seed/maabar-bedroom_furniture-10-4-1/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-4-2/1200/900', 'https://picsum.photos/seed/maabar-bedroom_furniture-10-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 33,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-10@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Memory Foam Mattress'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 330
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-10@example.com'
+  and lower(pr.name_en) = lower('Memory Foam Mattress')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Guangzhou Skyline Kitchen Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة مطبخ معيارية', 'Modular Kitchen Cabinet', '整体橱柜', 160, 'USD', 'kitchen_furniture', 10,
+select p.id, 'خزانة مطبخ معيارية', 'Modular Kitchen Cabinet', '整体橱柜', 'USD', 'kitchen_furniture', 10,
   'Modular Kitchen Cabinet — export-grade Kitchen Furniture from Guangzhou Skyline Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة مطبخ معيارية — منتج أثاث المطبخ للتصدير من Guangzhou Skyline Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-1-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-11-1-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-1-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 35,
   true, 240.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-11@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Modular Kitchen Cabinet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 160
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-11@example.com'
+  and lower(pr.name_en) = lower('Modular Kitchen Cabinet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'جزيرة مطبخ', 'Kitchen Island Unit', '厨房中岛', 280, 'USD', 'kitchen_furniture', 11,
+select p.id, 'جزيرة مطبخ', 'Kitchen Island Unit', '厨房中岛', 'USD', 'kitchen_furniture', 11,
   'Kitchen Island Unit — export-grade Kitchen Furniture from Guangzhou Skyline Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'جزيرة مطبخ — منتج أثاث المطبخ للتصدير من Guangzhou Skyline Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-2-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-11-2-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-2-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 36,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-11@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Kitchen Island Unit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 280
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-11@example.com'
+  and lower(pr.name_en) = lower('Kitchen Island Unit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'وحدة تخزين مؤن', 'Pantry Storage Unit', '餐边储物柜', 400, 'USD', 'kitchen_furniture', 12,
+select p.id, 'وحدة تخزين مؤن', 'Pantry Storage Unit', '餐边储物柜', 'USD', 'kitchen_furniture', 12,
   'Pantry Storage Unit — export-grade Kitchen Furniture from Guangzhou Skyline Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'وحدة تخزين مؤن — منتج أثاث المطبخ للتصدير من Guangzhou Skyline Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-3-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-11-3-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-3-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 37,
   true, 600.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-11@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Pantry Storage Unit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 400
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-11@example.com'
+  and lower(pr.name_en) = lower('Pantry Storage Unit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سطح عمل ستانلس', 'Stainless Steel Worktop', '不锈钢台面', 520, 'USD', 'kitchen_furniture', 13,
+select p.id, 'سطح عمل ستانلس', 'Stainless Steel Worktop', '不锈钢台面', 'USD', 'kitchen_furniture', 13,
   'Stainless Steel Worktop — export-grade Kitchen Furniture from Guangzhou Skyline Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سطح عمل ستانلس — منتج أثاث المطبخ للتصدير من Guangzhou Skyline Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-4-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-11-4-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-4-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-11-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 38,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-11@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Stainless Steel Worktop'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 520
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-11@example.com'
+  and lower(pr.name_en) = lower('Stainless Steel Worktop')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Shenzhen Unison Kitchen Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة مطبخ معيارية', 'Modular Kitchen Cabinet', '整体橱柜', 160, 'USD', 'kitchen_furniture', 10,
+select p.id, 'خزانة مطبخ معيارية', 'Modular Kitchen Cabinet', '整体橱柜', 'USD', 'kitchen_furniture', 10,
   'Modular Kitchen Cabinet — export-grade Kitchen Furniture from Shenzhen Unison Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة مطبخ معيارية — منتج أثاث المطبخ للتصدير من Shenzhen Unison Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-1-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-12-1-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-1-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 35,
   true, 240.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-12@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Modular Kitchen Cabinet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 160
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-12@example.com'
+  and lower(pr.name_en) = lower('Modular Kitchen Cabinet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'جزيرة مطبخ', 'Kitchen Island Unit', '厨房中岛', 280, 'USD', 'kitchen_furniture', 11,
+select p.id, 'جزيرة مطبخ', 'Kitchen Island Unit', '厨房中岛', 'USD', 'kitchen_furniture', 11,
   'Kitchen Island Unit — export-grade Kitchen Furniture from Shenzhen Unison Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'جزيرة مطبخ — منتج أثاث المطبخ للتصدير من Shenzhen Unison Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-2-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-12-2-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-2-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 36,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-12@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Kitchen Island Unit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 280
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-12@example.com'
+  and lower(pr.name_en) = lower('Kitchen Island Unit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'وحدة تخزين مؤن', 'Pantry Storage Unit', '餐边储物柜', 400, 'USD', 'kitchen_furniture', 12,
+select p.id, 'وحدة تخزين مؤن', 'Pantry Storage Unit', '餐边储物柜', 'USD', 'kitchen_furniture', 12,
   'Pantry Storage Unit — export-grade Kitchen Furniture from Shenzhen Unison Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'وحدة تخزين مؤن — منتج أثاث المطبخ للتصدير من Shenzhen Unison Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-3-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-12-3-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-3-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 37,
   true, 600.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-12@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Pantry Storage Unit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 400
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-12@example.com'
+  and lower(pr.name_en) = lower('Pantry Storage Unit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سطح عمل ستانلس', 'Stainless Steel Worktop', '不锈钢台面', 520, 'USD', 'kitchen_furniture', 13,
+select p.id, 'سطح عمل ستانلس', 'Stainless Steel Worktop', '不锈钢台面', 'USD', 'kitchen_furniture', 13,
   'Stainless Steel Worktop — export-grade Kitchen Furniture from Shenzhen Unison Kitchen Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سطح عمل ستانلس — منتج أثاث المطبخ للتصدير من Shenzhen Unison Kitchen Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-4-1/1200/900', array['https://picsum.photos/seed/maabar-kitchen_furniture-12-4-1/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-4-2/1200/900', 'https://picsum.photos/seed/maabar-kitchen_furniture-12-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 38,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-12@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Stainless Steel Worktop'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 520
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-12@example.com'
+  and lower(pr.name_en) = lower('Stainless Steel Worktop')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Yiwu Brightway Outdoor Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم حديقة روطان', 'Rattan Patio Set', '藤编户外套装', 60, 'USD', 'outdoor_furniture', 20,
+select p.id, 'طقم حديقة روطان', 'Rattan Patio Set', '藤编户外套装', 'USD', 'outdoor_furniture', 20,
   'Rattan Patio Set — export-grade Outdoor Furniture from Yiwu Brightway Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم حديقة روطان — منتج أثاث خارجي للتصدير من Yiwu Brightway Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-1-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-13-1-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-1-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 25,
   true, 90.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-13@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Rattan Patio Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 60
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-13@example.com'
+  and lower(pr.name_en) = lower('Rattan Patio Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مظلة حديقة', 'Garden Sun Umbrella', '户外遮阳伞', 105, 'USD', 'outdoor_furniture', 22,
+select p.id, 'مظلة حديقة', 'Garden Sun Umbrella', '户外遮阳伞', 'USD', 'outdoor_furniture', 22,
   'Garden Sun Umbrella — export-grade Outdoor Furniture from Yiwu Brightway Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مظلة حديقة — منتج أثاث خارجي للتصدير من Yiwu Brightway Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-2-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-13-2-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-2-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 26,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-13@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Garden Sun Umbrella'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 105
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-13@example.com'
+  and lower(pr.name_en) = lower('Garden Sun Umbrella')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرسي استرخاء خارجي', 'Outdoor Lounge Chair', '户外躺椅', 150, 'USD', 'outdoor_furniture', 24,
+select p.id, 'كرسي استرخاء خارجي', 'Outdoor Lounge Chair', '户外躺椅', 'USD', 'outdoor_furniture', 24,
   'Outdoor Lounge Chair — export-grade Outdoor Furniture from Yiwu Brightway Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرسي استرخاء خارجي — منتج أثاث خارجي للتصدير من Yiwu Brightway Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-3-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-13-3-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-3-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 27,
   true, 225.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-13@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Outdoor Lounge Chair'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 150
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-13@example.com'
+  and lower(pr.name_en) = lower('Outdoor Lounge Chair')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة نزهة قابلة للطي', 'Folding Picnic Table', '折叠野餐桌', 195, 'USD', 'outdoor_furniture', 26,
+select p.id, 'طاولة نزهة قابلة للطي', 'Folding Picnic Table', '折叠野餐桌', 'USD', 'outdoor_furniture', 26,
   'Folding Picnic Table — export-grade Outdoor Furniture from Yiwu Brightway Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة نزهة قابلة للطي — منتج أثاث خارجي للتصدير من Yiwu Brightway Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-4-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-13-4-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-4-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-13-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-13@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Folding Picnic Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 195
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-13@example.com'
+  and lower(pr.name_en) = lower('Folding Picnic Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Ningbo EastPort Outdoor Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم حديقة روطان', 'Rattan Patio Set', '藤编户外套装', 60, 'USD', 'outdoor_furniture', 20,
+select p.id, 'طقم حديقة روطان', 'Rattan Patio Set', '藤编户外套装', 'USD', 'outdoor_furniture', 20,
   'Rattan Patio Set — export-grade Outdoor Furniture from Ningbo EastPort Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم حديقة روطان — منتج أثاث خارجي للتصدير من Ningbo EastPort Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-1-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-14-1-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-1-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 25,
   true, 90.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-14@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Rattan Patio Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 60
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-14@example.com'
+  and lower(pr.name_en) = lower('Rattan Patio Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مظلة حديقة', 'Garden Sun Umbrella', '户外遮阳伞', 105, 'USD', 'outdoor_furniture', 22,
+select p.id, 'مظلة حديقة', 'Garden Sun Umbrella', '户外遮阳伞', 'USD', 'outdoor_furniture', 22,
   'Garden Sun Umbrella — export-grade Outdoor Furniture from Ningbo EastPort Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مظلة حديقة — منتج أثاث خارجي للتصدير من Ningbo EastPort Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-2-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-14-2-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-2-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 26,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-14@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Garden Sun Umbrella'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 105
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-14@example.com'
+  and lower(pr.name_en) = lower('Garden Sun Umbrella')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرسي استرخاء خارجي', 'Outdoor Lounge Chair', '户外躺椅', 150, 'USD', 'outdoor_furniture', 24,
+select p.id, 'كرسي استرخاء خارجي', 'Outdoor Lounge Chair', '户外躺椅', 'USD', 'outdoor_furniture', 24,
   'Outdoor Lounge Chair — export-grade Outdoor Furniture from Ningbo EastPort Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرسي استرخاء خارجي — منتج أثاث خارجي للتصدير من Ningbo EastPort Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-3-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-14-3-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-3-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 27,
   true, 225.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-14@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Outdoor Lounge Chair'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 150
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-14@example.com'
+  and lower(pr.name_en) = lower('Outdoor Lounge Chair')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة نزهة قابلة للطي', 'Folding Picnic Table', '折叠野餐桌', 195, 'USD', 'outdoor_furniture', 26,
+select p.id, 'طاولة نزهة قابلة للطي', 'Folding Picnic Table', '折叠野餐桌', 'USD', 'outdoor_furniture', 26,
   'Folding Picnic Table — export-grade Outdoor Furniture from Ningbo EastPort Outdoor Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة نزهة قابلة للطي — منتج أثاث خارجي للتصدير من Ningbo EastPort Outdoor Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-4-1/1200/900', array['https://picsum.photos/seed/maabar-outdoor_furniture-14-4-1/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-4-2/1200/900', 'https://picsum.photos/seed/maabar-outdoor_furniture-14-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-14@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Folding Picnic Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 195
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-14@example.com'
+  and lower(pr.name_en) = lower('Folding Picnic Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Foshan Crownway Home Décor Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'لوحات جدارية', 'Wall Art Canvas Set', '装饰画套装', 12, 'USD', 'home_decor', 80,
+select p.id, 'لوحات جدارية', 'Wall Art Canvas Set', '装饰画套装', 'USD', 'home_decor', 80,
   'Wall Art Canvas Set — export-grade Home Décor from Foshan Crownway Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'لوحات جدارية — منتج ديكور منزلي للتصدير من Foshan Crownway Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-15-1-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-15-1-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-1-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 18.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-15@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Wall Art Canvas Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 12
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-15@example.com'
+  and lower(pr.name_en) = lower('Wall Art Canvas Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مزهرية أرضية', 'Decorative Floor Vase', '落地花瓶', 22, 'USD', 'home_decor', 88,
+select p.id, 'مزهرية أرضية', 'Decorative Floor Vase', '落地花瓶', 'USD', 'home_decor', 88,
   'Decorative Floor Vase — export-grade Home Décor from Foshan Crownway Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مزهرية أرضية — منتج ديكور منزلي للتصدير من Foshan Crownway Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-15-2-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-15-2-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-2-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-15@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Decorative Floor Vase'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 22
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-15@example.com'
+  and lower(pr.name_en) = lower('Decorative Floor Vase')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سجادة منسوجة', 'Woven Area Rug', '编织地毯', 32, 'USD', 'home_decor', 96,
+select p.id, 'سجادة منسوجة', 'Woven Area Rug', '编织地毯', 'USD', 'home_decor', 96,
   'Woven Area Rug — export-grade Home Décor from Foshan Crownway Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سجادة منسوجة — منتج ديكور منزلي للتصدير من Foshan Crownway Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-15-3-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-15-3-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-3-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 48.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-15@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Woven Area Rug'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 32
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-15@example.com'
+  and lower(pr.name_en) = lower('Woven Area Rug')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شموع معطرة', 'Scented Candle Set', '香薰蜡烛套装', 42, 'USD', 'home_decor', 104,
+select p.id, 'شموع معطرة', 'Scented Candle Set', '香薰蜡烛套装', 'USD', 'home_decor', 104,
   'Scented Candle Set — export-grade Home Décor from Foshan Crownway Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شموع معطرة — منتج ديكور منزلي للتصدير من Foshan Crownway Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-15-4-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-15-4-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-4-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-15-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-15@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Scented Candle Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 42
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-15@example.com'
+  and lower(pr.name_en) = lower('Scented Candle Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Dongguan Maxwell Home Décor Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'لوحات جدارية', 'Wall Art Canvas Set', '装饰画套装', 12, 'USD', 'home_decor', 80,
+select p.id, 'لوحات جدارية', 'Wall Art Canvas Set', '装饰画套装', 'USD', 'home_decor', 80,
   'Wall Art Canvas Set — export-grade Home Décor from Dongguan Maxwell Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'لوحات جدارية — منتج ديكور منزلي للتصدير من Dongguan Maxwell Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-16-1-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-16-1-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-1-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 18.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-16@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Wall Art Canvas Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 12
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-16@example.com'
+  and lower(pr.name_en) = lower('Wall Art Canvas Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مزهرية أرضية', 'Decorative Floor Vase', '落地花瓶', 22, 'USD', 'home_decor', 88,
+select p.id, 'مزهرية أرضية', 'Decorative Floor Vase', '落地花瓶', 'USD', 'home_decor', 88,
   'Decorative Floor Vase — export-grade Home Décor from Dongguan Maxwell Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مزهرية أرضية — منتج ديكور منزلي للتصدير من Dongguan Maxwell Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-16-2-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-16-2-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-2-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-16@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Decorative Floor Vase'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 22
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-16@example.com'
+  and lower(pr.name_en) = lower('Decorative Floor Vase')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سجادة منسوجة', 'Woven Area Rug', '编织地毯', 32, 'USD', 'home_decor', 96,
+select p.id, 'سجادة منسوجة', 'Woven Area Rug', '编织地毯', 'USD', 'home_decor', 96,
   'Woven Area Rug — export-grade Home Décor from Dongguan Maxwell Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سجادة منسوجة — منتج ديكور منزلي للتصدير من Dongguan Maxwell Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-16-3-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-16-3-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-3-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 48.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-16@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Woven Area Rug'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 32
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-16@example.com'
+  and lower(pr.name_en) = lower('Woven Area Rug')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شموع معطرة', 'Scented Candle Set', '香薰蜡烛套装', 42, 'USD', 'home_decor', 104,
+select p.id, 'شموع معطرة', 'Scented Candle Set', '香薰蜡烛套装', 'USD', 'home_decor', 104,
   'Scented Candle Set — export-grade Home Décor from Dongguan Maxwell Home Décor Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شموع معطرة — منتج ديكور منزلي للتصدير من Dongguan Maxwell Home Décor Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_decor-16-4-1/1200/900', array['https://picsum.photos/seed/maabar-home_decor-16-4-1/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-4-2/1200/900', 'https://picsum.photos/seed/maabar-home_decor-16-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-16@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Scented Candle Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 42
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-16@example.com'
+  and lower(pr.name_en) = lower('Scented Candle Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Xiamen Silkroad Apparel Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'تيشيرت قطن بالجملة', 'Cotton T-Shirt (Bulk)', '纯棉T恤', 4, 'USD', 'clothing', 300,
+select p.id, 'تيشيرت قطن بالجملة', 'Cotton T-Shirt (Bulk)', '纯棉T恤', 'USD', 'clothing', 300,
   'Cotton T-Shirt (Bulk) — export-grade Clothing from Xiamen Silkroad Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'تيشيرت قطن بالجملة — منتج ملابس للتصدير من Xiamen Silkroad Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-17-1-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-17-1-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-1-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 6.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-17@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Cotton T-Shirt (Bulk)'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 4
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-17@example.com'
+  and lower(pr.name_en) = lower('Cotton T-Shirt (Bulk)')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم عباية مطرزة', 'Embroidered Abaya Set', '刺绣阿巴雅', 9, 'USD', 'clothing', 330,
+select p.id, 'طقم عباية مطرزة', 'Embroidered Abaya Set', '刺绣阿巴雅', 'USD', 'clothing', 330,
   'Embroidered Abaya Set — export-grade Clothing from Xiamen Silkroad Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم عباية مطرزة — منتج ملابس للتصدير من Xiamen Silkroad Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-17-2-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-17-2-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-2-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-17@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Embroidered Abaya Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 9
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-17@example.com'
+  and lower(pr.name_en) = lower('Embroidered Abaya Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'بدلة رياضية', 'Activewear Tracksuit', '运动套装', 14, 'USD', 'clothing', 360,
+select p.id, 'بدلة رياضية', 'Activewear Tracksuit', '运动套装', 'USD', 'clothing', 360,
   'Activewear Tracksuit — export-grade Clothing from Xiamen Silkroad Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'بدلة رياضية — منتج ملابس للتصدير من Xiamen Silkroad Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-17-3-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-17-3-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-3-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 21.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-17@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Activewear Tracksuit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 14
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-17@example.com'
+  and lower(pr.name_en) = lower('Activewear Tracksuit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'جاكيت شتوي', 'Padded Winter Jacket', '加棉冬季外套', 19, 'USD', 'clothing', 390,
+select p.id, 'جاكيت شتوي', 'Padded Winter Jacket', '加棉冬季外套', 'USD', 'clothing', 390,
   'Padded Winter Jacket — export-grade Clothing from Xiamen Silkroad Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'جاكيت شتوي — منتج ملابس للتصدير من Xiamen Silkroad Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-17-4-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-17-4-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-4-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-17-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-17@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Padded Winter Jacket'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 19
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-17@example.com'
+  and lower(pr.name_en) = lower('Padded Winter Jacket')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Hangzhou Harbor Apparel Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'تيشيرت قطن بالجملة', 'Cotton T-Shirt (Bulk)', '纯棉T恤', 4, 'USD', 'clothing', 300,
+select p.id, 'تيشيرت قطن بالجملة', 'Cotton T-Shirt (Bulk)', '纯棉T恤', 'USD', 'clothing', 300,
   'Cotton T-Shirt (Bulk) — export-grade Clothing from Hangzhou Harbor Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'تيشيرت قطن بالجملة — منتج ملابس للتصدير من Hangzhou Harbor Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-18-1-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-18-1-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-1-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 6.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-18@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Cotton T-Shirt (Bulk)'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 4
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-18@example.com'
+  and lower(pr.name_en) = lower('Cotton T-Shirt (Bulk)')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم عباية مطرزة', 'Embroidered Abaya Set', '刺绣阿巴雅', 9, 'USD', 'clothing', 330,
+select p.id, 'طقم عباية مطرزة', 'Embroidered Abaya Set', '刺绣阿巴雅', 'USD', 'clothing', 330,
   'Embroidered Abaya Set — export-grade Clothing from Hangzhou Harbor Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم عباية مطرزة — منتج ملابس للتصدير من Hangzhou Harbor Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-18-2-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-18-2-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-2-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-18@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Embroidered Abaya Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 9
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-18@example.com'
+  and lower(pr.name_en) = lower('Embroidered Abaya Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'بدلة رياضية', 'Activewear Tracksuit', '运动套装', 14, 'USD', 'clothing', 360,
+select p.id, 'بدلة رياضية', 'Activewear Tracksuit', '运动套装', 'USD', 'clothing', 360,
   'Activewear Tracksuit — export-grade Clothing from Hangzhou Harbor Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'بدلة رياضية — منتج ملابس للتصدير من Hangzhou Harbor Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-18-3-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-18-3-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-3-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 21.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-18@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Activewear Tracksuit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 14
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-18@example.com'
+  and lower(pr.name_en) = lower('Activewear Tracksuit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'جاكيت شتوي', 'Padded Winter Jacket', '加棉冬季外套', 19, 'USD', 'clothing', 390,
+select p.id, 'جاكيت شتوي', 'Padded Winter Jacket', '加棉冬季外套', 'USD', 'clothing', 390,
   'Padded Winter Jacket — export-grade Clothing from Hangzhou Harbor Apparel Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'جاكيت شتوي — منتج ملابس للتصدير من Hangzhou Harbor Apparel Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-clothing-18-4-1/1200/900', array['https://picsum.photos/seed/maabar-clothing-18-4-1/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-4-2/1200/900', 'https://picsum.photos/seed/maabar-clothing-18-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-18@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Padded Winter Jacket'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 19
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-18@example.com'
+  and lower(pr.name_en) = lower('Padded Winter Jacket')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Suzhou Vanguard Building Materials Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'بلاط بورسلين', 'Porcelain Floor Tiles', '瓷砖', 3, 'USD', 'building', 500,
+select p.id, 'بلاط بورسلين', 'Porcelain Floor Tiles', '瓷砖', 'USD', 'building', 500,
   'Porcelain Floor Tiles — export-grade Building Materials from Suzhou Vanguard Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'بلاط بورسلين — منتج مواد بناء للتصدير من Suzhou Vanguard Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-19-1-1/1200/900', array['https://picsum.photos/seed/maabar-building-19-1-1/1200/900', 'https://picsum.photos/seed/maabar-building-19-1-2/1200/900', 'https://picsum.photos/seed/maabar-building-19-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 4.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-19@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Porcelain Floor Tiles'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-19@example.com'
+  and lower(pr.name_en) = lower('Porcelain Floor Tiles')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'ألواح جدران PVC', 'PVC Wall Panels', 'PVC墙板', 9, 'USD', 'building', 550,
+select p.id, 'ألواح جدران PVC', 'PVC Wall Panels', 'PVC墙板', 'USD', 'building', 550,
   'PVC Wall Panels — export-grade Building Materials from Suzhou Vanguard Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'ألواح جدران PVC — منتج مواد بناء للتصدير من Suzhou Vanguard Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-19-2-1/1200/900', array['https://picsum.photos/seed/maabar-building-19-2-1/1200/900', 'https://picsum.photos/seed/maabar-building-19-2-2/1200/900', 'https://picsum.photos/seed/maabar-building-19-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-19@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('PVC Wall Panels'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 9
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-19@example.com'
+  and lower(pr.name_en) = lower('PVC Wall Panels')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مقاطع نوافذ ألمنيوم', 'Aluminum Window Profiles', '铝合金型材', 15, 'USD', 'building', 600,
+select p.id, 'مقاطع نوافذ ألمنيوم', 'Aluminum Window Profiles', '铝合金型材', 'USD', 'building', 600,
   'Aluminum Window Profiles — export-grade Building Materials from Suzhou Vanguard Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مقاطع نوافذ ألمنيوم — منتج مواد بناء للتصدير من Suzhou Vanguard Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-19-3-1/1200/900', array['https://picsum.photos/seed/maabar-building-19-3-1/1200/900', 'https://picsum.photos/seed/maabar-building-19-3-2/1200/900', 'https://picsum.photos/seed/maabar-building-19-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 24,
   true, 22.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-19@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Aluminum Window Profiles'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 15
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-19@example.com'
+  and lower(pr.name_en) = lower('Aluminum Window Profiles')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'عازل مائي', 'Waterproof Membrane Roll', '防水卷材', 21, 'USD', 'building', 650,
+select p.id, 'عازل مائي', 'Waterproof Membrane Roll', '防水卷材', 'USD', 'building', 650,
   'Waterproof Membrane Roll — export-grade Building Materials from Suzhou Vanguard Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'عازل مائي — منتج مواد بناء للتصدير من Suzhou Vanguard Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-19-4-1/1200/900', array['https://picsum.photos/seed/maabar-building-19-4-1/1200/900', 'https://picsum.photos/seed/maabar-building-19-4-2/1200/900', 'https://picsum.photos/seed/maabar-building-19-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 25,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-19@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Waterproof Membrane Roll'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 21
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-19@example.com'
+  and lower(pr.name_en) = lower('Waterproof Membrane Roll')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Qingdao Pinnacle Building Materials Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'بلاط بورسلين', 'Porcelain Floor Tiles', '瓷砖', 3, 'USD', 'building', 500,
+select p.id, 'بلاط بورسلين', 'Porcelain Floor Tiles', '瓷砖', 'USD', 'building', 500,
   'Porcelain Floor Tiles — export-grade Building Materials from Qingdao Pinnacle Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'بلاط بورسلين — منتج مواد بناء للتصدير من Qingdao Pinnacle Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-20-1-1/1200/900', array['https://picsum.photos/seed/maabar-building-20-1-1/1200/900', 'https://picsum.photos/seed/maabar-building-20-1-2/1200/900', 'https://picsum.photos/seed/maabar-building-20-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 4.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-20@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Porcelain Floor Tiles'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-20@example.com'
+  and lower(pr.name_en) = lower('Porcelain Floor Tiles')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'ألواح جدران PVC', 'PVC Wall Panels', 'PVC墙板', 9, 'USD', 'building', 550,
+select p.id, 'ألواح جدران PVC', 'PVC Wall Panels', 'PVC墙板', 'USD', 'building', 550,
   'PVC Wall Panels — export-grade Building Materials from Qingdao Pinnacle Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'ألواح جدران PVC — منتج مواد بناء للتصدير من Qingdao Pinnacle Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-20-2-1/1200/900', array['https://picsum.photos/seed/maabar-building-20-2-1/1200/900', 'https://picsum.photos/seed/maabar-building-20-2-2/1200/900', 'https://picsum.photos/seed/maabar-building-20-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-20@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('PVC Wall Panels'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 9
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-20@example.com'
+  and lower(pr.name_en) = lower('PVC Wall Panels')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مقاطع نوافذ ألمنيوم', 'Aluminum Window Profiles', '铝合金型材', 15, 'USD', 'building', 600,
+select p.id, 'مقاطع نوافذ ألمنيوم', 'Aluminum Window Profiles', '铝合金型材', 'USD', 'building', 600,
   'Aluminum Window Profiles — export-grade Building Materials from Qingdao Pinnacle Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مقاطع نوافذ ألمنيوم — منتج مواد بناء للتصدير من Qingdao Pinnacle Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-20-3-1/1200/900', array['https://picsum.photos/seed/maabar-building-20-3-1/1200/900', 'https://picsum.photos/seed/maabar-building-20-3-2/1200/900', 'https://picsum.photos/seed/maabar-building-20-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 24,
   true, 22.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-20@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Aluminum Window Profiles'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 15
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-20@example.com'
+  and lower(pr.name_en) = lower('Aluminum Window Profiles')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'عازل مائي', 'Waterproof Membrane Roll', '防水卷材', 21, 'USD', 'building', 650,
+select p.id, 'عازل مائي', 'Waterproof Membrane Roll', '防水卷材', 'USD', 'building', 650,
   'Waterproof Membrane Roll — export-grade Building Materials from Qingdao Pinnacle Building Materials Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'عازل مائي — منتج مواد بناء للتصدير من Qingdao Pinnacle Building Materials Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-building-20-4-1/1200/900', array['https://picsum.photos/seed/maabar-building-20-4-1/1200/900', 'https://picsum.photos/seed/maabar-building-20-4-2/1200/900', 'https://picsum.photos/seed/maabar-building-20-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 25,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-20@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Waterproof Membrane Roll'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 21
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-20@example.com'
+  and lower(pr.name_en) = lower('Waterproof Membrane Roll')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Guangzhou Trinity Food Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'تمور فاخرة', 'Premium Date Gift Pack', '精品椰枣礼盒', 6, 'USD', 'food', 200,
+select p.id, 'تمور فاخرة', 'Premium Date Gift Pack', '精品椰枣礼盒', 'USD', 'food', 200,
   'Premium Date Gift Pack — export-grade Food from Guangzhou Trinity Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'تمور فاخرة — منتج غذاء للتصدير من Guangzhou Trinity Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-21-1-1/1200/900', array['https://picsum.photos/seed/maabar-food-21-1-1/1200/900', 'https://picsum.photos/seed/maabar-food-21-1-2/1200/900', 'https://picsum.photos/seed/maabar-food-21-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 12,
   true, 9.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-21@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Premium Date Gift Pack'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 6
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-21@example.com'
+  and lower(pr.name_en) = lower('Premium Date Gift Pack')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت زيتون بكر', 'Extra-Virgin Olive Oil', '特级初榨橄榄油', 13, 'USD', 'food', 220,
+select p.id, 'زيت زيتون بكر', 'Extra-Virgin Olive Oil', '特级初榨橄榄油', 'USD', 'food', 220,
   'Extra-Virgin Olive Oil — export-grade Food from Guangzhou Trinity Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت زيتون بكر — منتج غذاء للتصدير من Guangzhou Trinity Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-21-2-1/1200/900', array['https://picsum.photos/seed/maabar-food-21-2-1/1200/900', 'https://picsum.photos/seed/maabar-food-21-2-2/1200/900', 'https://picsum.photos/seed/maabar-food-21-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 13,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-21@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Extra-Virgin Olive Oil'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 13
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-21@example.com'
+  and lower(pr.name_en) = lower('Extra-Virgin Olive Oil')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكسرات مشكلة', 'Mixed Nuts (Bulk)', '混合坚果', 20, 'USD', 'food', 240,
+select p.id, 'مكسرات مشكلة', 'Mixed Nuts (Bulk)', '混合坚果', 'USD', 'food', 240,
   'Mixed Nuts (Bulk) — export-grade Food from Guangzhou Trinity Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكسرات مشكلة — منتج غذاء للتصدير من Guangzhou Trinity Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-21-3-1/1200/900', array['https://picsum.photos/seed/maabar-food-21-3-1/1200/900', 'https://picsum.photos/seed/maabar-food-21-3-2/1200/900', 'https://picsum.photos/seed/maabar-food-21-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 14,
   true, 30.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-21@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Mixed Nuts (Bulk)'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 20
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-21@example.com'
+  and lower(pr.name_en) = lower('Mixed Nuts (Bulk)')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'حبوب قهوة مختصة', 'Specialty Coffee Beans', '精品咖啡豆', 27, 'USD', 'food', 260,
+select p.id, 'حبوب قهوة مختصة', 'Specialty Coffee Beans', '精品咖啡豆', 'USD', 'food', 260,
   'Specialty Coffee Beans — export-grade Food from Guangzhou Trinity Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'حبوب قهوة مختصة — منتج غذاء للتصدير من Guangzhou Trinity Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-21-4-1/1200/900', array['https://picsum.photos/seed/maabar-food-21-4-1/1200/900', 'https://picsum.photos/seed/maabar-food-21-4-2/1200/900', 'https://picsum.photos/seed/maabar-food-21-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-21@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Specialty Coffee Beans'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 27
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-21@example.com'
+  and lower(pr.name_en) = lower('Specialty Coffee Beans')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Shenzhen Zenith Food Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'تمور فاخرة', 'Premium Date Gift Pack', '精品椰枣礼盒', 6, 'USD', 'food', 200,
+select p.id, 'تمور فاخرة', 'Premium Date Gift Pack', '精品椰枣礼盒', 'USD', 'food', 200,
   'Premium Date Gift Pack — export-grade Food from Shenzhen Zenith Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'تمور فاخرة — منتج غذاء للتصدير من Shenzhen Zenith Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-22-1-1/1200/900', array['https://picsum.photos/seed/maabar-food-22-1-1/1200/900', 'https://picsum.photos/seed/maabar-food-22-1-2/1200/900', 'https://picsum.photos/seed/maabar-food-22-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 12,
   true, 9.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-22@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Premium Date Gift Pack'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 6
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-22@example.com'
+  and lower(pr.name_en) = lower('Premium Date Gift Pack')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت زيتون بكر', 'Extra-Virgin Olive Oil', '特级初榨橄榄油', 13, 'USD', 'food', 220,
+select p.id, 'زيت زيتون بكر', 'Extra-Virgin Olive Oil', '特级初榨橄榄油', 'USD', 'food', 220,
   'Extra-Virgin Olive Oil — export-grade Food from Shenzhen Zenith Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت زيتون بكر — منتج غذاء للتصدير من Shenzhen Zenith Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-22-2-1/1200/900', array['https://picsum.photos/seed/maabar-food-22-2-1/1200/900', 'https://picsum.photos/seed/maabar-food-22-2-2/1200/900', 'https://picsum.photos/seed/maabar-food-22-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 13,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-22@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Extra-Virgin Olive Oil'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 13
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-22@example.com'
+  and lower(pr.name_en) = lower('Extra-Virgin Olive Oil')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكسرات مشكلة', 'Mixed Nuts (Bulk)', '混合坚果', 20, 'USD', 'food', 240,
+select p.id, 'مكسرات مشكلة', 'Mixed Nuts (Bulk)', '混合坚果', 'USD', 'food', 240,
   'Mixed Nuts (Bulk) — export-grade Food from Shenzhen Zenith Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكسرات مشكلة — منتج غذاء للتصدير من Shenzhen Zenith Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-22-3-1/1200/900', array['https://picsum.photos/seed/maabar-food-22-3-1/1200/900', 'https://picsum.photos/seed/maabar-food-22-3-2/1200/900', 'https://picsum.photos/seed/maabar-food-22-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 14,
   true, 30.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-22@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Mixed Nuts (Bulk)'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 20
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-22@example.com'
+  and lower(pr.name_en) = lower('Mixed Nuts (Bulk)')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'حبوب قهوة مختصة', 'Specialty Coffee Beans', '精品咖啡豆', 27, 'USD', 'food', 260,
+select p.id, 'حبوب قهوة مختصة', 'Specialty Coffee Beans', '精品咖啡豆', 'USD', 'food', 260,
   'Specialty Coffee Beans — export-grade Food from Shenzhen Zenith Food Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'حبوب قهوة مختصة — منتج غذاء للتصدير من Shenzhen Zenith Food Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-food-22-4-1/1200/900', array['https://picsum.photos/seed/maabar-food-22-4-1/1200/900', 'https://picsum.photos/seed/maabar-food-22-4-2/1200/900', 'https://picsum.photos/seed/maabar-food-22-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-22@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Specialty Coffee Beans'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 27
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-22@example.com'
+  and lower(pr.name_en) = lower('Specialty Coffee Beans')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Yiwu Cardinal Beauty Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'عبوات مضخة تجميل', 'Cosmetic Pump Bottles', '化妆品泵瓶', 3, 'USD', 'beauty', 250,
+select p.id, 'عبوات مضخة تجميل', 'Cosmetic Pump Bottles', '化妆品泵瓶', 'USD', 'beauty', 250,
   'Cosmetic Pump Bottles — export-grade Beauty & Personal Care from Yiwu Cardinal Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'عبوات مضخة تجميل — منتج عناية وتجميل للتصدير من Yiwu Cardinal Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-23-1-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-23-1-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-1-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 4.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-23@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Cosmetic Pump Bottles'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-23@example.com'
+  and lower(pr.name_en) = lower('Cosmetic Pump Bottles')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم فرش مكياج', '12-pc Makeup Brush Set', '化妆刷套装', 7, 'USD', 'beauty', 275,
+select p.id, 'طقم فرش مكياج', '12-pc Makeup Brush Set', '化妆刷套装', 'USD', 'beauty', 275,
   '12-pc Makeup Brush Set — export-grade Beauty & Personal Care from Yiwu Cardinal Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم فرش مكياج — منتج عناية وتجميل للتصدير من Yiwu Cardinal Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-23-2-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-23-2-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-2-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-23@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('12-pc Makeup Brush Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 7
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-23@example.com'
+  and lower(pr.name_en) = lower('12-pc Makeup Brush Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سيروم فيتامين سي', 'Vitamin-C Skincare Serum', '维C护肤精华', 11, 'USD', 'beauty', 300,
+select p.id, 'سيروم فيتامين سي', 'Vitamin-C Skincare Serum', '维C护肤精华', 'USD', 'beauty', 300,
   'Vitamin-C Skincare Serum — export-grade Beauty & Personal Care from Yiwu Cardinal Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سيروم فيتامين سي — منتج عناية وتجميل للتصدير من Yiwu Cardinal Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-23-3-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-23-3-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-3-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 16.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-23@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Vitamin-C Skincare Serum'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 11
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-23@example.com'
+  and lower(pr.name_en) = lower('Vitamin-C Skincare Serum')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أدوات تصفيف شعر', 'Hair Styling Tool Kit', '美发造型套装', 15, 'USD', 'beauty', 325,
+select p.id, 'أدوات تصفيف شعر', 'Hair Styling Tool Kit', '美发造型套装', 'USD', 'beauty', 325,
   'Hair Styling Tool Kit — export-grade Beauty & Personal Care from Yiwu Cardinal Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أدوات تصفيف شعر — منتج عناية وتجميل للتصدير من Yiwu Cardinal Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-23-4-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-23-4-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-4-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-23-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-23@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Hair Styling Tool Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 15
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-23@example.com'
+  and lower(pr.name_en) = lower('Hair Styling Tool Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Ningbo Meridian Beauty Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'عبوات مضخة تجميل', 'Cosmetic Pump Bottles', '化妆品泵瓶', 3, 'USD', 'beauty', 250,
+select p.id, 'عبوات مضخة تجميل', 'Cosmetic Pump Bottles', '化妆品泵瓶', 'USD', 'beauty', 250,
   'Cosmetic Pump Bottles — export-grade Beauty & Personal Care from Ningbo Meridian Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'عبوات مضخة تجميل — منتج عناية وتجميل للتصدير من Ningbo Meridian Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-24-1-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-24-1-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-1-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 4.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-24@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Cosmetic Pump Bottles'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-24@example.com'
+  and lower(pr.name_en) = lower('Cosmetic Pump Bottles')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم فرش مكياج', '12-pc Makeup Brush Set', '化妆刷套装', 7, 'USD', 'beauty', 275,
+select p.id, 'طقم فرش مكياج', '12-pc Makeup Brush Set', '化妆刷套装', 'USD', 'beauty', 275,
   '12-pc Makeup Brush Set — export-grade Beauty & Personal Care from Ningbo Meridian Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم فرش مكياج — منتج عناية وتجميل للتصدير من Ningbo Meridian Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-24-2-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-24-2-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-2-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-24@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('12-pc Makeup Brush Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 7
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-24@example.com'
+  and lower(pr.name_en) = lower('12-pc Makeup Brush Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سيروم فيتامين سي', 'Vitamin-C Skincare Serum', '维C护肤精华', 11, 'USD', 'beauty', 300,
+select p.id, 'سيروم فيتامين سي', 'Vitamin-C Skincare Serum', '维C护肤精华', 'USD', 'beauty', 300,
   'Vitamin-C Skincare Serum — export-grade Beauty & Personal Care from Ningbo Meridian Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سيروم فيتامين سي — منتج عناية وتجميل للتصدير من Ningbo Meridian Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-24-3-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-24-3-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-3-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 16.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-24@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Vitamin-C Skincare Serum'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 11
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-24@example.com'
+  and lower(pr.name_en) = lower('Vitamin-C Skincare Serum')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أدوات تصفيف شعر', 'Hair Styling Tool Kit', '美发造型套装', 15, 'USD', 'beauty', 325,
+select p.id, 'أدوات تصفيف شعر', 'Hair Styling Tool Kit', '美发造型套装', 'USD', 'beauty', 325,
   'Hair Styling Tool Kit — export-grade Beauty & Personal Care from Ningbo Meridian Beauty Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أدوات تصفيف شعر — منتج عناية وتجميل للتصدير من Ningbo Meridian Beauty Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-beauty-24-4-1/1200/900', array['https://picsum.photos/seed/maabar-beauty-24-4-1/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-4-2/1200/900', 'https://picsum.photos/seed/maabar-beauty-24-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-24@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Hair Styling Tool Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 15
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-24@example.com'
+  and lower(pr.name_en) = lower('Hair Styling Tool Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Foshan Falcon Sports Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سجادة يوغا', 'Non-Slip Yoga Mat', '防滑瑜伽垫', 9, 'USD', 'sports', 120,
+select p.id, 'سجادة يوغا', 'Non-Slip Yoga Mat', '防滑瑜伽垫', 'USD', 'sports', 120,
   'Non-Slip Yoga Mat — export-grade Sports from Foshan Falcon Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سجادة يوغا — منتج رياضة للتصدير من Foshan Falcon Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-25-1-1/1200/900', array['https://picsum.photos/seed/maabar-sports-25-1-1/1200/900', 'https://picsum.photos/seed/maabar-sports-25-1-2/1200/900', 'https://picsum.photos/seed/maabar-sports-25-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 13.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-25@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Non-Slip Yoga Mat'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 9
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-25@example.com'
+  and lower(pr.name_en) = lower('Non-Slip Yoga Mat')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'دمبل قابل للتعديل', 'Adjustable Dumbbell Set', '可调哑铃', 20, 'USD', 'sports', 132,
+select p.id, 'دمبل قابل للتعديل', 'Adjustable Dumbbell Set', '可调哑铃', 'USD', 'sports', 132,
   'Adjustable Dumbbell Set — export-grade Sports from Foshan Falcon Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'دمبل قابل للتعديل — منتج رياضة للتصدير من Foshan Falcon Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-25-2-1/1200/900', array['https://picsum.photos/seed/maabar-sports-25-2-1/1200/900', 'https://picsum.photos/seed/maabar-sports-25-2-2/1200/900', 'https://picsum.photos/seed/maabar-sports-25-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-25@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Adjustable Dumbbell Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 20
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-25@example.com'
+  and lower(pr.name_en) = lower('Adjustable Dumbbell Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خيمة تخييم 4 أشخاص', '4-Person Camping Tent', '四人帐篷', 31, 'USD', 'sports', 144,
+select p.id, 'خيمة تخييم 4 أشخاص', '4-Person Camping Tent', '四人帐篷', 'USD', 'sports', 144,
   '4-Person Camping Tent — export-grade Sports from Foshan Falcon Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خيمة تخييم 4 أشخاص — منتج رياضة للتصدير من Foshan Falcon Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-25-3-1/1200/900', array['https://picsum.photos/seed/maabar-sports-25-3-1/1200/900', 'https://picsum.photos/seed/maabar-sports-25-3-2/1200/900', 'https://picsum.photos/seed/maabar-sports-25-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 46.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-25@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('4-Person Camping Tent'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 31
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-25@example.com'
+  and lower(pr.name_en) = lower('4-Person Camping Tent')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرة قدم', 'Match Football', '比赛足球', 42, 'USD', 'sports', 156,
+select p.id, 'كرة قدم', 'Match Football', '比赛足球', 'USD', 'sports', 156,
   'Match Football — export-grade Sports from Foshan Falcon Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرة قدم — منتج رياضة للتصدير من Foshan Falcon Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-25-4-1/1200/900', array['https://picsum.photos/seed/maabar-sports-25-4-1/1200/900', 'https://picsum.photos/seed/maabar-sports-25-4-2/1200/900', 'https://picsum.photos/seed/maabar-sports-25-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-25@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Match Football'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 42
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-25@example.com'
+  and lower(pr.name_en) = lower('Match Football')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Dongguan Volt Sports Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سجادة يوغا', 'Non-Slip Yoga Mat', '防滑瑜伽垫', 9, 'USD', 'sports', 120,
+select p.id, 'سجادة يوغا', 'Non-Slip Yoga Mat', '防滑瑜伽垫', 'USD', 'sports', 120,
   'Non-Slip Yoga Mat — export-grade Sports from Dongguan Volt Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سجادة يوغا — منتج رياضة للتصدير من Dongguan Volt Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-26-1-1/1200/900', array['https://picsum.photos/seed/maabar-sports-26-1-1/1200/900', 'https://picsum.photos/seed/maabar-sports-26-1-2/1200/900', 'https://picsum.photos/seed/maabar-sports-26-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 13.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-26@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Non-Slip Yoga Mat'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 9
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-26@example.com'
+  and lower(pr.name_en) = lower('Non-Slip Yoga Mat')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'دمبل قابل للتعديل', 'Adjustable Dumbbell Set', '可调哑铃', 20, 'USD', 'sports', 132,
+select p.id, 'دمبل قابل للتعديل', 'Adjustable Dumbbell Set', '可调哑铃', 'USD', 'sports', 132,
   'Adjustable Dumbbell Set — export-grade Sports from Dongguan Volt Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'دمبل قابل للتعديل — منتج رياضة للتصدير من Dongguan Volt Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-26-2-1/1200/900', array['https://picsum.photos/seed/maabar-sports-26-2-1/1200/900', 'https://picsum.photos/seed/maabar-sports-26-2-2/1200/900', 'https://picsum.photos/seed/maabar-sports-26-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-26@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Adjustable Dumbbell Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 20
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-26@example.com'
+  and lower(pr.name_en) = lower('Adjustable Dumbbell Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خيمة تخييم 4 أشخاص', '4-Person Camping Tent', '四人帐篷', 31, 'USD', 'sports', 144,
+select p.id, 'خيمة تخييم 4 أشخاص', '4-Person Camping Tent', '四人帐篷', 'USD', 'sports', 144,
   '4-Person Camping Tent — export-grade Sports from Dongguan Volt Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خيمة تخييم 4 أشخاص — منتج رياضة للتصدير من Dongguan Volt Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-26-3-1/1200/900', array['https://picsum.photos/seed/maabar-sports-26-3-1/1200/900', 'https://picsum.photos/seed/maabar-sports-26-3-2/1200/900', 'https://picsum.photos/seed/maabar-sports-26-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 46.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-26@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('4-Person Camping Tent'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 31
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-26@example.com'
+  and lower(pr.name_en) = lower('4-Person Camping Tent')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرة قدم', 'Match Football', '比赛足球', 42, 'USD', 'sports', 156,
+select p.id, 'كرة قدم', 'Match Football', '比赛足球', 'USD', 'sports', 156,
   'Match Football — export-grade Sports from Dongguan Volt Sports Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرة قدم — منتج رياضة للتصدير من Dongguan Volt Sports Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-sports-26-4-1/1200/900', array['https://picsum.photos/seed/maabar-sports-26-4-1/1200/900', 'https://picsum.photos/seed/maabar-sports-26-4-2/1200/900', 'https://picsum.photos/seed/maabar-sports-26-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-26@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Match Football'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 42
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-26@example.com'
+  and lower(pr.name_en) = lower('Match Football')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Xiamen Apex Toys Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكعبات بناء', 'Building Blocks Set', '积木套装', 3, 'USD', 'toys', 200,
+select p.id, 'مكعبات بناء', 'Building Blocks Set', '积木套装', 'USD', 'toys', 200,
   'Building Blocks Set — export-grade Toys from Xiamen Apex Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكعبات بناء — منتج ألعاب للتصدير من Xiamen Apex Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-27-1-1/1200/900', array['https://picsum.photos/seed/maabar-toys-27-1-1/1200/900', 'https://picsum.photos/seed/maabar-toys-27-1-2/1200/900', 'https://picsum.photos/seed/maabar-toys-27-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 4.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-27@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Building Blocks Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-27@example.com'
+  and lower(pr.name_en) = lower('Building Blocks Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سيارة تحكم', 'RC Stunt Car', '遥控特技车', 8, 'USD', 'toys', 220,
+select p.id, 'سيارة تحكم', 'RC Stunt Car', '遥控特技车', 'USD', 'toys', 220,
   'RC Stunt Car — export-grade Toys from Xiamen Apex Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سيارة تحكم — منتج ألعاب للتصدير من Xiamen Apex Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-27-2-1/1200/900', array['https://picsum.photos/seed/maabar-toys-27-2-1/1200/900', 'https://picsum.photos/seed/maabar-toys-27-2-2/1200/900', 'https://picsum.photos/seed/maabar-toys-27-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-27@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('RC Stunt Car'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-27@example.com'
+  and lower(pr.name_en) = lower('RC Stunt Car')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'دمى محشوة', 'Plush Toy Assortment', '毛绒玩具', 13, 'USD', 'toys', 240,
+select p.id, 'دمى محشوة', 'Plush Toy Assortment', '毛绒玩具', 'USD', 'toys', 240,
   'Plush Toy Assortment — export-grade Toys from Xiamen Apex Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'دمى محشوة — منتج ألعاب للتصدير من Xiamen Apex Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-27-3-1/1200/900', array['https://picsum.photos/seed/maabar-toys-27-3-1/1200/900', 'https://picsum.photos/seed/maabar-toys-27-3-2/1200/900', 'https://picsum.photos/seed/maabar-toys-27-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 19.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-27@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Plush Toy Assortment'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 13
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-27@example.com'
+  and lower(pr.name_en) = lower('Plush Toy Assortment')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أحجية تعليمية', 'Educational Jigsaw Puzzle', '益智拼图', 18, 'USD', 'toys', 260,
+select p.id, 'أحجية تعليمية', 'Educational Jigsaw Puzzle', '益智拼图', 'USD', 'toys', 260,
   'Educational Jigsaw Puzzle — export-grade Toys from Xiamen Apex Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أحجية تعليمية — منتج ألعاب للتصدير من Xiamen Apex Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-27-4-1/1200/900', array['https://picsum.photos/seed/maabar-toys-27-4-1/1200/900', 'https://picsum.photos/seed/maabar-toys-27-4-2/1200/900', 'https://picsum.photos/seed/maabar-toys-27-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-27@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Educational Jigsaw Puzzle'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 18
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-27@example.com'
+  and lower(pr.name_en) = lower('Educational Jigsaw Puzzle')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Hangzhou Sino Toys Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكعبات بناء', 'Building Blocks Set', '积木套装', 3, 'USD', 'toys', 200,
+select p.id, 'مكعبات بناء', 'Building Blocks Set', '积木套装', 'USD', 'toys', 200,
   'Building Blocks Set — export-grade Toys from Hangzhou Sino Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكعبات بناء — منتج ألعاب للتصدير من Hangzhou Sino Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-28-1-1/1200/900', array['https://picsum.photos/seed/maabar-toys-28-1-1/1200/900', 'https://picsum.photos/seed/maabar-toys-28-1-2/1200/900', 'https://picsum.photos/seed/maabar-toys-28-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 4.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-28@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Building Blocks Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-28@example.com'
+  and lower(pr.name_en) = lower('Building Blocks Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سيارة تحكم', 'RC Stunt Car', '遥控特技车', 8, 'USD', 'toys', 220,
+select p.id, 'سيارة تحكم', 'RC Stunt Car', '遥控特技车', 'USD', 'toys', 220,
   'RC Stunt Car — export-grade Toys from Hangzhou Sino Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سيارة تحكم — منتج ألعاب للتصدير من Hangzhou Sino Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-28-2-1/1200/900', array['https://picsum.photos/seed/maabar-toys-28-2-1/1200/900', 'https://picsum.photos/seed/maabar-toys-28-2-2/1200/900', 'https://picsum.photos/seed/maabar-toys-28-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-28@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('RC Stunt Car'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-28@example.com'
+  and lower(pr.name_en) = lower('RC Stunt Car')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'دمى محشوة', 'Plush Toy Assortment', '毛绒玩具', 13, 'USD', 'toys', 240,
+select p.id, 'دمى محشوة', 'Plush Toy Assortment', '毛绒玩具', 'USD', 'toys', 240,
   'Plush Toy Assortment — export-grade Toys from Hangzhou Sino Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'دمى محشوة — منتج ألعاب للتصدير من Hangzhou Sino Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-28-3-1/1200/900', array['https://picsum.photos/seed/maabar-toys-28-3-1/1200/900', 'https://picsum.photos/seed/maabar-toys-28-3-2/1200/900', 'https://picsum.photos/seed/maabar-toys-28-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 19.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-28@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Plush Toy Assortment'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 13
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-28@example.com'
+  and lower(pr.name_en) = lower('Plush Toy Assortment')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أحجية تعليمية', 'Educational Jigsaw Puzzle', '益智拼图', 18, 'USD', 'toys', 260,
+select p.id, 'أحجية تعليمية', 'Educational Jigsaw Puzzle', '益智拼图', 'USD', 'toys', 260,
   'Educational Jigsaw Puzzle — export-grade Toys from Hangzhou Sino Toys Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أحجية تعليمية — منتج ألعاب للتصدير من Hangzhou Sino Toys Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-toys-28-4-1/1200/900', array['https://picsum.photos/seed/maabar-toys-28-4-1/1200/900', 'https://picsum.photos/seed/maabar-toys-28-4-2/1200/900', 'https://picsum.photos/seed/maabar-toys-28-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-28@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Educational Jigsaw Puzzle'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 18
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-28@example.com'
+  and lower(pr.name_en) = lower('Educational Jigsaw Puzzle')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Suzhou GrandEast Auto Parts Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم فحمات سيراميك', 'Ceramic Brake Pad Set', '陶瓷刹车片', 12, 'USD', 'auto_parts', 60,
+select p.id, 'طقم فحمات سيراميك', 'Ceramic Brake Pad Set', '陶瓷刹车片', 'USD', 'auto_parts', 60,
   'Ceramic Brake Pad Set — export-grade Auto Parts from Suzhou GrandEast Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم فحمات سيراميك — منتج قطع غيار للتصدير من Suzhou GrandEast Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-29-1-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-29-1-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-1-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 18.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-29@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Ceramic Brake Pad Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 12
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-29@example.com'
+  and lower(pr.name_en) = lower('Ceramic Brake Pad Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'فلتر هواء المحرك', 'Engine Air Filter', '空气滤清器', 30, 'USD', 'auto_parts', 66,
+select p.id, 'فلتر هواء المحرك', 'Engine Air Filter', '空气滤清器', 'USD', 'auto_parts', 66,
   'Engine Air Filter — export-grade Auto Parts from Suzhou GrandEast Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'فلتر هواء المحرك — منتج قطع غيار للتصدير من Suzhou GrandEast Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-29-2-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-29-2-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-2-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-29@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Engine Air Filter'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 30
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-29@example.com'
+  and lower(pr.name_en) = lower('Engine Air Filter')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم كشافات LED', 'LED Headlight Kit', 'LED大灯', 48, 'USD', 'auto_parts', 72,
+select p.id, 'طقم كشافات LED', 'LED Headlight Kit', 'LED大灯', 'USD', 'auto_parts', 72,
   'LED Headlight Kit — export-grade Auto Parts from Suzhou GrandEast Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم كشافات LED — منتج قطع غيار للتصدير من Suzhou GrandEast Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-29-3-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-29-3-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-3-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 72.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-29@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('LED Headlight Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 48
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-29@example.com'
+  and lower(pr.name_en) = lower('LED Headlight Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مساعد تعليق', 'Suspension Shock Absorber', '减震器', 66, 'USD', 'auto_parts', 78,
+select p.id, 'مساعد تعليق', 'Suspension Shock Absorber', '减震器', 'USD', 'auto_parts', 78,
   'Suspension Shock Absorber — export-grade Auto Parts from Suzhou GrandEast Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مساعد تعليق — منتج قطع غيار للتصدير من Suzhou GrandEast Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-29-4-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-29-4-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-4-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-29-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-29@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Suspension Shock Absorber'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 66
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-29@example.com'
+  and lower(pr.name_en) = lower('Suspension Shock Absorber')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Qingdao Nova Auto Parts Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم فحمات سيراميك', 'Ceramic Brake Pad Set', '陶瓷刹车片', 12, 'USD', 'auto_parts', 60,
+select p.id, 'طقم فحمات سيراميك', 'Ceramic Brake Pad Set', '陶瓷刹车片', 'USD', 'auto_parts', 60,
   'Ceramic Brake Pad Set — export-grade Auto Parts from Qingdao Nova Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم فحمات سيراميك — منتج قطع غيار للتصدير من Qingdao Nova Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-30-1-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-30-1-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-1-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 18.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-30@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Ceramic Brake Pad Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 12
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-30@example.com'
+  and lower(pr.name_en) = lower('Ceramic Brake Pad Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'فلتر هواء المحرك', 'Engine Air Filter', '空气滤清器', 30, 'USD', 'auto_parts', 66,
+select p.id, 'فلتر هواء المحرك', 'Engine Air Filter', '空气滤清器', 'USD', 'auto_parts', 66,
   'Engine Air Filter — export-grade Auto Parts from Qingdao Nova Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'فلتر هواء المحرك — منتج قطع غيار للتصدير من Qingdao Nova Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-30-2-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-30-2-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-2-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-30@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Engine Air Filter'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 30
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-30@example.com'
+  and lower(pr.name_en) = lower('Engine Air Filter')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم كشافات LED', 'LED Headlight Kit', 'LED大灯', 48, 'USD', 'auto_parts', 72,
+select p.id, 'طقم كشافات LED', 'LED Headlight Kit', 'LED大灯', 'USD', 'auto_parts', 72,
   'LED Headlight Kit — export-grade Auto Parts from Qingdao Nova Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم كشافات LED — منتج قطع غيار للتصدير من Qingdao Nova Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-30-3-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-30-3-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-3-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 72.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-30@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('LED Headlight Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 48
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-30@example.com'
+  and lower(pr.name_en) = lower('LED Headlight Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مساعد تعليق', 'Suspension Shock Absorber', '减震器', 66, 'USD', 'auto_parts', 78,
+select p.id, 'مساعد تعليق', 'Suspension Shock Absorber', '减震器', 'USD', 'auto_parts', 78,
   'Suspension Shock Absorber — export-grade Auto Parts from Qingdao Nova Auto Parts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مساعد تعليق — منتج قطع غيار للتصدير من Qingdao Nova Auto Parts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-auto_parts-30-4-1/1200/900', array['https://picsum.photos/seed/maabar-auto_parts-30-4-1/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-4-2/1200/900', 'https://picsum.photos/seed/maabar-auto_parts-30-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-30@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Suspension Shock Absorber'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 66
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-30@example.com'
+  and lower(pr.name_en) = lower('Suspension Shock Absorber')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Guangzhou Orient Car Accessories Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'حامل جوال مغناطيسي', 'Magnetic Phone Holder', '磁吸手机支架', 6, 'USD', 'car_accessories', 150,
+select p.id, 'حامل جوال مغناطيسي', 'Magnetic Phone Holder', '磁吸手机支架', 'USD', 'car_accessories', 150,
   'Magnetic Phone Holder — export-grade Car Accessories from Guangzhou Orient Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'حامل جوال مغناطيسي — منتج إكسسوارات سيارات للتصدير من Guangzhou Orient Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-31-1-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-31-1-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-1-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 9.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-31@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Magnetic Phone Holder'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 6
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-31@example.com'
+  and lower(pr.name_en) = lower('Magnetic Phone Holder')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أغطية مقاعد', 'Universal Seat Covers', '通用座套', 14, 'USD', 'car_accessories', 165,
+select p.id, 'أغطية مقاعد', 'Universal Seat Covers', '通用座套', 'USD', 'car_accessories', 165,
   'Universal Seat Covers — export-grade Car Accessories from Guangzhou Orient Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أغطية مقاعد — منتج إكسسوارات سيارات للتصدير من Guangzhou Orient Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-31-2-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-31-2-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-2-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-31@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Universal Seat Covers'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 14
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-31@example.com'
+  and lower(pr.name_en) = lower('Universal Seat Covers')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كاميرا أمامية 1080p', '1080p Dash Camera', '1080p行车记录仪', 22, 'USD', 'car_accessories', 180,
+select p.id, 'كاميرا أمامية 1080p', '1080p Dash Camera', '1080p行车记录仪', 'USD', 'car_accessories', 180,
   '1080p Dash Camera — export-grade Car Accessories from Guangzhou Orient Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كاميرا أمامية 1080p — منتج إكسسوارات سيارات للتصدير من Guangzhou Orient Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-31-3-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-31-3-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-3-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 33.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-31@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('1080p Dash Camera'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 22
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-31@example.com'
+  and lower(pr.name_en) = lower('1080p Dash Camera')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'دعاسات أرضية', 'All-Weather Floor Mats', '全天候脚垫', 30, 'USD', 'car_accessories', 195,
+select p.id, 'دعاسات أرضية', 'All-Weather Floor Mats', '全天候脚垫', 'USD', 'car_accessories', 195,
   'All-Weather Floor Mats — export-grade Car Accessories from Guangzhou Orient Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'دعاسات أرضية — منتج إكسسوارات سيارات للتصدير من Guangzhou Orient Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-31-4-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-31-4-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-4-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-31-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-31@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('All-Weather Floor Mats'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 30
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-31@example.com'
+  and lower(pr.name_en) = lower('All-Weather Floor Mats')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Shenzhen Summit Car Accessories Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'حامل جوال مغناطيسي', 'Magnetic Phone Holder', '磁吸手机支架', 6, 'USD', 'car_accessories', 150,
+select p.id, 'حامل جوال مغناطيسي', 'Magnetic Phone Holder', '磁吸手机支架', 'USD', 'car_accessories', 150,
   'Magnetic Phone Holder — export-grade Car Accessories from Shenzhen Summit Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'حامل جوال مغناطيسي — منتج إكسسوارات سيارات للتصدير من Shenzhen Summit Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-32-1-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-32-1-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-1-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 9.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-32@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Magnetic Phone Holder'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 6
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-32@example.com'
+  and lower(pr.name_en) = lower('Magnetic Phone Holder')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أغطية مقاعد', 'Universal Seat Covers', '通用座套', 14, 'USD', 'car_accessories', 165,
+select p.id, 'أغطية مقاعد', 'Universal Seat Covers', '通用座套', 'USD', 'car_accessories', 165,
   'Universal Seat Covers — export-grade Car Accessories from Shenzhen Summit Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أغطية مقاعد — منتج إكسسوارات سيارات للتصدير من Shenzhen Summit Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-32-2-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-32-2-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-2-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-32@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Universal Seat Covers'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 14
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-32@example.com'
+  and lower(pr.name_en) = lower('Universal Seat Covers')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كاميرا أمامية 1080p', '1080p Dash Camera', '1080p行车记录仪', 22, 'USD', 'car_accessories', 180,
+select p.id, 'كاميرا أمامية 1080p', '1080p Dash Camera', '1080p行车记录仪', 'USD', 'car_accessories', 180,
   '1080p Dash Camera — export-grade Car Accessories from Shenzhen Summit Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كاميرا أمامية 1080p — منتج إكسسوارات سيارات للتصدير من Shenzhen Summit Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-32-3-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-32-3-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-3-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 33.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-32@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('1080p Dash Camera'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 22
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-32@example.com'
+  and lower(pr.name_en) = lower('1080p Dash Camera')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'دعاسات أرضية', 'All-Weather Floor Mats', '全天候脚垫', 30, 'USD', 'car_accessories', 195,
+select p.id, 'دعاسات أرضية', 'All-Weather Floor Mats', '全天候脚垫', 'USD', 'car_accessories', 195,
   'All-Weather Floor Mats — export-grade Car Accessories from Shenzhen Summit Car Accessories Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'دعاسات أرضية — منتج إكسسوارات سيارات للتصدير من Shenzhen Summit Car Accessories Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-car_accessories-32-4-1/1200/900', array['https://picsum.photos/seed/maabar-car_accessories-32-4-1/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-4-2/1200/900', 'https://picsum.photos/seed/maabar-car_accessories-32-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-32@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('All-Weather Floor Mats'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 30
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-32@example.com'
+  and lower(pr.name_en) = lower('All-Weather Floor Mats')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Yiwu Pacific Tire Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'إطار سيارة ركاب', 'Passenger Car Tire', '轿车轮胎', 35, 'USD', 'tires', 40,
+select p.id, 'إطار سيارة ركاب', 'Passenger Car Tire', '轿车轮胎', 'USD', 'tires', 40,
   'Passenger Car Tire — export-grade Tires from Yiwu Pacific Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'إطار سيارة ركاب — منتج إطارات للتصدير من Yiwu Pacific Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-33-1-1/1200/900', array['https://picsum.photos/seed/maabar-tires-33-1-1/1200/900', 'https://picsum.photos/seed/maabar-tires-33-1-2/1200/900', 'https://picsum.photos/seed/maabar-tires-33-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 25,
   true, 52.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-33@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Passenger Car Tire'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 35
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-33@example.com'
+  and lower(pr.name_en) = lower('Passenger Car Tire')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'إطار دفع رباعي', 'SUV All-Terrain Tire', 'SUV全地形轮胎', 63, 'USD', 'tires', 44,
+select p.id, 'إطار دفع رباعي', 'SUV All-Terrain Tire', 'SUV全地形轮胎', 'USD', 'tires', 44,
   'SUV All-Terrain Tire — export-grade Tires from Yiwu Pacific Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'إطار دفع رباعي — منتج إطارات للتصدير من Yiwu Pacific Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-33-2-1/1200/900', array['https://picsum.photos/seed/maabar-tires-33-2-1/1200/900', 'https://picsum.photos/seed/maabar-tires-33-2-2/1200/900', 'https://picsum.photos/seed/maabar-tires-33-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 26,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-33@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('SUV All-Terrain Tire'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 63
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-33@example.com'
+  and lower(pr.name_en) = lower('SUV All-Terrain Tire')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'إطار شاحنة', 'Commercial Truck Tire', '卡车轮胎', 91, 'USD', 'tires', 48,
+select p.id, 'إطار شاحنة', 'Commercial Truck Tire', '卡车轮胎', 'USD', 'tires', 48,
   'Commercial Truck Tire — export-grade Tires from Yiwu Pacific Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'إطار شاحنة — منتج إطارات للتصدير من Yiwu Pacific Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-33-3-1/1200/900', array['https://picsum.photos/seed/maabar-tires-33-3-1/1200/900', 'https://picsum.photos/seed/maabar-tires-33-3-2/1200/900', 'https://picsum.photos/seed/maabar-tires-33-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 27,
   true, 136.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-33@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Commercial Truck Tire'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 91
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-33@example.com'
+  and lower(pr.name_en) = lower('Commercial Truck Tire')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم إصلاح إطارات', 'Tire Repair Kit', '补胎套装', 119, 'USD', 'tires', 52,
+select p.id, 'طقم إصلاح إطارات', 'Tire Repair Kit', '补胎套装', 'USD', 'tires', 52,
   'Tire Repair Kit — export-grade Tires from Yiwu Pacific Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم إصلاح إطارات — منتج إطارات للتصدير من Yiwu Pacific Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-33-4-1/1200/900', array['https://picsum.photos/seed/maabar-tires-33-4-1/1200/900', 'https://picsum.photos/seed/maabar-tires-33-4-2/1200/900', 'https://picsum.photos/seed/maabar-tires-33-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-33@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Tire Repair Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 119
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-33@example.com'
+  and lower(pr.name_en) = lower('Tire Repair Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Ningbo Golden Tire Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'إطار سيارة ركاب', 'Passenger Car Tire', '轿车轮胎', 35, 'USD', 'tires', 40,
+select p.id, 'إطار سيارة ركاب', 'Passenger Car Tire', '轿车轮胎', 'USD', 'tires', 40,
   'Passenger Car Tire — export-grade Tires from Ningbo Golden Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'إطار سيارة ركاب — منتج إطارات للتصدير من Ningbo Golden Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-34-1-1/1200/900', array['https://picsum.photos/seed/maabar-tires-34-1-1/1200/900', 'https://picsum.photos/seed/maabar-tires-34-1-2/1200/900', 'https://picsum.photos/seed/maabar-tires-34-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 25,
   true, 52.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-34@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Passenger Car Tire'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 35
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-34@example.com'
+  and lower(pr.name_en) = lower('Passenger Car Tire')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'إطار دفع رباعي', 'SUV All-Terrain Tire', 'SUV全地形轮胎', 63, 'USD', 'tires', 44,
+select p.id, 'إطار دفع رباعي', 'SUV All-Terrain Tire', 'SUV全地形轮胎', 'USD', 'tires', 44,
   'SUV All-Terrain Tire — export-grade Tires from Ningbo Golden Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'إطار دفع رباعي — منتج إطارات للتصدير من Ningbo Golden Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-34-2-1/1200/900', array['https://picsum.photos/seed/maabar-tires-34-2-1/1200/900', 'https://picsum.photos/seed/maabar-tires-34-2-2/1200/900', 'https://picsum.photos/seed/maabar-tires-34-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 26,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-34@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('SUV All-Terrain Tire'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 63
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-34@example.com'
+  and lower(pr.name_en) = lower('SUV All-Terrain Tire')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'إطار شاحنة', 'Commercial Truck Tire', '卡车轮胎', 91, 'USD', 'tires', 48,
+select p.id, 'إطار شاحنة', 'Commercial Truck Tire', '卡车轮胎', 'USD', 'tires', 48,
   'Commercial Truck Tire — export-grade Tires from Ningbo Golden Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'إطار شاحنة — منتج إطارات للتصدير من Ningbo Golden Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-34-3-1/1200/900', array['https://picsum.photos/seed/maabar-tires-34-3-1/1200/900', 'https://picsum.photos/seed/maabar-tires-34-3-2/1200/900', 'https://picsum.photos/seed/maabar-tires-34-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 27,
   true, 136.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-34@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Commercial Truck Tire'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 91
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-34@example.com'
+  and lower(pr.name_en) = lower('Commercial Truck Tire')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم إصلاح إطارات', 'Tire Repair Kit', '补胎套装', 119, 'USD', 'tires', 52,
+select p.id, 'طقم إصلاح إطارات', 'Tire Repair Kit', '补胎套装', 'USD', 'tires', 52,
   'Tire Repair Kit — export-grade Tires from Ningbo Golden Tire Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم إصلاح إطارات — منتج إطارات للتصدير من Ningbo Golden Tire Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-tires-34-4-1/1200/900', array['https://picsum.photos/seed/maabar-tires-34-4-1/1200/900', 'https://picsum.photos/seed/maabar-tires-34-4-2/1200/900', 'https://picsum.photos/seed/maabar-tires-34-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-34@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Tire Repair Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 119
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-34@example.com'
+  and lower(pr.name_en) = lower('Tire Repair Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Foshan Evergreen Lubricants Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت محرك صناعي', 'Synthetic Engine Oil 5W-30', '全合成机油5W-30', 5, 'USD', 'lubricants', 200,
+select p.id, 'زيت محرك صناعي', 'Synthetic Engine Oil 5W-30', '全合成机油5W-30', 'USD', 'lubricants', 200,
   'Synthetic Engine Oil 5W-30 — export-grade Lubricants & Oils from Foshan Evergreen Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت محرك صناعي — منتج زيوت ومواد تشحيم للتصدير من Foshan Evergreen Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-35-1-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-35-1-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-1-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 14,
   true, 7.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-35@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Synthetic Engine Oil 5W-30'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 5
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-35@example.com'
+  and lower(pr.name_en) = lower('Synthetic Engine Oil 5W-30')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت تروس', 'Gear Oil 80W-90', '齿轮油', 11, 'USD', 'lubricants', 220,
+select p.id, 'زيت تروس', 'Gear Oil 80W-90', '齿轮油', 'USD', 'lubricants', 220,
   'Gear Oil 80W-90 — export-grade Lubricants & Oils from Foshan Evergreen Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت تروس — منتج زيوت ومواد تشحيم للتصدير من Foshan Evergreen Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-35-2-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-35-2-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-2-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-35@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Gear Oil 80W-90'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 11
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-35@example.com'
+  and lower(pr.name_en) = lower('Gear Oil 80W-90')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شحم متعدد الأغراض', 'Multi-Purpose Grease', '多用途润滑脂', 17, 'USD', 'lubricants', 240,
+select p.id, 'شحم متعدد الأغراض', 'Multi-Purpose Grease', '多用途润滑脂', 'USD', 'lubricants', 240,
   'Multi-Purpose Grease — export-grade Lubricants & Oils from Foshan Evergreen Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شحم متعدد الأغراض — منتج زيوت ومواد تشحيم للتصدير من Foshan Evergreen Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-35-3-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-35-3-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-3-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 25.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-35@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Multi-Purpose Grease'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-35@example.com'
+  and lower(pr.name_en) = lower('Multi-Purpose Grease')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت فرامل DOT-4', 'DOT-4 Brake Fluid', 'DOT-4刹车油', 23, 'USD', 'lubricants', 260,
+select p.id, 'زيت فرامل DOT-4', 'DOT-4 Brake Fluid', 'DOT-4刹车油', 'USD', 'lubricants', 260,
   'DOT-4 Brake Fluid — export-grade Lubricants & Oils from Foshan Evergreen Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت فرامل DOT-4 — منتج زيوت ومواد تشحيم للتصدير من Foshan Evergreen Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-35-4-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-35-4-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-4-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-35-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-35@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('DOT-4 Brake Fluid'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 23
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-35@example.com'
+  and lower(pr.name_en) = lower('DOT-4 Brake Fluid')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Dongguan Skyline Lubricants Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت محرك صناعي', 'Synthetic Engine Oil 5W-30', '全合成机油5W-30', 5, 'USD', 'lubricants', 200,
+select p.id, 'زيت محرك صناعي', 'Synthetic Engine Oil 5W-30', '全合成机油5W-30', 'USD', 'lubricants', 200,
   'Synthetic Engine Oil 5W-30 — export-grade Lubricants & Oils from Dongguan Skyline Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت محرك صناعي — منتج زيوت ومواد تشحيم للتصدير من Dongguan Skyline Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-36-1-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-36-1-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-1-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 14,
   true, 7.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-36@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Synthetic Engine Oil 5W-30'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 5
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-36@example.com'
+  and lower(pr.name_en) = lower('Synthetic Engine Oil 5W-30')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت تروس', 'Gear Oil 80W-90', '齿轮油', 11, 'USD', 'lubricants', 220,
+select p.id, 'زيت تروس', 'Gear Oil 80W-90', '齿轮油', 'USD', 'lubricants', 220,
   'Gear Oil 80W-90 — export-grade Lubricants & Oils from Dongguan Skyline Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت تروس — منتج زيوت ومواد تشحيم للتصدير من Dongguan Skyline Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-36-2-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-36-2-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-2-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-36@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Gear Oil 80W-90'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 11
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-36@example.com'
+  and lower(pr.name_en) = lower('Gear Oil 80W-90')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شحم متعدد الأغراض', 'Multi-Purpose Grease', '多用途润滑脂', 17, 'USD', 'lubricants', 240,
+select p.id, 'شحم متعدد الأغراض', 'Multi-Purpose Grease', '多用途润滑脂', 'USD', 'lubricants', 240,
   'Multi-Purpose Grease — export-grade Lubricants & Oils from Dongguan Skyline Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شحم متعدد الأغراض — منتج زيوت ومواد تشحيم للتصدير من Dongguan Skyline Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-36-3-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-36-3-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-3-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   true, 25.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-36@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Multi-Purpose Grease'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-36@example.com'
+  and lower(pr.name_en) = lower('Multi-Purpose Grease')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'زيت فرامل DOT-4', 'DOT-4 Brake Fluid', 'DOT-4刹车油', 23, 'USD', 'lubricants', 260,
+select p.id, 'زيت فرامل DOT-4', 'DOT-4 Brake Fluid', 'DOT-4刹车油', 'USD', 'lubricants', 260,
   'DOT-4 Brake Fluid — export-grade Lubricants & Oils from Dongguan Skyline Lubricants Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'زيت فرامل DOT-4 — منتج زيوت ومواد تشحيم للتصدير من Dongguan Skyline Lubricants Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-lubricants-36-4-1/1200/900', array['https://picsum.photos/seed/maabar-lubricants-36-4-1/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-4-2/1200/900', 'https://picsum.photos/seed/maabar-lubricants-36-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-36@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('DOT-4 Brake Fluid'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 23
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-36@example.com'
+  and lower(pr.name_en) = lower('DOT-4 Brake Fluid')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Xiamen Unison Medical Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'جهاز ضغط رقمي', 'Digital Blood Pressure Monitor', '电子血压计', 4, 'USD', 'health', 200,
+select p.id, 'جهاز ضغط رقمي', 'Digital Blood Pressure Monitor', '电子血压计', 'USD', 'health', 200,
   'Digital Blood Pressure Monitor — export-grade Health & Medical from Xiamen Unison Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'جهاز ضغط رقمي — منتج صحة وطب للتصدير من Xiamen Unison Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-37-1-1/1200/900', array['https://picsum.photos/seed/maabar-health-37-1-1/1200/900', 'https://picsum.photos/seed/maabar-health-37-1-2/1200/900', 'https://picsum.photos/seed/maabar-health-37-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 6.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-37@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Digital Blood Pressure Monitor'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 4
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-37@example.com'
+  and lower(pr.name_en) = lower('Digital Blood Pressure Monitor')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كمامات طبية', '3-Ply Surgical Masks', '医用口罩', 13, 'USD', 'health', 220,
+select p.id, 'كمامات طبية', '3-Ply Surgical Masks', '医用口罩', 'USD', 'health', 220,
   '3-Ply Surgical Masks — export-grade Health & Medical from Xiamen Unison Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كمامات طبية — منتج صحة وطب للتصدير من Xiamen Unison Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-37-2-1/1200/900', array['https://picsum.photos/seed/maabar-health-37-2-1/1200/900', 'https://picsum.photos/seed/maabar-health-37-2-2/1200/900', 'https://picsum.photos/seed/maabar-health-37-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-37@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Ply Surgical Masks'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 13
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-37@example.com'
+  and lower(pr.name_en) = lower('3-Ply Surgical Masks')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مقياس أكسجين', 'Fingertip Pulse Oximeter', '指夹血氧仪', 22, 'USD', 'health', 240,
+select p.id, 'مقياس أكسجين', 'Fingertip Pulse Oximeter', '指夹血氧仪', 'USD', 'health', 240,
   'Fingertip Pulse Oximeter — export-grade Health & Medical from Xiamen Unison Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مقياس أكسجين — منتج صحة وطب للتصدير من Xiamen Unison Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-37-3-1/1200/900', array['https://picsum.photos/seed/maabar-health-37-3-1/1200/900', 'https://picsum.photos/seed/maabar-health-37-3-2/1200/900', 'https://picsum.photos/seed/maabar-health-37-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 33.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-37@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Fingertip Pulse Oximeter'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 22
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-37@example.com'
+  and lower(pr.name_en) = lower('Fingertip Pulse Oximeter')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'ميزان حرارة', 'Infrared Forehead Thermometer', '红外测温仪', 31, 'USD', 'health', 260,
+select p.id, 'ميزان حرارة', 'Infrared Forehead Thermometer', '红外测温仪', 'USD', 'health', 260,
   'Infrared Forehead Thermometer — export-grade Health & Medical from Xiamen Unison Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'ميزان حرارة — منتج صحة وطب للتصدير من Xiamen Unison Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-37-4-1/1200/900', array['https://picsum.photos/seed/maabar-health-37-4-1/1200/900', 'https://picsum.photos/seed/maabar-health-37-4-2/1200/900', 'https://picsum.photos/seed/maabar-health-37-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-37@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Infrared Forehead Thermometer'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 31
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-37@example.com'
+  and lower(pr.name_en) = lower('Infrared Forehead Thermometer')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Hangzhou Brightway Medical Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'جهاز ضغط رقمي', 'Digital Blood Pressure Monitor', '电子血压计', 4, 'USD', 'health', 200,
+select p.id, 'جهاز ضغط رقمي', 'Digital Blood Pressure Monitor', '电子血压计', 'USD', 'health', 200,
   'Digital Blood Pressure Monitor — export-grade Health & Medical from Hangzhou Brightway Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'جهاز ضغط رقمي — منتج صحة وطب للتصدير من Hangzhou Brightway Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-38-1-1/1200/900', array['https://picsum.photos/seed/maabar-health-38-1-1/1200/900', 'https://picsum.photos/seed/maabar-health-38-1-2/1200/900', 'https://picsum.photos/seed/maabar-health-38-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 6.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-38@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Digital Blood Pressure Monitor'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 4
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-38@example.com'
+  and lower(pr.name_en) = lower('Digital Blood Pressure Monitor')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كمامات طبية', '3-Ply Surgical Masks', '医用口罩', 13, 'USD', 'health', 220,
+select p.id, 'كمامات طبية', '3-Ply Surgical Masks', '医用口罩', 'USD', 'health', 220,
   '3-Ply Surgical Masks — export-grade Health & Medical from Hangzhou Brightway Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كمامات طبية — منتج صحة وطب للتصدير من Hangzhou Brightway Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-38-2-1/1200/900', array['https://picsum.photos/seed/maabar-health-38-2-1/1200/900', 'https://picsum.photos/seed/maabar-health-38-2-2/1200/900', 'https://picsum.photos/seed/maabar-health-38-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-38@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Ply Surgical Masks'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 13
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-38@example.com'
+  and lower(pr.name_en) = lower('3-Ply Surgical Masks')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مقياس أكسجين', 'Fingertip Pulse Oximeter', '指夹血氧仪', 22, 'USD', 'health', 240,
+select p.id, 'مقياس أكسجين', 'Fingertip Pulse Oximeter', '指夹血氧仪', 'USD', 'health', 240,
   'Fingertip Pulse Oximeter — export-grade Health & Medical from Hangzhou Brightway Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مقياس أكسجين — منتج صحة وطب للتصدير من Hangzhou Brightway Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-38-3-1/1200/900', array['https://picsum.photos/seed/maabar-health-38-3-1/1200/900', 'https://picsum.photos/seed/maabar-health-38-3-2/1200/900', 'https://picsum.photos/seed/maabar-health-38-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 33.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-38@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Fingertip Pulse Oximeter'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 22
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-38@example.com'
+  and lower(pr.name_en) = lower('Fingertip Pulse Oximeter')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'ميزان حرارة', 'Infrared Forehead Thermometer', '红外测温仪', 31, 'USD', 'health', 260,
+select p.id, 'ميزان حرارة', 'Infrared Forehead Thermometer', '红外测温仪', 'USD', 'health', 260,
   'Infrared Forehead Thermometer — export-grade Health & Medical from Hangzhou Brightway Medical Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'ميزان حرارة — منتج صحة وطب للتصدير من Hangzhou Brightway Medical Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-health-38-4-1/1200/900', array['https://picsum.photos/seed/maabar-health-38-4-1/1200/900', 'https://picsum.photos/seed/maabar-health-38-4-2/1200/900', 'https://picsum.photos/seed/maabar-health-38-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-38@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Infrared Forehead Thermometer'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 31
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-38@example.com'
+  and lower(pr.name_en) = lower('Infrared Forehead Thermometer')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Suzhou EastPort Packaging Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'صناديق كرتون مموج', 'Corrugated Shipping Boxes', '瓦楞纸箱', 0.4, 'USD', 'packaging', 1000,
+select p.id, 'صناديق كرتون مموج', 'Corrugated Shipping Boxes', '瓦楞纸箱', 'USD', 'packaging', 1000,
   'Corrugated Shipping Boxes — export-grade Packaging from Suzhou EastPort Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'صناديق كرتون مموج — منتج تعبئة وتغليف للتصدير من Suzhou EastPort Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-39-1-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-39-1-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-1-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 12,
   true, 0.60, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-39@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Corrugated Shipping Boxes'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 0.4
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-39@example.com'
+  and lower(pr.name_en) = lower('Corrugated Shipping Boxes')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أكياس شحن مطبوعة', 'Custom Printed Mailer Bags', '定制快递袋', 1.5, 'USD', 'packaging', 1100,
+select p.id, 'أكياس شحن مطبوعة', 'Custom Printed Mailer Bags', '定制快递袋', 'USD', 'packaging', 1100,
   'Custom Printed Mailer Bags — export-grade Packaging from Suzhou EastPort Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أكياس شحن مطبوعة — منتج تعبئة وتغليف للتصدير من Suzhou EastPort Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-39-2-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-39-2-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-2-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 13,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-39@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Custom Printed Mailer Bags'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 1.5
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-39@example.com'
+  and lower(pr.name_en) = lower('Custom Printed Mailer Bags')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'لفات ورق كرافت', 'Kraft Paper Rolls', '牛皮纸卷', 2.6, 'USD', 'packaging', 1200,
+select p.id, 'لفات ورق كرافت', 'Kraft Paper Rolls', '牛皮纸卷', 'USD', 'packaging', 1200,
   'Kraft Paper Rolls — export-grade Packaging from Suzhou EastPort Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'لفات ورق كرافت — منتج تعبئة وتغليف للتصدير من Suzhou EastPort Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-39-3-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-39-3-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-3-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 14,
   true, 3.90, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-39@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Kraft Paper Rolls'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 2.6
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-39@example.com'
+  and lower(pr.name_en) = lower('Kraft Paper Rolls')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'لفائف فقاعات', 'Bubble Wrap Rolls', '气泡膜卷', 3.7, 'USD', 'packaging', 1300,
+select p.id, 'لفائف فقاعات', 'Bubble Wrap Rolls', '气泡膜卷', 'USD', 'packaging', 1300,
   'Bubble Wrap Rolls — export-grade Packaging from Suzhou EastPort Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'لفائف فقاعات — منتج تعبئة وتغليف للتصدير من Suzhou EastPort Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-39-4-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-39-4-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-4-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-39-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-39@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Bubble Wrap Rolls'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3.7
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-39@example.com'
+  and lower(pr.name_en) = lower('Bubble Wrap Rolls')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Qingdao Crownway Packaging Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'صناديق كرتون مموج', 'Corrugated Shipping Boxes', '瓦楞纸箱', 0.4, 'USD', 'packaging', 1000,
+select p.id, 'صناديق كرتون مموج', 'Corrugated Shipping Boxes', '瓦楞纸箱', 'USD', 'packaging', 1000,
   'Corrugated Shipping Boxes — export-grade Packaging from Qingdao Crownway Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'صناديق كرتون مموج — منتج تعبئة وتغليف للتصدير من Qingdao Crownway Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-40-1-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-40-1-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-1-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 12,
   true, 0.60, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-40@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Corrugated Shipping Boxes'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 0.4
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-40@example.com'
+  and lower(pr.name_en) = lower('Corrugated Shipping Boxes')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أكياس شحن مطبوعة', 'Custom Printed Mailer Bags', '定制快递袋', 1.5, 'USD', 'packaging', 1100,
+select p.id, 'أكياس شحن مطبوعة', 'Custom Printed Mailer Bags', '定制快递袋', 'USD', 'packaging', 1100,
   'Custom Printed Mailer Bags — export-grade Packaging from Qingdao Crownway Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أكياس شحن مطبوعة — منتج تعبئة وتغليف للتصدير من Qingdao Crownway Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-40-2-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-40-2-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-2-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 13,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-40@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Custom Printed Mailer Bags'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 1.5
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-40@example.com'
+  and lower(pr.name_en) = lower('Custom Printed Mailer Bags')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'لفات ورق كرافت', 'Kraft Paper Rolls', '牛皮纸卷', 2.6, 'USD', 'packaging', 1200,
+select p.id, 'لفات ورق كرافت', 'Kraft Paper Rolls', '牛皮纸卷', 'USD', 'packaging', 1200,
   'Kraft Paper Rolls — export-grade Packaging from Qingdao Crownway Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'لفات ورق كرافت — منتج تعبئة وتغليف للتصدير من Qingdao Crownway Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-40-3-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-40-3-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-3-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 14,
   true, 3.90, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-40@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Kraft Paper Rolls'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 2.6
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-40@example.com'
+  and lower(pr.name_en) = lower('Kraft Paper Rolls')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'لفائف فقاعات', 'Bubble Wrap Rolls', '气泡膜卷', 3.7, 'USD', 'packaging', 1300,
+select p.id, 'لفائف فقاعات', 'Bubble Wrap Rolls', '气泡膜卷', 'USD', 'packaging', 1300,
   'Bubble Wrap Rolls — export-grade Packaging from Qingdao Crownway Packaging Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'لفائف فقاعات — منتج تعبئة وتغليف للتصدير من Qingdao Crownway Packaging Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-packaging-40-4-1/1200/900', array['https://picsum.photos/seed/maabar-packaging-40-4-1/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-4-2/1200/900', 'https://picsum.photos/seed/maabar-packaging-40-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-40@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Bubble Wrap Rolls'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 3.7
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-40@example.com'
+  and lower(pr.name_en) = lower('Bubble Wrap Rolls')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Guangzhou Maxwell Gifts Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'علب هدايا فاخرة', 'Premium Gift Box Set', '精品礼盒', 2, 'USD', 'gifts', 300,
+select p.id, 'علب هدايا فاخرة', 'Premium Gift Box Set', '精品礼盒', 'USD', 'gifts', 300,
   'Premium Gift Box Set — export-grade Gifts from Guangzhou Maxwell Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'علب هدايا فاخرة — منتج هدايا للتصدير من Guangzhou Maxwell Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-41-1-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-41-1-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-1-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 3.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-41@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Premium Gift Box Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 2
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-41@example.com'
+  and lower(pr.name_en) = lower('Premium Gift Box Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'ميداليات معدنية', 'Custom Metal Keychains', '定制金属钥匙扣', 5, 'USD', 'gifts', 330,
+select p.id, 'ميداليات معدنية', 'Custom Metal Keychains', '定制金属钥匙扣', 'USD', 'gifts', 330,
   'Custom Metal Keychains — export-grade Gifts from Guangzhou Maxwell Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'ميداليات معدنية — منتج هدايا للتصدير من Guangzhou Maxwell Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-41-2-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-41-2-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-2-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-41@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Custom Metal Keychains'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 5
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-41@example.com'
+  and lower(pr.name_en) = lower('Custom Metal Keychains')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أكواب سيراميك دعائية', 'Promotional Ceramic Mugs', '广告陶瓷杯', 8, 'USD', 'gifts', 360,
+select p.id, 'أكواب سيراميك دعائية', 'Promotional Ceramic Mugs', '广告陶瓷杯', 'USD', 'gifts', 360,
   'Promotional Ceramic Mugs — export-grade Gifts from Guangzhou Maxwell Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أكواب سيراميك دعائية — منتج هدايا للتصدير من Guangzhou Maxwell Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-41-3-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-41-3-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-3-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 12.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-41@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Promotional Ceramic Mugs'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-41@example.com'
+  and lower(pr.name_en) = lower('Promotional Ceramic Mugs')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أقلام هدايا', 'Corporate Gift Pen Set', '商务礼品笔', 11, 'USD', 'gifts', 390,
+select p.id, 'أقلام هدايا', 'Corporate Gift Pen Set', '商务礼品笔', 'USD', 'gifts', 390,
   'Corporate Gift Pen Set — export-grade Gifts from Guangzhou Maxwell Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أقلام هدايا — منتج هدايا للتصدير من Guangzhou Maxwell Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-41-4-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-41-4-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-4-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-41-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-41@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Corporate Gift Pen Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 11
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-41@example.com'
+  and lower(pr.name_en) = lower('Corporate Gift Pen Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Shenzhen Silkroad Gifts Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'علب هدايا فاخرة', 'Premium Gift Box Set', '精品礼盒', 2, 'USD', 'gifts', 300,
+select p.id, 'علب هدايا فاخرة', 'Premium Gift Box Set', '精品礼盒', 'USD', 'gifts', 300,
   'Premium Gift Box Set — export-grade Gifts from Shenzhen Silkroad Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'علب هدايا فاخرة — منتج هدايا للتصدير من Shenzhen Silkroad Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-42-1-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-42-1-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-1-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 3.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-42@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Premium Gift Box Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 2
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-42@example.com'
+  and lower(pr.name_en) = lower('Premium Gift Box Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'ميداليات معدنية', 'Custom Metal Keychains', '定制金属钥匙扣', 5, 'USD', 'gifts', 330,
+select p.id, 'ميداليات معدنية', 'Custom Metal Keychains', '定制金属钥匙扣', 'USD', 'gifts', 330,
   'Custom Metal Keychains — export-grade Gifts from Shenzhen Silkroad Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'ميداليات معدنية — منتج هدايا للتصدير من Shenzhen Silkroad Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-42-2-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-42-2-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-2-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-42@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Custom Metal Keychains'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 5
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-42@example.com'
+  and lower(pr.name_en) = lower('Custom Metal Keychains')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أكواب سيراميك دعائية', 'Promotional Ceramic Mugs', '广告陶瓷杯', 8, 'USD', 'gifts', 360,
+select p.id, 'أكواب سيراميك دعائية', 'Promotional Ceramic Mugs', '广告陶瓷杯', 'USD', 'gifts', 360,
   'Promotional Ceramic Mugs — export-grade Gifts from Shenzhen Silkroad Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أكواب سيراميك دعائية — منتج هدايا للتصدير من Shenzhen Silkroad Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-42-3-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-42-3-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-3-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 12.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-42@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Promotional Ceramic Mugs'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-42@example.com'
+  and lower(pr.name_en) = lower('Promotional Ceramic Mugs')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أقلام هدايا', 'Corporate Gift Pen Set', '商务礼品笔', 11, 'USD', 'gifts', 390,
+select p.id, 'أقلام هدايا', 'Corporate Gift Pen Set', '商务礼品笔', 'USD', 'gifts', 390,
   'Corporate Gift Pen Set — export-grade Gifts from Shenzhen Silkroad Gifts Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أقلام هدايا — منتج هدايا للتصدير من Shenzhen Silkroad Gifts Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-gifts-42-4-1/1200/900', array['https://picsum.photos/seed/maabar-gifts-42-4-1/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-4-2/1200/900', 'https://picsum.photos/seed/maabar-gifts-42-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-42@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Corporate Gift Pen Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 11
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-42@example.com'
+  and lower(pr.name_en) = lower('Corporate Gift Pen Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Yiwu Harbor Agriculture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'نظام ري بالتنقيط', 'Drip Irrigation Kit', '滴灌套装', 10, 'USD', 'agriculture', 80,
+select p.id, 'نظام ري بالتنقيط', 'Drip Irrigation Kit', '滴灌套装', 'USD', 'agriculture', 80,
   'Drip Irrigation Kit — export-grade Agriculture from Yiwu Harbor Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'نظام ري بالتنقيط — منتج زراعة للتصدير من Yiwu Harbor Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-43-1-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-43-1-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-1-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 15.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-43@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Drip Irrigation Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 10
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-43@example.com'
+  and lower(pr.name_en) = lower('Drip Irrigation Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'غشاء بيوت محمية', 'Greenhouse Film Roll', '大棚膜', 24, 'USD', 'agriculture', 88,
+select p.id, 'غشاء بيوت محمية', 'Greenhouse Film Roll', '大棚膜', 'USD', 'agriculture', 88,
   'Greenhouse Film Roll — export-grade Agriculture from Yiwu Harbor Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'غشاء بيوت محمية — منتج زراعة للتصدير من Yiwu Harbor Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-43-2-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-43-2-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-2-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-43@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Greenhouse Film Roll'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 24
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-43@example.com'
+  and lower(pr.name_en) = lower('Greenhouse Film Roll')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أدوات بستنة', 'Garden Hand Tool Set', '园艺工具套装', 38, 'USD', 'agriculture', 96,
+select p.id, 'أدوات بستنة', 'Garden Hand Tool Set', '园艺工具套装', 'USD', 'agriculture', 96,
   'Garden Hand Tool Set — export-grade Agriculture from Yiwu Harbor Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أدوات بستنة — منتج زراعة للتصدير من Yiwu Harbor Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-43-3-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-43-3-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-3-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 57.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-43@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Garden Hand Tool Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 38
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-43@example.com'
+  and lower(pr.name_en) = lower('Garden Hand Tool Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شبك تظليل', 'Shade Net Roll', '遮阳网', 52, 'USD', 'agriculture', 104,
+select p.id, 'شبك تظليل', 'Shade Net Roll', '遮阳网', 'USD', 'agriculture', 104,
   'Shade Net Roll — export-grade Agriculture from Yiwu Harbor Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شبك تظليل — منتج زراعة للتصدير من Yiwu Harbor Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-43-4-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-43-4-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-4-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-43-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-43@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Shade Net Roll'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 52
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-43@example.com'
+  and lower(pr.name_en) = lower('Shade Net Roll')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Ningbo Vanguard Agriculture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'نظام ري بالتنقيط', 'Drip Irrigation Kit', '滴灌套装', 10, 'USD', 'agriculture', 80,
+select p.id, 'نظام ري بالتنقيط', 'Drip Irrigation Kit', '滴灌套装', 'USD', 'agriculture', 80,
   'Drip Irrigation Kit — export-grade Agriculture from Ningbo Vanguard Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'نظام ري بالتنقيط — منتج زراعة للتصدير من Ningbo Vanguard Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-44-1-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-44-1-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-1-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 15.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-44@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Drip Irrigation Kit'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 10
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-44@example.com'
+  and lower(pr.name_en) = lower('Drip Irrigation Kit')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'غشاء بيوت محمية', 'Greenhouse Film Roll', '大棚膜', 24, 'USD', 'agriculture', 88,
+select p.id, 'غشاء بيوت محمية', 'Greenhouse Film Roll', '大棚膜', 'USD', 'agriculture', 88,
   'Greenhouse Film Roll — export-grade Agriculture from Ningbo Vanguard Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'غشاء بيوت محمية — منتج زراعة للتصدير من Ningbo Vanguard Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-44-2-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-44-2-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-2-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-44@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Greenhouse Film Roll'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 24
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-44@example.com'
+  and lower(pr.name_en) = lower('Greenhouse Film Roll')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'أدوات بستنة', 'Garden Hand Tool Set', '园艺工具套装', 38, 'USD', 'agriculture', 96,
+select p.id, 'أدوات بستنة', 'Garden Hand Tool Set', '园艺工具套装', 'USD', 'agriculture', 96,
   'Garden Hand Tool Set — export-grade Agriculture from Ningbo Vanguard Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'أدوات بستنة — منتج زراعة للتصدير من Ningbo Vanguard Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-44-3-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-44-3-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-3-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 57.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-44@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Garden Hand Tool Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 38
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-44@example.com'
+  and lower(pr.name_en) = lower('Garden Hand Tool Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شبك تظليل', 'Shade Net Roll', '遮阳网', 52, 'USD', 'agriculture', 104,
+select p.id, 'شبك تظليل', 'Shade Net Roll', '遮阳网', 'USD', 'agriculture', 104,
   'Shade Net Roll — export-grade Agriculture from Ningbo Vanguard Agriculture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شبك تظليل — منتج زراعة للتصدير من Ningbo Vanguard Agriculture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-agriculture-44-4-1/1200/900', array['https://picsum.photos/seed/maabar-agriculture-44-4-1/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-4-2/1200/900', 'https://picsum.photos/seed/maabar-agriculture-44-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-44@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Shade Net Roll'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 52
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-44@example.com'
+  and lower(pr.name_en) = lower('Shade Net Roll')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Foshan Pinnacle Industrial Supplies Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خوذة سلامة', 'Industrial Safety Helmet', '安全帽', 7, 'USD', 'other', 120,
+select p.id, 'خوذة سلامة', 'Industrial Safety Helmet', '安全帽', 'USD', 'other', 120,
   'Industrial Safety Helmet — export-grade Other from Foshan Pinnacle Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خوذة سلامة — منتج أخرى للتصدير من Foshan Pinnacle Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-45-1-1/1200/900', array['https://picsum.photos/seed/maabar-other-45-1-1/1200/900', 'https://picsum.photos/seed/maabar-other-45-1-2/1200/900', 'https://picsum.photos/seed/maabar-other-45-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 10.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-45@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Industrial Safety Helmet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 7
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-45@example.com'
+  and lower(pr.name_en) = lower('Industrial Safety Helmet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم عدد يدوية', '32-pc Hand Tool Set', '手动工具套装', 17, 'USD', 'other', 132,
+select p.id, 'طقم عدد يدوية', '32-pc Hand Tool Set', '手动工具套装', 'USD', 'other', 132,
   '32-pc Hand Tool Set — export-grade Other from Foshan Pinnacle Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم عدد يدوية — منتج أخرى للتصدير من Foshan Pinnacle Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-45-2-1/1200/900', array['https://picsum.photos/seed/maabar-other-45-2-1/1200/900', 'https://picsum.photos/seed/maabar-other-45-2-2/1200/900', 'https://picsum.photos/seed/maabar-other-45-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-45@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('32-pc Hand Tool Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-45@example.com'
+  and lower(pr.name_en) = lower('32-pc Hand Tool Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'قفازات عمل', 'Work Gloves (Bulk)', '劳保手套', 27, 'USD', 'other', 144,
+select p.id, 'قفازات عمل', 'Work Gloves (Bulk)', '劳保手套', 'USD', 'other', 144,
   'Work Gloves (Bulk) — export-grade Other from Foshan Pinnacle Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'قفازات عمل — منتج أخرى للتصدير من Foshan Pinnacle Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-45-3-1/1200/900', array['https://picsum.photos/seed/maabar-other-45-3-1/1200/900', 'https://picsum.photos/seed/maabar-other-45-3-2/1200/900', 'https://picsum.photos/seed/maabar-other-45-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 40.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-45@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Work Gloves (Bulk)'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 27
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-45@example.com'
+  and lower(pr.name_en) = lower('Work Gloves (Bulk)')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كشاف عمل LED', 'Rechargeable LED Work Light', 'LED工作灯', 37, 'USD', 'other', 156,
+select p.id, 'كشاف عمل LED', 'Rechargeable LED Work Light', 'LED工作灯', 'USD', 'other', 156,
   'Rechargeable LED Work Light — export-grade Other from Foshan Pinnacle Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كشاف عمل LED — منتج أخرى للتصدير من Foshan Pinnacle Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-45-4-1/1200/900', array['https://picsum.photos/seed/maabar-other-45-4-1/1200/900', 'https://picsum.photos/seed/maabar-other-45-4-2/1200/900', 'https://picsum.photos/seed/maabar-other-45-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-45@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Rechargeable LED Work Light'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 37
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-45@example.com'
+  and lower(pr.name_en) = lower('Rechargeable LED Work Light')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Dongguan Trinity Industrial Supplies Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خوذة سلامة', 'Industrial Safety Helmet', '安全帽', 7, 'USD', 'other', 120,
+select p.id, 'خوذة سلامة', 'Industrial Safety Helmet', '安全帽', 'USD', 'other', 120,
   'Industrial Safety Helmet — export-grade Other from Dongguan Trinity Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خوذة سلامة — منتج أخرى للتصدير من Dongguan Trinity Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-46-1-1/1200/900', array['https://picsum.photos/seed/maabar-other-46-1-1/1200/900', 'https://picsum.photos/seed/maabar-other-46-1-2/1200/900', 'https://picsum.photos/seed/maabar-other-46-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   true, 10.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-46@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Industrial Safety Helmet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 7
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-46@example.com'
+  and lower(pr.name_en) = lower('Industrial Safety Helmet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم عدد يدوية', '32-pc Hand Tool Set', '手动工具套装', 17, 'USD', 'other', 132,
+select p.id, 'طقم عدد يدوية', '32-pc Hand Tool Set', '手动工具套装', 'USD', 'other', 132,
   '32-pc Hand Tool Set — export-grade Other from Dongguan Trinity Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم عدد يدوية — منتج أخرى للتصدير من Dongguan Trinity Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-46-2-1/1200/900', array['https://picsum.photos/seed/maabar-other-46-2-1/1200/900', 'https://picsum.photos/seed/maabar-other-46-2-2/1200/900', 'https://picsum.photos/seed/maabar-other-46-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 19,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-46@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('32-pc Hand Tool Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-46@example.com'
+  and lower(pr.name_en) = lower('32-pc Hand Tool Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'قفازات عمل', 'Work Gloves (Bulk)', '劳保手套', 27, 'USD', 'other', 144,
+select p.id, 'قفازات عمل', 'Work Gloves (Bulk)', '劳保手套', 'USD', 'other', 144,
   'Work Gloves (Bulk) — export-grade Other from Dongguan Trinity Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'قفازات عمل — منتج أخرى للتصدير من Dongguan Trinity Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-46-3-1/1200/900', array['https://picsum.photos/seed/maabar-other-46-3-1/1200/900', 'https://picsum.photos/seed/maabar-other-46-3-2/1200/900', 'https://picsum.photos/seed/maabar-other-46-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 40.50, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-46@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Work Gloves (Bulk)'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 27
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-46@example.com'
+  and lower(pr.name_en) = lower('Work Gloves (Bulk)')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كشاف عمل LED', 'Rechargeable LED Work Light', 'LED工作灯', 37, 'USD', 'other', 156,
+select p.id, 'كشاف عمل LED', 'Rechargeable LED Work Light', 'LED工作灯', 'USD', 'other', 156,
   'Rechargeable LED Work Light — export-grade Other from Dongguan Trinity Industrial Supplies Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كشاف عمل LED — منتج أخرى للتصدير من Dongguan Trinity Industrial Supplies Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-other-46-4-1/1200/900', array['https://picsum.photos/seed/maabar-other-46-4-1/1200/900', 'https://picsum.photos/seed/maabar-other-46-4-2/1200/900', 'https://picsum.photos/seed/maabar-other-46-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-46@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Rechargeable LED Work Light'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 37
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-46@example.com'
+  and lower(pr.name_en) = lower('Rechargeable LED Work Light')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Xiamen Zenith Electronics Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'سماعات لاسلكية برو', 'Wireless Earbuds Pro', '无线耳机Pro', 8, 'USD', 'electronics', 100,
+select p.id, 'سماعات لاسلكية برو', 'Wireless Earbuds Pro', '无线耳机Pro', 'USD', 'electronics', 100,
   'Wireless Earbuds Pro — export-grade Electronics from Xiamen Zenith Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'سماعات لاسلكية برو — منتج إلكترونيات للتصدير من Xiamen Zenith Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-47-1-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-47-1-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-1-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 15,
   true, 12.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-47@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Wireless Earbuds Pro'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 8
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-47@example.com'
+  and lower(pr.name_en) = lower('Wireless Earbuds Pro')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'شاحن سريع 65 واط', '65W Fast Charger', '65W快充', 17, 'USD', 'electronics', 110,
+select p.id, 'شاحن سريع 65 واط', '65W Fast Charger', '65W快充', 'USD', 'electronics', 110,
   '65W Fast Charger — export-grade Electronics from Xiamen Zenith Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'شاحن سريع 65 واط — منتج إلكترونيات للتصدير من Xiamen Zenith Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-47-2-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-47-2-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-2-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 16,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-47@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('65W Fast Charger'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 17
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-47@example.com'
+  and lower(pr.name_en) = lower('65W Fast Charger')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'باور بانك 20000', 'Power Bank 20000mAh', '20000mAh充电宝', 26, 'USD', 'electronics', 120,
+select p.id, 'باور بانك 20000', 'Power Bank 20000mAh', '20000mAh充电宝', 'USD', 'electronics', 120,
   'Power Bank 20000mAh — export-grade Electronics from Xiamen Zenith Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'باور بانك 20000 — منتج إلكترونيات للتصدير من Xiamen Zenith Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-47-3-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-47-3-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-3-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 17,
   true, 39.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-47@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Power Bank 20000mAh'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 26
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-47@example.com'
+  and lower(pr.name_en) = lower('Power Bank 20000mAh')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكبر صوت بلوتوث', 'Portable Bluetooth Speaker', '便携蓝牙音箱', 35, 'USD', 'electronics', 130,
+select p.id, 'مكبر صوت بلوتوث', 'Portable Bluetooth Speaker', '便携蓝牙音箱', 'USD', 'electronics', 130,
   'Portable Bluetooth Speaker — export-grade Electronics from Xiamen Zenith Electronics Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكبر صوت بلوتوث — منتج إلكترونيات للتصدير من Xiamen Zenith Electronics Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-electronics-47-4-1/1200/900', array['https://picsum.photos/seed/maabar-electronics-47-4-1/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-4-2/1200/900', 'https://picsum.photos/seed/maabar-electronics-47-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 18,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-47@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Portable Bluetooth Speaker'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 35
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-47@example.com'
+  and lower(pr.name_en) = lower('Portable Bluetooth Speaker')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Hangzhou Cardinal Home Appliance Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'غلاية كهربائية 1.8 لتر', '1.8L Electric Kettle', '1.8L电热水壶', 18, 'USD', 'home_appliances', 50,
+select p.id, 'غلاية كهربائية 1.8 لتر', '1.8L Electric Kettle', '1.8L电热水壶', 'USD', 'home_appliances', 50,
   '1.8L Electric Kettle — export-grade Home Appliances from Hangzhou Cardinal Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'غلاية كهربائية 1.8 لتر — منتج أجهزة منزلية للتصدير من Hangzhou Cardinal Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-48-1-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-48-1-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-1-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 20,
   true, 27.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-48@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('1.8L Electric Kettle'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 18
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-48@example.com'
+  and lower(pr.name_en) = lower('1.8L Electric Kettle')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'قلاية هوائية رقمية', 'Digital Air Fryer', '数字空气炸锅', 32, 'USD', 'home_appliances', 55,
+select p.id, 'قلاية هوائية رقمية', 'Digital Air Fryer', '数字空气炸锅', 'USD', 'home_appliances', 55,
   'Digital Air Fryer — export-grade Home Appliances from Hangzhou Cardinal Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'قلاية هوائية رقمية — منتج أجهزة منزلية للتصدير من Hangzhou Cardinal Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-48-2-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-48-2-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-2-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 21,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-48@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Digital Air Fryer'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 32
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-48@example.com'
+  and lower(pr.name_en) = lower('Digital Air Fryer')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خلاط عمودي 1000 واط', 'Stand Mixer 1000W', '1000W厨师机', 46, 'USD', 'home_appliances', 60,
+select p.id, 'خلاط عمودي 1000 واط', 'Stand Mixer 1000W', '1000W厨师机', 'USD', 'home_appliances', 60,
   'Stand Mixer 1000W — export-grade Home Appliances from Hangzhou Cardinal Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خلاط عمودي 1000 واط — منتج أجهزة منزلية للتصدير من Hangzhou Cardinal Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-48-3-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-48-3-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-3-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 22,
   true, 69.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-48@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Stand Mixer 1000W'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 46
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-48@example.com'
+  and lower(pr.name_en) = lower('Stand Mixer 1000W')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكنسة روبوت', 'Robot Vacuum Cleaner', '扫地机器人', 60, 'USD', 'home_appliances', 65,
+select p.id, 'مكنسة روبوت', 'Robot Vacuum Cleaner', '扫地机器人', 'USD', 'home_appliances', 65,
   'Robot Vacuum Cleaner — export-grade Home Appliances from Hangzhou Cardinal Home Appliance Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكنسة روبوت — منتج أجهزة منزلية للتصدير من Hangzhou Cardinal Home Appliance Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-home_appliances-48-4-1/1200/900', array['https://picsum.photos/seed/maabar-home_appliances-48-4-1/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-4-2/1200/900', 'https://picsum.photos/seed/maabar-home_appliances-48-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 23,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-48@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Robot Vacuum Cleaner'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 60
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-48@example.com'
+  and lower(pr.name_en) = lower('Robot Vacuum Cleaner')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Suzhou Meridian Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كنبة قماش 3 مقاعد', '3-Seater Fabric Sofa', '三人布艺沙发', 140, 'USD', 'furniture', 20,
+select p.id, 'كنبة قماش 3 مقاعد', '3-Seater Fabric Sofa', '三人布艺沙发', 'USD', 'furniture', 20,
   '3-Seater Fabric Sofa — export-grade Furniture from Suzhou Meridian Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كنبة قماش 3 مقاعد — منتج أثاث للتصدير من Suzhou Meridian Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-49-1-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-49-1-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-1-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 210.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-49@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Seater Fabric Sofa'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 140
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-49@example.com'
+  and lower(pr.name_en) = lower('3-Seater Fabric Sofa')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طقم طعام 6 كراسي', '6-Seat Dining Set', '六人餐桌套装', 230, 'USD', 'furniture', 22,
+select p.id, 'طقم طعام 6 كراسي', '6-Seat Dining Set', '六人餐桌套装', 'USD', 'furniture', 22,
   '6-Seat Dining Set — export-grade Furniture from Suzhou Meridian Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طقم طعام 6 كراسي — منتج أثاث للتصدير من Suzhou Meridian Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-49-2-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-49-2-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-2-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-49@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('6-Seat Dining Set'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 230
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-49@example.com'
+  and lower(pr.name_en) = lower('6-Seat Dining Set')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة بأبواب منزلقة', 'Sliding-Door Wardrobe', '移门衣柜', 320, 'USD', 'furniture', 24,
+select p.id, 'خزانة بأبواب منزلقة', 'Sliding-Door Wardrobe', '移门衣柜', 'USD', 'furniture', 24,
   'Sliding-Door Wardrobe — export-grade Furniture from Suzhou Meridian Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة بأبواب منزلقة — منتج أثاث للتصدير من Suzhou Meridian Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-49-3-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-49-3-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-3-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 32,
   true, 480.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-49@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Sliding-Door Wardrobe'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 320
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-49@example.com'
+  and lower(pr.name_en) = lower('Sliding-Door Wardrobe')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة قهوة عصرية', 'Modern Coffee Table', '现代茶几', 410, 'USD', 'furniture', 26,
+select p.id, 'طاولة قهوة عصرية', 'Modern Coffee Table', '现代茶几', 'USD', 'furniture', 26,
   'Modern Coffee Table — export-grade Furniture from Suzhou Meridian Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة قهوة عصرية — منتج أثاث للتصدير من Suzhou Meridian Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-furniture-49-4-1/1200/900', array['https://picsum.photos/seed/maabar-furniture-49-4-1/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-4-2/1200/900', 'https://picsum.photos/seed/maabar-furniture-49-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 33,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-49@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Modern Coffee Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 410
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-49@example.com'
+  and lower(pr.name_en) = lower('Modern Coffee Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- products for Qingdao Falcon Office Furniture Co., Ltd.
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'كرسي مكتب مريح', 'Ergonomic Office Chair', '人体工学办公椅', 80, 'USD', 'office_furniture', 15,
+select p.id, 'كرسي مكتب مريح', 'Ergonomic Office Chair', '人体工学办公椅', 'USD', 'office_furniture', 15,
   'Ergonomic Office Chair — export-grade Office Furniture from Qingdao Falcon Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'كرسي مكتب مريح — منتج أثاث مكتبي للتصدير من Qingdao Falcon Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-50-1-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-50-1-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-1-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-1-3/1200/900']::text[], 'Export-grade materials', '0.30 kg',
   'Black / White / Custom', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 28,
   true, 120.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-50@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Ergonomic Office Chair'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 80
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-50@example.com'
+  and lower(pr.name_en) = lower('Ergonomic Office Chair')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'مكتب تنفيذي', 'Executive Office Desk', '行政办公桌', 140, 'USD', 'office_furniture', 17,
+select p.id, 'مكتب تنفيذي', 'Executive Office Desk', '行政办公桌', 'USD', 'office_furniture', 17,
   'Executive Office Desk — export-grade Office Furniture from Qingdao Falcon Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'مكتب تنفيذي — منتج أثاث مكتبي للتصدير من Qingdao Falcon Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-50-2-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-50-2-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-2-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-2-3/1200/900']::text[], 'Export-grade materials', '0.70 kg',
   'Standard export assortment', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 29,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-50@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Executive Office Desk'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 140
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-50@example.com'
+  and lower(pr.name_en) = lower('Executive Office Desk')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'خزانة ملفات 3 أدراج', '3-Drawer Filing Cabinet', '三抽文件柜', 200, 'USD', 'office_furniture', 19,
+select p.id, 'خزانة ملفات 3 أدراج', '3-Drawer Filing Cabinet', '三抽文件柜', 'USD', 'office_furniture', 19,
   '3-Drawer Filing Cabinet — export-grade Office Furniture from Qingdao Falcon Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'خزانة ملفات 3 أدراج — منتج أثاث مكتبي للتصدير من Qingdao Falcon Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-50-3-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-50-3-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-3-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-3-3/1200/900']::text[], 'Export-grade materials', '1.10 kg',
   'Black / Silver / Blue', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 30,
   true, 300.00, 8, 5, 'Pre-production sample available.', true
 from public.profiles p
 where p.email = 'seed-supplier-50@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('3-Drawer Filing Cabinet'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 200
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-50@example.com'
+  and lower(pr.name_en) = lower('3-Drawer Filing Cabinet')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 insert into public.products (
-  supplier_id, name_ar, name_en, name_zh, price_from, currency, category, moq,
+  supplier_id, name_ar, name_en, name_zh, currency, category, moq,
   desc_en, desc_ar, image_url, gallery_images, spec_material, spec_unit_weight,
   spec_color_options, spec_packaging_details, spec_customization, spec_lead_time_days,
   sample_available, sample_price, sample_shipping, sample_max_qty, sample_note, is_active
 )
-select p.id, 'طاولة اجتماعات', 'Conference Meeting Table', '会议桌', 260, 'USD', 'office_furniture', 21,
+select p.id, 'طاولة اجتماعات', 'Conference Meeting Table', '会议桌', 'USD', 'office_furniture', 21,
   'Conference Meeting Table — export-grade Office Furniture from Qingdao Falcon Office Furniture Co., Ltd. Demo-safe synthetic listing for marketplace presentation only.', 'طاولة اجتماعات — منتج أثاث مكتبي للتصدير من Qingdao Falcon Office Furniture Co., Ltd. عرض تجريبي آمن لمنصة مَعبر فقط.', 'https://picsum.photos/seed/maabar-office_furniture-50-4-1/1200/900', array['https://picsum.photos/seed/maabar-office_furniture-50-4-1/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-4-2/1200/900', 'https://picsum.photos/seed/maabar-office_furniture-50-4-3/1200/900']::text[], 'Export-grade materials', '1.50 kg',
   'Brand-matched colors', 'Master-carton export packing with barcode-ready labels.', 'Logo printing, custom packaging, and Arabic labeling on request.', 31,
   false, null, null, null, null, true
 from public.profiles p
 where p.email = 'seed-supplier-50@example.com'
   and not exists (select 1 from public.products x where x.supplier_id = p.id and lower(x.name_en) = lower('Conference Meeting Table'));
+-- price lives in product_pricing_tiers (products.price_from was dropped in phase 4)
+insert into public.product_pricing_tiers (product_id, variant_id, qty_from, qty_to, unit_price)
+select pr.id, null, 1, null, 260
+from public.products pr
+join public.profiles p on p.id = pr.supplier_id
+where p.email = 'seed-supplier-50@example.com'
+  and lower(pr.name_en) = lower('Conference Meeting Table')
+  and not exists (select 1 from public.product_pricing_tiers t where t.product_id = pr.id and t.variant_id is null);
 
 -- ── 6. Buyer requests (status=open, payment_plan in {30,100}) ────────────────
 insert into public.requests (
