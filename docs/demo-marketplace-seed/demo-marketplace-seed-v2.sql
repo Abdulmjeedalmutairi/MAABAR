@@ -21,19 +21,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'demo-supplier@maabar.io',
       extensions.crypt('Demo1234!', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('Demo1234!', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -63,19 +75,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-02@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -105,19 +129,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-03@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -147,19 +183,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-04@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -189,19 +237,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-05@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -231,19 +291,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-06@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -273,19 +345,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-07@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -315,19 +399,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-08@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -357,19 +453,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-09@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -399,19 +507,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-10@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -441,19 +561,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-11@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -483,19 +615,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-12@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -525,19 +669,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-13@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -567,19 +723,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-14@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -609,19 +777,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-15@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -651,19 +831,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-16@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -693,19 +885,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-17@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -735,19 +939,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-18@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -777,19 +993,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-19@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -819,19 +1047,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-20@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -861,19 +1101,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-21@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -903,19 +1155,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-22@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -945,19 +1209,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-23@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -987,19 +1263,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-24@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1029,19 +1317,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-25@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1071,19 +1371,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-26@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1113,19 +1425,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-27@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1155,19 +1479,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-28@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1197,19 +1533,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-29@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1239,19 +1587,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-30@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1281,19 +1641,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-31@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1323,19 +1695,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-32@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1365,19 +1749,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-33@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1407,19 +1803,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-34@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1449,19 +1857,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-35@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1491,19 +1911,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-36@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1533,19 +1965,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-37@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1575,19 +2019,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-38@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1617,19 +2073,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-39@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1659,19 +2127,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-40@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1701,19 +2181,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-41@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1743,19 +2235,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-42@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1785,19 +2289,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-43@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1827,19 +2343,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-44@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1869,19 +2397,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-45@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1911,19 +2451,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-46@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1953,19 +2505,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-47@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -1995,19 +2559,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-48@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2037,19 +2613,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-49@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2079,19 +2667,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-supplier-50@example.com',
       extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"supplier","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('MaabarDemo!2026Seed#', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2122,19 +2722,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'demo-trader@maabar.io',
       extensions.crypt('Demo1234!', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('Demo1234!', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2164,19 +2776,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-trader-2@example.com',
       extensions.crypt('undefined', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('undefined', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2206,19 +2830,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-trader-3@example.com',
       extensions.crypt('undefined', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('undefined', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2248,19 +2884,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-trader-4@example.com',
       extensions.crypt('undefined', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('undefined', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
@@ -2290,19 +2938,31 @@ begin
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password,
       email_confirmed_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
-      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous
+      is_super_admin, created_at, updated_at, is_sso_user, is_anonymous,
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, phone_change, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', 'seed-trader-5@example.com',
       extensions.crypt('undefined', extensions.gen_salt('bf')),
       now(), now(),
       '{"provider":"email","providers":["email"],"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
       '{"role":"buyer","is_seed":true,"seed_group":"demo-marketplace-v2"}'::jsonb,
-      false, now(), now(), false, false
+      false, now(), now(), false, false,
+      -- GoTrue scans these token columns into Go strings on password login; a
+      -- NULL (the default for hand-inserted rows) makes login error out. '' is
+      -- the value GoTrue itself writes, so seeded users can sign in.
+      '', '', '', '', '', ''
     );
   else
     update auth.users set
       encrypted_password = extensions.crypt('undefined', extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
+      confirmation_token     = coalesce(confirmation_token, ''),
+      recovery_token         = coalesce(recovery_token, ''),
+      email_change           = coalesce(email_change, ''),
+      email_change_token_new = coalesce(email_change_token_new, ''),
+      phone_change           = coalesce(phone_change, ''),
+      reauthentication_token = coalesce(reauthentication_token, ''),
       updated_at = now()
     where id = v_user_id;
   end if;
