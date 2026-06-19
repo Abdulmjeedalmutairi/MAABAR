@@ -213,7 +213,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
       afterState: { status: newStatus },
       notes: reason || null,
     });
-    if (newStatus === 'active') {
+    if (newStatus === 'verified') {
       try {
         await sendMaabarEmail({
           type: 'supplier_approved',
@@ -321,7 +321,7 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
             <div className="sd-action-bar">
               {supplier.status === 'verification_under_review' && (
                 <>
-                  <button className="sd-btn sd-btn-approve" disabled={saving} onClick={() => updateStatus('active')}>
+                  <button className="sd-btn sd-btn-approve" disabled={saving} onClick={() => updateStatus('verified')}>
                     {saving ? '…' : (isAr ? 'قبول المورد' : 'Approve')}
                   </button>
                   <button className="sd-btn sd-btn-reject" disabled={saving} onClick={() => setShowRejectForm(v => !v)}>
@@ -329,13 +329,13 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                   </button>
                 </>
               )}
-              {supplier.status === 'active' && (
+              {supplier.status === 'verified' && (
                 <button className="sd-btn sd-btn-ghost" disabled={saving} onClick={() => updateStatus('inactive')}>
                   {isAr ? 'إيقاف' : 'Deactivate'}
                 </button>
               )}
               {(supplier.status === 'inactive' || supplier.status === 'rejected') && (
-                <button className="sd-btn sd-btn-approve" disabled={saving} onClick={() => updateStatus('active')}>
+                <button className="sd-btn sd-btn-approve" disabled={saving} onClick={() => updateStatus('verified')}>
                   {isAr ? 'إعادة تفعيل' : 'Reactivate'}
                 </button>
               )}
