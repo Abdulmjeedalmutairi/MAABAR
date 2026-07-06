@@ -138,6 +138,28 @@ const templates: Record<string, (d: any) => any> = {
 </div>`),
   }),
 
+  // Admin alert: a new admin-managed request (managed or "اصنع فكرتك" idea) was
+  // submitted and needs review/matching. Recipient is ADMIN_EMAIL (same pattern
+  // as admin_new_supplier). Not sent for direct/targeted requests.
+  admin_new_request: (d) => ({
+    subject: `طلب جديد على معبر — ${d.requestTitle || d.titleAr || d.titleEn || ''}`,
+    to: ADMIN_EMAIL,
+    html: wrap(`
+<div class="bd">
+<p class="gr">New Request Submitted</p>
+<p class="tg">${d.isIdea ? 'طلب «اصنع فكرتك» جديد' : 'طلب مُدار جديد'}</p>
+<div class="ib">
+<p class="il">تفاصيل الطلب</p>
+<div class="ir"><span class="ik">العنوان</span><span class="iv">${d.titleAr || d.requestTitle || d.titleEn || '-'}</span></div>
+<div class="ir"><span class="ik">النوع</span><span class="iv">${d.isIdea ? 'اصنع فكرتك' : 'الطلب المُدار'}</span></div>
+<div class="ir"><span class="ik">التصنيف</span><span class="iv">${d.category || '-'}</span></div>
+<div class="ir"><span class="ik">الكمية</span><span class="iv">${d.quantity || '-'}</span></div>
+<div class="ir"><span class="ik">رقم الطلب</span><span class="iv">${d.requestId || '-'}</span></div>
+</div>
+<div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة الطلب ←</a></div>
+</div>`),
+  }),
+
   supplier_approved: (d) => {
     const lang = d.lang || 'ar';
     const t = ({
@@ -560,6 +582,27 @@ ${dateStr !== '-' ? `<div class="ir"><span class="ik">${t.dateLabel}</span><span
 </div>
 <p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
 <div class="bw"><a href="https://maabar.io/dashboard?tab=direct-orders" class="bt">${t.cta}</a></div>
+</div>`, { lang }) };
+  },
+
+  // Trader acknowledgement that their request was received. Buyer-bound, so
+  // AR · EN only (toBuyerLang). Deliberately general timing — no time promise.
+  request_received: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: `تم استلام طلبك — ${d.requestTitle || ''}`, eyebrow: 'Request Received', title: 'تم استلام طلبك', reqLabel: 'الطلب', refLabel: 'رقم الطلب', body: 'وصلنا طلبك بنجاح. سيقوم فريق معبر بمراجعة طلبك والرد عليك قريباً.', cta: 'متابعة الطلب ←' },
+      en: { subject: `We received your request — ${d.requestTitle || ''}`, eyebrow: 'Request Received', title: 'We received your request', reqLabel: 'Request', refLabel: 'Reference', body: 'Your request has reached us. Our team will review your request and get back to you soon.', cta: 'Track request →' },
+    } as any)[lang] || { subject: `We received your request — ${d.requestTitle || ''}`, eyebrow: 'Request Received', title: 'We received your request', reqLabel: 'Request', refLabel: 'Reference', body: 'Your request has reached us. Our team will review your request and get back to you soon.', cta: 'Track request →' };
+    return { subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<div class="ib">
+<div class="ir"><span class="ik">${t.reqLabel}</span><span class="iv">${d.requestTitle || '-'}</span></div>
+<div class="ir"><span class="ik">${t.refLabel}</span><span class="iv">${d.requestId || '-'}</span></div>
+</div>
+<p style="font-size:14px;line-height:1.8;color:rgba(0,0,0,0.55);margin:0 0 20px;">${t.body}</p>
+<div class="bw"><a href="https://maabar.io/dashboard?tab=requests" class="bt">${t.cta}</a></div>
 </div>`, { lang }) };
   },
 
