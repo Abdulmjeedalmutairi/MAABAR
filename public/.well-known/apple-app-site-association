@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "PDRJ6R3RNQ.com.maabar.app",
+        "paths": [
+          "NOT /admin-seed*",
+          "NOT /admin/*",
+          "NOT /login/*",
+          "NOT /auth/*",
+          "/dashboard",
+          "/dashboard/*",
+          "/chat/*",
+          "/products",
+          "/products/*",
+          "/suppliers",
+          "/suppliers/*"
+        ]
+      }
+    ]
+  }
+}
