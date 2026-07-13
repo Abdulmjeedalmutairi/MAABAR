@@ -2010,11 +2010,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     return { options, variants, tiers, shipping };
   };
 
-  const addProduct = async () => {
-    const validationMessage = getProductComposerValidationMessage(product, lang);
-    if (validationMessage) {
-      setProductSaveMsg(validationMessage);
-      return;
+  const addProduct = async (asDraft) => {
+    // Guard against the click event being passed as the arg — only an explicit
+    // `true` (from the Save-as-Draft button) means draft.
+    const isDraft = asDraft === true;
+    if (!isDraft) {
+      const validationMessage = getProductComposerValidationMessage(product, lang);
+      if (validationMessage) {
+        setProductSaveMsg(validationMessage);
+        return;
+      }
     }
     setSaving(true);
     setProductSaveMsg('');
@@ -2027,7 +2032,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch (translationErr) {
       console.error('addProduct translation error:', translationErr?.message || translationErr);
     }
-    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id);
+    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id, { asDraft: isDraft });
     const { data: insertedRows, error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -2076,8 +2081,9 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     loadStats();
   };
 
-  const updateProduct = async () => {
+  const updateProduct = async (asDraft) => {
     if (!editingProduct) return;
+    const isDraft = asDraft === true;
     setSaving(true);
     let translatedFields = {};
     try {
@@ -2088,7 +2094,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch (translationErr) {
       console.error('updateProduct translation error:', translationErr?.message || translationErr);
     }
-    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields });
+    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields }, undefined, { asDraft: isDraft });
     delete payload.supplier_id;
     const { error } = await runWithOptionalColumns({
       table: 'products',
@@ -3663,7 +3669,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       {editProductComposerStep === 'preview' ? (
                         <ProductPreviewPanel key={editingProduct.id} product={normalizeProductDraftMedia(editingProduct)} onPublish={updateProduct} onBack={() => setEditProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} certificationsCount={(editingProduct.certifications || []).length} />
                       ) : (
-                        <ProductForm key={editingProduct.id} isEdit certificationsCount={(editingProduct.certifications || []).length} data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={editVariantData} setVariantData={setEditVariantData} />
+                        <ProductForm key={editingProduct.id} isEdit certificationsCount={(editingProduct.certifications || []).length} data={editingProduct} setData={setEditingProduct} onSave={updateProduct} onSaveDraft={() => updateProduct(true)} onPreview={openEditProductPreview} showPreviewAction onCancel={() => { setEditingProduct(null); setEditProductComposerStep('edit'); }} imgRef={editImageRef} vidRef={editVideoRef} onImgChange={e => handleImageUpload(e, true)} onVidChange={e => handleVideoUpload(e, true)} onRemoveImage={index => removeImageAt(index, true)} onRemoveVideo={() => removeVideo(true)} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={editVariantData} setVariantData={setEditVariantData} />
                       )}
                     </div>
                   ) : (
@@ -3682,8 +3688,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         <p style={{ fontSize: 12, color: 'var(--text-disabled)' }}>{deriveProductPriceFrom(p) ?? '—'} {p.currency || 'USD'} · {isAr ? 'MOQ' : lang === 'zh' ? '最小起订量' : 'MOQ'}: {p.moq}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', border: '1px solid', borderColor: p.is_active ? 'rgba(45,122,79,0.3)' : 'var(--border-subtle)', color: p.is_active ? 'var(--green)' : 'var(--text-disabled)', background: p.is_active ? 'rgba(45,122,79,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
-                        <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
+                        {p.is_draft ? (
+                          <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', border: '1px solid rgba(176,141,46,0.4)', color: '#8A6D1E', background: 'rgba(176,141,46,0.12)' }}>{isAr ? 'مسودة' : lang === 'zh' ? '草稿' : 'Draft'}</span>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 'var(--radius-pill)', border: '1px solid', borderColor: p.is_active ? 'rgba(45,122,79,0.3)' : 'var(--border-subtle)', color: p.is_active ? 'var(--green)' : 'var(--text-disabled)', background: p.is_active ? 'rgba(45,122,79,0.08)' : 'transparent' }}>{p.is_active ? t.active : t.inactive}</span>
+                            <button onClick={() => toggleProductActive(p)} className="btn-outline" style={{ padding: '5px 10px', fontSize: 10, minHeight: 28 }}>{t.toggleActive}</button>
+                          </>
+                        )}
                         <button onClick={() => {
                           // Expand stored country/port into the dropdown+other form pair.
                           const country = expandStoredSelect(p.country_of_origin, COUNTRY_OF_ORIGIN_OPTIONS);
@@ -4217,7 +4229,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               {productComposerStep === 'preview' ? (
                 <ProductPreviewPanel product={normalizeProductDraftMedia(product)} onPublish={addProduct} onBack={() => setProductComposerStep('edit')} t={t} isAr={isAr} saving={saving} lang={lang} certificationsCount={(product.certifications || []).length} />
               ) : (
-                <ProductForm data={product} setData={setProduct} onSave={addProduct} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={variantData} setVariantData={setVariantData} certificationsCount={(product.certifications || []).length} />
+                <ProductForm data={product} setData={setProduct} onSave={addProduct} onSaveDraft={() => addProduct(true)} onPreview={openProductPreview} showPreviewAction imgRef={imageRef} vidRef={videoRef} onImgChange={e => handleImageUpload(e, false)} onVidChange={e => handleVideoUpload(e, false)} onRemoveImage={index => removeImageAt(index, false)} onRemoveVideo={() => removeVideo(false)} onCancel={() => setActiveTab('overview')} uploadingImage={uploadingImage} uploadingVideo={uploadingVideo} t={t} isAr={isAr} saving={saving} usdRate={usdRate} categories={cats} lang={lang} variantData={variantData} setVariantData={setVariantData} certificationsCount={(product.certifications || []).length} />
               )}
               {productSaveMsg && (
                 <p style={{ marginTop: 12, fontSize: 13, color: ([t.productSavedWithFallback, 'تم إضافة المنتج بنجاح', '产品添加成功', 'Product added successfully'].includes(productSaveMsg) ? (productSaveMsg === t.productSavedWithFallback ? 'var(--warn)' : 'var(--green)') : 'var(--red)'), fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>

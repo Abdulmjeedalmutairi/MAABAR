@@ -56,6 +56,7 @@ export const emptyProduct = {
 };
 
 export const PRODUCT_OPTIONAL_DB_FIELDS = [
+  'is_draft',
   'gallery_images',
   'spec_material',
   'spec_dimensions',
@@ -119,7 +120,7 @@ export function expandStoredSelect(stored, knownOptions) {
   return { selectValue: '__other__', otherValue: v };
 }
 
-export const buildProductWritePayload = (rawProduct, supplierId) => {
+export const buildProductWritePayload = (rawProduct, supplierId, { asDraft = false } = {}) => {
   const product = normalizeProductDraftMedia(rawProduct);
   const fallbackName = product.name_en || product.name_zh || product.name_ar || '';
 
@@ -202,7 +203,10 @@ export const buildProductWritePayload = (rawProduct, supplierId) => {
     unit_weight_kg: product.unit_weight_kg ? parseFloat(product.unit_weight_kg) : null,
     package_dimensions: product.package_dimensions || null,
     sample_free_from_qty: product.sample_free_from_qty ? parseInt(product.sample_free_from_qty, 10) : null,
-    is_active: true,
+    // Drafts stay unpublished (is_active=false) and are skipped by the
+    // auto-publish-on-verified trigger; a full save publishes (is_draft=false).
+    is_active: asDraft ? false : true,
+    is_draft: asDraft,
   };
 };
 
@@ -912,6 +916,7 @@ export function ProductForm({
   data,
   setData,
   onSave,
+  onSaveDraft,
   onCancel,
   onPreview,
   showPreviewAction = false,
@@ -1578,6 +1583,11 @@ export function ProductForm({
         {showPreviewAction
           ? <button onClick={onPreview} className="vf-btn-ink" style={{ display: 'inline-block', width: 'auto', padding: '13px 28px', fontSize: 14 }}>{t.continueToPreview}</button>
           : <button onClick={onSave} disabled={saving} className="vf-btn-ink" style={{ display: 'inline-block', width: 'auto', padding: '13px 28px', fontSize: 14 }}>{saving ? t.saving : (saveLabel || t.save)}</button>}
+        {onSaveDraft && (
+          <button onClick={onSaveDraft} disabled={saving} className="vf-btn-ghost" style={{ display: 'inline-block', width: 'auto', padding: '11px 20px', fontSize: 14 }}>
+            {lang === 'ar' ? 'حفظ كمسودة' : lang === 'zh' ? '存为草稿' : 'Save as Draft'}
+          </button>
+        )}
         <button onClick={onCancel} className="vf-btn-ghost" style={{ display: 'inline-block', width: 'auto', padding: '11px 20px', fontSize: 14 }}>{t.cancel}</button>
       </div>
     </div>
