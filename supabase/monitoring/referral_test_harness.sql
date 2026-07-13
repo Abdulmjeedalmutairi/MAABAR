@@ -16,23 +16,31 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ─────────────────────────── STEP 1 — simulate + inspect ───────────────────
--- Give the referred a DIFFERENT commercial registration + reset to unverified.
+-- 1) Set up the referred: DIFFERENT commercial registration + reset to
+--    unverified. (Its role must be 'supplier' — the guard checks that.)
 update public.profiles
    set reg_number = 'CR-TEST-REFERRED', status = 'registered'
  where id = '<REFERRED_ID>';
 
--- Bind the referral using the referrer's REAL code (maabar_supplier_id).
-insert into public.referrals (referrer_id, referred_id, referral_code)
-select p.id, '<REFERRED_ID>'::uuid, p.maabar_supplier_id
-  from public.profiles p
- where p.id = '<REFERRER_ID>'
-on conflict (referred_id) do nothing;
+-- 2) Bind via the REAL function — exercises record_referral's guards:
+--    referrer-must-be-verified, referred-must-be-supplier, no self-referral,
+--    the 50 / 10 caps, and dedup. (NOT a raw insert.)
+select public.record_referral(
+  '<REFERRED_ID>'::uuid,
+  (select maabar_supplier_id from public.profiles where id = '<REFERRER_ID>')
+);
 
--- Fire the reward(s): the referred completes verification.
+-- 3) Did it bind? Row present = passed every guard; absent = a guard blocked it.
+select referrer_id, referred_id, referral_code, referred_verified_at, reward_eligible
+  from public.referrals where referred_id = '<REFERRED_ID>';
+
+-- 4) Fire the reward(s) via a REAL status UPDATE — this is the actual
+--    on_supplier_verified_referral trigger, not a manual insert.
 update public.profiles set status = 'verified' where id = '<REFERRED_ID>';
 
--- What the triggers produced (expect: 'referred_verified' $30 pending; and
--- 'first_product_and_verified' $30 too IF the referrer has a published product):
+-- 5) What the trigger produced (expect 'referred_verified' $30 pending; and
+--    'first_product_and_verified' $30 too IF the referrer has a published
+--    product):
 select reward_type, amount, currency, state, condition_met, earned_at
   from public.referral_rewards
  where referral_id = (select id from public.referrals where referred_id = '<REFERRED_ID>')
@@ -46,8 +54,19 @@ select reward_type, amount, currency, state, condition_met, earned_at
 -- delete from public.notifications where user_id = '<REFERRER_ID>' and type = 'referral_reward';
 
 -- ── Variants ───────────────────────────────────────────────────────────────
--- • Anti-fraud (same CR): in STEP 1 set the referred's reg_number to the SAME
---   value as the referrer's → the results grid should be EMPTY (no reward).
+-- Binding guards live in record_referral (STEP 1.2); the CR-dedup lives in the
+-- reward trigger (STEP 1.4). So they show up in different grids:
+--
+-- • Same CR (anti-fraud): set the referred's reg_number = the referrer's. The
+--   referral STILL binds (STEP 3 shows a row) but the REWARDS grid (STEP 5) is
+--   EMPTY, and referrals.reward_eligible = false.
+-- • Referrer not verified: temporarily set the referrer's status to
+--   'registered' before STEP 1.2 → record_referral binds nothing (STEP 3 empty).
+-- • Self-referral: pass the SAME id for referrer and referred → STEP 3 empty.
+-- • Referred not a supplier: point REFERRED_ID at a buyer profile → STEP 3
+--   empty (the referred-is-supplier guard).
+-- • 10-cap: pre-insert 10 dummy referrals for the referrer, then call
+--   record_referral for an 11th referred → STEP 3 empty.
 -- • Reward 2 in isolation: pick a referrer with NO published product; run STEP 1
---   → only reward 1 appears. Then publish a product for the referrer (via the UI
---   or an insert) → reward 2 fires on its own.
+--   → only reward 1 appears. Then publish a product for the referrer → reward 2
+--   fires on its own.
