@@ -4,12 +4,26 @@ import BrandLogo from '../components/BrandLogo';
 import usePageTitle from '../hooks/usePageTitle';
 import { getSupplierOnboardingState, getSupplierPrimaryRoute } from '../lib/supplierOnboarding';
 
-// Deadline: fixed launch target (2026-05-18). Was a sliding 14-day window
-// per page load; switched to a fixed date so every visitor sees the same countdown.
-const ACCESS_DEADLINE = new Date('2026-05-18T00:00:00').toISOString();
+// Early-registration urgency: a rolling 14-day window anchored per visitor in
+// localStorage. It actually counts down (persists across refreshes) and never
+// turns into a dead past date the way a fixed launch date does.
+const ACCESS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+const DEADLINE_KEY = 'maabar_supplier_access_deadline';
 
-function getTimeLeft() {
-  const diff = new Date(ACCESS_DEADLINE).getTime() - Date.now();
+function getAccessDeadline() {
+  try {
+    const stored = Number(window.localStorage.getItem(DEADLINE_KEY));
+    if (Number.isFinite(stored) && stored > Date.now()) return stored;
+    const next = Date.now() + ACCESS_WINDOW_MS;
+    window.localStorage.setItem(DEADLINE_KEY, String(next));
+    return next;
+  } catch {
+    return Date.now() + ACCESS_WINDOW_MS;
+  }
+}
+
+function getTimeLeft(deadline) {
+  const diff = deadline - Date.now();
   if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
   return {
     days: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -31,11 +45,11 @@ const TRANSLATIONS = {
     benefits: [
       {
         title: 'Free Registration — No Monthly Fees',
-        desc: 'Commission applies only on successful sales after the free period ends — see our Terms & Conditions for full details.',
+        desc: 'Registration is completely free — no monthly fees, and no commission on your sales.',
       },
       {
         title: '0% Commission',
-        desc: 'First 20 suppliers: 0% commission for 6 months.',
+        desc: 'Maabar never takes a commission from suppliers — you keep 100% of every sale.',
       },
       {
         title: 'Direct Access to Saudi Buyers',
@@ -82,11 +96,11 @@ const TRANSLATIONS = {
     benefits: [
       {
         title: '免费注册 — 无月费',
-        desc: '仅对成功销售收取佣金，免费期结束后生效。详情请查看条款与条件。',
+        desc: '注册完全免费 — 无月费，且永不收取任何销售佣金。',
       },
       {
         title: '0% 佣金',
-        desc: '前20名供应商：6个月内享受0%佣金。',
+        desc: 'Maabar 从不向供应商收取佣金 — 每笔销售 100% 归您所有。',
       },
       {
         title: '直接对接沙特买家',
@@ -127,18 +141,19 @@ const TRANSLATIONS = {
 
 export default function SupplierAccess({ user, profile, lang = 'zh' }) {
   const nav = useNavigate();
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft());
-  const [currentLang, setCurrentLang] = useState('zh');
+  const deadline = useMemo(() => getAccessDeadline(), []);
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(deadline));
+  const [currentLang, setCurrentLang] = useState('en');
   usePageTitle('supplier-access', currentLang);
 
   useEffect(() => {
-    const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    const timer = setInterval(() => setTimeLeft(getTimeLeft(deadline)), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [deadline]);
 
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRouteRaw = supplierState ? getSupplierPrimaryRoute(profile, user) : '/login/supplier';
-  const routeLang = supplierState ? currentLang : 'zh';
+  const routeLang = currentLang;
   const supplierPrimaryRoute = supplierPrimaryRouteRaw + (supplierPrimaryRouteRaw.includes('?') ? `&lang=${routeLang}` : `?lang=${routeLang}`);
   const hasExistingSupplierAccount = Boolean(user && profile?.role === 'supplier');
 
@@ -169,8 +184,12 @@ export default function SupplierAccess({ user, profile, lang = 'zh' }) {
       {/* CONTENT */}
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px 60px' }}>
 
-        {/* Already approved? Sign in - MOVED TO TOP */}
-        <div style={{ textAlign: 'right', padding: '20px 0 10px' }}>
+        {/* Top bar: prominent language toggle (left) + sign in (right) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0 10px', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'inline-flex', border: '1px solid var(--border-default)', borderRadius: 999, overflow: 'hidden' }}>
+            <button onClick={() => setCurrentLang('en')} style={{ background: currentLang === 'en' ? 'var(--text-primary)' : 'transparent', color: currentLang === 'en' ? 'var(--bg-base)' : 'var(--text-secondary)', border: 'none', padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>English</button>
+            <button onClick={() => setCurrentLang('zh')} style={{ background: currentLang === 'zh' ? 'var(--text-primary)' : 'transparent', color: currentLang === 'zh' ? 'var(--bg-base)' : 'var(--text-secondary)', border: 'none', padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>中文</button>
+          </div>
           <button onClick={goToSignIn} style={{ background: 'none', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em' }}>
             {t.alreadyApproved}
           </button>
