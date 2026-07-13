@@ -41,11 +41,6 @@ export default function Terms({ lang }) {
   const isAr = lang === 'ar';
   const t = T[lang] || T.ar;
   const sections = SECTIONS[lang] || SECTIONS.ar;
-  const metaItems = [
-    { label: t.companyLabel, value: CR_NUMBER },
-    { label: t.emailLabel, value: CONTACT_EMAIL },
-    { label: t.websiteLabel, value: WEBSITE_URL },
-  ];
 
   usePageTitle('terms', lang);
 
@@ -68,22 +63,7 @@ export default function Terms({ lang }) {
         </div>
       </section>
 
-      <section className="terms-meta-wrap" style={{ padding: '32px 60px 24px' }}>
-        <div className="terms-meta-grid" style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
-          {metaItems.map((item) => (
-            <div key={item.label} style={{ border: '1px solid var(--border-subtle)', borderRadius: 22, background: 'var(--bg-raised)', padding: 20 }}>
-              <p style={{ margin: '0 0 8px', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
-                {item.label}
-              </p>
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: 'var(--text-primary)', wordBreak: 'break-word', fontFamily: item.label === t.websiteLabel || item.label === t.emailLabel ? 'var(--font-sans)' : (isAr ? 'var(--font-ar)' : 'var(--font-sans)') }}>
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="terms-body" style={{ padding: '0 60px 80px' }}>
+      <section className="terms-body" style={{ padding: '32px 60px 80px' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {sections.map((section) => (
             <article key={section.title} style={{ border: '1px solid var(--border-subtle)', borderRadius: 24, background: 'var(--bg-base)', padding: '24px 24px 22px' }}>
@@ -95,6 +75,9 @@ export default function Terms({ lang }) {
               </p>
             </article>
           ))}
+          <p style={{ margin: '10px 4px 0', fontSize: 13, lineHeight: 1.8, color: 'var(--text-disabled)', textAlign: isAr ? 'right' : 'left', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {t.companyLabel}: <span style={{ fontFamily: 'var(--font-sans)' }}>{CR_NUMBER}</span>
+          </p>
         </div>
       </section>
 
