@@ -278,6 +278,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [uploadingFactory, setUploadingFactory] = useState(false);
   const [samples, setSamples] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
+  const [referrals, setReferrals] = useState([]);
+  const [referralRewards, setReferralRewards] = useState([]);
   const [showVfSuccess, setShowVfSuccess] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState('');
   const [settingsMsgType, setSettingsMsgType] = useState('success');
@@ -370,6 +372,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'samples',      label: isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples', badge: stats.pendingSamples > 0 ? stats.pendingSamples : null },
     { id: 'product-inquiries', label: isAr ? 'استفسارات المنتجات' : lang === 'zh' ? '产品咨询' : 'Product Inquiries', badge: stats.productInquiries > 0 ? stats.productInquiries : null },
     { id: 'reviews',      label: isAr ? 'تقييماتي' : lang === 'zh' ? '评价' : 'Reviews' },
+    { id: 'wallet',       label: isAr ? 'المحفظة والإحالات' : lang === 'zh' ? '钱包与推荐' : 'Wallet & Referrals' },
     { id: 'messages',     label: t.messages, badge: stats.messages > 0 ? stats.messages : null },
     { id: 'settings',     label: t.settings },
   ], [lang, t, needsVerification, needsPayoutSetup, stats.pendingSamples, stats.productInquiries, stats.messages, isAr, directOrders.length, paidDirectOrders.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -437,6 +440,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     if (activeTab === 'samples')      loadSamples();
     if (activeTab === 'product-inquiries') loadProductInquiries();
     if (activeTab === 'reviews')      loadMyReviews();
+    if (activeTab === 'wallet')       loadReferrals();
     if (activeTab === 'add-product')  {
       setEditingProduct(null);
       setProductComposerStep('edit');
@@ -690,6 +694,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const loadMyReviews = async () => {
     const { data } = await sb.from('reviews').select('*').eq('supplier_id', user.id).order('created_at', { ascending: false });
     if (data) setMyReviews(await attachDirectoryProfiles(sb, data, 'reviewer_id', 'profiles'));
+  };
+
+  const loadReferrals = async () => {
+    const [{ data: refs }, { data: rewards }] = await Promise.all([
+      sb.from('referrals')
+        .select('*, referred:profiles!referrals_referred_id_fkey(company_name, status)')
+        .eq('referrer_id', user.id)
+        .order('created_at', { ascending: false }),
+      sb.from('referral_rewards')
+        .select('*')
+        .eq('referrer_id', user.id)
+        .order('earned_at', { ascending: false }),
+    ]);
+    setReferrals(refs || []);
+    setReferralRewards(rewards || []);
   };
 
   const updateSampleStatus = async (sampleId, status) => {
@@ -4886,6 +4905,88 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               )}
             </div>
           )}
+
+          {/* ── WALLET & REFERRALS ── */}
+          {!isRestrictedSupplierTab && activeTab === 'wallet' && (() => {
+            const code = profile.maabar_supplier_id || '';
+            const shareLink = code ? `https://maabar.io/login/supplier?ref=${code}&mode=signup` : '';
+            const pendingSum = referralRewards.filter(r => r.state === 'pending').reduce((a, r) => a + Number(r.amount || 0), 0);
+            const withdrawableSum = referralRewards.filter(r => r.state === 'withdrawable').reduce((a, r) => a + Number(r.amount || 0), 0);
+            const verifiedCount = referrals.filter(r => r.referred_verified_at).length;
+            const rewardLabel = (rt) => rt === 'referred_verified'
+              ? (isAr ? 'إحالة أكملت التوثيق' : lang === 'zh' ? '推荐已通过认证' : 'Referral verified')
+              : (isAr ? 'أول منتج + إحالة موثّقة' : lang === 'zh' ? '首个产品 + 已认证推荐' : 'First product + verified referral');
+            const cardBox = { background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 16, padding: 18 };
+            const dir = isAr ? 'rtl' : 'ltr';
+            return (
+              <div style={{ ...section, maxWidth: 900, direction: dir }}>
+                <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  {isAr ? 'المحفظة والإحالات' : lang === 'zh' ? '钱包与推荐' : 'Wallet & Referrals'}
+                </h2>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 18px' }}>
+                  {isAr ? 'ادعُ موردين آخرين بكودك واكسب $30 عن كل مرحلة.' : lang === 'zh' ? '用您的推荐码邀请供应商，每个阶段赚取 $30。' : 'Invite suppliers with your code and start earning $30 per milestone.'}
+                </p>
+
+                {/* Balances */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                  <div style={cardBox}>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'قيد التفعيل' : lang === 'zh' ? '待激活' : 'Pending'}</p>
+                    <b style={{ fontSize: 26, color: 'var(--text-primary)' }}>${pendingSum}</b>
+                  </div>
+                  <div style={cardBox}>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'قابل للسحب' : lang === 'zh' ? '可提现' : 'Withdrawable'}</p>
+                    <b style={{ fontSize: 26, color: 'var(--text-primary)' }}>${withdrawableSum}</b>
+                    <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '6px 0 0' }}>{isAr ? 'يُفعَّل عند أول عمولة بيع فعلية' : lang === 'zh' ? '在首笔实际销售佣金后解锁' : 'Unlocks with your first real sale commission'}</p>
+                  </div>
+                </div>
+
+                {/* Code + share */}
+                {code ? (
+                  <div style={{ ...cardBox, marginBottom: 16 }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'كودك للإحالة' : lang === 'zh' ? '您的推荐码' : 'Your referral code'}</p>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+                      <code style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1, color: 'var(--text-primary)', direction: 'ltr' }}>{code}</code>
+                      <button onClick={() => navigator.clipboard?.writeText(code)} className="btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>{isAr ? 'نسخ' : lang === 'zh' ? '复制' : 'Copy'}</button>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'رابط الدعوة' : lang === 'zh' ? '邀请链接' : 'Invite link'}</p>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input readOnly value={shareLink} onFocus={(e) => e.target.select()} style={{ flex: 1, minWidth: 220, direction: 'ltr', fontSize: 12, padding: '8px 10px', border: '1px solid var(--border-default)', borderRadius: 10, background: 'var(--bg-base)', color: 'var(--text-secondary)' }} />
+                      <button onClick={() => navigator.clipboard?.writeText(shareLink)} className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>{isAr ? 'نسخ الرابط' : lang === 'zh' ? '复制链接' : 'Copy link'}</button>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '12px 0 0' }}>
+                      {isAr ? `إحالاتك: ${referrals.length} / 10 · موثّقة: ${verifiedCount}` : lang === 'zh' ? `推荐：${referrals.length} / 10 · 已认证：${verifiedCount}` : `Referrals: ${referrals.length} / 10 · Verified: ${verifiedCount}`}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ ...cardBox, marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                      {isAr ? 'كودك للإحالة يظهر بعد اعتماد توثيقك كمورد موثّق.' : lang === 'zh' ? '您的推荐码将在账户通过认证后显示。' : 'Your referral code appears once your account is verified.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Rewards ledger */}
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 10px' }}>{isAr ? 'سجل المكافآت' : lang === 'zh' ? '奖励记录' : 'Rewards ledger'}</h3>
+                {referralRewards.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--text-disabled)' }}>{isAr ? 'لا مكافآت بعد — ابدأ بمشاركة كودك.' : lang === 'zh' ? '暂无奖励 — 分享您的推荐码开始吧。' : 'No rewards yet — share your code to start.'}</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {referralRewards.map((r) => (
+                      <div key={r.id} style={{ ...cardBox, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 2px' }}>{rewardLabel(r.reward_type)}</p>
+                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: 0, direction: 'ltr', textAlign: isAr ? 'right' : 'left' }}>${Number(r.amount)} · {new Date(r.earned_at).toLocaleDateString(isAr ? 'ar-SA-u-nu-latn' : lang === 'zh' ? 'zh-CN' : 'en-US')}</p>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, background: r.state === 'withdrawable' ? 'rgba(45,122,79,0.10)' : 'rgba(176,141,46,0.12)', color: r.state === 'withdrawable' ? 'var(--green)' : '#8A6D1E' }}>
+                          {r.state === 'withdrawable' ? (isAr ? 'قابل للسحب' : lang === 'zh' ? '可提现' : 'Withdrawable') : (isAr ? 'قيد التفعيل' : lang === 'zh' ? '待激活' : 'Pending')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── SETTINGS ── */}
           {activeTab === 'settings' && (
