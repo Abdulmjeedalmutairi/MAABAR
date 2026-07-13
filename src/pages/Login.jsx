@@ -291,6 +291,8 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [supCity, setSupCity] = useState('');
   const [speciality, setSpeciality] = useState('');
   const [tradeLink, setTradeLink] = useState('');
+  // Referral code — prefilled from the ?ref= link and bound at sign-up only.
+  const [referralCode, setReferralCode] = useState(searchParams.get('ref') || '');
 
   useEffect(() => {
     setMode(getInitialMode());
@@ -500,6 +502,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         city: trimValue(supCity),
         trade_link: trimValue(tradeLink),
         lang: effectiveLang === 'zh' ? 'zh' : 'en',
+        ...(trimValue(referralCode) && { referral_code: trimValue(referralCode) }),
       }),
     };
 
@@ -538,6 +541,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             speciality: trimValue(speciality),
             trade_link: trimValue(tradeLink),
             lang: effectiveLang === 'zh' ? 'zh' : 'en',
+            pending_referral_code: trimValue(referralCode) || null,
           }).select().single();
 
           if (profileError) {
@@ -971,6 +975,25 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                       autoComplete="off"
                     />
                     <p style={helperTextStyle}>{supplierSignupContent.tradeLinkHint}</p>
+                  </div>
+
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>
+                      {isAr ? 'كود الإحالة (اختياري)' : lang === 'zh' ? '推荐码（可选）' : 'Referral code (optional)'}
+                    </label>
+                    <input
+                      style={inputStyle}
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value)}
+                      placeholder={isAr ? 'أدخل الكود' : lang === 'zh' ? '输入推荐码' : 'Enter code'}
+                      dir="ltr"
+                      autoComplete="off"
+                    />
+                    <p style={helperTextStyle}>
+                      {isAr ? 'إذا وصلك كود من مورد، أدخله هنا وقت التسجيل.'
+                        : lang === 'zh' ? '如果供应商与您分享了推荐码，请在注册时输入。'
+                        : 'If a supplier shared a code with you, enter it here at sign-up.'}
+                    </p>
                   </div>
 
                   <div style={{
