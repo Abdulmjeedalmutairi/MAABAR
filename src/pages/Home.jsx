@@ -1,251 +1,100 @@
 import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { sb } from '../supabase';
 import IdeaToProduct from '../components/IdeaToProduct';
 import Footer from '../components/Footer';
 import RoleIntroTour from '../components/RoleIntroTour';
 
+// Trilingual copy — mirrors the mobile app's public home (PublicHomeScreen).
 const T = {
   ar: {
     tag: 'الحل لجميع مشاكل استيرادك من الصين',
-    title: 'لا تبحث\nمعبر\nيبحث لك',
-    mainSub: 'استورد بثقة — بدون وسطاء، بدون مخاطر',
-    sub: 'ارفع طلبك فقط، ومعبر يتولى فهمه وترتيبه، ثم يراجعه داخلياً ويطابقه مع الموردين المناسبين ويعيد لك أفضل 3 عروض بشكل واضح داخل نفس صفحة الطلب.',
-    cta: 'دع معبر يتولى الطلب',
-    reqCta: 'ارفع طلبك بنفسك',
-    whyLabel: 'لماذا معبر؟',
-    whyTitle: 'لماذا معبر مختلف؟',
-    whyIntro: 'معبر لا يضيف طبقة تسويق جديدة فوق الاستيراد. هو ينظّم الطريق بين التاجر السعودي والمورد الصيني المناسب بشكل أوضح وأسرع.',
-    strengths: [
-      {
-        num: '01',
-        title: 'أول منصة سعودية تربط التاجر السعودي مباشرة بالمورد الصيني',
-        desc: 'الوصول للموردين يتم من خلال منصة سعودية مصممة لاحتياج السوق المحلي، بدون الدوران بين مواقع وأطراف كثيرة.',
-      },
-      {
-        num: '02',
-        title: 'موردون معتمدون',
-        desc: 'الموردون الذين يستقبلون الطلبات في معبر يمرّون بعملية تحقق قبل الدخول للمنصة.',
-        badge: '✓ تحقق ميداني من المصنع',
-      },
-      {
-        num: '03',
-        title: 'طلبك يذهب للموردين المناسبين والمنافسة تبدأ عليه',
-        desc: 'بدلاً من أن تبحث بنفسك، معبر يوجّه الطلب للجهات المناسبة لتستقبل عروضاً قابلة للمقارنة.',
-      },
+    heroTitle: 'لا تبحث — معبر يبحث لك',
+    heroSub: 'استورد من الصين بثقة — بدون وسطاء، وبلا حاجز لغة.',
+    heroBtn1: 'ابدأ طلب استيراد',
+    heroBtn2: 'تصفح الموردين',
+    services: [
+      { key: 'products',    title: 'ابحث عن منتجات',    desc: 'تصفّح كتالوج المنتجات الجاهزة' },
+      { key: 'suppliers',   title: 'استكشف الموردين',   desc: 'موردون صينيون معتمدون' },
+      { key: 'manufacture', title: 'اطلب تصنيع منتجك',  desc: 'حوّل فكرتك إلى منتج مُصنّع' },
+      { key: 'support',     title: 'دعم باللغة العربية', desc: 'فريق ودعم بالعربية دائمًا' },
     ],
-    howLabel: 'كيف يعمل',
-    howTitle: 'كيف يعمل الطلب المُدار من معبر',
-    howIntro: 'الفلو هنا واضح ومقصود: معبر لا يرسل طلبك عشوائياً، بل يمرره عبر AI ثم مراجعة داخلية ثم مطابقة دقيقة قبل أن يعرض لك أفضل 3 خيارات.',
-    steps: [
-      {
-        t: 'ارفع الطلب',
-        d: 'أضف المنتج أو التصنيع المطلوب والكمية والمواصفات والأولوية بشكل واضح.',
-      },
-      {
-        t: 'معبر يرتبه ويراجعه',
-        d: 'نجهّز طلبك بشكل واضح ونراجعه داخلياً قبل إرساله.',
-      },
-      {
-        t: 'يصل للمورد المناسب فقط',
-        d: 'نختار الموردين المطابقين لطلبك ونجمع عروضهم — كل مورد تحقق منه ميدانياً قبل دخوله المنصة.',
-      },
-      {
-        t: 'تستلم العروض المختارة لك',
-        d: 'أفضل 3 عروض تظهر لك داخل نفس صفحة الطلب بشكل مرتب وواضح لتختار أو تطلب تفاوضاً إضافياً.',
-      },
-    ],
-    trustLabel: 'مبني على الثقة',
-    trustTitle: 'لماذا يمكن الوثوق في معبر؟',
-    trustIntro: 'الثقة هنا ليست شعاراً عاماً. هذه هي العناصر التي تحمي الصفقة عملياً.',
-    trusts: [
-      {
-        num: '01',
-        t: 'موردون معتمدون',
-        d: 'كل مورد داخل المنصة يمر بتحقق قبل أن يبدأ باستقبال الطلبات.',
-      },
-      {
-        num: '02',
-        t: 'دفع محمي ومرن',
-        d: 'خيارات الدفع مصممة لتمنحك مرونة أكبر وتحكماً أوضح بحسب مستوى راحتك في الصفقة.',
-      },
-      {
-        num: '03',
-        t: 'تواصل بدون حاجز اللغة',
-        d: 'تستطيع إدارة التواصل بوضوح بدون أن تصبح اللغة عائقاً بينك وبين المورد.',
-      },
-      {
-        num: '04',
-        t: 'شفافية أوضح قبل القرار',
-        d: 'تفاصيل العرض والتكلفة والخطوات تكون أوضح قبل أن تمضي في الصفقة.',
-      },
-    ],
-    finalCtaLabel: 'ابدأ الآن',
-    finalCtaTitle: 'جاهز تبدأ طلباً مُداراً بشكل أوضح؟',
-    finalCtaText: 'ابدأ بالمسار المُدار إذا كنت تريد أن يتولى معبر المراجعة والمطابقة والتفاوض، أو افتح المسار المباشر إذا كنت تريد إدارة الطلب بنفسك.',
-    finalPrimary: 'دع معبر يتولى الطلب',
-    finalSecondary: 'ارفع طلبك بنفسك',
+    mgBadge: 'خدمة مميّزة',
+    mgTitle: 'الطلب المُدار',
+    mgSub: 'دع خبراء معبر يتولّون طلبك بالكامل — نبحث، نفاوض، ونعرض لك أفضل ٣ عروض مختارة.',
+    mgBullets: ['فريق مختص يبحث ويفاوض بدلاً عنك', 'أفضل ٣ عروض مُنتقاة تصلك جاهزة', 'أنت فقط تختار وتستلم'],
+    mgBtn: 'اطلب طلبًا مُدارًا',
+    productsTitle: 'منتجات',
+    viewAll: 'عرض الكل',
+    ctaTitle: 'جاهز تبدأ استيرادك بثقة؟',
+    ctaText: 'ابدأ طلبك الآن ودع مَعبر يتولّى المطابقة والعروض.',
+    ctaBtn: 'ابدأ طلب استيراد',
+    appTitle: 'التطبيق قادم قريبًا',
+    appText: 'حمّل تطبيق معبر على جوالك — قريبًا على App Store و Google Play.',
+    soon: 'قريباً',
   },
   en: {
-    tag: 'Maabar · The Only Platform That Protects Saudi Traders at Every Step',
-    title: "Don't Search\nLet the Supplier\nCome to You",
-    mainSub: 'Import with confidence — no middlemen, no risks',
-    sub: 'Submit the request once and let Maabar structure it, review it internally, match the right suppliers, and return the top 3 offers clearly inside the same request page.',
-    cta: 'Let Maabar Handle the Request',
-    reqCta: 'Post Your Request Yourself',
-    whyLabel: 'Why Maabar?',
-    whyTitle: 'Why is Maabar different?',
-    whyIntro: 'Maabar is not another marketplace layer. It creates a clearer path between Saudi traders and the right Chinese suppliers.',
-    strengths: [
-      {
-        num: '01',
-        title: 'The first Saudi platform connecting Saudi traders directly with Chinese suppliers',
-        desc: 'It is built around the Saudi import journey, so traders can source through one local platform instead of bouncing between disconnected channels.',
-      },
-      {
-        num: '02',
-        title: 'Verified suppliers',
-        desc: 'Suppliers receiving requests on Maabar go through a verification process before joining the platform.',
-        badge: '✓ Factory-verified',
-      },
-      {
-        num: '03',
-        title: 'Your request goes to relevant suppliers and suppliers compete on it',
-        desc: 'Instead of searching one by one, you send one request and receive comparable offers from matching suppliers.',
-      },
+    tag: 'The solution to all your China import problems',
+    heroTitle: "Don't search — Maabar finds it for you",
+    heroSub: 'Import from China with confidence — no middlemen, no language barrier.',
+    heroBtn1: 'Start an import request',
+    heroBtn2: 'Browse suppliers',
+    services: [
+      { key: 'products',    title: 'Find products',         desc: 'Browse the ready catalog' },
+      { key: 'suppliers',   title: 'Explore suppliers',     desc: 'Verified Chinese suppliers' },
+      { key: 'manufacture', title: 'Request manufacturing', desc: 'Turn your idea into a product' },
+      { key: 'support',     title: 'Arabic support',        desc: 'Arabic support, always' },
     ],
-    howLabel: 'How it works',
-    howTitle: 'How managed sourcing works on Maabar',
-    howIntro: 'The managed path is deliberate: AI prepares the request, Maabar reviews it internally, matching suppliers are selected, and the top 3 offers come back in one clear place.',
-    steps: [
-      {
-        t: 'Submit the request',
-        d: 'Share the product, quantity, specs, and priority in one clear request.',
-      },
-      {
-        t: 'Maabar prepares and reviews it',
-        d: 'We structure your request clearly and review it internally before sending it.',
-      },
-      {
-        t: 'It reaches only the right supplier',
-        d: 'We select the suppliers that match your request and gather their offers — every supplier is field-verified before joining the platform.',
-      },
-      {
-        t: 'Receive the selected offers',
-        d: 'The best 3 offers are returned inside the same request page so the decision stays clear and structured.',
-      },
-    ],
-    trustLabel: 'Built on trust',
-    trustTitle: 'Why should you trust Maabar?',
-    trustIntro: 'Trust should be practical, not vague. These are the parts designed to protect the deal.',
-    trusts: [
-      {
-        num: '01',
-        t: 'Verified suppliers',
-        d: 'Every supplier on the platform is reviewed before they start receiving buyer requests.',
-      },
-      {
-        num: '02',
-        t: 'Protected and flexible payment',
-        d: 'Payment options are structured to give you more control and more flexibility based on your comfort level.',
-      },
-      {
-        num: '03',
-        t: 'Communication without a language barrier',
-        d: 'You can move the deal forward clearly without language becoming a blocker between you and the supplier.',
-      },
-      {
-        num: '04',
-        t: 'Clearer transparency before you commit',
-        d: 'Offer details, costs, and next steps are clearer before you move ahead with a deal.',
-      },
-    ],
-    finalCtaLabel: 'Start now',
-    finalCtaTitle: 'Ready to start with managed sourcing?',
-    finalCtaText: 'Choose the managed path if you want Maabar to review, match, and negotiate for you, or use the direct path if you want to manage the RFQ yourself.',
-    finalPrimary: 'Let Maabar Handle the Request',
-    finalSecondary: 'Post Your Request Yourself',
+    mgBadge: 'Premium',
+    mgTitle: 'Managed Sourcing',
+    mgSub: "Let Maabar's experts run your request end-to-end — we search, negotiate, and bring you the top 3 curated offers.",
+    mgBullets: ['A dedicated team searches and negotiates for you', 'Top 3 hand-picked offers, ready to compare', 'You just choose and receive'],
+    mgBtn: 'Request managed sourcing',
+    productsTitle: 'Products',
+    viewAll: 'View all',
+    ctaTitle: 'Ready to import with confidence?',
+    ctaText: 'Start your request and let Maabar handle matching and offers.',
+    ctaBtn: 'Start an import request',
+    appTitle: 'The app is coming soon',
+    appText: 'Get the Maabar app on your phone — coming soon to the App Store and Google Play.',
+    soon: 'Soon',
   },
   zh: {
-    tag: 'Maabar · 唯一在每一步保护沙特贸易商的平台',
-    title: '无需搜索\n让供应商\n主动找您',
-    mainSub: '放心进口 — 无中间商，无风险',
-    sub: '发布您的需求，认证中国供应商竞相报价 — 按您的信任程度付款，随着每次成功交易增加信任。',
-    cta: '将您的想法变成产品',
-    reqCta: '发布需求',
-    whyLabel: '为什么选择 Maabar？',
-    whyTitle: 'Maabar 有什么不同？',
-    whyIntro: 'Maabar 不是又一个泛泛的市场平台，它为沙特贸易商和合适的中国供应商之间建立了更清晰的连接路径。',
-    strengths: [
-      {
-        num: '01',
-        title: '首个直接连接沙特贸易商与中国供应商的沙特平台',
-        desc: '平台围绕沙特进口流程而设计，让贸易商不必在多个零散渠道之间来回寻找。',
-      },
-      {
-        num: '02',
-        title: '认证供应商',
-        desc: '在 Maabar 接收需求的供应商进入平台前都要经过审核。',
-        badge: '✓ 工厂实地核查',
-      },
-      {
-        num: '03',
-        title: '您的需求会发送给合适的供应商，并由他们参与报价竞争',
-        desc: '您无需逐个寻找，只需提交一次需求，即可收到来自匹配供应商的可比较报价。',
-      },
+    tag: '解决您从中国进口的所有难题',
+    heroTitle: '无需搜索 — Maabar 为您寻找',
+    heroSub: '放心从中国进口 — 没有中间商，没有语言障碍。',
+    heroBtn1: '开始进口需求',
+    heroBtn2: '浏览供应商',
+    services: [
+      { key: 'products',    title: '查找产品',   desc: '浏览现成产品目录' },
+      { key: 'suppliers',   title: '探索供应商', desc: '经认证的中国供应商' },
+      { key: 'manufacture', title: '定制制造',   desc: '把创意变成可制造的产品' },
+      { key: 'support',     title: '阿拉伯语支持', desc: '始终提供阿拉伯语支持' },
     ],
-    howLabel: '如何运作',
-    howTitle: 'Maabar 如何运作',
-    howIntro: '流程清晰且有条理：我们整理您的需求、进行内部审核、精准匹配供应商，最后把最佳 3 个报价集中呈现。',
-    steps: [
-      {
-        t: '发布您的需求',
-        d: '清晰填写所需产品或定制、数量、规格与优先级。',
-      },
-      {
-        t: 'Maabar 整理并审核',
-        d: '我们把您的需求整理清晰，并在发送前进行内部审核。',
-      },
-      {
-        t: '仅送达匹配的供应商',
-        d: '我们筛选与您需求匹配的供应商并收集其报价——每位供应商在进入平台前都经过工厂实地核查。',
-      },
-      {
-        t: '接收为您筛选的报价',
-        d: '最佳 3 个报价会清晰呈现在同一需求页，供您选择或要求进一步谈判。',
-      },
-    ],
-    trustLabel: '建立在信任之上',
-    trustTitle: '为什么可以信任 Maabar？',
-    trustIntro: '信任不该只是口号，而应体现在真正保护交易的环节里。',
-    trusts: [
-      {
-        num: '01',
-        t: '认证供应商',
-        d: '平台上的每位供应商在接收买家需求前都会经过审核。',
-      },
-      {
-        num: '02',
-        t: '受保护且灵活的付款方式',
-        d: '付款安排提供更清晰的控制感和更高的灵活性，方便您按自己的接受程度推进交易。',
-      },
-      {
-        num: '03',
-        t: '沟通没有语言障碍',
-        d: '您可以更顺畅地推进交易，而不必让语言成为与供应商合作的阻碍。',
-      },
-      {
-        num: '04',
-        t: '在决定前获得更清晰的透明度',
-        d: '在继续交易之前，报价细节、成本和下一步信息会更清楚。',
-      },
-    ],
-    finalCtaLabel: '立即开始',
-    finalCtaTitle: '准备好从托管采购开始了吗？',
-    finalCtaText: '如果您希望 Maabar 负责审核、匹配与谈判，请使用托管路径；如果您想自己管理需求，则使用直接发布路径。',
-    finalPrimary: '让 Maabar 代您处理需求',
-    finalSecondary: '自己发布需求',
+    mgBadge: '尊享服务',
+    mgTitle: '托管采购',
+    mgSub: '让 Maabar 专家全程负责您的需求 — 我们搜寻、谈判，并为您呈现 3 个甄选报价。',
+    mgBullets: ['专业团队为您搜寻与谈判', '3 个精选报价，随时比较', '您只需选择并收货'],
+    mgBtn: '申请托管采购',
+    productsTitle: '产品',
+    viewAll: '查看全部',
+    ctaTitle: '准备好放心进口了吗？',
+    ctaText: '现在提交需求，让 Maabar 为您匹配供应商与报价。',
+    ctaBtn: '开始进口需求',
+    appTitle: '应用即将推出',
+    appText: '在手机上使用 Maabar — 即将登陆 App Store 和 Google Play。',
+    soon: '即将推出',
   },
+};
+
+// Minimal stroke icons for the services row (language-independent).
+const svgProps = { width: 26, height: 26, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' };
+const ICONS = {
+  products:    (<svg {...svgProps}><path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" /></svg>),
+  suppliers:   (<svg {...svgProps}><path d="M3 21h18" /><path d="M5 21V7l7-4 7 4v14" /><path d="M9 21v-6h6v6" /></svg>),
+  manufacture: (<svg {...svgProps}><path d="M14 4l-1 5 5-2v11H6V7l5 2-1-5z" /><path d="M6 21h12" /></svg>),
+  support:     (<svg {...svgProps}><path d="M4 14v-2a8 8 0 0116 0v2" /><rect x="2.5" y="14" width="4" height="6" rx="1.4" /><rect x="17.5" y="14" width="4" height="6" rx="1.4" /></svg>),
 };
 
 export default function Home({ lang, user }) {
@@ -254,9 +103,22 @@ export default function Home({ lang, user }) {
   const isAr = lang === 'ar';
   usePageTitle('home', lang);
   const [ideaOpen, setIdeaOpen] = useState(false);
+  const [products, setProducts] = useState([]);
   const rootRef = useRef(null);
 
   useEffect(() => () => setIdeaOpen(false), []);
+
+  // Latest active products for the carousel teaser (drafts are is_active=false).
+  useEffect(() => {
+    let cancelled = false;
+    sb.from('products')
+      .select('id, name_ar, name_en, name_zh, price_from, currency, image_url, gallery_images')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(8)
+      .then(({ data }) => { if (!cancelled) setProducts(data || []); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Scroll-reveal: fade-in + slide-up once on enter (no libraries).
   useEffect(() => {
@@ -275,198 +137,120 @@ export default function Home({ lang, user }) {
           io.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [lang]);
 
   const arFont = isAr ? { fontFamily: 'var(--font-ar)' } : {};
-  const startOptions = [
-    {
-      key: 'managed',
-      eyebrow: isAr ? 'الخيار الموصى به' : lang === 'zh' ? '推荐方式' : 'Recommended path',
-      title: isAr ? 'دع معبر يتولى الطلب' : lang === 'zh' ? '让 Maabar 代您处理需求' : 'Let Maabar handle the request',
-      text: isAr
-        ? 'ارفع الطلب، ومعبر ينظّفه ويطابق الموردين الأنسب ويتفاوض ثم يعرض لك أفضل 3 خيارات داخل نفس صفحة الطلب.'
-        : lang === 'zh'
-          ? '提交需求后，Maabar 会整理内容、筛选合适供应商、谈判，并把最佳 3 个方案直接放回同一需求页。'
-          : 'Submit the need once and Maabar will clean it up, match the right suppliers, negotiate, and return the top 3 inside the same request page.',
-      action: isAr ? 'ابدأ الطلب المُدار' : lang === 'zh' ? '开始托管需求' : 'Start managed sourcing',
-      onClick: () => nav('/requests?mode=managed'),
-      featured: true,
-    },
-    {
-      key: 'direct',
-      eyebrow: isAr ? 'للطلبات الواضحة والسريعة' : lang === 'zh' ? '适合明确需求' : 'For clear and fast RFQs',
-      title: isAr ? 'ارفع طلبك بنفسك' : lang === 'zh' ? '自己发布需求' : 'Post your request yourself',
-      text: isAr
-        ? 'إذا كان المنتج واضحاً عندك وتريد عروضاً مباشرة من الموردين، ارفع الطلب القياسي المعتاد.'
-        : lang === 'zh'
-          ? '如果产品和规格已经清楚，您可以像平常一样直接发布标准需求。'
-          : 'If the product is already clear and you want direct supplier quotes, use the standard RFQ path.',
-      action: isAr ? 'ارفع طلبك الآن' : lang === 'zh' ? '立即发布需求' : 'Post your request',
-      onClick: () => nav('/requests'),
-    },
-    {
-      key: 'idea',
-      eyebrow: isAr ? 'للـ OEM / Private Label' : lang === 'zh' ? '适合 OEM / 自有品牌' : 'For OEM / private label',
-      title: isAr ? 'حوّل فكرتك إلى منتج' : lang === 'zh' ? '将您的想法变成产品' : 'Turn your idea into a product',
-      text: isAr
-        ? 'إذا كانت البداية مجرد فكرة أو علامة خاصة، افتح مسار التصنيع حتى يرتب معبر brief أوضح قبل التوريد.'
-        : lang === 'zh'
-          ? '如果现在只是一个想法或自有品牌方向，请进入制造路径，让 Maabar 先帮您整理更清晰的 brief。'
-          : 'If you are starting from an idea or private-label concept, open the manufacturing path so Maabar can structure a clearer brief first.',
-      action: isAr ? 'ابدأ مسار المنتج' : lang === 'zh' ? '开始产品路径' : 'Start product path',
-      onClick: () => setIdeaOpen(true),
-    },
-  ];
+  const svcOnClick = {
+    products:    () => nav('/products'),
+    suppliers:   () => nav('/suppliers'),
+    manufacture: () => setIdeaOpen(true),
+    support:     () => nav('/contact'),
+  };
+  const productName = (p) => lang === 'zh' ? (p.name_zh || p.name_en || p.name_ar || '—')
+    : lang === 'en' ? (p.name_en || p.name_ar || p.name_zh || '—')
+    : (p.name_ar || p.name_en || p.name_zh || '—');
+  const productImg = (p) => p.image_url || (Array.isArray(p.gallery_images) ? p.gallery_images[0] : null);
 
   return (
-    <div ref={rootRef}>
+    <div ref={rootRef} className={`home2${isAr ? ' rtl' : ''}`}>
       <RoleIntroTour lang={lang} user={user} />
 
-      <section id="hero">
-        <div className="hero-bg" />
-        <div className="hero-overlay" />
-        <div className="hero-content reveal">
-          <p className="hero-tag">{t.tag}</p>
-          {isAr ? (
-            <h1 className="hero-title-ar">لا تبحث — معبر يبحث لك</h1>
-          ) : (
-            <h1 className={`hero-title-${lang === 'zh' ? 'zh' : 'en'}`}>
-              {t.title.split('\n').map((line, i) => (
-                <span key={i}>
-                  {line}
-                  <br />
-                </span>
-              ))}
-            </h1>
-          )}
-          <p className={`hero-main-sub${isAr ? ' ar' : ''}`}>{t.mainSub}</p>
-          <p className={`hero-sub${isAr ? ' ar' : ''}`}>{t.sub}</p>
-          <div className="hero-actions">
-            <button className="btn-primary" onClick={() => nav('/requests?mode=managed')}>
-              {t.cta}
-            </button>
-            <button className="btn-hero-secondary" onClick={() => nav('/requests')}>
-              {t.reqCta}
-            </button>
+      {/* ── Hero ── */}
+      <section className="home2-hero reveal">
+        <div className="home2-hero-text">
+          <p className="home2-tag" style={arFont}>{t.tag}</p>
+          <h1 className="home2-title" style={arFont}>{t.heroTitle}</h1>
+          <p className="home2-sub" style={arFont}>{t.heroSub}</p>
+          <div className="home2-actions">
+            <button className="btn-primary" onClick={() => nav('/requests')}>{t.heroBtn1}</button>
+            <button className="btn-outline" onClick={() => nav('/suppliers')}>{t.heroBtn2}</button>
           </div>
+        </div>
+        <div className="home2-hero-img">
+          <img src="/home/hero-full.png" alt="" loading="eager" />
         </div>
       </section>
 
-      <section style={{ maxWidth: 1280, margin: '-34px auto 0', padding: '0 24px 12px', position: 'relative', zIndex: 2 }}>
-        <div style={{
-          borderRadius: 'var(--radius-card)',
-          border: '1px solid var(--border)',
-          background: 'var(--surface)',
-          padding: '28px clamp(20px, 4vw, 34px)',
-        }}>
-          <div className="reveal" style={{ marginBottom: 18 }}>
-            <p className="section-label">{isAr ? 'اختر كيف تريد أن تبدأ' : lang === 'zh' ? '选择您希望如何开始' : 'Choose how you want to start'}</p>
-            <h2 className="sec-title" style={{ ...arFont, marginBottom: 10 }}>{isAr ? '3 مسارات واضحة حسب نوع طلبك' : lang === 'zh' ? '按需求类型开始的 3 条清晰路径' : '3 clear starting paths depending on your request'}</h2>
-            <p className={`section-intro${isAr ? ' ar' : ''}`} style={{ marginBottom: 0 }}>
-              {isAr
-                ? 'إذا كنت تريد أن يتولى معبر البحث والمطابقة والتفاوض، ابدأ بالمسار المُدار. وإذا كان منتجك واضحاً أو كنت تبني علامة خاصة، لديك المسار المناسب من البداية.'
-                : lang === 'zh'
-                  ? '如果您希望 Maabar 负责筛选、匹配与谈判，请从托管路径开始。如果产品已经明确，或您要做自有品牌，也有对应的开始方式。'
-                  : 'If you want Maabar to take care of sourcing, matching, and negotiation, start with the managed path. If your product is already clear or you are building a private label, the right entry point is ready.'}
-            </p>
-          </div>
+      {/* ── Services ── */}
+      <section className="home2-services reveal">
+        {t.services.map((sv) => (
+          <button key={sv.key} className="home2-svc" onClick={svcOnClick[sv.key]}>
+            <span className="home2-svc-icon">{ICONS[sv.key]}</span>
+            <span className="home2-svc-title" style={arFont}>{sv.title}</span>
+            <span className="home2-svc-desc" style={arFont}>{sv.desc}</span>
+          </button>
+        ))}
+      </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
-            {startOptions.map((option, i) => (
-              <div key={option.key} className="reveal" style={{
-                transitionDelay: `${i * 80}ms`,
-                borderRadius: 'var(--radius-card)',
-                border: option.featured ? '1px solid var(--border-strong)' : '1px solid var(--border)',
-                background: option.featured ? 'var(--bg-hero)' : 'var(--surface)',
-                padding: '20px 20px 18px',
-                display: 'grid',
-                gap: 12,
-              }}>
-                <div>
-                  <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'var(--text-primary)' : 'var(--text-disabled)' }}>
-                    {option.eyebrow}
-                  </p>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 400, color: 'var(--text-primary)', ...arFont }}>{option.title}</h3>
-                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)', ...arFont }}>{option.text}</p>
-                </div>
-                <button className={option.featured ? 'btn-primary' : 'btn-outline'} onClick={option.onClick} style={{ minHeight: 40 }}>
-                  {option.action}
-                </button>
-              </div>
+      {/* ── Managed sourcing — premium gold band ── */}
+      <section className="home2-managed reveal">
+        <span className="home2-shine" aria-hidden="true" />
+        <div className="home2-managed-content">
+          <div className="home2-managed-head">
+            <h2 className="home2-managed-title" style={arFont}>{t.mgTitle}</h2>
+            <span className="home2-managed-badge" style={arFont}>★ {t.mgBadge}</span>
+          </div>
+          <p className="home2-managed-sub" style={arFont}>{t.mgSub}</p>
+          <ul className="home2-managed-bullets">
+            {t.mgBullets.map((b, i) => (
+              <li key={i} style={arFont}><span className="home2-check">✓</span>{b}</li>
             ))}
-          </div>
+          </ul>
+          <button className="btn-primary home2-managed-btn" onClick={() => nav('/requests?mode=managed')}>{t.mgBtn}</button>
         </div>
       </section>
 
-      <section id="strengths">
-        <div className="reveal">
-          <p className="section-label">{t.whyLabel}</p>
-          <h2 className="sec-title" style={arFont}>{t.whyTitle}</h2>
-          <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.whyIntro}</p>
-        </div>
-
-        <div className="strengths-grid">
-          {t.strengths.map((s, i) => (
-            <div key={i} className={`strength-item reveal${i === 0 ? ' strength-item-featured' : ''}`} style={{ transitionDelay: `${i * 80}ms` }}>
-              <p className="strength-num">{s.num}</p>
-              <h3 className="strength-title" style={arFont}>{s.title}</h3>
-              <p className="strength-desc" style={arFont}>{s.desc}</p>
-              {s.badge && <span className={`strength-badge${isAr ? ' ar' : ''}`}>{s.badge}</span>}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="how">
-        <div className="reveal">
-          <p className="section-label">{t.howLabel}</p>
-          <h2 className="sec-title" style={arFont}>{t.howTitle}</h2>
-          <p className={`section-intro${isAr ? ' ar' : ''}`}>{t.howIntro}</p>
-        </div>
-        <div className="steps">
-          {t.steps.map((s, i) => (
-            <div key={i} className="step reveal" style={{ transitionDelay: `${i * 80}ms` }}>
-              <div className="step-num">0{i + 1}</div>
-              <h3 className={`step-t${isAr ? ' ar' : ''}`}>{s.t}</h3>
-              <p className={`step-d${isAr ? ' ar' : ''}`}>{s.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="trust">
-        <div className="section-heading-centered reveal">
-          <p className="section-label">{t.trustLabel}</p>
-          <h2 className="sec-title" style={arFont}>{t.trustTitle}</h2>
-          <p className={`section-intro centered${isAr ? ' ar' : ''}`}>{t.trustIntro}</p>
-        </div>
-        <div className="trust-grid">
-          {t.trusts.map((tr, i) => (
-            <div key={i} className="trust-item reveal" style={{ transitionDelay: `${i * 80}ms` }}>
-              <p className="trust-num">{tr.num}</p>
-              <h3 className={`trust-t${isAr ? ' ar' : ''}`}>{tr.t}</h3>
-              <p className={`trust-d${isAr ? ' ar' : ''}`}>{tr.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="home-cta" className="home-cta-section">
-        <div className="home-cta-card reveal">
-          <p className="section-label">{t.finalCtaLabel}</p>
-          <h2 className="sec-title" style={arFont}>{t.finalCtaTitle}</h2>
-          <p className={`section-intro centered${isAr ? ' ar' : ''}`}>{t.finalCtaText}</p>
-          <div className="home-cta-actions">
-            <button className="btn-primary" onClick={() => nav('/requests?mode=managed')}>
-              {t.finalPrimary}
-            </button>
-            <button className="btn-hero-secondary" onClick={() => nav('/requests')}>
-              {t.finalSecondary}
+      {/* ── Products carousel ── */}
+      {products.length > 0 && (
+        <section className="home2-products reveal">
+          <div className="home2-sec-head">
+            <h2 className="home2-sec-title" style={arFont}>{t.productsTitle}</h2>
+            <button className="home2-viewall" style={arFont} onClick={() => nav('/products')}>
+              {t.viewAll} {isAr ? '←' : '→'}
             </button>
           </div>
+          <div className="home2-products-scroll">
+            {products.map((p) => {
+              const img = productImg(p);
+              return (
+                <button key={p.id} className="home2-pcard" onClick={() => nav(`/products/${p.id}`)}>
+                  <span className="home2-pimg">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
+                  <span className="home2-pname" style={arFont}>{productName(p)}</span>
+                  {p.price_from ? <span className="home2-pprice">{p.price_from} {p.currency || 'USD'}</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Final CTA ── */}
+      <section className="home2-cta reveal">
+        <div className="home2-cta-body">
+          <h2 className="home2-cta-title" style={arFont}>{t.ctaTitle}</h2>
+          <p className="home2-cta-text" style={arFont}>{t.ctaText}</p>
+          <button className="btn-primary" onClick={() => nav('/requests?mode=managed')}>{t.ctaBtn}</button>
+        </div>
+        <div className="home2-cta-img"><img src="/home/boxes-pallets.png" alt="" loading="lazy" /></div>
+      </section>
+
+      {/* ── App coming soon ── */}
+      <section className="home2-app reveal">
+        <h2 className="home2-app-title" style={arFont}>{t.appTitle}</h2>
+        <p className="home2-app-text" style={arFont}>{t.appText}</p>
+        <div className="home2-stores">
+          <span className="home2-store">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12.6c0-2 1.6-3 1.7-3-.9-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7s-1.6-.7-2.6-.7c-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.4 2 2.4 2s1.3-.6 2.5-.6 1.5.6 2.6.6 1.7-1 2.3-2c.7-1.1 1-2.2 1-2.2s-1.7-.6-1.7-2.6zM14.5 6.3c.6-.7 1-1.6.9-2.6-.8 0-1.8.6-2.4 1.3-.5.6-1 1.5-.9 2.5.9.1 1.8-.5 2.4-1.2z" /></svg>
+            App Store
+          </span>
+          <span className="home2-store">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1L13 12.1v-.2L3.7 2.2l-.1.1zM16.3 15.4l-3.1-3.1v-.2l3.1-3.1.1.1 3.7 2.1c1 .6 1 1.6 0 2.2l-3.7 2.1-.1-.1zM15.7 16l-3.2-3.2L3.6 21.8c.4.4 1 .4 1.7.1l10.4-5.9zM15.7 8L5.3 2.1c-.7-.4-1.3-.3-1.7.1l8.9 8.9L15.7 8z" /></svg>
+            Google Play
+          </span>
+          <span className="home2-soon" style={arFont}>{t.soon}</span>
         </div>
       </section>
 
