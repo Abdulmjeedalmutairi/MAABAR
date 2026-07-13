@@ -174,6 +174,23 @@ export default function Home({ lang, user }) {
         </div>
       </section>
 
+      {/* ── Supplier CTA — prominent, for the supplier outreach link ── */}
+      <section className="home2-supplier reveal">
+        <div className="home2-supplier-text">
+          <h2 className="home2-supplier-title" style={arFont}>
+            {isAr ? 'هل أنت مورد؟' : lang === 'zh' ? '您是供应商吗？' : 'Are you a supplier?'}
+          </h2>
+          <p className="home2-supplier-sub" style={arFont}>
+            {isAr ? 'انضم إلى معبر وابدأ البيع لمشترين سعوديين موثوقين.'
+              : lang === 'zh' ? '加入 Maabar，开始向可信的沙特买家销售。'
+              : 'Join Maabar and start selling to trusted Saudi buyers.'}
+          </p>
+        </div>
+        <button className="btn-primary home2-supplier-btn" onClick={() => nav('/supplier-access')}>
+          Register as Supplier
+        </button>
+      </section>
+
       {/* ── Services ── */}
       <section className="home2-services reveal">
         {t.services.map((sv) => (

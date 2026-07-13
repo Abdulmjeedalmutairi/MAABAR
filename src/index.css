@@ -3123,3 +3123,13 @@ input:-webkit-autofill:active {
   .home2 { padding: 16px 14px 0; }
   .home2-services { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
+
+/* Supplier CTA band (supplier outreach) */
+.home2-supplier {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  margin-top: 22px; border-radius: 20px; padding: 22px clamp(20px, 3.5vw, 34px);
+  background: #1a1a1a; color: #fff;
+}
+.home2-supplier-title { margin: 0 0 4px; font-size: clamp(18px, 2.2vw, 24px); font-weight: 700; color: #fff; }
+.home2-supplier-sub { margin: 0; font-size: 14px; line-height: 1.6; color: rgba(255,255,255,.72); }
+.home2-supplier-btn { background: #fff !important; color: #1a1a1a !important; flex: 0 0 auto; }
