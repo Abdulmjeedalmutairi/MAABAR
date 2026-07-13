@@ -21,7 +21,7 @@ export const MAABAR_AI_TASKS = {
 
 export const MAABAR_AI_SUPPORT_CHANNELS = {
   email: 'support@maabar.io',
-  whatsapp: 'https://wa.me/966504248942',
+  whatsapp: 'https://wa.me/966554064679',
 };
 
 export const MAABAR_AI_SUPPORT_PROMISE = {

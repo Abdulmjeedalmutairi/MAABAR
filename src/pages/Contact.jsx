@@ -54,10 +54,10 @@ export default function Contact({ lang }) {
             </div>
           </button>
 
-          <a href="https://wa.me/966504248942" style={styles.btn}>
+          <a href="https://wa.me/966554064679" style={styles.btn}>
             <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
               <p style={{ fontSize: 11, letterSpacing: isAr ? 0 : 2, color: 'var(--text-secondary)', marginBottom: 4 }}>{t.wa}</p>
-              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>+966 50 424 8942</p>
+              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>+966 55 406 4679</p>
             </div>
           </a>
           <a href="mailto:support@maabar.io" style={styles.btn}>
