@@ -186,7 +186,7 @@ export default function Home({ lang, user }) {
               : 'Join Maabar and start selling to trusted Saudi buyers.'}
           </p>
         </div>
-        <button className="btn-primary home2-supplier-btn" onClick={() => nav('/supplier-access')}>
+        <button className="btn-primary home2-supplier-btn" onClick={() => nav('/login/supplier')}>
           Register as Supplier
         </button>
       </section>
