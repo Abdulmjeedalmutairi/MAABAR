@@ -373,7 +373,12 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [lang, setLang] = useState(() => {
     const stored = localStorage.getItem('maabar_lang');
-    return stored && ['ar', 'en', 'zh'].includes(stored) ? stored : 'ar';
+    if (stored && ['ar', 'en', 'zh'].includes(stored)) return stored;
+    // First visit (no saved choice): mirror the mobile app — use the browser
+    // locale when it's one of our three languages, else fall back to Arabic. So
+    // a Chinese/English supplier opening a shared link sees their own language.
+    const nav = (navigator.language || (navigator.languages && navigator.languages[0]) || '').slice(0, 2).toLowerCase();
+    return ['ar', 'en', 'zh'].includes(nav) ? nav : 'ar';
   });
   const [displayCurrency, setDisplayCurrency] = useState('SAR');
   const [exchangeRates, setExchangeRates] = useState(() => getCachedDisplayRates());
