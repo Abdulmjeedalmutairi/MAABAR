@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFound from './pages/NotFound';
@@ -370,6 +370,9 @@ function App() {
   useMobileViewport();
 
   const [user, setUser] = useState(null);
+  // Tracks the logged-in user id across the auth listener closure, so we can tell
+  // a genuinely new login from Supabase re-firing SIGNED_IN on tab focus.
+  const currentUserIdRef = useRef(null);
   const [profile, setProfile] = useState(null);
   const [lang, setLang] = useState(() => {
     const stored = localStorage.getItem('maabar_lang');
@@ -392,6 +395,7 @@ function App() {
 
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        currentUserIdRef.current = session.user.id;
         setUser(session.user);
         setLoading(true);
         loadProfile(session.user.id, 1, session.user);
@@ -411,12 +415,20 @@ function App() {
 
       setUser(session?.user ?? null);
       if (event === 'SIGNED_OUT' || !session?.user) {
+        currentUserIdRef.current = null;
         setProfile(null); setLoading(false);
         if (window._profileChannel) { sb.removeChannel(window._profileChannel); window._profileChannel = null; }
         return;
       }
-      // SIGNED_IN (new login or cross-tab sync) — full reset is appropriate here
-      // because DashboardSupplier is not mounted yet (user was on login page).
+      // Supabase re-fires SIGNED_IN when the tab regains focus (and on cross-tab
+      // revalidation) with the SAME user — not just on a fresh login. Doing a full
+      // reset there tears the Router tree down and shows the loading screen, so it
+      // looks like the whole site reloads every time you switch back. Only reset
+      // for a genuinely new/different user; otherwise just keep the user ref fresh.
+      if (session.user.id === currentUserIdRef.current) {
+        return;
+      }
+      currentUserIdRef.current = session.user.id;
       setLoading(true);
       setProfile(null);
       setProfileError(false);
