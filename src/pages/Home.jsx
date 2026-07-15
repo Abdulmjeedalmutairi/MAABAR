@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import IdeaToProduct from '../components/IdeaToProduct';
 import Footer from '../components/Footer';
-import RoleIntroTour from '../components/RoleIntroTour';
 
 // Trilingual copy — mirrors the mobile app's public home (PublicHomeScreen).
 const T = {
@@ -156,8 +155,6 @@ export default function Home({ lang, user }) {
 
   return (
     <div ref={rootRef} className={`home2${isAr ? ' rtl' : ''}`}>
-      <RoleIntroTour lang={lang} user={user} />
-
       {/* ── Hero ── */}
       <section className="home2-hero reveal">
         <div className="home2-hero-text">
