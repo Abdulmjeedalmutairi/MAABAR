@@ -29,8 +29,8 @@ const T = {
     ctaTitle: 'جاهز تبدأ استيرادك بثقة؟',
     ctaText: 'ابدأ طلبك الآن ودع مَعبر يتولّى المطابقة والعروض.',
     ctaBtn: 'ابدأ طلب استيراد',
-    appTitle: 'التطبيق قادم قريبًا',
-    appText: 'حمّل تطبيق معبر على جوالك — قريبًا على App Store و Google Play.',
+    appTitle: 'حمّل تطبيق معبر',
+    appText: 'متوفّر الآن على App Store — وقريبًا على Google Play.',
     soon: 'قريباً',
   },
   en: {
@@ -55,8 +55,8 @@ const T = {
     ctaTitle: 'Ready to import with confidence?',
     ctaText: 'Start your request and let Maabar handle matching and offers.',
     ctaBtn: 'Start an import request',
-    appTitle: 'The app is coming soon',
-    appText: 'Get the Maabar app on your phone — coming soon to the App Store and Google Play.',
+    appTitle: 'Get the Maabar app',
+    appText: 'Now on the App Store — Google Play coming soon.',
     soon: 'Soon',
   },
   zh: {
@@ -81,8 +81,8 @@ const T = {
     ctaTitle: '准备好放心进口了吗？',
     ctaText: '现在提交需求，让 Maabar 为您匹配供应商与报价。',
     ctaBtn: '开始进口需求',
-    appTitle: '应用即将推出',
-    appText: '在手机上使用 Maabar — 即将登陆 App Store 和 Google Play。',
+    appTitle: '下载 Maabar 应用',
+    appText: '现已登陆 App Store — Google Play 即将推出。',
     soon: '即将推出',
   },
 };
@@ -95,6 +95,8 @@ const ICONS = {
   manufacture: (<svg {...svgProps}><path d="M14 4l-1 5 5-2v11H6V7l5 2-1-5z" /><path d="M6 21h12" /></svg>),
   support:     (<svg {...svgProps}><path d="M4 14v-2a8 8 0 0116 0v2" /><rect x="2.5" y="14" width="4" height="6" rx="1.4" /><rect x="17.5" y="14" width="4" height="6" rx="1.4" /></svg>),
 };
+
+const APP_STORE_URL = 'https://apps.apple.com/sa/app/maabar-%D9%85%D8%B9%D8%A8%D8%B1/id6780046671';
 
 export default function Home({ lang, user }) {
   const nav = useNavigate();
@@ -256,15 +258,15 @@ export default function Home({ lang, user }) {
         <h2 className="home2-app-title" style={arFont}>{t.appTitle}</h2>
         <p className="home2-app-text" style={arFont}>{t.appText}</p>
         <div className="home2-stores">
-          <span className="home2-store">
+          <a className="home2-store" href={APP_STORE_URL} target="_blank" rel="noreferrer">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12.6c0-2 1.6-3 1.7-3-.9-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7s-1.6-.7-2.6-.7c-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.4 2 2.4 2s1.3-.6 2.5-.6 1.5.6 2.6.6 1.7-1 2.3-2c.7-1.1 1-2.2 1-2.2s-1.7-.6-1.7-2.6zM14.5 6.3c.6-.7 1-1.6.9-2.6-.8 0-1.8.6-2.4 1.3-.5.6-1 1.5-.9 2.5.9.1 1.8-.5 2.4-1.2z" /></svg>
             App Store
-          </span>
-          <span className="home2-store">
+          </a>
+          <span className="home2-store home2-store-soon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1L13 12.1v-.2L3.7 2.2l-.1.1zM16.3 15.4l-3.1-3.1v-.2l3.1-3.1.1.1 3.7 2.1c1 .6 1 1.6 0 2.2l-3.7 2.1-.1-.1zM15.7 16l-3.2-3.2L3.6 21.8c.4.4 1 .4 1.7.1l10.4-5.9zM15.7 8L5.3 2.1c-.7-.4-1.3-.3-1.7.1l8.9 8.9L15.7 8z" /></svg>
             Google Play
+            <span className="home2-soon" style={arFont}>{t.soon}</span>
           </span>
-          <span className="home2-soon" style={arFont}>{t.soon}</span>
         </div>
       </section>
 

@@ -3138,7 +3138,9 @@ input:-webkit-autofill:active {
 .home2-app-title { margin: 0 0 8px; font-size: 22px; font-weight: 700; color: var(--text-primary); }
 .home2-app-text { margin: 0 auto 18px; max-width: 40em; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
 .home2-stores { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.home2-store { display: inline-flex; align-items: center; gap: 8px; background: #1a1a1a; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; }
+.home2-store { display: inline-flex; align-items: center; gap: 8px; background: #1a1a1a; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: opacity .15s; }
+a.home2-store:hover { opacity: .85; }
+.home2-store-soon { opacity: .5; }
 .home2-soon { background: rgba(176,141,46,.14); color: #8A6D1E; border: 1px solid rgba(176,141,46,.4); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 
 /* Responsive — the base layout above is already single-column mobile, so only
