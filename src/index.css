@@ -3059,7 +3059,7 @@ input:-webkit-autofill:active {
 /* ═══════════════════════════════════════════════════════════════════════════
    Home (home2) — unified with the mobile app's public home.
    ═══════════════════════════════════════════════════════════════════════════ */
-.home2 { max-width: 1200px; margin: 0 auto; padding: 24px 20px 0; }
+.home2 { max-width: 1200px; margin: 0 auto; padding: calc(var(--page-top-offset) + 12px) 20px 0; }
 .home2.rtl { direction: rtl; }
 
 /* Hero — content sits directly on the cream page (no card, single column) */
@@ -3144,7 +3144,7 @@ input:-webkit-autofill:active {
 /* Responsive — the base layout above is already single-column mobile, so only
    tiny-phone spacing tweaks remain. */
 @media (max-width: 460px) {
-  .home2 { padding: 16px 14px 0; }
+  .home2 { padding: calc(var(--page-top-offset) + 8px) 14px 0; }
   .home2-services { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
 
