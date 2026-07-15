@@ -3072,9 +3072,10 @@ input:-webkit-autofill:active {
 .home2-title { margin: 0 0 14px; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.18; font-weight: 700; color: var(--text-primary); }
 .home2-sub { margin: 0 0 22px; font-size: clamp(14px, 1.4vw, 16px); line-height: 1.7; color: var(--text-secondary); max-width: 30em; }
 .home2-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-/* Portrait, transparent PNG — no box/background, floats on the cream page */
-.home2-hero-img { order: -1; max-width: 250px; margin: 0 auto; }
-.home2-hero-img img { display: block; width: 100%; height: auto; }
+/* hero-full.png has a uniform white studio background; multiply blends that
+   white into the cream page so no box shows — no image editing, full subject. */
+.home2-hero-img { order: -1; max-width: 380px; margin: 0 auto; }
+.home2-hero-img img { display: block; width: 100%; height: auto; mix-blend-mode: multiply; }
 
 /* Services row */
 .home2-services { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 22px; }
@@ -3129,7 +3130,7 @@ input:-webkit-autofill:active {
 .home2-cta { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: center; text-align: center; margin-top: 30px; padding: 8px 0; }
 .home2-cta-title { margin: 0 0 10px; font-size: clamp(20px, 2.6vw, 28px); font-weight: 700; color: var(--text-primary); }
 .home2-cta-text { margin: 0 0 18px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
-.home2-cta-img { max-width: 260px; margin: 0 auto; }
+.home2-cta-img { max-width: 300px; margin: 0 auto; }
 .home2-cta-img img { width: 100%; height: auto; display: block; }
 
 /* App coming soon */
