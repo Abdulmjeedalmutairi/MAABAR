@@ -170,7 +170,7 @@ export default function Home({ lang, user }) {
           </div>
         </div>
         <div className="home2-hero-img">
-          <img src="/home/hero-full.png" alt="" loading="eager" />
+          <img src="/home/hero-container.png" alt="" loading="eager" />
         </div>
       </section>
 

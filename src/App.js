@@ -300,7 +300,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
   };
 
   return (
-    <div dir={pageDir} className="app-shell">
+    <div dir={pageDir} className={`app-shell${isAdminPage ? '' : ' mobile-locked'}`}>
       {!isChromelessPage && <Navbar {...sharedProps} logoOnly={isSupplierAccessPage} />}
       <Routes>
         {/* Homepage temporarily reverted to <Home> for Moyasar review.
