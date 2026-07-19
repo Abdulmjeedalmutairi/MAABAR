@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || 'https://utzalmszfqfcofywfetv.supabase.co';
@@ -887,29 +888,9 @@ async function resolveEmailContext(to: string, data: any = {}) {
 // ─── Supabase Auth Email Hook ───────────────────────────────────────────────
 const HOOK_SECRET_RAW = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
 
-async function handleSupabaseAuthHook(body: any, authHeader: string | null, headers: Headers) {
-  console.log('[hook] full body:', JSON.stringify(body));
-
-  // Check if this is a Supabase Auth Hook (identified by User-Agent)
-  const userAgent = headers.get('user-agent') || '';
-  const isSupabaseHook = userAgent.includes('Go-http-client');
-
-  console.log('[hook] User-Agent:', userAgent);
-  console.log('[hook] Is Supabase hook?', isSupabaseHook);
-  
-  if (!isSupabaseHook) {
-    // Only verify auth for non-hook requests (e.g., direct API calls)
-    console.log('[hook] Non-hook request, verifying Authorization header');
-    if (!authHeader || authHeader !== HOOK_SECRET_RAW) {
-      console.error('[hook] Unauthorized non-hook request');
-      throw new Error('Unauthorized');
-    }
-    console.log('[hook] Non-hook request authorized');
-  } else {
-    // Supabase hook request - allow through directly
-    console.log('[hook] Supabase hook request accepted (no auth verification)');
-  }
-
+async function handleSupabaseAuthHook(body: any) {
+  // Caller authenticity is established by verifying the standardwebhooks
+  // signature in serve() BEFORE this runs — never by trusting the User-Agent.
   const { user, email_data, event } = body;
   if (!user || !email_data) {
     throw new Error('Missing user or email_data in hook payload');
@@ -998,13 +979,26 @@ ${hasConfirmUrl ? `
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
-    const body = await req.json();
-    const authHeader = req.headers.get('Authorization');
+    const raw = await req.text();
+    let body: any;
+    try { body = JSON.parse(raw); }
+    catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } }); }
 
-    // Check if this is a Supabase Auth email hook
+    // Supabase Auth "Send Email" hook — authenticate by verifying the
+    // standardwebhooks signature (never the User-Agent). Rejects forged requests.
     if (body.user && body.email_data) {
-      console.log('[hook] Received Supabase Auth hook');
-      const result = await handleSupabaseAuthHook(body, authHeader, req.headers);
+      const secret = HOOK_SECRET_RAW.replace(/^v1,whsec_/, '');
+      if (!secret) return new Response(JSON.stringify({ error: 'Hook secret not configured.' }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
+      try {
+        new Webhook(secret).verify(raw, {
+          'webhook-id':        req.headers.get('webhook-id')        ?? '',
+          'webhook-timestamp': req.headers.get('webhook-timestamp') ?? '',
+          'webhook-signature': req.headers.get('webhook-signature') ?? '',
+        });
+      } catch {
+        return new Response(JSON.stringify({ error: 'Invalid webhook signature.' }), { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const result = await handleSupabaseAuthHook(body);
       return new Response(JSON.stringify(result), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
@@ -1021,13 +1015,6 @@ serve(async (req) => {
         adminResult = await sendEmail(adminTpl.to || ADMIN_EMAIL, adminTpl.subject, adminTpl.html);
       }
       return new Response(JSON.stringify({ ok: true, welcomeResult, adminResult }), { headers: { ...cors, 'Content-Type': 'application/json' } });
-    }
-
-    if (type === 'inspect_email') {
-      if (!data?.emailId) return new Response(JSON.stringify({ error: 'Missing emailId' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
-      const inspectRes = await fetch(`https://api.resend.com/emails/${data.emailId}`, { headers: { 'Authorization': `Bearer ${RESEND_API_KEY}` } });
-      const inspectData = await inspectRes.json().catch(() => ({}));
-      return new Response(JSON.stringify({ ok: inspectRes.ok, status: inspectRes.status, data: inspectData }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
     const factory = templates[type];
