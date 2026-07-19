@@ -288,7 +288,7 @@ export default function SupplierOnboardingSequence({
             sequence shows once and never nags on later logins. */}
         <div style={{ textAlign: isAr ? 'left' : 'right', marginBottom: 12 }}>
           <button
-            onClick={() => completeOnboarding()}
+            onClick={() => completeOnboarding('overview')}
             disabled={completing}
             style={{ background: 'none', border: 'none', color: VF_C.ink60, fontSize: 13, cursor: completing ? 'default' : 'pointer', fontFamily: "'Tajawal', sans-serif", padding: '6px 4px', textDecoration: 'underline', opacity: completing ? 0.5 : 1 }}
           >
