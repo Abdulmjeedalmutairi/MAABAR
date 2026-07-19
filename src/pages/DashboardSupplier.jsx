@@ -4986,7 +4986,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           {isAr ? `تهانينا! جمعت $${earned} في محفظتك` : lang === 'zh' ? `恭喜！您的钱包已累积 $${earned}` : `Congrats! You've earned $${earned} in your wallet`}
                         </p>
                         <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          {isAr ? 'خطوة أخيرة لتفعيلها: أول عملية بيع — رصيدك محجوز وينتظرك.' : lang === 'zh' ? '最后一步即可激活：完成首笔销售 — 余额已为您保留。' : 'One last step to activate it — your first sale. Your balance is reserved and waiting.'}
+                          {isAr ? 'رصيدك محجوز وينتظرك في محفظتك.' : lang === 'zh' ? '您的余额已保留在钱包中。' : 'Your balance is reserved and waiting in your wallet.'}
                         </p>
                       </div>
                     );
@@ -4998,9 +4998,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       </p>
                       {step(inviteDone, isAr ? 'ادعُ مورداً يُكمل توثيقه' : lang === 'zh' ? '邀请一位供应商完成认证' : 'Invite a supplier who gets verified', '+$30')}
                       {step(productDone, isAr ? 'انشر أول منتج لك' : lang === 'zh' ? '发布您的第一个产品' : 'Publish your first product', '+$30')}
-                      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {isAr ? 'ثم تُفعَّل $60 مع أول عملية بيع.' : lang === 'zh' ? '然后在首笔销售时激活 $60。' : 'Then your $60 activates with your first sale.'}
-                      </p>
                     </div>
                   );
                 })()}
