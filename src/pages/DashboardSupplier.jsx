@@ -5589,6 +5589,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           <div className="more-menu-sheet" dir={isAr ? 'rtl' : 'ltr'}>
             <div className="more-menu-handle" />
             {[
+              { id: 'wallet',             label: isAr ? 'المحفظة والإحالات' : lang === 'zh' ? '钱包与推荐' : 'Wallet & Referrals', badge: null },
               { id: 'direct-orders',      label: isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders', badge: directOrders.length > 0 ? directOrders.length : null },
               { id: 'offers',             label: isAr ? 'عروضي' : lang === 'zh' ? '我的报价' : 'My Offers',          badge: null },
               { id: 'payout',             label: isAr ? 'المدفوعات' : lang === 'zh' ? '收款设置' : 'Payments',       badge: needsPayoutSetup ? '!' : null },
