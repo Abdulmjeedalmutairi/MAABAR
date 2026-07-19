@@ -258,7 +258,14 @@ export default function SupplierOnboardingSequence({
       // Best-effort failure: still close the overlay; admin can re-open if needed
       console.error('[onboarding] failed to flip onboarding_completed:', error);
     }
-    if (setProfile) setProfile((prev) => ({ ...(prev || {}), onboarding_completed: true }));
+    // Re-fetch the full row so the dashboard gets fresh state (incl.
+    // maabar_supplier_id) — otherwise the earn banner only appeared after a manual
+    // page refresh. Falls back to an in-memory merge if the re-fetch fails.
+    if (setProfile) {
+      const { data: fresh } = await sb.from('profiles').select('*').eq('id', user.id).single();
+      if (fresh) setProfile(fresh);
+      else setProfile((prev) => ({ ...(prev || {}), onboarding_completed: true }));
+    }
     if (onComplete) onComplete();
     if (target && onNavigateToTab) onNavigateToTab(target);
   };
