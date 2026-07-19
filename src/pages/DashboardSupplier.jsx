@@ -2738,6 +2738,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
+              {profile.maabar_supplier_id && (
+                <div onClick={() => setActiveTab('wallet')} style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)', border: '1px solid rgba(176,141,46,.5)', borderRadius: 16, padding: '18px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#8A6D1E', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? '💰 ابدأ تكسب ‏$60 عن كل مورد تدعوه' : lang === 'zh' ? '💰 每邀请一位供应商赚取 $60' : '💰 Earn $60 for every supplier you invite'}
+                    </p>
+                    <p style={{ margin: '5px 0 0', fontSize: 13, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'شارك كودك الآن — التفاصيل في المحفظة' : lang === 'zh' ? '立即分享您的推荐码 — 详情见钱包' : 'Share your code now — details in your wallet'}
+                    </p>
+                  </div>
+                  <span className="btn-primary" style={{ padding: '9px 16px', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    {isAr ? 'شارك واربح ←' : lang === 'zh' ? '分享赚钱 →' : 'Share & earn →'}
+                  </span>
+                </div>
+              )}
               {isOnboardingLimited ? (
                 <>
                   <div style={{ marginBottom: 24, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)' }}>

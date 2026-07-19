@@ -728,6 +728,21 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             {isSupplier ? l.supplierSub : l.buyerSub}
           </p>
 
+          {isSupplier && (
+            <div style={{
+              background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)',
+              border: '1px solid rgba(176,141,46,.5)',
+              borderRadius: 14, padding: '16px 18px', marginBottom: 32, textAlign: 'center',
+            }}>
+              <p style={{ margin: 0, fontSize: isAr ? 21 : 23, fontWeight: 700, color: '#8A6D1E', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr ? '🎁 سجّل واربح ‏$60' : effectiveLang === 'zh' ? '🎁 注册即赚 $60' : '🎁 Sign up and earn $60'}
+              </p>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr ? 'عن كل مورد تدعوه إلى معبر' : effectiveLang === 'zh' ? '每邀请一位供应商加入 Maabar' : 'for every supplier you invite to Maabar'}
+              </p>
+            </div>
+          )}
+
           {msg && (
             <div style={{
               fontSize: 13,
