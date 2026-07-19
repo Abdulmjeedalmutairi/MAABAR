@@ -284,6 +284,18 @@ export default function SupplierOnboardingSequence({
       }}>
         <StepBadgeRow active={step} isAr={isAr} />
 
+        {/* Always-available dismiss: persists onboarding_completed so this welcome
+            sequence shows once and never nags on later logins. */}
+        <div style={{ textAlign: isAr ? 'left' : 'right', marginBottom: 12 }}>
+          <button
+            onClick={() => completeOnboarding()}
+            disabled={completing}
+            style={{ background: 'none', border: 'none', color: VF_C.ink60, fontSize: 13, cursor: completing ? 'default' : 'pointer', fontFamily: "'Tajawal', sans-serif", padding: '6px 4px', textDecoration: 'underline', opacity: completing ? 0.5 : 1 }}
+          >
+            {isAr ? 'لاحقاً — للوحة المورد ←' : lang === 'zh' ? '稍后 — 进入控制台 →' : 'Later — go to dashboard →'}
+          </button>
+        </div>
+
         {step === 'welcome' && (
           <div className="vf-fu" style={{ textAlign: 'center' }}>
             <h1 style={{
