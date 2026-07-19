@@ -393,6 +393,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     }
 
     setLoading(true);
+    // Signal App's onAuthStateChange that this page is handling the login (it sets
+    // user+profile and navigates itself), so the global SIGNED_IN reset doesn't
+    // wipe that mid-flight and leave the user stuck on the form.
+    window._passwordLoginTs = Date.now();
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     setLoading(false);
 

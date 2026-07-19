@@ -429,6 +429,13 @@ function App() {
         return;
       }
       currentUserIdRef.current = session.user.id;
+      // A password login started from the sign-in page loads the profile and
+      // redirects on its own. Skip the reset here so we don't wipe that profile
+      // and race the redirect (which left the user stuck on the login form on the
+      // first attempt). OAuth / cross-tab logins fall through to the normal reset.
+      if (window._passwordLoginTs && Date.now() - window._passwordLoginTs < 4000) {
+        return;
+      }
       setLoading(true);
       setProfile(null);
       setProfileError(false);
