@@ -1,6 +1,6 @@
 export const VERIFICATION_IMAGE_LIMIT = 5;
 export const VERIFICATION_VIDEO_LIMIT = 2;
-export const VERIFICATION_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+export const VERIFICATION_VIDEO_MAX_BYTES = 200 * 1024 * 1024;
 
 export function getCompanyDescription(value = {}) {
   const rawValue = typeof value === 'string'

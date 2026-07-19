@@ -1765,7 +1765,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const uploadFile = async (file, type) => {
     if (!file) return null;
     const isVideo = type === 'video';
-    if (isVideo && file.size > 50 * 1024 * 1024) { alert(t.maxVideo); return null; }
+    if (isVideo && file.size > VERIFICATION_VIDEO_MAX_BYTES) { alert(t.maxVideo); return null; }
     isVideo ? setUploadingVideo(true) : setUploadingImage(true);
     const path = `${user.id}/${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${file.name.split('.').pop()}`;
     const { error } = await sb.storage.from('product-images').upload(path, file, { upsert: true });
