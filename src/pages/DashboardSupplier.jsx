@@ -4966,18 +4966,44 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </p>
                 </div>
 
-                {/* Balances */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
-                  <div style={cardBox}>
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'قيد التفعيل' : lang === 'zh' ? '待激活' : 'Pending'}</p>
-                    <b style={{ fontSize: 26, color: 'var(--text-primary)' }}>${pendingSum}</b>
-                  </div>
-                  <div style={cardBox}>
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'قابل للسحب' : lang === 'zh' ? '可提现' : 'Withdrawable'}</p>
-                    <b style={{ fontSize: 26, color: 'var(--text-primary)' }}>${withdrawableSum}</b>
-                    <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '6px 0 0' }}>{isAr ? 'يُفعَّل عند أول عمولة بيع فعلية' : lang === 'zh' ? '在首笔实际销售佣金后解锁' : 'Unlocks with your first real sale commission'}</p>
-                  </div>
-                </div>
+                {/* Referral journey → celebration (replaces the old pending/withdrawable cards) */}
+                {(() => {
+                  const inviteDone = verifiedCount >= 1;
+                  const productDone = (stats.products || 0) >= 1;
+                  const earned = pendingSum + withdrawableSum;
+                  const step = (done, label, reward) => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0' }}>
+                      <span style={{ width: 22, height: 22, borderRadius: '50%', display: 'grid', placeItems: 'center', flex: '0 0 auto', background: done ? '#8A6D1E' : 'rgba(0,0,0,0.06)', color: done ? '#fff' : 'var(--text-disabled)', fontSize: 12, fontWeight: 700 }}>{done ? '✓' : ''}</span>
+                      <span style={{ flex: 1, fontSize: 14, color: done ? 'var(--text-primary)' : 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#8A6D1E' }}>{reward}</span>
+                    </div>
+                  );
+                  if (inviteDone && productDone && earned > 0) {
+                    return (
+                      <div style={{ background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)', border: '1px solid rgba(176,141,46,.5)', borderRadius: 16, padding: '22px 20px', marginBottom: 16, textAlign: 'center' }}>
+                        <p style={{ margin: 0, fontSize: 28 }}>🎉</p>
+                        <p style={{ margin: '6px 0 0', fontSize: 19, fontWeight: 700, color: '#8A6D1E', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? `تهانينا! جمعت $${earned} في محفظتك` : lang === 'zh' ? `恭喜！您的钱包已累积 $${earned}` : `Congrats! You've earned $${earned} in your wallet`}
+                        </p>
+                        <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'خطوة أخيرة لتفعيلها: أول عملية بيع — رصيدك محجوز وينتظرك.' : lang === 'zh' ? '最后一步即可激活：完成首笔销售 — 余额已为您保留。' : 'One last step to activate it — your first sale. Your balance is reserved and waiting.'}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ ...cardBox, marginBottom: 16 }}>
+                      <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'رحلتك نحو $60' : lang === 'zh' ? '赚取 $60 的旅程' : 'Your journey to $60'}
+                      </p>
+                      {step(inviteDone, isAr ? 'ادعُ مورداً يُكمل توثيقه' : lang === 'zh' ? '邀请一位供应商完成认证' : 'Invite a supplier who gets verified', '+$30')}
+                      {step(productDone, isAr ? 'انشر أول منتج لك' : lang === 'zh' ? '发布您的第一个产品' : 'Publish your first product', '+$30')}
+                      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'ثم تُفعَّل $60 مع أول عملية بيع.' : lang === 'zh' ? '然后在首笔销售时激活 $60。' : 'Then your $60 activates with your first sale.'}
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 {/* Code + share */}
                 {code ? (
