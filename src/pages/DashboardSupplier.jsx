@@ -211,6 +211,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [activeTab, setActiveTab]           = useState('overview');
   const [activeCat, setActiveCat]           = useState('all');
   const [activeBottomTab, setActiveBottomTab] = useState('home');
+  const [copiedKey, setCopiedKey] = useState('');
   const [moreMenuOpen, setMoreMenuOpen]     = useState(false);
   const [requestStatusFilter, setRequestStatusFilter] = useState('all');
   const [productStatusFilter, setProductStatusFilter] = useState('all');
@@ -4918,14 +4919,37 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               : (isAr ? 'أول منتج + إحالة موثّقة' : lang === 'zh' ? '首个产品 + 已认证推荐' : 'First product + verified referral');
             const cardBox = { background: 'var(--bg-raised)', border: '1px solid var(--border-subtle)', borderRadius: 16, padding: 18 };
             const dir = isAr ? 'rtl' : 'ltr';
+            // navigator.clipboard is undefined outside a secure context (http on a
+            // LAN IP), so fall back to a hidden textarea + execCommand.
+            const copyText = async (text, key) => {
+              if (!text) return;
+              try {
+                if (navigator.clipboard?.writeText) {
+                  await navigator.clipboard.writeText(text);
+                } else {
+                  const ta = document.createElement('textarea');
+                  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                  document.body.appendChild(ta); ta.focus(); ta.select();
+                  document.execCommand('copy'); document.body.removeChild(ta);
+                }
+                setCopiedKey(key); setTimeout(() => setCopiedKey(''), 1500);
+              } catch (e) { /* noop */ }
+            };
+            const copyLabel = (key, base) => copiedKey === key
+              ? (isAr ? 'تم ✓' : lang === 'zh' ? '已复制 ✓' : 'Copied ✓') : base;
             return (
               <div style={{ ...section, maxWidth: 900, direction: dir }}>
                 <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                   {isAr ? 'المحفظة والإحالات' : lang === 'zh' ? '钱包与推荐' : 'Wallet & Referrals'}
                 </h2>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 18px' }}>
-                  {isAr ? 'ادعُ موردين آخرين بكودك واكسب $30 عن كل مرحلة.' : lang === 'zh' ? '用您的推荐码邀请供应商，每个阶段赚取 $30。' : 'Invite suppliers with your code and start earning $30 per milestone.'}
-                </p>
+                <div style={{ background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)', border: '1px solid rgba(176,141,46,.45)', borderRadius: 14, padding: '16px 18px', margin: '0 0 18px' }}>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#8A6D1E', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? '🎁 اربح حتى $60 عن كل مورد تدعوه' : lang === 'zh' ? '🎁 每邀请一位供应商，最多赚取 $60' : '🎁 Earn up to $60 for every supplier you invite'}
+                  </p>
+                  <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? '‏$30 عند إتمام توثيق المورد المُحال · ‏$30 إضافية عند نشرك منتجاً' : lang === 'zh' ? '推荐供应商通过认证得 $30 · 您发布产品再得 $30' : '$30 when your referral gets verified · $30 more once you publish a product'}
+                  </p>
+                </div>
 
                 {/* Balances */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
@@ -4946,12 +4970,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                     <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'كودك للإحالة' : lang === 'zh' ? '您的推荐码' : 'Your referral code'}</p>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
                       <code style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1, color: 'var(--text-primary)', direction: 'ltr' }}>{code}</code>
-                      <button onClick={() => navigator.clipboard?.writeText(code)} className="btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>{isAr ? 'نسخ' : lang === 'zh' ? '复制' : 'Copy'}</button>
+                      <button onClick={() => copyText(code, 'code')} className="btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>{copyLabel('code', isAr ? 'نسخ' : lang === 'zh' ? '复制' : 'Copy')}</button>
                     </div>
                     <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{isAr ? 'رابط الدعوة' : lang === 'zh' ? '邀请链接' : 'Invite link'}</p>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <input readOnly value={shareLink} onFocus={(e) => e.target.select()} style={{ flex: 1, minWidth: 220, direction: 'ltr', fontSize: 12, padding: '8px 10px', border: '1px solid var(--border-default)', borderRadius: 10, background: 'var(--bg-base)', color: 'var(--text-secondary)' }} />
-                      <button onClick={() => navigator.clipboard?.writeText(shareLink)} className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>{isAr ? 'نسخ الرابط' : lang === 'zh' ? '复制链接' : 'Copy link'}</button>
+                      <button onClick={() => copyText(shareLink, 'link')} className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>{copyLabel('link', isAr ? 'نسخ الرابط' : lang === 'zh' ? '复制链接' : 'Copy link')}</button>
                     </div>
                     <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '12px 0 0' }}>
                       {isAr ? `إحالاتك: ${referrals.length} / 10 · موثّقة: ${verifiedCount}` : lang === 'zh' ? `推荐：${referrals.length} / 10 · 已认证：${verifiedCount}` : `Referrals: ${referrals.length} / 10 · Verified: ${verifiedCount}`}
