@@ -4983,10 +4983,10 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                       <div style={{ background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)', border: '1px solid rgba(176,141,46,.5)', borderRadius: 16, padding: '22px 20px', marginBottom: 16, textAlign: 'center' }}>
                         <p style={{ margin: 0, fontSize: 28 }}>🎉</p>
                         <p style={{ margin: '6px 0 0', fontSize: 19, fontWeight: 700, color: '#8A6D1E', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          {isAr ? `تهانينا! جمعت $${earned} في محفظتك` : lang === 'zh' ? `恭喜！您的钱包已累积 $${earned}` : `Congrats! You've earned $${earned} in your wallet`}
+                          {isAr ? `تهانينا! كسبت $${earned}` : lang === 'zh' ? `恭喜！您赚取了 $${earned}` : `Congrats! You've earned $${earned}`}
                         </p>
                         <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                          {isAr ? 'رصيدك محجوز وينتظرك في محفظتك.' : lang === 'zh' ? '您的余额已保留在钱包中。' : 'Your balance is reserved and waiting in your wallet.'}
+                          {isAr ? 'يتحوّل لك مع أول عملية بيع في معبر.' : lang === 'zh' ? '将在您于 Maabar 的首笔销售时转入您的账户。' : 'It transfers to you with your first sale on Maabar.'}
                         </p>
                       </div>
                     );
