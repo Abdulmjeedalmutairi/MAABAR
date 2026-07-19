@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const SEND_EMAIL_URL = `${SUPABASE_URL}/functions/v1/send-email`;
+const INTERNAL_SECRET = Deno.env.get('MAABAR_INTERNAL_SECRET') || '';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -72,7 +73,7 @@ serve(async (req) => {
     try {
       const r = await fetch(SEND_EMAIL_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'X-Maabar-Internal': INTERNAL_SECRET },
         body: JSON.stringify({
           type: 'direct_order_rejected',
           data: {

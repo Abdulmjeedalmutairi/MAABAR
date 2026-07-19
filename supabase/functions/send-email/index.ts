@@ -885,6 +885,27 @@ async function resolveEmailContext(to: string, data: any = {}) {
   return { recipient, lang: inferredLang, profileRow };
 }
 
+// ─── Transactional path lockdown (B1, phased) ───────────────────────────────
+const INTERNAL_SECRET = Deno.env.get('MAABAR_INTERNAL_SECRET') || '';
+
+// Constant-time compare so a wrong secret can't be recovered via response timing.
+function secretsMatch(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// Transactional types fully migrated to server-side senders. A request for one of
+// these MUST carry X-Maabar-Internal; clients (which never hold the secret) can no
+// longer trigger it. Add a type here ONLY after ALL its callers are server-side, or
+// you break a live client path. Starts empty; grows each phase; when it covers every
+// type the legacy anon path is deleted (end of Phase C).
+const SERVER_ONLY_TYPES = new Set<string>([
+  // Phase A — added one-by-one as each type's callers move server-side.
+  // (empty for now: direct_order_rejected is still sent by DashboardSupplier.jsx:1401)
+]);
+
 // ─── Supabase Auth Email Hook ───────────────────────────────────────────────
 const HOOK_SECRET_RAW = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
 
@@ -1004,6 +1025,15 @@ serve(async (req) => {
 
     // Legacy send-email API
     const { type, to, data } = body;
+
+    // Phase-A lockdown: migrated types require the internal secret; un-migrated types
+    // remain client-callable until their turn, so nothing breaks mid-migration.
+    if (SERVER_ONLY_TYPES.has(type)) {
+      if (!secretsMatch(req.headers.get('X-Maabar-Internal') || '', INTERNAL_SECRET)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized.' }),
+          { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+    }
 
     if (type === 'supplier_signup_bundle') {
       if (!data?.email) return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
