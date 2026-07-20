@@ -122,13 +122,31 @@ export default function AdminSettings({ user, profile, lang, ...rest }) {
   const inviteAdmin = async () => {
     if (!inviteEmail.trim()) return;
     setSaving(prev => ({ ...prev, invite: true }));
+    const done = () => setSaving(prev => ({ ...prev, invite: false }));
+
     const { data: existing } = await sb.from('profiles').select('id, role, full_name').ilike('email', inviteEmail.trim()).single();
-    if (!existing) { showFlash(isAr ? 'المستخدم غير موجود' : 'User not found'); setSaving(prev => ({ ...prev, invite: false })); return; }
+    if (!existing) { showFlash(isAr ? 'المستخدم غير موجود' : 'User not found'); done(); return; }
+
+    // Changing your own role is refused by guard_profile_sensitive_fields()
+    // (self-demotion would lock everyone out of role management). Say so here
+    // rather than letting the user discover it as a raw DB error.
+    if (existing.id === user.id) {
+      showFlash(isAr ? 'لا يمكنك تغيير دورك بنفسك' : 'You cannot change your own role');
+      done(); return;
+    }
+
     const before = { role: existing.role };
-    await sb.from('profiles').update({ role: inviteRole }).eq('id', existing.id);
+    // The error was previously discarded: after the super_admin role boundary
+    // landed, a plain admin's refused update still flashed "role updated".
+    const { error } = await sb.from('profiles').update({ role: inviteRole }).eq('id', existing.id);
+    if (error) {
+      showFlash((isAr ? 'تعذّر تعيين الدور: ' : 'Could not assign role: ') + (error.message || ''));
+      done(); return;
+    }
+
     await logAdminAction({ actorId: user.id, action: 'admin_role_assign', entityType: 'profile', entityId: existing.id, beforeState: before, afterState: { role: inviteRole } });
     setInviteEmail('');
-    setSaving(prev => ({ ...prev, invite: false }));
+    done();
     showFlash(isAr ? `تم تعيين الدور: ${inviteRole}` : `Role updated to ${inviteRole}`);
   };
 
