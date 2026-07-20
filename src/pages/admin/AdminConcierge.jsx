@@ -66,6 +66,7 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
   const [tab, setTab] = useState('all');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const isAr = lang === 'ar';
 
@@ -90,8 +91,40 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
       if (statuses.length) q = q.in('managed_status', statuses);
     }
 
-    const { data, error } = await q;
-    if (error) console.error('[AdminConcierge] load error:', error);
+    const { data, error: loadErr } = await q;
+    if (loadErr) {
+      console.error('[AdminConcierge] load error:', loadErr);
+      setError(loadErr.message || 'Query failed');
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+    setError('');
+
+    // Offer counts per request — one extra query, not an N+1. This is the signal
+    // the list was missing entirely: an admin had no way to know a supplier had
+    // quoted without opening all 200 requests one by one, which is why "supplier
+    // managed offers never reach the admin" was reported.
+    const ids = (data || []).map(r => r.id);
+    let offerCounts = {};
+    if (ids.length) {
+      const { data: offerRows, error: offerErr } = await sb
+        .from('offers')
+        .select('request_id')
+        .eq('managed_visibility', 'admin_only')
+        .in('request_id', ids);
+      if (offerErr) {
+        // Surface it. An RLS denial here renders identically to "no offers",
+        // which is precisely how this class of bug stays invisible.
+        console.error('[AdminConcierge] offer count error:', offerErr);
+        setError(offerErr.message || 'Offer count failed');
+      } else {
+        offerCounts = (offerRows || []).reduce((acc, o) => {
+          acc[o.request_id] = (acc[o.request_id] || 0) + 1;
+          return acc;
+        }, {});
+      }
+    }
 
     // Normalize so the existing UI (which expects concierge_requests shape)
     // keeps working without template changes.
@@ -106,6 +139,7 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
         currency: 'USD',
         status: MANAGED_STATUS_TO_TAB[r.managed_status] || r.managed_status || 'pending',
         created_at: r.created_at,
+        offerCount: offerCounts[r.id] || 0,
       };
     });
 
@@ -145,6 +179,12 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
 
           <input className="a-search" placeholder={isAr ? 'بحث بالوصف أو المستخدم...' : 'Search by description or requester…'} value={search} onChange={e => setSearch(e.target.value)} dir={isAr ? 'rtl' : 'ltr'} />
 
+          {error && (
+            <div style={{ margin: '0 0 16px', padding: '11px 14px', borderRadius: 8, background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.18)', color: '#c0392b', fontSize: 12, fontFamily: FONT_BODY }}>
+              {isAr ? 'تعذّر التحميل: ' : 'Failed to load: '}{error}
+            </div>
+          )}
+
           {/* Desktop table */}
           <div className="a-table-wrap">
             <table className="a-table">
@@ -154,13 +194,14 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
                   <th>{isAr ? 'النوع' : 'Type'}</th>
                   <th>{isAr ? 'الوصف' : 'Description'}</th>
                   <th>{isAr ? 'الميزانية' : 'Budget'}</th>
+                  <th>{isAr ? 'العروض' : 'Offers'}</th>
                   <th>{isAr ? 'الحالة' : 'Status'}</th>
                   <th>{isAr ? 'التاريخ' : 'Date'}</th>
                 </tr>
               </thead>
               <tbody>
-                {loading && <tr><td colSpan={6}><div className="a-empty">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</div></td></tr>}
-                {!loading && filtered.length === 0 && <tr><td colSpan={6}><div className="a-empty">{isAr ? 'لا توجد طلبات' : 'No concierge requests found'}</div></td></tr>}
+                {loading && <tr><td colSpan={7}><div className="a-empty">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</div></td></tr>}
+                {!loading && filtered.length === 0 && <tr><td colSpan={7}><div className="a-empty">{isAr ? 'لا توجد طلبات' : 'No concierge requests found'}</div></td></tr>}
                 {filtered.map(r => (
                   <tr key={r.id} onClick={() => nav(`/admin/concierge/${r.id}`)}>
                     <td>
@@ -174,6 +215,15 @@ export default function AdminConcierge({ user, profile, lang, ...rest }) {
                       </div>
                     </td>
                     <td style={{ fontVariantNumeric: 'lining-nums', whiteSpace: 'nowrap' }}>{r.budget ? `${r.budget} ${r.currency}` : '—'}</td>
+                    <td>
+                      {r.offerCount > 0 ? (
+                        <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, color: '#27725a', background: 'rgba(39,114,90,0.08)', border: '1px solid rgba(39,114,90,0.18)', fontVariantNumeric: 'lining-nums', fontFamily: FONT_BODY }}>
+                          {r.offerCount}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.25)' }}>—</span>
+                      )}
+                    </td>
                     <td><AdminStatusBadge status={r.status} lang={lang} /></td>
                     <td style={{ fontFamily: FONT_BODY, fontSize: 12, color: 'rgba(0,0,0,0.40)', fontVariantNumeric: 'lining-nums' }}>{fmtDate(r.created_at)}</td>
                   </tr>

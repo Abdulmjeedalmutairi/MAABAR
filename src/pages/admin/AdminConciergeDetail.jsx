@@ -261,6 +261,20 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     'viewed_at', 'supplier_responded_at', 'closed_at',
   ]);
 
+  // The real managed_supplier_matches.status vocabulary, as written by the flows:
+  // 'new' on admin assign, 'viewed'/'quoted'/'declined' by the supplier
+  // (DashboardSupplier submitManagedMatchOffer), 'shortlisted' by the admin.
+  // The old dropdown offered only active/closed, so selecting either overwrote
+  // 'quoted' — erasing the one signal that a supplier had actually responded.
+  const MATCH_STATUSES = [
+    { val: 'new',         ar: 'جديد',       en: 'New' },
+    { val: 'viewed',      ar: 'اطّلع',       en: 'Viewed' },
+    { val: 'quoted',      ar: 'قدّم عرضاً',  en: 'Quoted' },
+    { val: 'declined',    ar: 'اعتذر',      en: 'Declined' },
+    { val: 'shortlisted', ar: 'في القائمة', en: 'Shortlisted' },
+    { val: 'closed',      ar: 'مغلق',       en: 'Closed' },
+  ];
+
   const addConnection = async (supplier) => {
     if (!request?.buyer_id) {
       console.error('[AdminConciergeDetail] addConnection: missing buyer_id on request');
@@ -649,18 +663,15 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
                     onChange={e => updateConnection(conn, { status: e.target.value })}
                     style={{ padding: '7px 10px', background: 'var(--bg-raised, #fff)', border: '1px solid rgba(0,0,0,0.09)', borderRadius: 7, fontSize: 12, color: 'rgba(0,0,0,0.75)', outline: 'none', cursor: 'pointer', minHeight: 34, fontFamily: FONT_BODY }}
                   >
-                    <option value="active">active</option>
-                    <option value="closed">closed</option>
+                    {/* Preserve any legacy value (e.g. 'active') so the select never
+                        silently mislabels the row it is about to overwrite. */}
+                    {conn.status && !MATCH_STATUSES.some(s => s.val === conn.status) && (
+                      <option value={conn.status}>{conn.status}</option>
+                    )}
+                    {MATCH_STATUSES.map(s => (
+                      <option key={s.val} value={s.val}>{isAr ? s.ar : s.en}</option>
+                    ))}
                   </select>
-                  <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>
-                    {isAr ? 'تدخلات:' : 'Interventions:'} {conn.admin_interventions || 0}
-                  </span>
-                  <button
-                    className="cd-btn"
-                    onClick={() => updateConnection(conn, { admin_interventions: (conn.admin_interventions || 0) + 1 })}
-                  >
-                    + {isAr ? 'تدخل' : 'Intervention'}
-                  </button>
                 </div>
                 {conn.notes && (
                   <div style={{ marginTop: 8, padding: '7px 10px', background: 'var(--bg-raised, #fff)', borderRadius: 6, fontSize: 12, color: 'rgba(0,0,0,0.60)', fontFamily: FONT_BODY }}>
