@@ -5,6 +5,7 @@ import { sb } from '../../supabase';
 const NAV = [
   { path: '/admin/overview',  enLabel: 'Overview',          arLabel: 'نظرة عامة',      phase: 1 },
   { path: '/admin/suppliers', enLabel: 'Suppliers',         arLabel: 'الموردون',        phase: 1 },
+  { path: '/admin/referrals', enLabel: 'Referrals',         arLabel: 'الإحالات',        phase: 1 },
   { path: '/admin/concierge', enLabel: 'Concierge',         arLabel: 'الكونسيرج',      phase: 1 },
   { path: '/admin/disputes',  enLabel: 'Disputes',          arLabel: 'النزاعات',        phase: 2 },
   { path: '/admin/traders',   enLabel: 'Traders',           arLabel: 'التجار',          phase: 2 },
