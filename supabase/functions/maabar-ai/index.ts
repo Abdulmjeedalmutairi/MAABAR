@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -71,6 +73,53 @@ function json(data: unknown, status = 200) {
       'Content-Type': 'application/json',
     },
   });
+}
+
+// ─── IP rate limiting (finding #2/#4) ───────────────────────────────────────
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+
+// Per-task IP limits (hour, day). All tasks keyed by IP this phase; user_id binding
+// for authed tasks (chat_translation/managed_brief) is a deferred enhancement.
+const RATE_LIMITS: Record<string, { hour: number; day: number }> = {
+  idea_to_product:      { hour: 8,   day: 25 },
+  product_conversation: { hour: 8,   day: 25 },
+  customer_support:     { hour: 20,  day: 60 },
+  chat_translation:     { hour: 150, day: 800 },
+  managed_brief:        { hour: 15,  day: 60 },
+};
+
+function clientIp(req: Request): string {
+  const xff = req.headers.get('x-forwarded-for') || '';
+  return xff.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown';
+}
+
+function windowStartIso(now: Date, unit: 'hour' | 'day'): string {
+  const d = new Date(now);
+  d.setUTCMinutes(0, 0, 0);
+  if (unit === 'day') d.setUTCHours(0);
+  return d.toISOString();
+}
+
+// null = allowed; otherwise a 429 Response. Fail-OPEN on limiter errors so a limiter
+// outage never blocks the product.
+async function enforceRateLimit(req: Request, task: string): Promise<Response | null> {
+  const limits = RATE_LIMITS[task];
+  if (!limits) return null;                 // unknown task → handled by the 400 path
+  const ip = clientIp(req);
+  const now = new Date();
+  for (const unit of ['hour', 'day'] as const) {
+    const key = `ip:${ip}:${task}:${unit}`;
+    const { data, error } = await admin.rpc('ai_rate_bump', {
+      p_key: key, p_window: windowStartIso(now, unit),
+    });
+    if (error) { console.error('[maabar-ai][rate]', error.message); return null; } // fail-open
+    if (Number(data) > limits[unit]) {
+      return json({ error: 'Rate limit exceeded. Please try again later.', scope: unit }, 429);
+    }
+  }
+  return null;
 }
 
 function getLanguageName(lang: Lang = 'ar') {
@@ -280,6 +329,10 @@ Deno.serve(async (request) => {
     if (!body.task || !body.payload) {
       return json({ error: 'Missing task or payload' }, 400);
     }
+
+    // IP rate limit — before any paid Groq/Gemini call.
+    const limited = await enforceRateLimit(request, body.task);
+    if (limited) return limited;
 
     if (body.task === 'idea_to_product') {
       const payload = body.payload as IdeaToProductPayload;
