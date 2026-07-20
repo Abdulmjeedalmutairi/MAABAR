@@ -42,6 +42,7 @@ as $$
 declare
   v_count  int := 0;
   v_amount numeric := 0;
+  v_ref_id uuid;
 begin
   if p_supplier_id is null then return 0; end if;
 
@@ -50,9 +51,15 @@ begin
        set state = 'withdrawable'
      where referrer_id = p_supplier_id
        and state = 'pending'
-    returning amount
+    returning amount, referral_id
   )
-  select count(*), coalesce(sum(amount), 0) into v_count, v_amount from released;
+  -- Carry one referral_id out for the notification's ref_id: every other
+  -- notifications insert in this codebase passes a real id, and the base schema
+  -- (cloud-only) may well have ref_id NOT NULL — a null would abort the payment
+  -- transaction this runs inside.
+  select count(*), coalesce(sum(amount), 0), (array_agg(referral_id))[1]
+    into v_count, v_amount, v_ref_id
+  from released;
 
   if v_count > 0 then
     insert into public.notifications (user_id, type, title_ar, title_en, title_zh, ref_id, is_read)
@@ -62,7 +69,7 @@ begin
       'تهانينا! تحوّلت مكافأة الإحالة ' || v_amount || '$ — صارت قابلة للسحب بعد أول عملية بيع',
       'Congratulations! Your $' || v_amount || ' referral reward is now withdrawable after your first sale',
       '恭喜！首笔成交后，您的 $' || v_amount || ' 推荐奖励现已可提现',
-      null,
+      v_ref_id,
       false
     );
   end if;
@@ -79,10 +86,23 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
+declare
+  v_status_changed boolean;
 begin
+  -- OLD is UNASSIGNED in an INSERT trigger, and PL/pgSQL does not guarantee
+  -- short-circuit evaluation of OR — so `tg_op='INSERT' or old.status ...` can
+  -- still evaluate the right-hand side and raise "record old is not assigned yet".
+  -- Since this trigger runs inside the payment write, that error would abort the
+  -- payment itself. Branch on TG_OP explicitly instead.
+  if tg_op = 'INSERT' then
+    v_status_changed := true;
+  else
+    v_status_changed := lower(coalesce(old.status, '')) is distinct from lower(coalesce(new.status, ''));
+  end if;
+
   if new.supplier_id is not null
      and lower(coalesce(new.status, '')) in ('first_paid', 'second_paid', 'completed')
-     and (tg_op = 'INSERT' or lower(coalesce(old.status, '')) is distinct from lower(coalesce(new.status, '')))
+     and v_status_changed
   then
     perform public.release_referral_rewards_on_sale(new.supplier_id);
   end if;
