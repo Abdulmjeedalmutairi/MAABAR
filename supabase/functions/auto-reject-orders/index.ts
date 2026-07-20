@@ -5,6 +5,15 @@ const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || Deno.env.get('SUPABASE_
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const SEND_EMAIL_URL = `${SUPABASE_URL}/functions/v1/send-email`;
 const INTERNAL_SECRET = Deno.env.get('MAABAR_INTERNAL_SECRET') || '';
+const CRON_SECRET = Deno.env.get('CRON_SECRET') || '';
+
+// Constant-time compare so a wrong secret can't be recovered via response timing.
+function secretsMatch(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +27,13 @@ function json(body: unknown, status = 200) {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+
+  // Only the scheduled cron (which holds CRON_SECRET) may trigger auto-rejection.
+  // verify_jwt is off for this function (cron sends no JWT), so this IS the auth.
+  // Fail-closed: if CRON_SECRET is unset, every request is rejected.
+  if (!secretsMatch(req.headers.get('x-cron-secret') || '', CRON_SECRET)) {
+    return json({ error: 'Unauthorized.' }, 401);
+  }
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return json({ error: 'Server is missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars.' }, 500);

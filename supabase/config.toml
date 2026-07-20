@@ -405,6 +405,12 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 [functions.send-email]
 verify_jwt = false
 
+# auto-reject-orders is invoked by pg_cron (net.http_post), which sends no JWT —
+# the platform gate would reject it with "Missing authorization header" before our
+# code runs. Auth is enforced IN CODE via the x-cron-secret header (CRON_SECRET).
+[functions.auto-reject-orders]
+verify_jwt = false
+
 # [experimental.pgdelta]
 # When enabled, pg-delta becomes the active engine for supported schema flows.
 # enabled = false

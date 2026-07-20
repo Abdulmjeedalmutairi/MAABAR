@@ -10,10 +10,14 @@
 --    Run it manually in the Supabase SQL editor (Project → SQL → New query)
 --    AFTER the edge function has been deployed.
 --
--- The edge function is deployed with `--no-verify-jwt` (option a — no shared
--- secret), so the cron call does not need an Authorization header. The function
--- is idempotent: re-running it on the same hour produces zero updates after the
--- first successful run.
+-- The edge function runs with verify_jwt=false (see supabase/config.toml), so the
+-- cron call sends no Authorization header. Auth is enforced IN the function via the
+-- x-cron-secret header, which must match the CRON_SECRET edge-function secret.
+-- The function is idempotent: re-running it on the same hour produces zero updates
+-- after the first successful run.
+--
+-- ⚠️  Replace <CRON_SECRET_HERE> below with the real CRON_SECRET value at run time.
+--    NEVER commit the real secret to git — keep the placeholder in the tracked file.
 -- ============================================================================
 
 -- 1. Enable the extensions (idempotent — safe to re-run).
@@ -40,7 +44,10 @@ select cron.schedule(
   $cron$
   select net.http_post(
     url := 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/auto-reject-orders',
-    headers := jsonb_build_object('Content-Type', 'application/json'),
+    headers := jsonb_build_object(
+      'Content-Type',  'application/json',
+      'x-cron-secret', '<CRON_SECRET_HERE>'
+    ),
     body := '{}'::jsonb
   ) as request_id;
   $cron$
@@ -56,6 +63,9 @@ select cron.schedule(
 --    Trigger an immediate one-off run for testing:
 --    select net.http_post(
 --      url := 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/auto-reject-orders',
---      headers := jsonb_build_object('Content-Type', 'application/json'),
+--      headers := jsonb_build_object(
+--        'Content-Type',  'application/json',
+--        'x-cron-secret', '<CRON_SECRET_HERE>'
+--      ),
 --      body := '{}'::jsonb
 --    );
