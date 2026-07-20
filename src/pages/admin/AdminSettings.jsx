@@ -184,7 +184,13 @@ export default function AdminSettings({ user, profile, lang, ...rest }) {
                 <div className="st-row">
                   <div>
                     <div className="st-label">{isAr ? 'نسبة الرسوم الحالية' : 'Current fee percentage'}</div>
-                    <div className="st-sub">{isAr ? 'تُطبّق على جميع الطلبات الجديدة' : 'Applied to all new orders'}</div>
+                    {/* Honest label: this key is persisted to admin_settings but no
+                        checkout path or edge function reads it yet, so it does not
+                        actually price anything. Saying "applied to all new orders"
+                        made an operator believe a change took effect. */}
+                    <div className="st-sub" style={{ color: '#8B6914' }}>
+                      {isAr ? '⚠️ محفوظة فقط — لا يقرأها مسار الدفع بعد' : '⚠️ Stored only — no checkout path reads it yet'}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
@@ -213,7 +219,13 @@ export default function AdminSettings({ user, profile, lang, ...rest }) {
                 <div className="st-row">
                   <div>
                     <div className="st-label">{isAr ? 'تفعيل وضع الصيانة' : 'Enable maintenance mode'}</div>
-                    <div className="st-sub">{isAr ? 'يمنع وصول المستخدمين للمنصة' : 'Blocks user access to the platform'}</div>
+                    {/* No route guard, app shell, or edge function reads
+                        maintenance_mode — toggling it currently blocks nobody.
+                        Claiming otherwise is the most dangerous label on this page:
+                        an operator could believe the platform is down when it is up. */}
+                    <div className="st-sub" style={{ color: '#c0392b' }}>
+                      {isAr ? '⚠️ غير مُفعّل بعد — لا يمنع أحداً فعلياً' : '⚠️ Not enforced yet — this blocks nobody'}
+                    </div>
                   </div>
                   <input
                     type="checkbox"

@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
+import {
+  getSupplierReviewQueueStatuses,
+  getSupplierPublicVisibilityStatuses,
+} from '../../lib/supplierOnboarding';
 import { sb } from '../../supabase';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
@@ -69,13 +73,19 @@ async function fetchKPIs() {
     { count: totalRequests },
   ] = await Promise.all([
     sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier'),
-    sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier').eq('status', 'verification_under_review'),
-    sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier').eq('status', 'active'),
+    // Canonical status vocabulary (supplierOnboarding.js), not hardcoded guesses.
+    sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier').in('status', getSupplierReviewQueueStatuses()),
+    // Was .eq('status','active') — approvals write 'verified', so this KPI was
+    // permanently 0. Same defect the Suppliers "Active" tab had.
+    sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier').in('status', getSupplierPublicVisibilityStatuses()),
     sb.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['buyer', 'trader']),
     sb.from('requests').select('*', { count: 'exact', head: true }).eq('sourcing_mode', 'managed').not('managed_status', 'is', null),
-    sb.from('concierge_requests').select('*', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
+    // Was concierge_requests — a table the buyer flow never populates (AdminConcierge
+    // documents this), so the KPI was always 0. Managed requests live in requests.
+    sb.from('requests').select('*', { count: 'exact', head: true }).eq('sourcing_mode', 'managed').in('managed_status', ['pending', 'sourcing', 'matching', 'in_progress']),
     sb.from('disputes').select('*', { count: 'exact', head: true }).in('status', ['open', 'under_review', 'mediating']),
-    sb.from('requests').select('*', { count: 'exact', head: true }),
+    // Tile is labelled "Open Requests" — it had no status filter at all.
+    sb.from('requests').select('*', { count: 'exact', head: true }).eq('status', 'open'),
   ]);
   return { totalSuppliers, pendingVerification, activeSuppliers, totalBuyers, openManaged, openConcierge, openDisputes, totalRequests };
 }

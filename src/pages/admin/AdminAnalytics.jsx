@@ -6,6 +6,11 @@ import { sb } from '../../supabase';
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY    = "'Tajawal', sans-serif";
 
+// The group-by charts still need rows, so they stay bounded and explicit rather
+// than unbounded-and-silently-capped. Scalars above use exact counts instead.
+// A proper fix is a server-side group-by RPC; this at least stops lying quietly.
+const CHART_ROW_CAP = 2000;
+
 const CSS = `
   .an-page { padding: 36px 32px; max-width: 1080px; }
   .an-page-title { margin: 0 0 4px; font-size: 26px; font-weight: 400; color: rgba(0,0,0,0.88); font-family: ${FONT_HEADING}; line-height: 1.1; }
@@ -70,18 +75,45 @@ export default function AdminAnalytics({ user, profile, lang, ...rest }) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    // Scalars come from exact server-side counts. Previously every figure was
+    // computed client-side over unbounded .select() calls with no .range()/.limit(),
+    // so past PostgREST's max-rows cap each number silently went wrong with no
+    // visual indicator. Counts transfer no rows and are correct at any scale.
+    const cnt  = (q) => q.then(({ count, error }) => (error ? 0 : (count || 0)));
+    const rows = (q) => q.then(({ data, error }) => (error ? [] : (data || [])));
+
+    const nowMs  = Date.now();
+    const past30 = new Date(nowMs - 30 * 86400000).toISOString();
+    const past7  = new Date(nowMs - 7  * 86400000).toISOString();
+
+    // profiles has NO is_active column — the old `p.is_active !== false` was true for
+    // every row (undefined !== false), so "Active Users" always equalled "Total Users".
+    // Profiles carry `status`; active is the absence of a disabling one.
+    const INACTIVE_STATUSES = ['inactive', 'rejected', 'disabled', 'suspended'];
+
     const [
-      { data: profiles },
-      { data: orders },
-      { data: tickets },
-      { data: disputes },
-      { data: requests },
+      totalUsers, suppliers, buyers, inactiveUsers, newUsers30,
+      totalOrders, newOrders7, openTickets, openDisputes,
+      totalRequests, pendingReq,
+      orderRows, ticketRows, disputeRows, profileRows,
     ] = await Promise.all([
-      sb.from('profiles').select('role, created_at, is_active'),
-      sb.from('orders').select('status, amount, currency, platform_fee_pct, platform_fee_amount, created_at'),
-      sb.from('support_tickets').select('status, created_at'),
-      sb.from('disputes').select('status, severity, created_at'),
-      sb.from('service_requests').select('status, created_at'),
+      cnt(sb.from('profiles').select('*', { count: 'exact', head: true })),
+      cnt(sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'supplier')),
+      cnt(sb.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['buyer', 'trader'])),
+      cnt(sb.from('profiles').select('*', { count: 'exact', head: true }).in('status', INACTIVE_STATUSES)),
+      cnt(sb.from('profiles').select('*', { count: 'exact', head: true }).gt('created_at', past30)),
+      cnt(sb.from('orders').select('*', { count: 'exact', head: true })),
+      cnt(sb.from('orders').select('*', { count: 'exact', head: true }).gt('created_at', past7)),
+      cnt(sb.from('support_tickets').select('*', { count: 'exact', head: true }).in('status', ['open', 'in_progress'])),
+      cnt(sb.from('disputes').select('*', { count: 'exact', head: true }).in('status', ['open', 'under_review', 'mediating'])),
+      // was service_requests — a table that does not exist, so both request tiles
+      // silently rendered 0. The real buyer requests live in public.requests.
+      cnt(sb.from('requests').select('*', { count: 'exact', head: true })),
+      cnt(sb.from('requests').select('*', { count: 'exact', head: true }).in('status', ['open', 'pending'])),
+      rows(sb.from('orders').select('status, amount, currency, platform_fee_pct, platform_fee_amount').limit(CHART_ROW_CAP)),
+      rows(sb.from('support_tickets').select('status').limit(CHART_ROW_CAP)),
+      rows(sb.from('disputes').select('severity').limit(CHART_ROW_CAP)),
+      rows(sb.from('profiles').select('role').limit(CHART_ROW_CAP)),
     ]);
 
     const countBy = (arr, key) => {
@@ -90,34 +122,28 @@ export default function AdminAnalytics({ user, profile, lang, ...rest }) {
       return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count }));
     };
 
-    const paidOrders = (orders || []).filter(o => o.status === 'paid' && o.currency === 'SAR');
-    const gmv = paidOrders.reduce((s, o) => s + (o.amount || 0), 0);
+    const paidOrders = orderRows.filter(o => o.status === 'paid' && o.currency === 'SAR');
+    const gmv  = paidOrders.reduce((s, o) => s + (o.amount || 0), 0);
     const fees = paidOrders.reduce((s, o) => s + (o.platform_fee_amount ?? (o.amount * (o.platform_fee_pct || 5) / 100)), 0);
 
-    const now = new Date();
-    const past30 = new Date(now - 30 * 86400000);
-    const past7  = new Date(now - 7  * 86400000);
-    const newUsers30 = (profiles || []).filter(p => new Date(p.created_at) > past30).length;
-    const newOrders7 = (orders || []).filter(o => new Date(o.created_at) > past7).length;
-
     setData({
-      totalUsers:    (profiles || []).length,
-      activeUsers:   (profiles || []).filter(p => p.is_active !== false).length,
+      totalUsers,
+      activeUsers: Math.max(totalUsers - inactiveUsers, 0),
       newUsers30,
-      suppliers:     (profiles || []).filter(p => p.role === 'supplier').length,
-      buyers:        (profiles || []).filter(p => p.role === 'buyer' || p.role === 'trader').length,
+      suppliers,
+      buyers,
       gmv,
       fees,
-      totalOrders:   (orders || []).length,
+      totalOrders,
       newOrders7,
-      openTickets:   (tickets || []).filter(t => t.status === 'open' || t.status === 'in_progress').length,
-      openDisputes:  (disputes || []).filter(d => d.status === 'open' || d.status === 'under_review' || d.status === 'mediating').length,
-      totalRequests: (requests || []).length,
-      pendingReq:    (requests || []).filter(r => r.status === 'pending' || r.status === 'open').length,
-      ordersByStatus: countBy(orders, 'status'),
-      ticketsByStatus: countBy(tickets, 'status'),
-      disputesBySeverity: countBy(disputes, 'severity'),
-      usersByRole: countBy(profiles, 'role'),
+      openTickets,
+      openDisputes,
+      totalRequests,
+      pendingReq,
+      ordersByStatus: countBy(orderRows, 'status'),
+      ticketsByStatus: countBy(ticketRows, 'status'),
+      disputesBySeverity: countBy(disputeRows, 'severity'),
+      usersByRole: countBy(profileRows, 'role'),
     });
     setLoading(false);
   }, []);
@@ -148,6 +174,13 @@ export default function AdminAnalytics({ user, profile, lang, ...rest }) {
               <Tile label={isAr ? 'مستخدمون جدد (30 يوماً)' : 'New Users (30 days)'} value={fmt(data.newUsers30)} style={{ marginBottom: 28 }} />
 
               <p className="an-section-title" style={{ marginTop: 4 }}>{isAr ? 'الطلبات والمدفوعات' : 'Orders & Payments'}</p>
+              {data.totalOrders === 0 && (
+                <p style={{ margin: '0 0 12px', padding: '10px 13px', borderRadius: 8, background: 'rgba(139,105,20,0.06)', border: '1px solid rgba(139,105,20,0.18)', color: '#8B6914', fontSize: 12, fontFamily: FONT_BODY }}>
+                  {isAr
+                    ? 'هذه الأرقام تقرأ جدول orders، ولا يكتب فيه أي مسار في التطبيق — المدفوعات الفعلية في جدول payments. فالأصفار هنا لا تعني عدم وجود مبيعات.'
+                    : 'These figures read the orders table, which no app flow writes to — real money lives in payments. Zeros here do not mean there were no sales.'}
+                </p>
+              )}
               <div className="an-grid-4">
                 <Tile label={isAr ? 'حجم المعاملات' : 'GMV (SAR)'}        value={fmtSAR(data.gmv)}       color="#27725a" />
                 <Tile label={isAr ? 'رسوم المنصة' : 'Platform Fees'}      value={fmtSAR(data.fees)}      color="#8B6914" />

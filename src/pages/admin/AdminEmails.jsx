@@ -85,7 +85,6 @@ function EmailLogs({ user, lang, isAr }) {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [selected, setSelected] = useState(null);
-  const [retrying, setRetrying] = useState(false);
   const [flashMsg, setFlashMsg] = useState('');
 
   const showFlash = msg => { setFlashMsg(msg); setTimeout(() => setFlashMsg(''), 3000); };
@@ -107,16 +106,13 @@ function EmailLogs({ user, lang, isAr }) {
   useEffect(() => { setPage(0); }, [logTab, search]);
   useEffect(() => { load(); }, [load]);
 
-  const retryEmail = async (log) => {
-    setRetrying(true);
-    const before = { status: log.status };
-    await sb.from('email_logs').update({ status: 'sent', error_message: null }).eq('id', log.id);
-    await logAdminAction({ actorId: user.id, action: 'email_retry', entityType: 'email_log', entityId: log.id, beforeState: before, afterState: { status: 'sent' } });
-    await load();
-    setSelected(null);
-    setRetrying(false);
-    showFlash(isAr ? 'تمت إعادة المحاولة' : 'Queued for retry');
-  };
+  // Retry is deliberately NOT wired. The previous implementation just rewrote the
+  // log row to status='sent' and flashed "Queued for retry" — it never invoked the
+  // sender, so it falsified delivery state. A real retry needs send-email to (a)
+  // write email_logs on send and (b) accept a re-send of a logged payload; neither
+  // exists today (send-email references neither email_logs nor template_overrides).
+  // Falsely reporting success is worse than offering nothing, so the button is gone
+  // until that wiring lands.
 
   const STATUS_DOT = { sent: '#27725a', failed: '#c0392b', bounced: '#8B6914' };
 
@@ -209,9 +205,11 @@ function EmailLogs({ user, lang, isAr }) {
                 </div>
               )}
               {(selected.status === 'failed' || selected.status === 'bounced') && (
-                <button className="em-btn em-btn-warn" disabled={retrying} onClick={() => retryEmail(selected)} style={{ marginTop: 4 }}>
-                  {retrying ? '…' : (isAr ? 'إعادة المحاولة' : 'Retry')}
-                </button>
+                <p style={{ marginTop: 4, fontSize: 11, color: 'rgba(0,0,0,0.40)', fontFamily: FONT_BODY, lineHeight: 1.6 }}>
+                  {isAr
+                    ? 'لا تتوفّر إعادة إرسال تلقائية بعد — أعد الإجراء من مصدره لإطلاق الإيميل من جديد.'
+                    : 'Automatic resend is not available yet — re-trigger the action at its source to send again.'}
+                </p>
               )}
             </>
           )}
