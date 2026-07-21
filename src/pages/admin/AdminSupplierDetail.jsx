@@ -93,11 +93,6 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     return data.signedUrl;
   }, []);
 
-  const openDoc = useCallback(async (rawPath) => {
-    const url = await getSignedUrl(rawPath);
-    if (!url) { alert('Could not open file.'); return; }
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, [getSignedUrl]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -188,6 +183,25 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
       setSignedUrls(Object.fromEntries(entries.filter(([, v]) => v)));
     });
   }, [supplier, getSignedUrl]);
+
+  // In-page attachment viewer. Reviewing a supplier used to mean leaving the page
+  // for every single file (window.open / target="_blank"), losing your place and
+  // your scroll position each time. Everything is signed up-front anyway, so it
+  // can all be inspected here without navigating away.
+  const [viewerIdx, setViewerIdx] = useState(null);
+  const viewerOpen = viewerIdx !== null;
+
+  useEffect(() => {
+    if (!viewerOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setViewerIdx(null);
+      if (e.key === 'ArrowRight') setViewerIdx(i => (i === null ? i : i + 1));
+      if (e.key === 'ArrowLeft')  setViewerIdx(i => (i === null ? i : i - 1));
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [viewerOpen]);
 
   const flash = (msg) => {
     setActionMsg(msg);
@@ -293,6 +307,57 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
       url: supplier.address_proof_photo,
     },
   ].filter(Boolean);
+
+  // One flat list so the viewer can page through every attachment in order.
+  const kindOf = (path = '') => {
+    const p = String(path).toLowerCase().split('?')[0];
+    if (/\.(mp4|mov|webm|m4v|avi|mkv)$/.test(p)) return 'video';
+    if (/\.pdf$/.test(p)) return 'pdf';
+    return 'image';
+  };
+  const attachments = [
+    ...docs.map(d => ({ raw: d.url, label: d.label, kind: kindOf(d.url) })),
+    ...images.map((raw, i) => ({ raw, label: `${isAr ? 'صورة المصنع' : 'Factory photo'} ${i + 1}`, kind: 'image' })),
+    ...videos.map((raw, i) => ({ raw, label: `${isAr ? 'فيديو المصنع' : 'Factory video'} ${i + 1}`, kind: 'video' })),
+  ].map(a => ({ ...a, url: signedUrls[a.raw] || null }));
+
+  const idxOf = (raw) => attachments.findIndex(a => a.raw === raw);
+  const openViewer = (raw) => { const i = idxOf(raw); if (i >= 0) setViewerIdx(i); };
+  const current = viewerOpen ? attachments[Math.max(0, Math.min(viewerIdx, attachments.length - 1))] : null;
+
+  const Thumb = ({ att }) => (
+    <button
+      onClick={() => openViewer(att.raw)}
+      title={att.label}
+      style={{
+        position: 'relative', padding: 0, cursor: 'pointer', overflow: 'hidden',
+        width: 132, height: 108, borderRadius: 10, background: 'var(--bg-subtle, #F5F2EE)',
+        border: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 6, textAlign: 'center',
+      }}
+    >
+      {att.url && att.kind === 'image' ? (
+        <img src={att.url} alt={att.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : att.url && att.kind === 'video' ? (
+        <>
+          <video src={att.url} preload="metadata" muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          <span style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', background: 'rgba(26,24,20,0.72)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>▶</span>
+        </>
+      ) : att.url && att.kind === 'pdf' ? (
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: 'rgba(0,0,0,0.45)', fontFamily: FONT_BODY }}>PDF</span>
+      ) : (
+        <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.30)', fontFamily: FONT_BODY }}>…</span>
+      )}
+      <span style={{
+        position: 'absolute', left: 0, right: 0, bottom: 0, padding: '5px 7px',
+        background: 'linear-gradient(transparent, rgba(0,0,0,0.62))', color: '#fff',
+        fontSize: 9.5, fontFamily: FONT_BODY, lineHeight: 1.25,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {att.label}
+      </span>
+    </button>
+  );
 
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
@@ -402,56 +467,40 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
             )}
           </SectionCard>
 
-          {/* Documents */}
-          {docs.length > 0 && (
-            <SectionCard title={isAr ? 'المستندات' : 'Documents'}>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {docs.map((doc, i) => (
-                  <button key={i} onClick={() => openDoc(doc.url)} className="sd-doc-link" style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
-                    {doc.label} ↗
-                  </button>
-                ))}
-              </div>
-            </SectionCard>
-          )}
-
-          {/* Factory images */}
-          {images.length > 0 && (
-            <SectionCard title={isAr ? 'صور المصنع' : 'Factory Photos'}>
-              <div className="sd-img-grid">
-                {images.map((raw, i) => {
-                  const signed = signedUrls[raw];
-                  return signed ? (
-                    <a key={i} href={signed} target="_blank" rel="noopener noreferrer">
-                      <img src={signed} alt={`Factory ${i + 1}`} className="sd-img" />
-                    </a>
-                  ) : (
-                    <div key={i} className="sd-img" style={{ background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>…</div>
-                  );
-                })}
-              </div>
-            </SectionCard>
-          )}
-
-          {/* Factory videos */}
-          {videos.length > 0 && (
-            <SectionCard title={isAr ? 'فيديو المصنع' : 'Factory Videos'}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {videos.map((raw, i) => {
-                  const signed = signedUrls[raw];
-                  return signed ? (
-                    <video
-                      key={i}
-                      src={signed}
-                      controls
-                      preload="metadata"
-                      style={{ width: '100%', maxWidth: 360, borderRadius: 8, background: 'rgba(0,0,0,0.04)' }}
-                    />
-                  ) : (
-                    <div key={i} style={{ width: 240, height: 135, background: 'rgba(0,0,0,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>…</div>
-                  );
-                })}
-              </div>
+          {/* All attachments, inline. Everything the reviewer needs is visible at a
+              glance here and opens in-page — no tab-hopping mid-review. */}
+          {attachments.length > 0 && (
+            <SectionCard title={`${isAr ? 'المرفقات' : 'Attachments'} (${attachments.length})`}>
+              {docs.length > 0 && (
+                <>
+                  <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>
+                    {isAr ? 'المستندات الرسمية' : 'Official documents'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+                    {attachments.slice(0, docs.length).map((att, i) => <Thumb key={`d${i}`} att={att} />)}
+                  </div>
+                </>
+              )}
+              {images.length > 0 && (
+                <>
+                  <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>
+                    {isAr ? 'صور المصنع' : 'Factory photos'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+                    {attachments.slice(docs.length, docs.length + images.length).map((att, i) => <Thumb key={`i${i}`} att={att} />)}
+                  </div>
+                </>
+              )}
+              {videos.length > 0 && (
+                <>
+                  <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY }}>
+                    {isAr ? 'فيديو المصنع' : 'Factory video'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {attachments.slice(docs.length + images.length).map((att, i) => <Thumb key={`v${i}`} att={att} />)}
+                  </div>
+                </>
+              )}
             </SectionCard>
           )}
 
@@ -626,6 +675,110 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
             <AdminNoteThread entityType="supplier" entityId={id} user={user} lang={lang} />
           </SectionCard>
         </div>
+
+        {/* ── In-page attachment viewer ── */}
+        {viewerOpen && current && (
+          <div
+            onClick={() => setViewerIdx(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(20,18,15,0.92)',
+              backdropFilter: 'blur(6px)', display: 'flex', flexDirection: 'column',
+            }}
+          >
+            {/* Bar */}
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                padding: '14px 18px', color: 'rgba(255,255,255,0.92)', flexShrink: 0,
+                borderBottom: '1px solid rgba(255,255,255,0.10)',
+              }}
+              dir={isAr ? 'rtl' : 'ltr'}
+            >
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, fontFamily: FONT_BODY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {current.label}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: FONT_BODY, fontVariantNumeric: 'lining-nums' }}>
+                  {viewerIdx + 1} / {attachments.length}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                {current.url && (
+                  <a
+                    href={current.url} target="_blank" rel="noopener noreferrer" download
+                    style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8, padding: '7px 12px', fontFamily: FONT_BODY, minHeight: 36, display: 'flex', alignItems: 'center' }}
+                  >
+                    {isAr ? 'تنزيل' : 'Download'}
+                  </a>
+                )}
+                <button
+                  onClick={() => setViewerIdx(null)}
+                  style={{ fontSize: 18, lineHeight: 1, color: 'rgba(255,255,255,0.8)', background: 'transparent', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8, cursor: 'pointer', width: 36, height: 36 }}
+                  aria-label={isAr ? 'إغلاق' : 'Close'}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Stage */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 14, minHeight: 0 }}>
+              <button
+                onClick={e => { e.stopPropagation(); setViewerIdx(i => (i - 1 + attachments.length) % attachments.length); }}
+                disabled={attachments.length < 2}
+                style={{ flexShrink: 0, width: 42, height: 42, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 18, cursor: attachments.length < 2 ? 'default' : 'pointer', opacity: attachments.length < 2 ? 0.3 : 1 }}
+                aria-label="Previous"
+              >
+                ‹
+              </button>
+
+              <div onClick={e => e.stopPropagation()} style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
+                {!current.url ? (
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontFamily: FONT_BODY }}>{isAr ? 'جارٍ التحميل…' : 'Loading…'}</p>
+                ) : current.kind === 'image' ? (
+                  <img src={current.url} alt={current.label} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                ) : current.kind === 'video' ? (
+                  <video src={current.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8, background: '#000' }} />
+                ) : (
+                  <iframe src={current.url} title={current.label} style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8, background: '#fff' }} />
+                )}
+              </div>
+
+              <button
+                onClick={e => { e.stopPropagation(); setViewerIdx(i => (i + 1) % attachments.length); }}
+                disabled={attachments.length < 2}
+                style={{ flexShrink: 0, width: 42, height: 42, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 18, cursor: attachments.length < 2 ? 'default' : 'pointer', opacity: attachments.length < 2 ? 0.3 : 1 }}
+                aria-label="Next"
+              >
+                ›
+              </button>
+            </div>
+
+            {/* Filmstrip */}
+            {attachments.length > 1 && (
+              <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 7, padding: '10px 14px', overflowX: 'auto', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+                {attachments.map((a, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setViewerIdx(i)}
+                    title={a.label}
+                    style={{
+                      flexShrink: 0, width: 56, height: 42, borderRadius: 6, overflow: 'hidden', cursor: 'pointer', padding: 0,
+                      border: i === viewerIdx ? '2px solid #fff' : '1px solid rgba(255,255,255,0.20)',
+                      opacity: i === viewerIdx ? 1 : 0.55, background: 'rgba(255,255,255,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {a.url && a.kind === 'image'
+                      ? <img src={a.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.8)', fontFamily: FONT_BODY }}>{a.kind === 'video' ? '▶' : 'PDF'}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </AdminShell>
     </AdminRouteGuard>
   );
