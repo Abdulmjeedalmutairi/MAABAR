@@ -162,7 +162,10 @@ export default function AdminShell({ children, user, profile, lang }) {
       <div style={{ padding: '22px 18px 18px' }}>
         <AdminWordmark isAr={isAr} />
       </div>
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 16px' }}>
+      {/* role="navigation" instead of <nav>: index.css styles the bare `nav`
+          element as the site's fixed top bar (position:fixed; top:0; z-index:1000),
+          so any <nav> in here inherits it and covers the admin top bar. */}
+      <div role="navigation" style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 16px' }}>
         {NAV_GROUPS.map(group => (
           <div key={group.en} style={{ marginBottom: 14 }}>
             <p className="a-nav-group" style={{ textAlign: isAr ? 'right' : 'left', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -175,7 +178,7 @@ export default function AdminShell({ children, user, profile, lang }) {
             </div>
           </div>
         ))}
-      </nav>
+      </div>
     </div>
   );
 
@@ -380,7 +383,8 @@ export default function AdminShell({ children, user, profile, lang }) {
         </div>
 
         {/* Mobile bottom nav */}
-        <nav className="a-bottom-nav">
+        {/* Also a div, for the same reason as the sidebar nav above. */}
+        <div role="navigation" className="a-bottom-nav">
           {BOTTOM_NAV.map(item => (
             <button key={item.path} className={`a-bnav-btn${isItemActive(item.path) ? ' on' : ''}`} onClick={() => handleNav(item.path)}>
               <Icon name={item.icon} size={19} />
@@ -389,7 +393,7 @@ export default function AdminShell({ children, user, profile, lang }) {
               </span>
             </button>
           ))}
-        </nav>
+        </div>
       </div>
     </>
   );
