@@ -203,6 +203,67 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
     return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
   }, [viewerOpen]);
 
+  // ── Share links ──────────────────────────────────────────────────────────
+  const fmtDate = (d) => d
+    ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
+  const [shareLinks, setShareLinks] = useState([]);
+  const [sharing, setSharing] = useState(false);
+  const [copiedToken, setCopiedToken] = useState('');
+
+  const loadShareLinks = useCallback(async () => {
+    const { data } = await sb.from('supplier_share_links')
+      .select('token, created_at, expires_at, revoked_at, view_count, last_viewed_at')
+      .eq('supplier_id', id)
+      .order('created_at', { ascending: false });
+    setShareLinks(data || []);
+  }, [id]);
+
+  useEffect(() => { loadShareLinks(); }, [loadShareLinks]);
+
+  const shareUrlFor = (token) => `${window.location.origin}/s/supplier/${token}`;
+
+  const copyText = async (text) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch { /* fall through */ }
+    // Non-secure contexts (e.g. testing over a LAN IP) have no clipboard API.
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch { return false; }
+  };
+
+  const createShareLink = async () => {
+    setSharing(true);
+    const { data: token, error } = await sb.rpc('create_supplier_share_link', { p_supplier_id: id, p_days: 30 });
+    if (error || !token) {
+      flash((isAr ? 'تعذّر إنشاء الرابط: ' : 'Could not create link: ') + (error?.message || ''));
+      setSharing(false); return;
+    }
+    const url = shareUrlFor(token);
+    const copied = await copyText(url);
+    setCopiedToken(copied ? token : '');
+    await logAdminAction({ actorId: user.id, action: 'supplier_share_link_create', entityType: 'supplier', entityId: id, beforeState: null, afterState: { expires_days: 30 } });
+    await loadShareLinks();
+    setSharing(false);
+    flash(copied
+      ? (isAr ? 'تم إنشاء الرابط ونسخه' : 'Link created and copied')
+      : (isAr ? 'تم إنشاء الرابط — انسخه يدوياً' : 'Link created — copy it manually'));
+  };
+
+  const revokeShareLink = async (token) => {
+    const { error } = await sb.rpc('revoke_supplier_share_link', { p_token: token });
+    if (error) { flash((isAr ? 'تعذّر الإلغاء: ' : 'Could not revoke: ') + error.message); return; }
+    await logAdminAction({ actorId: user.id, action: 'supplier_share_link_revoke', entityType: 'supplier', entityId: id, beforeState: { token: token.slice(0, 8) }, afterState: { revoked: true } });
+    await loadShareLinks();
+    flash(isAr ? 'تم إلغاء الرابط' : 'Link revoked');
+  };
+
   const flash = (msg) => {
     setActionMsg(msg);
     setTimeout(() => setActionMsg(''), 3500);
@@ -463,6 +524,66 @@ export default function AdminSupplierDetail({ user, profile, lang, ...rest }) {
                 <a href={supplier.trade_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(0,0,0,0.60)', wordBreak: 'break-all', fontFamily: FONT_BODY }}>
                   {supplier.trade_link} ↗
                 </a>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Share with an outside reviewer (e.g. a partner verifying the factory
+              on the ground in China). The link carries identity documents, so it
+              expires, is revocable, and every view is counted. */}
+          <SectionCard title={isAr ? 'مشاركة الملف' : 'Share Dossier'}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: shareLinks.length ? 16 : 0 }}>
+              <button className="sd-btn sd-btn-approve" onClick={createShareLink} disabled={sharing}>
+                {sharing ? '…' : (isAr ? 'إنشاء رابط مشاركة' : 'Create share link')}
+              </button>
+              <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.42)', fontFamily: FONT_BODY, lineHeight: 1.6 }}>
+                {isAr
+                  ? 'صالح ٣٠ يوماً · يفتحه أي شخص بلا حساب · يعرض الوثائق كاملة'
+                  : 'Valid 30 days · opens without an account · shows full documents'}
+              </span>
+            </div>
+
+            {shareLinks.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {shareLinks.map(l => {
+                  const expired = new Date(l.expires_at).getTime() < Date.now();
+                  const dead = !!l.revoked_at || expired;
+                  return (
+                    <div key={l.token} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                      padding: '10px 12px', borderRadius: 8,
+                      background: dead ? 'rgba(0,0,0,0.02)' : 'var(--bg-subtle, #F5F2EE)',
+                      border: '1px solid rgba(0,0,0,0.06)', opacity: dead ? 0.6 : 1,
+                    }}>
+                      <code style={{ fontSize: 11, color: 'rgba(0,0,0,0.55)', fontFamily: 'monospace', wordBreak: 'break-all', flex: 1, minWidth: 140 }}>
+                        …/s/supplier/{l.token.slice(0, 10)}…
+                      </code>
+                      <span style={{ fontSize: 10.5, color: 'rgba(0,0,0,0.42)', fontFamily: FONT_BODY, whiteSpace: 'nowrap' }}>
+                        {l.revoked_at
+                          ? (isAr ? 'مُلغى' : 'Revoked')
+                          : expired
+                            ? (isAr ? 'منتهٍ' : 'Expired')
+                            : `${isAr ? 'ينتهي' : 'expires'} ${fmtDate(l.expires_at)}`}
+                        {' · '}
+                        {l.view_count || 0} {isAr ? 'مشاهدة' : 'views'}
+                      </span>
+                      {!dead && (
+                        <>
+                          <button className="sd-btn" onClick={async () => {
+                            const ok = await copyText(shareUrlFor(l.token));
+                            setCopiedToken(ok ? l.token : '');
+                            flash(ok ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'تعذّر النسخ' : 'Copy failed'));
+                          }}>
+                            {copiedToken === l.token ? (isAr ? 'نُسخ ✓' : 'Copied ✓') : (isAr ? 'نسخ' : 'Copy')}
+                          </button>
+                          <button className="sd-btn sd-btn-reject" onClick={() => revokeShareLink(l.token)}>
+                            {isAr ? 'إلغاء' : 'Revoke'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </SectionCard>

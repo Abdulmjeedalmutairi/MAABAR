@@ -411,6 +411,13 @@ verify_jwt = false
 [functions.auto-reject-orders]
 verify_jwt = false
 
+# supplier-share is opened by a partner who has no Maabar account — the share token
+# IS the credential, validated in code against supplier_share_links (expiry,
+# revocation, 64-hex format) with a per-IP ceiling. A JWT gate would make the
+# feature impossible.
+[functions.supplier-share]
+verify_jwt = false
+
 # maabar-ai is called with the public anon key (a valid JWT), so verify_jwt=true is
 # satisfied by legit clients and adds a platform-layer floor (blocks no-key scanners).
 # Real abuse control is the in-function IP rate limit (ai_rate_limits).

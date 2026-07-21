@@ -59,6 +59,7 @@ import AdminOverview from './pages/admin/AdminOverview';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
 import AdminSupplierDetail from './pages/admin/AdminSupplierDetail';
 import AdminReferrals from './pages/admin/AdminReferrals';
+import SupplierShareView from './pages/SupplierShareView';
 import AdminConcierge from './pages/admin/AdminConcierge';
 import AdminConciergeDetail from './pages/admin/AdminConciergeDetail';
 import AdminComingSoon from './pages/admin/AdminComingSoon';
@@ -277,8 +278,12 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
   const location = useLocation();
   const isAuthCallbackPage = location.pathname === AUTH_CALLBACK_PATH;
   const isAdminPage = location.pathname.startsWith('/admin');
+  // Share links are opened by people outside Maabar (a partner verifying a
+  // supplier); the dossier stands alone, with no site nav or AI hub around it.
+  const isSharePage = location.pathname.startsWith('/s/');
   const isChromelessPage = isAuthCallbackPage
     || isAdminPage
+    || isSharePage
     || location.pathname === '/buyer'
     || location.pathname === '/preview'
     || location.pathname === '/login'
@@ -341,6 +346,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin/suppliers"         element={<AdminSuppliers       {...sharedProps} />} />
         <Route path="/admin/suppliers/:id"     element={<AdminSupplierDetail  {...sharedProps} />} />
         <Route path="/admin/referrals"         element={<AdminReferrals       {...sharedProps} />} />
+        <Route path="/s/supplier/:token"       element={<SupplierShareView    lang={lang} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
         <Route path="/admin/concierge/:id"     element={<AdminConciergeDetail {...sharedProps} />} />
         <Route path="/admin/disputes"          element={<AdminDisputes        {...sharedProps} />} />
