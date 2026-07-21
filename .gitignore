@@ -26,3 +26,6 @@ yarn-error.log*
 .netlify
 .env
 .vercel
+
+# Security review reports — attacker roadmap, keep out of version control
+docs/security/

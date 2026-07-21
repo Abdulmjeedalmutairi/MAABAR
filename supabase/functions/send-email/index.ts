@@ -14,79 +14,172 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ─── Brand type ──────────────────────────────────────────────────────────────
+// The webfonts below are loaded via @import in wrap(). Apple Mail and iOS honour
+// it (the bulk of this audience); Gmail web and Outlook's Word engine strip it.
+// So every stack has to degrade to a real system face for that script — the old
+// stacks fell back to Arial/Tahoma, which is why Arabic mail read like a 2005
+// office document instead of Maabar.
+//
+// Arabic: no serif/sans split worth making here — Tajawal carries both body and
+// headings, falling back to genuine Arabic system faces (Geeza Pro/Damascus on
+// Apple, Segoe UI on Windows) before Tahoma.
+const AR_STACK = `'Tajawal','Noto Kufi Arabic','Segoe UI','Geeza Pro','Damascus','Al Bayan',Tahoma,sans-serif`;
+// Latin: Cormorant Garamond is the brand display face. Georgia is LAST, purely a
+// last-resort serif — previously it was the font actually doing the work.
+const EN_STACK = `'Cormorant Garamond','Hoefler Text','Iowan Old Style',Palatino,Georgia,serif`;
+const ZH_STACK = `'Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif`;
+
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cormorant+Garamond:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');`;
+
+// size/lh/track are per-script because the new faces have different metrics from
+// the Arial/Georgia they replaced:
+//   · track MUST be 0 for Arabic — letter-spacing breaks the cursive joins, which
+//     is what made the Arabic mail look mangled once real Arabic faces loaded.
+//   · Cormorant has a small x-height, so Latin needs a larger size than the 14px
+//     that suited Georgia, or it reads cramped and faint.
+//   · Arabic wants a taller line than Latin, especially with diacritics (مَعبر).
 function localeMeta(lang = 'ar') {
-  if (lang === 'zh') return { lang: 'zh', dir: 'ltr', align: 'left', font: `'Segoe UI', Arial, sans-serif` };
-  if (lang === 'en') return { lang: 'en', dir: 'ltr', align: 'left', font: `'Segoe UI', Arial, sans-serif` };
-  return { lang: 'ar', dir: 'rtl', align: 'right', font: `Tahoma, Arial, sans-serif` };
+  if (lang === 'zh') return { lang: 'zh', dir: 'ltr', align: 'left', body: ZH_STACK, display: ZH_STACK, size: 15, lh: 1.9, track: '1px' };
+  if (lang === 'en') return { lang: 'en', dir: 'ltr', align: 'left', body: EN_STACK, display: EN_STACK, size: 16, lh: 1.75, track: '2px' };
+  return { lang: 'ar', dir: 'rtl', align: 'right', body: AR_STACK, display: AR_STACK, size: 15, lh: 1.95, track: '0' };
 }
 
 function wrap(content, options: any = {}) {
   const locale = localeMeta(options.lang || 'ar');
   const subject = options.subject || 'مَعبر';
 
-  const grStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#b0ab9e;margin:0 0 10px;text-transform:uppercase;';
-  const tgStyle = 'font-family:Georgia,serif;font-size:22px;line-height:1.4;font-weight:700;color:#1a1814;margin:0 0 16px;';
-  const ibStyle = 'background-color:#f5f3ef;border:1px solid #e8e5de;border-radius:10px;padding:16px 18px;margin:0 0 20px;';
-  const ilStyle = 'font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#b0ab9e;margin:0 0 10px;text-transform:uppercase;';
-  const irStyle = 'padding:8px 0;border-bottom:1px solid #e8e5de;font-family:Arial,sans-serif;';
-  const ikStyle = 'display:inline-block;min-width:130px;font-size:12px;color:#6b6560;vertical-align:top;';
-  const ivStyle = 'display:inline-block;font-size:12px;color:#1a1814;font-weight:600;vertical-align:top;';
+  const grStyle = `font-family:${locale.body};font-size:11px;letter-spacing:${locale.track};color:#b0ab9e;margin:0 0 14px;text-transform:uppercase;line-height:1.5;`;
+  const tgStyle = `font-family:${locale.display};font-size:24px;line-height:1.45;font-weight:700;letter-spacing:${locale.track === '0' ? '0' : '0.005em'};color:#1a1814;margin:0 0 22px;`;
+  const ibStyle = 'background-color:#f5f3ef;border:1px solid #e8e5de;border-radius:10px;padding:20px 22px;margin:0 0 24px;';
+  const ilStyle = `font-family:${locale.body};font-size:11px;letter-spacing:${locale.track};color:#b0ab9e;margin:0 0 14px;text-transform:uppercase;line-height:1.5;`;
+  const irStyle = `padding:11px 0;border-bottom:1px solid #e8e5de;font-family:${locale.body};line-height:1.7;`;
+  const ikStyle = 'display:inline-block;min-width:145px;font-size:13px;color:#6b6560;vertical-align:top;padding-inline-end:12px;';
+  const ivStyle = 'display:inline-block;font-size:13px;color:#1a1814;font-weight:600;vertical-align:top;';
   const unsubText = locale.lang === 'zh' ? '取消订阅' : locale.lang === 'en' ? 'Unsubscribe' : 'إلغاء الاشتراك';
-  const bwStyle = `margin-top:24px;text-align:${locale.align};`;
-  const btStyle = 'display:inline-block;background-color:#1a1814;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:600;border-radius:10px;';
+  // Bottom margin matters as much as the top one: several templates place a
+  // paragraph directly after the button with an inline `margin:0`, so with only a
+  // top margin the copy sat flush against the button.
+  const bwStyle = `margin:34px 0 32px;text-align:${locale.align};`;
+  const btStyle = `display:inline-block;background-color:#1a1814;padding:14px 28px;color:#ffffff;text-decoration:none;font-family:${locale.body};font-size:14px;font-weight:600;border-radius:10px;`;
 
+  // Classes are added alongside the inline styles purely as dark-mode hooks for
+  // the @media block below — inline styles still carry the actual design, so
+  // clients that strip <style> are unaffected.
   const rendered = content
     .replace(/<div class="bd">/g, `<div style="direction:${locale.dir};text-align:${locale.align};">`)
-    .replace(/<p class="gr">/g, `<p style="${grStyle}">`)
-    .replace(/<p class="tg">/g, `<p style="${tgStyle}">`)
-    .replace(/<div class="ib">/g, `<div style="${ibStyle}">`)
-    .replace(/<p class="il">/g, `<p style="${ilStyle}">`)
-    .replace(/<div class="ir">/g, `<div style="${irStyle}">`)
-    .replace(/<span class="ik">/g, `<span style="${ikStyle}">`)
-    .replace(/<span class="iv">/g, `<span style="${ivStyle}">`)
+    .replace(/<p class="gr">/g, `<p class="m-muted" style="${grStyle}">`)
+    .replace(/<p class="tg">/g, `<p class="m-ink" style="${tgStyle}">`)
+    .replace(/<div class="ib">/g, `<div class="m-panel" style="${ibStyle}">`)
+    .replace(/<p class="il">/g, `<p class="m-muted" style="${ilStyle}">`)
+    .replace(/<div class="ir">/g, `<div class="m-row" style="${irStyle}">`)
+    .replace(/<span class="ik">/g, `<span class="m-sec" style="${ikStyle}">`)
+    .replace(/<span class="iv">/g, `<span class="m-ink" style="${ivStyle}">`)
     .replace(/<div class="bw">/g, `<div style="${bwStyle}">`)
-    .replace(/class="bt"/g, `style="${btStyle}"`);
+    .replace(/class="bt"/g, `class="m-btn" style="${btStyle}"`);
+
+  // Preheader: the snippet the inbox shows beside the subject. Left unset it
+  // scrapes whatever text happens to come first in the body. Passed in per email
+  // type via options.preheader; falls back to the subject rather than inventing
+  // one. Omitted entirely when there is nothing meaningful to say, so we never
+  // ship an empty grey line.
+  const rawPre = (options.preheader || (options.subject ? subject : '') || '').toString().trim();
+  const preText = rawPre
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  // Zero-width padding stops the body copy bleeding into the preview after the
+  // preheader ends.
+  const prePad = '&#847;&zwnj;&nbsp;'.repeat(60);
+  const preheaderBlock = preText
+    ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;color:#faf9f7;">${preText}${prePad}</div>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="${locale.lang}" dir="${locale.dir}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<!-- Declare the palette as light-only. Without this, Apple Mail and Outlook
+     dark mode re-map the cream/ink scheme on their own and the result is
+     unpredictable — usually a muddy inverted card with the ink button washed out. -->
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
 <title>${subject}</title>
+<style>
+${FONT_IMPORT}
+:root { color-scheme: light only; supported-color-schemes: light only; }
+/* Paragraph rhythm. Individual templates hardcode inline margin:0 / line-height:1.8
+   on their <p>, which beats a normal stylesheet rule and is what left copy sitting
+   flush against the button and set too tight for the new faces. Overriding here
+   fixes every template at once instead of editing 35 of them; clients that drop
+   <style> simply keep the old inline values. */
+.m-body p { line-height: ${locale.lh} !important; margin-top: 0 !important; margin-bottom: 20px !important; }
+.m-body p:last-child { margin-bottom: 0 !important; }
+/* Clients that force dark anyway: restate the intended colours so the palette
+   survives instead of being auto-inverted. */
+@media (prefers-color-scheme: dark) {
+  .m-page  { background:#f5f3ef !important; }
+  .m-card  { background:#faf9f7 !important; border-color:#e8e5de !important; }
+  .m-ink   { color:#1a1814 !important; }
+  .m-sec   { color:#6b6560 !important; }
+  .m-muted { color:#b0ab9e !important; }
+  .m-panel { background-color:#f5f3ef !important; border-color:#e8e5de !important; }
+  .m-row   { border-color:#e8e5de !important; }
+  .m-rule  { background-color:#e8e5de !important; }
+  .m-btn   { background-color:#1a1814 !important; color:#ffffff !important; }
+  .m-link  { color:#6b6560 !important; }
+}
+/* Outlook.com rewrites classes with these prefixes in dark mode. */
+[data-ogsc] .m-card  { background:#faf9f7 !important; }
+[data-ogsc] .m-ink   { color:#1a1814 !important; }
+[data-ogsc] .m-btn   { background-color:#1a1814 !important; color:#ffffff !important; }
+</style>
 </head>
-<body style="margin:0;padding:0;background:#f5f3ef;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f3ef">
+<body class="m-page" style="margin:0;padding:0;background:#f5f3ef;">
+${preheaderBlock}
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f3ef" class="m-page">
 <tr><td align="center" style="padding:40px 20px;">
-<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#faf9f7" style="border-radius:16px;overflow:hidden;border:1px solid #e8e5de;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#faf9f7" class="m-card" style="border-radius:16px;overflow:hidden;border:1px solid #e8e5de;">
 
 <!-- HEADER -->
 <tr>
-<td bgcolor="#faf9f7" style="padding:32px 40px;text-align:center;border-bottom:1px solid #e8e5de;">
-<img src="https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/Maabar%20logo/maabar-logo.png" alt="MAABAR | مَعبر" width="200" style="display:block;margin:0 auto;max-width:200px;" />
+<td bgcolor="#faf9f7" class="m-card" style="padding:38px 40px 34px;text-align:center;border-bottom:1px solid #e8e5de;">
+<!-- Logo stays an image on purpose. It was briefly rebuilt as live type to match
+     BrandLogo.jsx exactly, but that only holds where the webfonts load: Gmail
+     strips them, so MAABAR fell back to Georgia and مَعبر to a system Arabic face
+     at sizes tuned for the real fonts, and the lockup came apart. A logo has to
+     render identically everywhere, which only a raster can guarantee. -->
+<!-- Served from the app itself rather than the old Supabase bucket, whose path
+     contained a literal space (Maabar%20logo) and depended on that bucket staying
+     public — if it ever stopped being public, every email already in an inbox
+     would lose its logo. Asset is the 4642px master downscaled to 630px (3× the
+     210px display size) with its alpha intact, 101KB → 14KB. -->
+<img src="https://maabar.io/email-logo.png"
+     alt="MAABAR | مَعبر | 迈巴尔" width="210"
+     style="display:block;margin:0 auto;width:210px;max-width:72%;height:auto;border:0;outline:none;text-decoration:none;" />
 </td>
 </tr>
 
 <!-- DIVIDER -->
-<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e5de" height="1"></td></tr></table></td></tr>
+<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e5de" height="1" class="m-rule"></td></tr></table></td></tr>
 
 <!-- CONTENT -->
 <tr>
-<td style="padding:36px 40px;direction:${locale.dir};text-align:${locale.align};font-family:Arial,sans-serif;font-size:14px;color:#1a1814;line-height:1.8;background:#faf9f7;">
+<td class="m-card m-ink m-body" style="padding:40px 44px;direction:${locale.dir};text-align:${locale.align};font-family:${locale.body};font-size:${locale.size}px;color:#1a1814;line-height:${locale.lh};background:#faf9f7;">
 ${rendered}
 </td>
 </tr>
 
 <!-- DIVIDER -->
-<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e5de" height="1"></td></tr></table></td></tr>
+<tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#e8e5de" height="1" class="m-rule"></td></tr></table></td></tr>
 
 <!-- FOOTER -->
 <tr>
-<td bgcolor="#faf9f7" style="padding:24px 40px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:#b0ab9e;">
-<p style="margin:0 0 8px 0;">© 2026 مَعبر · Riyadh, Saudi Arabia</p>
+<td bgcolor="#faf9f7" class="m-card m-muted" style="padding:24px 40px;text-align:center;font-family:${locale.body};font-size:11px;color:#b0ab9e;">
+<p class="m-muted" style="margin:0 0 8px 0;">© 2026 مَعبر · Riyadh, Saudi Arabia</p>
 <p style="margin:0;">
-<a href="https://maabar.io" style="color:#6b6560;text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
-<a href="mailto:info@maabar.io" style="color:#6b6560;text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
-<a href="https://maabar.io/unsubscribe" style="color:#b0ab9e;text-decoration:none;">${unsubText}</a>
+<a href="https://maabar.io" class="m-link" style="color:#6b6560;text-decoration:none;">maabar.io</a> &nbsp;·&nbsp;
+<a href="mailto:info@maabar.io" class="m-link" style="color:#6b6560;text-decoration:none;">info@maabar.io</a> &nbsp;·&nbsp;
+<a href="https://maabar.io/unsubscribe" class="m-muted" style="color:#b0ab9e;text-decoration:none;">${unsubText}</a>
 </p>
 </td>
 </tr>
