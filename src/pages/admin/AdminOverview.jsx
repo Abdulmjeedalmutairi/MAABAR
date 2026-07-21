@@ -102,7 +102,50 @@ export default function AdminOverview({ user, profile, lang, ...rest }) {
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
       <AdminShell user={user} profile={profile} lang={lang}>
         <style>{`
-          .a-overview { padding: 36px 32px; max-width: 1080px; }
+          .a-overview { padding: 0 0 36px; max-width: 1080px; }
+          .ov-body { padding: 0 32px; }
+
+          /* Console header — states "لوحة الإدارة" outright, at display scale.
+             Kept light so it complements the dark sidebar instead of competing. */
+          .ov-hero {
+            position: relative; overflow: hidden;
+            padding: 40px 32px 34px; margin-bottom: 34px;
+            background: linear-gradient(160deg, var(--bg-hero) 0%, var(--bg-page) 62%);
+            border-bottom: 1px solid var(--border);
+          }
+          .ov-hero::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 3px; background: var(--ink);
+          }
+          .ov-hero.ltr::after { left: 0; }
+          .ov-hero.rtl::after { right: 0; }
+          .ov-eyebrow {
+            margin: 0 0 12px; font-size: 10px; font-weight: 600;
+            letter-spacing: 0.32em; text-transform: uppercase;
+            color: var(--text-muted); font-family: var(--font-sans);
+          }
+          .ov-title { margin: 0; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+          .ov-title-ar {
+            font-family: var(--font-ar); font-size: 40px; font-weight: 700;
+            color: var(--ink); line-height: 1.05; letter-spacing: -0.01em;
+          }
+          .ov-title-en {
+            font-family: var(--font-sans); font-size: 15px; font-weight: 500;
+            letter-spacing: 0.26em; text-transform: uppercase; color: var(--text-secondary);
+          }
+          .ov-rule { width: 46px; height: 2px; background: var(--ink); margin: 18px 0 14px; opacity: 0.85; }
+          .ov-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+          .ov-welcome { margin: 0; font-size: 14px; color: var(--text-secondary); }
+          .ov-role {
+            font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+            color: var(--on-dark); background: var(--ink); padding: 3px 9px; border-radius: 4px;
+            font-family: var(--font-sans);
+          }
+          @media (max-width: 900px) {
+            .ov-hero { padding: 28px 18px 24px; margin-bottom: 24px; }
+            .ov-title-ar { font-size: 30px; }
+            .ov-title-en { font-size: 12px; letter-spacing: 0.2em; }
+            .ov-body { padding: 0 18px; }
+          }
           .a-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
           .a-quick-links { display: flex; gap: 8px; flex-wrap: wrap; }
           .a-quick-btn {
@@ -127,14 +170,25 @@ export default function AdminOverview({ user, profile, lang, ...rest }) {
         `}</style>
 
         <div className="a-overview" dir={isAr ? 'rtl' : 'ltr'}>
-          {/* Page header */}
-          <p style={{ margin: '0 0 4px', fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'rgba(0,0,0,0.28)', fontFamily: FONT_BODY }}>
-            MAABAR ADMIN
-          </p>
-          <h1 style={{ margin: '0 0 28px', fontSize: 28, fontWeight: 400, color: 'rgba(0,0,0,0.88)', fontFamily: FONT_HEADING, lineHeight: 1.1 }}>
-            {isAr ? `مرحباً، ${profile?.full_name?.split(' ')[0] || ''}` : `Welcome back, ${profile?.full_name?.split(' ')[0] || 'Admin'}`}
-          </h1>
+          {/* Console header */}
+          <header className={`ov-hero ${isAr ? 'rtl' : 'ltr'}`}>
+            <p className="ov-eyebrow">MAABAR · معبر</p>
+            <h1 className="ov-title">
+              <span className="ov-title-ar">لوحة الإدارة</span>
+              <span className="ov-title-en">Admin Console</span>
+            </h1>
+            <div className="ov-rule" />
+            <div className="ov-meta">
+              <p className="ov-welcome" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr
+                  ? `مرحباً، ${profile?.full_name?.split(' ')[0] || ''}`
+                  : `Welcome back, ${profile?.full_name?.split(' ')[0] || 'Admin'}`}
+              </p>
+              {profile?.role && <span className="ov-role">{profile.role.replace('_', ' ')}</span>}
+            </div>
+          </header>
 
+          <div className="ov-body">
           {/* Suppliers section */}
           <SectionTitle>{isAr ? 'الموردون' : 'Suppliers'}</SectionTitle>
           <div className="a-kpi-grid">
@@ -159,7 +213,7 @@ export default function AdminOverview({ user, profile, lang, ...rest }) {
               sub={isAr ? 'موثّقون ومعتمدون' : 'Verified & approved'}
               accentColor={kpis?.activeSuppliers > 0 ? '#27725a' : undefined}
               loading={loading}
-              onClick={() => nav('/admin/suppliers?tab=active')}
+              onClick={() => nav('/admin/suppliers?tab=verified')}
             />
             <KPITile
               label={isAr ? 'التجار' : 'Traders'}
@@ -224,6 +278,7 @@ export default function AdminOverview({ user, profile, lang, ...rest }) {
             <button className="a-quick-btn" onClick={() => nav('/admin/suppliers')}>
               {isAr ? 'كل الموردين' : 'All Suppliers'}
             </button>
+          </div>
           </div>
         </div>
       </AdminShell>
