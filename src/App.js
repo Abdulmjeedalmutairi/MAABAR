@@ -452,6 +452,20 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Record that this session came from the web, so emails can link to the website
+  // rather than the app for this user. Deliberately its own effect keyed on the
+  // user id: the auth effect above has five early returns and a comment warning
+  // that touching it tears down the Router tree, and this covers every path into a
+  // session (initial load, sign-in, cross-tab) without going near that logic.
+  // touch_last_platform() skips redundant writes, so firing on every mount is cheap,
+  // and a failure here must never surface to the user.
+  useEffect(() => {
+    if (!user?.id) return;
+    sb.rpc('touch_last_platform', { p_platform: 'web' }).then(({ error }) => {
+      if (error) console.warn('[last_platform] not recorded:', error.message);
+    });
+  }, [user?.id]);
+
   useEffect(() => {
     if (profile?.preferred_display_currency) {
       setDisplayCurrency(normalizeDisplayCurrency(profile.preferred_display_currency));
