@@ -61,7 +61,8 @@
       "Bash(xargs cat *)",
       "Bash(npx --no-install babel-node --presets=@babel/preset-env,@babel/preset-react --eval \"require\\('./src/screens/buyer/ManagedRequestScreen.js'\\)\")",
       "Bash(\"C:/Users/Mje_0/maabar-app/node_modules/.bin/esparse.cmd\" --jsx \"C:/Users/Mje_0/maabar-app/src/screens/buyer/ManagedRequestScreen.js\")",
-      "Bash(\"C:/Users/Mje_0/maabar-app/node_modules/.bin/esparse.cmd\" --help)"
+      "Bash(\"C:/Users/Mje_0/maabar-app/node_modules/.bin/esparse.cmd\" --help)",
+      "mcp__Claude_Code_Remote__list_repos"
     ]
   }
 }
