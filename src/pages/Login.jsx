@@ -549,18 +549,26 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           }).select().single();
 
           if (profileError) {
-            if (profileError.code === '23505' || profileError.status === 403) {
-              // 23505 (unique violation) and 403 (RLS-denied insert pre-confirmation)
-              // both mean the on_auth_user_created trigger already created the profile
-              // from raw_user_meta_data. We can't SELECT to verify without an active
-              // session (RLS denies anonymous reads), so trust the trigger contract.
-              console.info('[doSignUp] profile created by trigger:', profileError.code || profileError.status);
-            } else {
-              console.error('[doSignUp] profile insert failed:', JSON.stringify(profileError));
-              setMsg(isAr ? 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.' : 'Account creation failed. Please try again.');
-              setMsgType('error');
-              return;
-            }
+            // The profile is created server-side by the on_auth_user_created
+            // trigger from raw_user_meta_data (verified: role + every supplier
+            // field lands correctly). This client insert is ONLY a best-effort
+            // fallback for the case where that trigger did not run.
+            //
+            // Sign-up requires email confirmation, so there is NO session here.
+            // Without a session the row already exists (from the trigger) and RLS
+            // denies this redundant path, so profileError is one of:
+            //   · 23505    unique violation (dup id)
+            //   · 42501    RLS insufficient_privilege (no session → insert denied)
+            //   · PGRST116 insert reached the row but the return=representation
+            //              SELECT is RLS-filtered and .single() gets zero rows
+            // NONE of these mean signup failed, and we cannot read the row back to
+            // verify anyway. The previous code only recognised 23505 and a
+            // non-existent `profileError.status === 403` (supabase-js v2 errors
+            // carry `.code`, not `.status`), so a plain RLS denial (42501) fell
+            // through to a hard "Account creation failed" — rejecting users whose
+            // account had in fact been created in full, which blocked every new
+            // supplier. This fallback is now non-fatal: log and continue.
+            console.info('[doSignUp] fallback profile insert not applied (trigger is authoritative):', profileError.code || profileError.message);
           }
         }
 
