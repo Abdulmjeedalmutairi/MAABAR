@@ -2,6 +2,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_URL } from '../supabase';
+import { uploadWithProgress } from '../lib/uploadWithProgress';
 import Footer from '../components/Footer';
 import ManagedSupplierMatchesPanel from '../components/ManagedSupplierMatchesPanel';
 import { getManagedMatchGroup, isManagedRequest } from '../lib/managedSourcing';
@@ -263,6 +264,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [verificationSaved, setVerificationSaved] = useState(false);
   const [verificationMsg, setVerificationMsg] = useState('');
   const [uploadingVerificationDoc, setUploadingVerificationDoc] = useState({ license: false, images: false, videos: false });
+  // Live upload percentage per media key (e.g. { videos: 42 }); null/absent = idle.
+  const [verificationUploadPct, setVerificationUploadPct] = useState({});
   const [verificationStep, setVerificationStep] = useState(1);
   const [draftSavedAt, setDraftSavedAt] = useState('');
   const [savingPayout, setSavingPayout] = useState(false);
@@ -894,9 +897,12 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     const acceptedFiles = files.slice(0, remainingSlots);
     const stateKey = isVideo ? 'videos' : 'images';
     setUploadingVerificationDoc(prev => ({ ...prev, [stateKey]: true }));
+    setVerificationUploadPct(prev => ({ ...prev, [stateKey]: 0 }));
 
     const uploadedPaths = [];
-    for (const file of acceptedFiles) {
+    const totalFiles = acceptedFiles.length;
+    for (let idx = 0; idx < acceptedFiles.length; idx++) {
+      const file = acceptedFiles[idx];
       if (isVideo && file.size > VERIFICATION_VIDEO_MAX_BYTES) {
         alert(t.maxVideo);
         continue;
@@ -904,11 +910,21 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
       const extension = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg');
       const path = `${user.id}/verification_${isVideo ? 'video' : 'image'}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
-      const { error } = await sb.storage.from('supplier-docs').upload(path, file, { upsert: true });
+      // Byte-level progress via XHR (fetch, which supabase-js .upload() uses,
+      // reports none). For multi-file image batches the bar spans the whole set:
+      // files already done + the fraction of the one in flight.
+      const { error } = await uploadWithProgress('supplier-docs', path, file, {
+        upsert: true,
+        onProgress: (pct) => setVerificationUploadPct(prev => ({
+          ...prev,
+          [stateKey]: Math.round(((idx + pct / 100) / totalFiles) * 100),
+        })),
+      });
       if (!error) uploadedPaths.push(path);
     }
 
     setUploadingVerificationDoc(prev => ({ ...prev, [stateKey]: false }));
+    setVerificationUploadPct(prev => ({ ...prev, [stateKey]: null }));
 
     if (!uploadedPaths.length) {
       alert(isAr ? 'فشل رفع الملفات المحددة' : lang === 'zh' ? '所选文件上传失败' : 'Failed to upload the selected files');
@@ -4721,7 +4737,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                           ) : (
                             <label style={{ display: 'block', border: `1px solid ${VF_C.ink10}`, borderRadius: 'var(--radius-panel)', padding: '26px 20px', textAlign: 'center', cursor: 'pointer', background: VF_C.paper }}>
                               {uploadingVerificationDoc.images
-                                ? <p style={{ fontSize: 13, color: VF_C.ink30, fontFamily: 'var(--font-ar)' }}>...</p>
+                                ? <>
+                                    <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 8 }}>
+                                      {isAr ? `جاري رفع الصور… ${verificationUploadPct.images ?? 0}%` : lang === 'zh' ? `正在上传图片… ${verificationUploadPct.images ?? 0}%` : `Uploading photos… ${verificationUploadPct.images ?? 0}%`}
+                                    </p>
+                                    <div style={{ height: 6, borderRadius: 999, background: VF_C.ink10, overflow: 'hidden', maxWidth: 240, margin: '0 auto' }}>
+                                      <div style={{ width: `${verificationUploadPct.images ?? 0}%`, height: '100%', background: VF_C.sage, borderRadius: 999, transition: 'width 0.2s ease' }} />
+                                    </div>
+                                  </>
                                 : <>
                                     <p style={{ fontSize: 14, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, marginBottom: 4 }}>
                                       {isAr ? 'صور المصنع أو المستودع' : lang === 'zh' ? '工厂或仓库照片' : 'Factory or warehouse photos'}
@@ -4753,19 +4776,40 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                               </button>
                             </div>
                           ) : (
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 'var(--radius-panel)', border: `1px dashed ${VF_C.ink10}`, background: VF_C.paper, cursor: 'pointer' }}>
-                              <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-control)', background: VF_C.ink05, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill={VF_C.ink30} /></svg>
-                              </div>
-                              <div>
-                                <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400 }}>
-                                  {isAr ? 'رفع فيديو' : lang === 'zh' ? '上传视频' : 'Upload video'}
-                                </p>
-                                <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, marginTop: 2 }}>
-                                  {isAr ? 'جولة في المصنع · MP4 · حتى 50MB' : lang === 'zh' ? '工厂参观视频 · MP4 · 最大 50MB' : 'Factory tour · MP4 · Max 50MB'}
-                                </p>
-                              </div>
-                              <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async e => { await uploadVerificationMedia(e.target.files, 'video'); e.target.value = ''; }} />
+                            <label style={{ display: 'block', padding: '14px 18px', borderRadius: 'var(--radius-panel)', border: `1px dashed ${VF_C.ink10}`, background: VF_C.paper, cursor: uploadingVerificationDoc.videos ? 'default' : 'pointer' }}>
+                              {uploadingVerificationDoc.videos ? (
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400, margin: 0 }}>
+                                      {isAr ? 'جاري رفع الفيديو…' : lang === 'zh' ? '正在上传视频…' : 'Uploading video…'}
+                                    </p>
+                                    <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 600, margin: 0 }} dir="ltr">
+                                      {verificationUploadPct.videos ?? 0}%
+                                    </p>
+                                  </div>
+                                  <div style={{ height: 6, borderRadius: 999, background: VF_C.ink10, overflow: 'hidden' }}>
+                                    <div style={{ width: `${verificationUploadPct.videos ?? 0}%`, height: '100%', background: VF_C.sage, borderRadius: 999, transition: 'width 0.2s ease' }} />
+                                  </div>
+                                  <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, marginTop: 8, marginBottom: 0 }}>
+                                    {isAr ? 'لا تغلق الصفحة حتى يكتمل الرفع.' : lang === 'zh' ? '上传完成前请勿关闭页面。' : 'Keep this page open until the upload completes.'}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                  <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-control)', background: VF_C.ink05, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill={VF_C.ink30} /></svg>
+                                  </div>
+                                  <div>
+                                    <p style={{ fontSize: 13, color: VF_C.ink60, fontFamily: 'var(--font-ar)', fontWeight: 400 }}>
+                                      {isAr ? 'رفع فيديو' : lang === 'zh' ? '上传视频' : 'Upload video'}
+                                    </p>
+                                    <p style={{ fontSize: 11, color: VF_C.ink30, fontFamily: 'var(--font-ar)', fontWeight: 300, marginTop: 2 }}>
+                                      {isAr ? 'جولة في المصنع · MP4 · حتى 200MB' : lang === 'zh' ? '工厂参观视频 · MP4 · 最大 200MB' : 'Factory tour · MP4 · Max 200MB'}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              <input type="file" accept="video/*" disabled={uploadingVerificationDoc.videos} style={{ display: 'none' }} onChange={async e => { await uploadVerificationMedia(e.target.files, 'video'); e.target.value = ''; }} />
                             </label>
                           )}
                         </div>
