@@ -1066,6 +1066,16 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 {getErrorText('pass')}
               </div>
 
+              {phoneIdentity && mode === 'signin' && (
+                <p style={{ ...helperTextStyle, marginTop: -6, marginBottom: 16 }}>
+                  {isAr
+                    ? 'نسيت كلمة المرور؟ تواصل مع الدعم لإعادة تعيينها (لا استعادة عبر رسالة حاليًا).'
+                    : effectiveLang === 'zh'
+                      ? '忘记密码？请联系客服重置（暂不支持短信找回）。'
+                      : 'Forgot your password? Contact support to reset it (no SMS reset yet).'}
+                </p>
+              )}
+
               {!isSupplier && mode === 'signup' && (
                 <>
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16, marginTop: 8, fontWeight: 500 }}>
