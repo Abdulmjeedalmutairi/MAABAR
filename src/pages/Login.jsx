@@ -299,6 +299,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [supPhone, setSupPhone] = useState('');
   const [supPhoneValid, setSupPhoneValid] = useState(false);
 
+  // Signup is a 3-step wizard (1: account, 2: details, 3: review). Account
+  // creation still happens only on the final step — this state just gates which
+  // group of fields renders. Sign-in ignores it entirely.
+  const [step, setStep] = useState(1);
+
   const [supCompany, setSupCompany] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [wechat, setWechat] = useState('');
@@ -311,6 +316,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   useEffect(() => {
     setMode(getInitialMode());
+    setStep(1);
   }, [isSupplier, searchParams]);
 
   useEffect(() => {
@@ -367,6 +373,36 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   // (optional email, review note) stay gated on isSupplierSignup.
   const supplierAuth = isSupplier && (mode === 'signup' || mode === 'signin');
   const phoneIdentity = supplierAuth && signupMethod === 'phone';
+
+  // ── Signup wizard: step titles + per-step validation ────────────────────────
+  const wizardStepTitles = [
+    isAr ? 'الحساب' : effectiveLang === 'zh' ? '账户' : 'Account',
+    isSupplier
+      ? (isAr ? 'بيانات الشركة' : effectiveLang === 'zh' ? '公司资料' : 'Company')
+      : (isAr ? 'بياناتك' : effectiveLang === 'zh' ? '您的资料' : 'Your details'),
+    isAr ? 'المراجعة' : effectiveLang === 'zh' ? '确认' : 'Review',
+  ];
+
+  const stepFieldKeys = (n) => {
+    if (n === 1) return [phoneIdentity ? 'supPhone' : 'email', 'pass'];
+    if (n === 2) return isSupplier
+      ? ['supCompany', 'country', 'supCity', 'speciality']
+      : ['firstName', 'lastName', 'phone', 'city'];
+    return ['terms'];
+  };
+  const stepHasErrors = (n) => stepFieldKeys(n).some((k) => validationErrors[k]);
+
+  const goNextStep = () => {
+    if (stepHasErrors(step)) { setShowValidation(true); return; }
+    setShowValidation(false);
+    setStep((s) => Math.min(3, s + 1));
+  };
+  const goPrevStep = () => { setShowValidation(false); setStep((s) => Math.max(1, s - 1)); };
+
+  // Sign-in shows everything at once (the wizard is a signup-only concern).
+  const showAccountStep = mode === 'signin' || (mode === 'signup' && step === 1);
+  const showDetailsStep = mode === 'signup' && step === 2;
+  const showReviewStep = mode === 'signup' && step === 3;
 
   const requiredAsterisk = <span style={{ color: '#d66b6b' }}> *</span>;
 
@@ -745,6 +781,37 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
   };
 
+  const primaryBtnStyle = {
+    width: '100%',
+    background: '#1a1a1a',
+    color: '#ffffff',
+    border: 'none',
+    padding: '14px',
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: loading ? 'not-allowed' : 'pointer',
+    marginTop: 8,
+    borderRadius: 'var(--radius-md)',
+    transition: 'all 0.2s',
+    opacity: loading ? 0.5 : 1,
+    letterSpacing: 0.3,
+    minHeight: 48,
+    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+  };
+  const secondaryBtnStyle = {
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)',
+    padding: '14px 20px',
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: loading ? 'not-allowed' : 'pointer',
+    marginTop: 8,
+    borderRadius: 'var(--radius-md)',
+    minHeight: 48,
+    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+  };
+
   const termsSections = SECTIONS[effectiveLang] || SECTIONS.ar;
   const termsDir = isAr ? 'rtl' : 'ltr';
   const termsFont = isAr ? 'var(--font-ar)' : 'var(--font-sans)';
@@ -961,7 +1028,36 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
           {!isSupplier || msgType !== 'success' ? (
             <>
-              {supplierAuth && (
+              {mode === 'signup' && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                    {[1, 2, 3].map((n) => (
+                      <div key={n} style={{
+                        flex: 1,
+                        height: 3,
+                        borderRadius: 999,
+                        background: n <= step ? 'var(--text-primary)' : 'var(--border-default)',
+                        transition: 'background 0.2s',
+                      }} />
+                    ))}
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                  }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {wizardStepTitles[step - 1]}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 1 }}>
+                      {isAr ? `خطوة ${step} من 3` : effectiveLang === 'zh' ? `第 ${step}/3 步` : `Step ${step} of 3`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {supplierAuth && showAccountStep && (
                 <div style={{ ...fieldStyle, display: 'flex', gap: 8 }}>
                   {[
                     ['phone', isAr ? 'رقم الجوال' : effectiveLang === 'zh' ? '手机号' : 'Phone'],
@@ -990,7 +1086,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </div>
               )}
 
-              {phoneIdentity ? (
+              {showAccountStep && (phoneIdentity ? (
                 <>
                   <div style={fieldStyle}>
                     <label style={labelStyle}>
@@ -1050,8 +1146,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                   />
                   {getErrorText('email')}
                 </div>
-              )}
+              ))}
 
+              {showAccountStep && (
               <div style={fieldStyle}>
                 <label style={labelStyle}>{l.pass}{requiredAsterisk}</label>
                 <input
@@ -1065,6 +1162,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 />
                 {getErrorText('pass')}
               </div>
+              )}
 
               {phoneIdentity && mode === 'signin' && (
                 <p style={{ ...helperTextStyle, marginTop: -6, marginBottom: 16 }}>
@@ -1076,7 +1174,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </p>
               )}
 
-              {!isSupplier && mode === 'signup' && (
+              {!isSupplier && showDetailsStep && (
                 <>
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16, marginTop: 8, fontWeight: 500 }}>
                     {l.buyerInfo}
@@ -1115,7 +1213,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </>
               )}
 
-              {isSupplier && mode === 'signup' && (
+              {isSupplier && showDetailsStep && (
                 <>
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, marginTop: 8, fontWeight: 500 }}>
                     {l.supInfo}
@@ -1161,7 +1259,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     </select>
                     {getErrorText('speciality')}
                   </div>
+                </>
+              )}
 
+              {isSupplier && showReviewStep && (
+                <>
                   <div style={fieldStyle}>
                     <label style={labelStyle}>{l.tradeLink}</label>
                     <textarea
@@ -1219,7 +1321,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </>
               )}
 
-              {mode === 'signup' && (
+              {showReviewStep && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{
                     display: 'flex',
@@ -1257,33 +1359,30 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </div>
               )}
 
-              <button
-                onClick={mode === 'signin' ? doSignIn : doSignUp}
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  background: '#1a1a1a',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '14px',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  marginTop: 8,
-                  borderRadius: 'var(--radius-md)',
-                  transition: 'all 0.2s',
-                  opacity: loading ? 0.5 : 1,
-                  letterSpacing: 0.3,
-                  minHeight: 48,
-                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                }}
-              >
-                {loading ? '...' : mode === 'signin'
-                  ? l.signin
-                  : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
-              </button>
+              {mode === 'signin' ? (
+                <button onClick={doSignIn} disabled={loading} style={primaryBtnStyle}>
+                  {loading ? '...' : l.signin}
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {step > 1 && (
+                    <button type="button" onClick={goPrevStep} disabled={loading} style={secondaryBtnStyle}>
+                      {isAr ? 'رجوع' : effectiveLang === 'zh' ? '上一步' : 'Back'}
+                    </button>
+                  )}
+                  {step < 3 ? (
+                    <button type="button" onClick={goNextStep} style={{ ...primaryBtnStyle, flex: 1 }}>
+                      {isAr ? 'التالي' : effectiveLang === 'zh' ? '下一步' : 'Next'}
+                    </button>
+                  ) : (
+                    <button onClick={doSignUp} disabled={loading} style={{ ...primaryBtnStyle, flex: 1 }}>
+                      {loading ? '...' : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
+                    </button>
+                  )}
+                </div>
+              )}
 
-              {!isSupplier && (
+              {!isSupplier && showAccountStep && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
@@ -1346,6 +1445,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 <button
                   onClick={() => {
                     setMode(mode === 'signin' ? 'signup' : 'signin');
+                    setStep(1);
                     setMsg('');
                     setMsgType('');
                     setSubmittedEmail('');
