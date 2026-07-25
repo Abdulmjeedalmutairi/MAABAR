@@ -231,10 +231,10 @@ function buildFieldErrorMap({
 }) {
   const errors = {};
 
-  // Supplier phone-identity signup: the phone replaces email as the required
-  // identifier and email becomes optional. Every other case still needs email.
-  const supplierPhoneSignup = isSupplier && mode === 'signup' && signupMethod === 'phone';
-  if (supplierPhoneSignup) {
+  // Phone-identity signup (supplier OR buyer): the phone replaces email as the
+  // required identifier and email becomes optional. Every other case needs email.
+  const phoneSignup = mode === 'signup' && signupMethod === 'phone';
+  if (phoneSignup) {
     if (!values.phoneValid) errors.supPhone = langPack.requiredField;
   } else if (!trimValue(values.email)) {
     errors.email = langPack.requiredField;
@@ -251,7 +251,9 @@ function buildFieldErrorMap({
   } else {
     if (!trimValue(values.firstName)) errors.firstName = langPack.requiredField;
     if (!trimValue(values.lastName)) errors.lastName = langPack.requiredField;
-    if (!trimValue(values.phone)) errors.phone = langPack.requiredField;
+    // When the buyer registers by phone, supPhone IS the phone — the separate
+    // profile phone field is hidden, so don't require it here.
+    if (!phoneSignup && !trimValue(values.phone)) errors.phone = langPack.requiredField;
     if (!trimValue(values.city)) errors.city = langPack.requiredField;
   }
 
@@ -293,9 +295,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [city, setCity] = useState('');
   const [companyName, setCompanyName] = useState('');
 
-  // Supplier signup identifier: 'phone' (default — most Chinese suppliers have no
-  // email) or 'email'. supPhone holds the canonical E.164 from PhoneField.
-  const [signupMethod, setSignupMethod] = useState('phone');
+  // Signup identifier method: 'phone' or 'email'. Default is role-aware —
+  // suppliers to phone (most Chinese suppliers have no email), buyers to email —
+  // and the toggle lets either switch. supPhone holds the canonical E.164.
+  const [signupMethod, setSignupMethod] = useState(isSupplier ? 'phone' : 'email');
   const [supPhone, setSupPhone] = useState('');
   const [supPhoneValid, setSupPhoneValid] = useState(false);
 
@@ -371,8 +374,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   // The phone/email toggle and phone identifier apply to supplier sign-IN too, so
   // a phone-registered supplier can authenticate; only the signup-only extras
   // (optional email, review note) stay gated on isSupplierSignup.
-  const supplierAuth = isSupplier && (mode === 'signup' || mode === 'signin');
-  const phoneIdentity = supplierAuth && signupMethod === 'phone';
+  // Phone-identity now applies to buyers too, not just suppliers.
+  const authMode = mode === 'signup' || mode === 'signin';
+  const phoneIdentity = authMode && signupMethod === 'phone';
 
   // ── Signup wizard: step titles + per-step validation ────────────────────────
   const wizardStepTitles = [
@@ -387,7 +391,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     if (n === 1) return [phoneIdentity ? 'supPhone' : 'email', 'pass'];
     if (n === 2) return isSupplier
       ? ['supCompany', 'country', 'supCity', 'speciality']
-      : ['firstName', 'lastName', 'phone', 'city'];
+      : phoneIdentity
+        ? ['firstName', 'lastName', 'city']
+        : ['firstName', 'lastName', 'phone', 'city'];
     return ['terms'];
   };
   const stepHasErrors = (n) => stepFieldKeys(n).some((k) => validationErrors[k]);
@@ -447,9 +453,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   };
 
   const doSignIn = async () => {
-    // Phone-registered suppliers authenticate with phone + password; everyone else
-    // with email + password.
-    const usePhone = isSupplier && signupMethod === 'phone';
+    // Phone-registered users (supplier or buyer) authenticate with phone +
+    // password; everyone else with email + password.
+    const usePhone = signupMethod === 'phone';
     if ((usePhone ? !supPhoneValid : !trimValue(email)) || !trimValue(pass)) {
       setShowValidation(true);
       setMsg(l.fillRequired);
@@ -561,17 +567,19 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     setLoading(true);
 
-    // Supplier registering by phone: the phone is the auth identifier and email
-    // is optional. handle_new_user copies supplier fields (incl. phone) from this
-    // metadata, so pass the canonical E.164 through it.
-    const usePhone = isSupplier && signupMethod === 'phone';
+    // Registering by phone (supplier OR buyer): the phone is the auth identifier
+    // and email is optional. handle_new_user copies these fields (incl. phone)
+    // from the metadata, so pass the canonical E.164 through it. Keys are
+    // unchanged from the email flow — only phone's value source differs.
+    const usePhone = signupMethod === 'phone';
 
     const metaData = {
       role,
       status: isSupplier ? 'registered' : 'active',
       ...(!isSupplier && {
         full_name: `${trimValue(firstName)} ${trimValue(lastName)}`.trim(),
-        phone: trimValue(phone),
+        // Phone-method buyers have no separate phone field — supPhone IS the phone.
+        phone: usePhone ? supPhone : trimValue(phone),
         city: trimValue(city),
         company_name: trimValue(companyName),
       }),
@@ -618,9 +626,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       return;
     }
 
-    // Phone supplier: session is already live and the phone is confirmed, so there
-    // is no email-confirmation step — persist an optional email if given, then take
-    // them straight in like a successful sign-in.
+    // Phone signup (supplier or buyer): session is already live and the phone is
+    // confirmed, so there is no email-confirmation step — persist an optional email
+    // if given, then take them straight in like a successful sign-in.
     if (usePhone) {
       try {
         if (data?.user?.id) {
@@ -637,14 +645,14 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             .single();
           if (prof) {
             setProfile(prof);
-            nav(getSupplierPrimaryRoute(prof, data.user));
+            nav(isSupplier ? getSupplierPrimaryRoute(prof, data.user) : '/dashboard');
             return;
           }
         }
       } catch (phoneFlowError) {
         console.error('[doSignUp] phone post-signup:', phoneFlowError);
       }
-      nav('/dashboard/supplier');
+      nav(isSupplier ? '/dashboard/supplier' : '/dashboard');
       return;
     }
 
@@ -1057,7 +1065,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </div>
               )}
 
-              {supplierAuth && showAccountStep && (
+              {authMode && showAccountStep && (
                 <div style={{ ...fieldStyle, display: 'flex', gap: 8 }}>
                   {[
                     ['phone', isAr ? 'رقم الجوال' : effectiveLang === 'zh' ? '手机号' : 'Phone'],
@@ -1112,7 +1120,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                       </p>
                     )}
                   </div>
-                  {isSupplierSignup && (
+                  {mode === 'signup' && (
                     <div style={fieldStyle}>
                       <label style={labelStyle}>
                         {l.email}{' '}
@@ -1192,11 +1200,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 14 }}>
-                    <div style={{ ...fieldStyle, flex: 1 }}>
-                      <label style={labelStyle}>{l.phone}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5x xxx xxxx" dir="ltr" />
-                      {getErrorText('phone')}
-                    </div>
+                    {!phoneIdentity && (
+                      <div style={{ ...fieldStyle, flex: 1 }}>
+                        <label style={labelStyle}>{l.phone}{requiredAsterisk}</label>
+                        <input style={getFieldInputStyle('phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5x xxx xxxx" dir="ltr" />
+                        {getErrorText('phone')}
+                      </div>
+                    )}
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.city}{requiredAsterisk}</label>
                       <select style={{ ...getFieldInputStyle('city'), cursor: 'pointer' }} value={city} onChange={(e) => setCity(e.target.value)}>
