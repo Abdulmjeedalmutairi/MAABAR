@@ -362,7 +362,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   ]);
 
   const isSupplierSignup = isSupplier && mode === 'signup';
-  const phoneIdentity = isSupplierSignup && signupMethod === 'phone';
+  // The phone/email toggle and phone identifier apply to supplier sign-IN too, so
+  // a phone-registered supplier can authenticate; only the signup-only extras
+  // (optional email, review note) stay gated on isSupplierSignup.
+  const supplierAuth = isSupplier && (mode === 'signup' || mode === 'signin');
+  const phoneIdentity = supplierAuth && signupMethod === 'phone';
 
   const requiredAsterisk = <span style={{ color: '#d66b6b' }}> *</span>;
 
@@ -407,7 +411,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   };
 
   const doSignIn = async () => {
-    if (!trimValue(email) || !trimValue(pass)) {
+    // Phone-registered suppliers authenticate with phone + password; everyone else
+    // with email + password.
+    const usePhone = isSupplier && signupMethod === 'phone';
+    if ((usePhone ? !supPhoneValid : !trimValue(email)) || !trimValue(pass)) {
       setShowValidation(true);
       setMsg(l.fillRequired);
       setMsgType('error');
@@ -419,7 +426,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     // user+profile and navigates itself), so the global SIGNED_IN reset doesn't
     // wipe that mid-flight and leave the user stuck on the form.
     window._passwordLoginTs = Date.now();
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    const { data, error } = usePhone
+      ? await sb.auth.signInWithPassword({ phone: supPhone, password: pass })
+      : await sb.auth.signInWithPassword({ email, password: pass });
     setLoading(false);
 
     if (error) {
@@ -436,7 +445,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       return;
     }
 
-    if (isSupplier && !data.user?.email_confirmed_at) {
+    // Phone suppliers have no email_confirmed_at — they are confirmed via
+    // phone_confirmed_at (set at signup, confirmations off). Accept either, else a
+    // phone-registered supplier could never sign in.
+    const identityConfirmed = data.user?.email_confirmed_at || data.user?.phone_confirmed_at;
+    if (isSupplier && !usePhone && !identityConfirmed) {
       await sb.auth.signOut();
       setSubmittedEmail(trimValue(email));
       setMsg(l.emailNotConfirmed);
@@ -948,7 +961,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
           {!isSupplier || msgType !== 'success' ? (
             <>
-              {isSupplierSignup && (
+              {supplierAuth && (
                 <div style={{ ...fieldStyle, display: 'flex', gap: 8 }}>
                   {[
                     ['phone', isAr ? 'رقم الجوال' : effectiveLang === 'zh' ? '手机号' : 'Phone'],
@@ -993,31 +1006,35 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                       invalid={showValidation && !!validationErrors.supPhone}
                     />
                     {getErrorText('supPhone')}
-                    <p style={helperTextStyle}>
-                      {isAr
-                        ? 'سنتواصل معك على هذا الرقم. لا يلزم كود تحقق الآن — تُراجَع هويتك يدويًا لاحقًا.'
-                        : effectiveLang === 'zh'
-                          ? '我们将通过此号码联系您。现在无需验证码，稍后将人工审核您的身份。'
-                          : 'We will reach you on this number. No verification code now — your identity is reviewed manually later.'}
-                    </p>
+                    {isSupplierSignup && (
+                      <p style={helperTextStyle}>
+                        {isAr
+                          ? 'سنتواصل معك على هذا الرقم. لا يلزم كود تحقق الآن — تُراجَع هويتك يدويًا لاحقًا.'
+                          : effectiveLang === 'zh'
+                            ? '我们将通过此号码联系您。现在无需验证码，稍后将人工审核您的身份。'
+                            : 'We will reach you on this number. No verification code now — your identity is reviewed manually later.'}
+                      </p>
+                    )}
                   </div>
-                  <div style={fieldStyle}>
-                    <label style={labelStyle}>
-                      {l.email}{' '}
-                      <span style={{ textTransform: 'none', opacity: 0.6 }}>
-                        {isAr ? '(اختياري)' : effectiveLang === 'zh' ? '（可选）' : '(optional)'}
-                      </span>
-                    </label>
-                    <input
-                      style={getFieldInputStyle('email')}
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="example@email.com"
-                      autoComplete="email"
-                      dir="ltr"
-                    />
-                  </div>
+                  {isSupplierSignup && (
+                    <div style={fieldStyle}>
+                      <label style={labelStyle}>
+                        {l.email}{' '}
+                        <span style={{ textTransform: 'none', opacity: 0.6 }}>
+                          {isAr ? '(اختياري)' : effectiveLang === 'zh' ? '（可选）' : '(optional)'}
+                        </span>
+                      </label>
+                      <input
+                        style={getFieldInputStyle('email')}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="example@email.com"
+                        autoComplete="email"
+                        dir="ltr"
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={fieldStyle}>
