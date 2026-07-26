@@ -58,7 +58,6 @@ export default function Suppliers({ lang, user }) {
       s.city,
       s.country,
       s.maabar_supplier_id,
-      s.trade_link,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(q));
@@ -167,14 +166,14 @@ export default function Suppliers({ lang, user }) {
                         {s.company_name || '—'}
                       </p>
                       {isReviewedSupplier && (
-                        <span title={isAr ? 'اكتملت وثائق المورد النظامية' : 'Supplier documents complete'} style={{
+                        <span title={isAr ? 'مورد موصى به' : 'Recommended supplier'} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 3,
                           padding: '2px 7px', borderRadius: 20,
                           background: 'rgba(45,122,79,0.1)',
                           border: '1px solid rgba(45,122,79,0.25)',
                           color: 'var(--green)',
                           fontSize: 10, fontWeight: 600, flexShrink: 0,
-                        }}>✓ {isAr ? 'الملف مكتمل' : lang === 'zh' ? '资料完整' : 'Documents Complete'}</span>
+                        }}>{isAr ? 'موصى به' : lang === 'zh' ? '推荐' : 'Recommended'}</span>
                       )}
                     </div>
                     {/* Phase 6B Task 3 — specialty promoted from pills row to under company name */}
@@ -226,35 +225,12 @@ export default function Suppliers({ lang, user }) {
                       {s.product_count} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
                     </span>
                   )}
-                  {trustSignals.includes('trade_profile_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.18)', borderRadius: 20, color: 'var(--green)', letterSpacing: 0.6 }}>
-                      {isAr ? 'رابط متجر موثق' : lang === 'zh' ? '店铺链接已提供' : 'Trade link on file'}
-                    </span>
-                  )}
                   {trustSignals.includes('factory_media_available') && (
                     <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
                       {isAr ? 'صور منشأة' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
                     </span>
                   )}
                 </div>
-
-                {/* TRUST SIGNALS */}
-                {trustSignals.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
-                      <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1 }}>
-                        {isAr ? 'إشارات الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
-                      {isAr
-                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'مسجّل لدى مَعبر'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}`
-                        : lang === 'zh'
-                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '已在 Maabar 注册'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}`
-                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Registered with Maabar'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}`}
-                    </p>
-                  </div>
-                )}
 
                 {/* FOOTER */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-default)', paddingTop: 12, gap: 8 }}>

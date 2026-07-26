@@ -302,7 +302,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     supplierLanguages.length > 0 ? { label: isAr ? 'اللغات' : lang === 'zh' ? '支持语言' : 'Languages', value: supplierLanguages.join(' · ') } : null,
     exportMarkets.length > 0 ? { label: isAr ? 'أسواق التصدير' : lang === 'zh' ? '出口市场' : 'Export markets', value: exportMarkets.join(' · ') } : null,
     supplier.customization_support ? { label: isAr ? 'التخصيص' : lang === 'zh' ? '定制' : 'Customization', value: supplier.customization_support, translatable: true } : null,
-    supplier.trade_link ? { label: isAr ? 'الملف التجاري' : lang === 'zh' ? '贸易主页' : 'Trade profile', value: supplier.trade_link, isLink: true } : null,
   ].filter(Boolean);
 
   return (
@@ -357,7 +356,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                   }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
                     <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {isAr ? 'الملف مكتمل' : lang === 'zh' ? '资料完整' : 'Documents Complete'}
+                      {isAr ? 'موصى به' : lang === 'zh' ? '推荐' : 'Recommended'}
                     </span>
                   </div>
                 )}
@@ -529,7 +528,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20, flexShrink: 0 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
                   <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                    {isAr ? 'مكتمل' : lang === 'zh' ? '资料完整' : 'Complete'}
+                    {isAr ? 'موصى به' : lang === 'zh' ? '推荐' : 'Recommended'}
                   </span>
                 </div>
               )}
@@ -600,7 +599,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                         {isReviewedSupplier && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block', flexShrink: 0 }} />
-                            <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>الملف مكتمل</span>
+                            <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>موصى به</span>
                           </div>
                         )}
                         <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>
