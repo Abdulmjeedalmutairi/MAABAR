@@ -265,6 +265,13 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
   const emailConfirmed = sessionUser ? hasConfirmedEmail(sessionUser) : null;
   const stage = getSupplierStageFromStatus(status);
   const canAccessOperationalFeatures = status === 'verified';
+  // Products are unlocked for any active (non-rejected/non-inactive) supplier —
+  // registration should let them start listing immediately. Buyers still only see
+  // those products post-verification, because the product save keeps them
+  // is_active=false until auto_publish_products_on_supplier_verified flips them on
+  // approval. This is deliberately NARROWER than a full unlock: Offers, Requests,
+  // Messages and Payout stay gated on canAccessOperationalFeatures.
+  const canAccessProducts = stage !== 'rejected' && stage !== 'inactive';
   const routeGuardRedirect = '/dashboard';
 
   return {
@@ -295,11 +302,13 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
     canAccessOperationalFeatures,
     canAccessMessaging: canAccessOperationalFeatures,
     canAccessRequests: canAccessOperationalFeatures,
-    canAccessProducts: canAccessOperationalFeatures,
+    canAccessProducts,
     canAccessOffers: canAccessOperationalFeatures,
     canAccessPayoutSetup: canAccessOperationalFeatures,
     routeGuardRedirect,
-    limitedTabs: ['overview', 'verification', 'settings'],
+    // my-products / add-product join the limited-access set so a not-yet-verified
+    // supplier can reach them; everything else stays locked until verified.
+    limitedTabs: ['overview', 'verification', 'settings', ...(canAccessProducts ? ['my-products', 'add-product'] : [])],
     fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'product-inquiries', 'reviews', 'messages', 'settings'],
   };
 }

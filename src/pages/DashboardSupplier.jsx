@@ -2068,7 +2068,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch (translationErr) {
       console.error('addProduct translation error:', translationErr?.message || translationErr);
     }
-    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id, { asDraft: isDraft });
+    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
     const { data: insertedRows, error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -2130,7 +2130,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     } catch (translationErr) {
       console.error('updateProduct translation error:', translationErr?.message || translationErr);
     }
-    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields }, undefined, { asDraft: isDraft });
+    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields }, undefined, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
     delete payload.supplier_id;
     const { error } = await runWithOptionalColumns({
       table: 'products',
