@@ -3,11 +3,7 @@ import Footer from '../components/Footer';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
-import {
-  buildSupplierTrustSignals,
-  getSupplierMaabarId,
-  isSupplierDocsComplete,
-} from '../lib/supplierOnboarding';
+import { isSupplierDocsComplete } from '../lib/supplierOnboarding';
 import { getSpecialtyLabel, UI_CATEGORIES as CATEGORIES } from '../lib/supplierDashboardConstants';
 
 const SkeletonCard = () => (
@@ -58,17 +54,10 @@ export default function Suppliers({ lang, user }) {
       s.city,
       s.country,
       s.maabar_supplier_id,
-      s.trade_link,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(q));
   });
-
-  const stars = (r) => {
-    let s = '';
-    for (let i = 1; i <= 5; i++) s += i <= Math.round(r || 0) ? '★' : '☆';
-    return s;
-  };
 
   return (
     <div className="full-page">
@@ -137,150 +126,91 @@ export default function Suppliers({ lang, user }) {
         {!loading && filtered.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {filtered.map((s, idx) => {
-              const trustSignals = buildSupplierTrustSignals(s);
-              // Docs-complete = passed the 8-field verification path. Drives the
-              // badge only; visibility is no longer gated on it.
               const isReviewedSupplier = isSupplierDocsComplete(s.status);
-              const supplierMaabarId = getSupplierMaabarId(s);
+              const factoryPhoto = (Array.isArray(s.factory_images) ? s.factory_images : [])
+                .find((img) => typeof img === 'string' && /^https?:\/\//i.test(img) && !img.includes('/supplier-docs/')) || '';
+              const initial = ((s.company_name || '?').trim()[0] || '?').toUpperCase();
+              const cardDesc = (isAr ? s.bio_ar : lang === 'zh' ? s.bio_zh : s.bio_en) || s.company_description || s.bio_en || s.bio_ar || s.bio_zh || '';
+              const cardLocation = [s.city, s.country].filter(Boolean).join(isAr ? '، ' : ', ');
+              const exportMarketsText = (Array.isArray(s.export_markets) ? s.export_markets.filter(Boolean) : (s.export_markets ? [s.export_markets] : [])).slice(0, 2).join(' · ');
+              const cardTags = [
+                s.speciality && s.speciality !== 'other' ? getSpecialtyLabel(s.speciality, lang) : null,
+                s.business_type || null,
+                s.customization_support || null,
+                s.years_experience ? (isAr ? `${s.years_experience}+ سنة خبرة` : lang === 'zh' ? `${s.years_experience}+ 年经验` : `${s.years_experience}+ yrs`) : null,
+                exportMarketsText || null,
+                (Array.isArray(s.certifications) && s.certifications.length) ? (isAr ? `${s.certifications.length} شهادة` : lang === 'zh' ? `${s.certifications.length} 项认证` : `${s.certifications.length} certs`) : null,
+              ].filter(Boolean).slice(0, 5);
 
               return (
               <div key={s.id}
                 onClick={() => nav(`/supplier/${s.id}`)}
                 style={{
-                  background: 'var(--surface)', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-card)', padding: 24, cursor: 'pointer',
-                  transition: 'all 0.2s', animation: `fadeIn 0.4s ease ${idx * 0.05}s both`,
+                  background: '#FAF8F5',
+                  border: isReviewedSupplier ? '1px solid #C2A468' : '1px solid #E6DFD3',
+                  borderRadius: 16, cursor: 'pointer', overflow: 'hidden',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  animation: `fadeIn 0.4s ease ${idx * 0.05}s both`,
+                  boxShadow: isReviewedSupplier ? '0 1px 3px rgba(160,124,58,0.10), 0 8px 22px rgba(160,124,58,0.07)' : '0 1px 2px rgba(0,0,0,0.03)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}>
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
 
-                {/* HEADER */}
-                <div style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                {/* MEDIA */}
+                <div style={{ position: 'relative', height: 140, background: '#EFE8DC' }}>
+                  {factoryPhoto
+                    ? <img src={factoryPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 60, fontWeight: 300, color: '#C9BCA6', fontFamily: "'Cormorant Garamond', serif" }}>{initial}</span>
+                      </div>}
+                  <div style={{ position: 'absolute', bottom: -22, left: '50%', transform: 'translateX(-50%)', width: 52, height: 52, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E6DFD3', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {s.avatar_url
                       ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--text-secondary)' }}>{(s.company_name || '?')[0].toUpperCase()}</span>}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {s.company_name || '—'}
-                      </p>
-                      {isReviewedSupplier && (
-                        <span title={isAr ? 'اكتملت وثائق المورد النظامية' : 'Supplier documents complete'} style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                          padding: '2px 7px', borderRadius: 20,
-                          background: 'rgba(45,122,79,0.1)',
-                          border: '1px solid rgba(45,122,79,0.25)',
-                          color: 'var(--green)',
-                          fontSize: 10, fontWeight: 600, flexShrink: 0,
-                        }}>✓ {isAr ? 'الملف مكتمل' : lang === 'zh' ? '资料完整' : 'Documents Complete'}</span>
-                      )}
-                    </div>
-                    {/* Phase 6B Task 3 — specialty promoted from pills row to under company name */}
-                    {s.speciality && s.speciality !== 'other' && (
-                      <p style={{
-                        fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 4px',
-                        fontWeight: 500,
-                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                        letterSpacing: isAr ? 0 : 0.2,
-                      }}>
-                        {getSpecialtyLabel(s.speciality, lang)}
-                      </p>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ color: 'var(--star)', fontSize: 13 }}>{stars(s.rating)}</span>
-                      {s.reviews_count > 0 && (
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>({s.reviews_count})</span>
-                      )}
-                      {(s.reviews?.length > 0 || s.reviews_count > 0) && (
-                        <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)', borderRadius: 20 }}>
-                          {s.reviews_count || s.reviews?.length} {isAr ? 'صفقة مكتملة' : lang === 'zh' ? '笔交易' : 'deals'}
-                        </span>
-                      )}
-                    </div>
+                      : <span style={{ fontSize: 20, fontWeight: 600, color: '#8B7355', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{initial}</span>}
                   </div>
                 </div>
 
-                {/* BIO */}
-                {(s.bio_ar || s.bio_en || s.bio_zh) && (
-                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
-                    {isAr ? s.bio_ar || s.bio_en : lang === 'zh' ? s.bio_zh || s.bio_en : s.bio_en || s.bio_ar}
+                {/* BODY */}
+                <div style={{ padding: '32px 20px 20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: '#2A2420', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {s.company_name || '—'}
                   </p>
-                )}
+                  {cardLocation && (
+                    <p style={{ fontSize: 12, color: '#8A8178', margin: '0 0 12px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{cardLocation}</p>
+                  )}
 
-                {/* TAGS — specialty promoted to header in Phase 6B; this row keeps Maabar ID, city, product count, trust signals */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                  {supplierMaabarId && isReviewedSupplier && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
-                      {isAr ? `معرّف: ${supplierMaabarId}` : lang === 'zh' ? `编号：${supplierMaabarId}` : `ID: ${supplierMaabarId}`}
+                  {/* BADGES — Field Verified is unconditional; Recommended is gated */}
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap', marginBottom: cardDesc || cardTags.length ? 12 : 16 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: 'rgba(110,130,102,0.12)', border: '1px solid rgba(110,130,102,0.30)', color: '#5E7256', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'تم التحقق ميدانيًا' : lang === 'zh' ? '实地核验' : 'Field Verified'}
                     </span>
-                  )}
-                  {s.city && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
-                      {s.city}
-                    </span>
-                  )}
-                  {s.product_count > 0 && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-hover)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 1 }}>
-                      {s.product_count} {isAr ? 'منتج' : lang === 'zh' ? '产品' : 'products'}
-                    </span>
-                  )}
-                  {trustSignals.includes('trade_profile_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.18)', borderRadius: 20, color: 'var(--green)', letterSpacing: 0.6 }}>
-                      {isAr ? 'رابط متجر موثق' : lang === 'zh' ? '店铺链接已提供' : 'Trade link on file'}
-                    </span>
-                  )}
-                  {trustSignals.includes('factory_media_available') && (
-                    <span style={{ fontSize: 10, padding: '3px 10px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 20, color: 'var(--text-secondary)', letterSpacing: 0.6 }}>
-                      {isAr ? 'صور منشأة' : lang === 'zh' ? '工厂图片' : 'Factory photos'}
-                    </span>
-                  )}
-                </div>
-
-                {/* TRUST SIGNALS */}
-                {trustSignals.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
-                      <span style={{ fontSize: 10, color: 'var(--text-disabled)', letterSpacing: 1 }}>
-                        {isAr ? 'إشارات الثقة' : lang === 'zh' ? '信任信号' : 'Trust signals'}
+                    {isReviewedSupplier && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: 'rgba(160,124,58,0.12)', border: '1px solid rgba(160,124,58,0.32)', color: '#9A7636', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'موصى به' : lang === 'zh' ? '推荐' : 'Recommended'}
                       </span>
-                    </div>
-                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
-                      {isAr
-                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'مسجّل لدى مَعبر'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}`
-                        : lang === 'zh'
-                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '已在 Maabar 注册'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}`
-                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Registered with Maabar'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}`}
-                    </p>
+                    )}
                   </div>
-                )}
 
-                {/* FOOTER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-default)', paddingTop: 12, gap: 8 }}>
-                  {s.min_order_value ? (
-                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
-                      {isAr ? `أقل طلب: ${s.min_order_value} ريال` : `Min: ${s.min_order_value} SAR`}
+                  {/* DESCRIPTION */}
+                  {cardDesc && (
+                    <p style={{ fontSize: 12.5, color: '#6B6560', lineHeight: 1.6, margin: '0 0 14px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'inherit' }}>
+                      {cardDesc}
                     </p>
-                  ) : <span />}
-                  <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={e => { e.stopPropagation(); nav(`/chat/${s.id}`); }}
-                      style={{
-                        padding: '6px 12px', fontSize: 11, cursor: 'pointer',
-                        background: 'var(--bg-subtle)', border: '1px solid var(--border)',
-                        color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)',
-                        transition: 'all 0.15s', letterSpacing: 0.5,
-                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; }}>
-                      {isAr ? 'تواصل' : lang === 'zh' ? '联系' : 'Chat'}
-                    </button>
-                    <span style={{ fontSize: 12, color: 'var(--text-primary)', letterSpacing: 1, lineHeight: '28px' }}>
-                      {isAr ? 'الملف →' : lang === 'zh' ? '查看 →' : 'View →'}
-                    </span>
-                  </div>
+                  )}
+
+                  {/* TAGS */}
+                  {cardTags.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+                      {cardTags.map((tag, i) => (
+                        <span key={i} style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, background: '#F0E9DD', color: '#7A6E5C', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{tag}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* CTA */}
+                  <button onClick={e => { e.stopPropagation(); nav(`/supplier/${s.id}`); }} style={{ width: '100%', padding: '10px', fontSize: 12.5, fontWeight: 600, color: '#FFFFFF', background: '#8B7355', border: 'none', borderRadius: 10, cursor: 'pointer', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'عرض ملف المورد' : lang === 'zh' ? '查看供应商主页' : 'View supplier profile'}
+                  </button>
                 </div>
               </div>
               );

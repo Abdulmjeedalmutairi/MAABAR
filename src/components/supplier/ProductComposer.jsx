@@ -120,7 +120,7 @@ export function expandStoredSelect(stored, knownOptions) {
   return { selectValue: '__other__', otherValue: v };
 }
 
-export const buildProductWritePayload = (rawProduct, supplierId, { asDraft = false } = {}) => {
+export const buildProductWritePayload = (rawProduct, supplierId, { asDraft = false, isVerified = true } = {}) => {
   const product = normalizeProductDraftMedia(rawProduct);
   const fallbackName = product.name_en || product.name_zh || product.name_ar || '';
 
@@ -204,8 +204,12 @@ export const buildProductWritePayload = (rawProduct, supplierId, { asDraft = fal
     package_dimensions: product.package_dimensions || null,
     sample_free_from_qty: product.sample_free_from_qty ? parseInt(product.sample_free_from_qty, 10) : null,
     // Drafts stay unpublished (is_active=false) and are skipped by the
-    // auto-publish-on-verified trigger; a full save publishes (is_draft=false).
-    is_active: asDraft ? false : true,
+    // auto-publish-on-verified trigger; a full save publishes (is_draft=false)
+    // ONLY if the supplier is already verified. A not-yet-verified supplier can
+    // now create products, but they stay is_active=false (staged) and go live via
+    // auto_publish_products_on_supplier_verified when the supplier is approved —
+    // so buyers never see a product from an unverified supplier.
+    is_active: (asDraft || !isVerified) ? false : true,
     is_draft: asDraft,
   };
 };
