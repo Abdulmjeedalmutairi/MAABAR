@@ -6,7 +6,7 @@ import { sb } from '../supabase';
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
-  isSupplierPubliclyVisible,
+  isSupplierDocsComplete,
 } from '../lib/supplierOnboarding';
 import { getSpecialtyLabel, UI_CATEGORIES as CATEGORIES } from '../lib/supplierDashboardConstants';
 
@@ -138,7 +138,9 @@ export default function Suppliers({ lang, user }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {filtered.map((s, idx) => {
               const trustSignals = buildSupplierTrustSignals(s);
-              const isReviewedSupplier = isSupplierPubliclyVisible(s.status);
+              // Docs-complete = passed the 8-field verification path. Drives the
+              // badge only; visibility is no longer gated on it.
+              const isReviewedSupplier = isSupplierDocsComplete(s.status);
               const supplierMaabarId = getSupplierMaabarId(s);
 
               return (
@@ -165,14 +167,14 @@ export default function Suppliers({ lang, user }) {
                         {s.company_name || '—'}
                       </p>
                       {isReviewedSupplier && (
-                        <span title={isAr ? 'مورد معتمد من فريق مَعبر' : 'Verified by Maabar team'} style={{
+                        <span title={isAr ? 'اكتملت وثائق المورد النظامية' : 'Supplier documents complete'} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 3,
                           padding: '2px 7px', borderRadius: 20,
                           background: 'rgba(45,122,79,0.1)',
                           border: '1px solid rgba(45,122,79,0.25)',
                           color: 'var(--green)',
                           fontSize: 10, fontWeight: 600, flexShrink: 0,
-                        }}>✓ {isAr ? 'معتمد' : lang === 'zh' ? '已认证' : 'Verified'}</span>
+                        }}>✓ {isAr ? 'الملف مكتمل' : lang === 'zh' ? '资料完整' : 'Documents Complete'}</span>
                       )}
                     </div>
                     {/* Phase 6B Task 3 — specialty promoted from pills row to under company name */}
@@ -246,10 +248,10 @@ export default function Suppliers({ lang, user }) {
                     </div>
                     <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
                       {isAr
-                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'الحساب بانتظار المراجعة'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}`
+                        ? `${isReviewedSupplier ? 'تمت مراجعة الحساب من مَعبر' : 'مسجّل لدى مَعبر'}${trustSignals.includes('trade_profile_available') ? ' · رابط الشركة متوفر' : ''}`
                         : lang === 'zh'
-                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '等待平台审核'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}`
-                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Awaiting review'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}`}
+                          ? `${isReviewedSupplier ? '已通过 Maabar 审核' : '已在 Maabar 注册'}${trustSignals.includes('trade_profile_available') ? ' · 已提供店铺/官网链接' : ''}`
+                          : `${isReviewedSupplier ? 'Reviewed by Maabar' : 'Registered with Maabar'}${trustSignals.includes('trade_profile_available') ? ' · trade profile available' : ''}`}
                     </p>
                   </div>
                 )}
