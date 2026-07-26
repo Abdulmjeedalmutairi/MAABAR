@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import BrandLogo from '../components/BrandLogo';
+import PhoneField from '../components/PhoneField';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
@@ -223,13 +224,21 @@ function trimValue(value) {
 function buildFieldErrorMap({
   isSupplier,
   mode,
+  signupMethod,
   values,
   agreedTerms,
   langPack,
 }) {
   const errors = {};
 
-  if (!trimValue(values.email)) errors.email = langPack.requiredField;
+  // Phone-identity signup (supplier OR buyer): the phone replaces email as the
+  // required identifier and email becomes optional. Every other case needs email.
+  const phoneSignup = mode === 'signup' && signupMethod === 'phone';
+  if (phoneSignup) {
+    if (!values.phoneValid) errors.supPhone = langPack.requiredField;
+  } else if (!trimValue(values.email)) {
+    errors.email = langPack.requiredField;
+  }
   if (!trimValue(values.pass)) errors.pass = langPack.requiredField;
 
   if (mode !== 'signup') return errors;
@@ -242,7 +251,9 @@ function buildFieldErrorMap({
   } else {
     if (!trimValue(values.firstName)) errors.firstName = langPack.requiredField;
     if (!trimValue(values.lastName)) errors.lastName = langPack.requiredField;
-    if (!trimValue(values.phone)) errors.phone = langPack.requiredField;
+    // When the buyer registers by phone, supPhone IS the phone — the separate
+    // profile phone field is hidden, so don't require it here.
+    if (!phoneSignup && !trimValue(values.phone)) errors.phone = langPack.requiredField;
     if (!trimValue(values.city)) errors.city = langPack.requiredField;
   }
 
@@ -284,6 +295,18 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const [city, setCity] = useState('');
   const [companyName, setCompanyName] = useState('');
 
+  // Signup identifier method: 'phone' or 'email'. Default is role-aware —
+  // suppliers to phone (most Chinese suppliers have no email), buyers to email —
+  // and the toggle lets either switch. supPhone holds the canonical E.164.
+  const [signupMethod, setSignupMethod] = useState(isSupplier ? 'phone' : 'email');
+  const [supPhone, setSupPhone] = useState('');
+  const [supPhoneValid, setSupPhoneValid] = useState(false);
+
+  // Signup is a 3-step wizard (1: account, 2: details, 3: review). Account
+  // creation still happens only on the final step — this state just gates which
+  // group of fields renders. Sign-in ignores it entirely.
+  const [step, setStep] = useState(1);
+
   const [supCompany, setSupCompany] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [wechat, setWechat] = useState('');
@@ -296,6 +319,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   useEffect(() => {
     setMode(getInitialMode());
+    setStep(1);
   }, [isSupplier, searchParams]);
 
   useEffect(() => {
@@ -311,6 +335,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const validationErrors = useMemo(() => buildFieldErrorMap({
     isSupplier,
     mode,
+    signupMethod,
     values: {
       email,
       pass,
@@ -322,12 +347,14 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       country,
       supCity,
       speciality,
+      phoneValid: supPhoneValid,
     },
     agreedTerms,
     langPack: l,
   }), [
     isSupplier,
     mode,
+    signupMethod,
     email,
     pass,
     firstName,
@@ -338,9 +365,50 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     country,
     supCity,
     speciality,
+    supPhoneValid,
     agreedTerms,
     l,
   ]);
+
+  const isSupplierSignup = isSupplier && mode === 'signup';
+  // The phone/email toggle and phone identifier apply to supplier sign-IN too, so
+  // a phone-registered supplier can authenticate; only the signup-only extras
+  // (optional email, review note) stay gated on isSupplierSignup.
+  // Phone-identity now applies to buyers too, not just suppliers.
+  const authMode = mode === 'signup' || mode === 'signin';
+  const phoneIdentity = authMode && signupMethod === 'phone';
+
+  // ── Signup wizard: step titles + per-step validation ────────────────────────
+  const wizardStepTitles = [
+    isAr ? 'الحساب' : effectiveLang === 'zh' ? '账户' : 'Account',
+    isSupplier
+      ? (isAr ? 'بيانات الشركة' : effectiveLang === 'zh' ? '公司资料' : 'Company')
+      : (isAr ? 'بياناتك' : effectiveLang === 'zh' ? '您的资料' : 'Your details'),
+    isAr ? 'المراجعة' : effectiveLang === 'zh' ? '确认' : 'Review',
+  ];
+
+  const stepFieldKeys = (n) => {
+    if (n === 1) return [phoneIdentity ? 'supPhone' : 'email', 'pass'];
+    if (n === 2) return isSupplier
+      ? ['supCompany', 'country', 'supCity', 'speciality']
+      : phoneIdentity
+        ? ['firstName', 'lastName', 'city']
+        : ['firstName', 'lastName', 'phone', 'city'];
+    return ['terms'];
+  };
+  const stepHasErrors = (n) => stepFieldKeys(n).some((k) => validationErrors[k]);
+
+  const goNextStep = () => {
+    if (stepHasErrors(step)) { setShowValidation(true); return; }
+    setShowValidation(false);
+    setStep((s) => Math.min(3, s + 1));
+  };
+  const goPrevStep = () => { setShowValidation(false); setStep((s) => Math.max(1, s - 1)); };
+
+  // Sign-in shows everything at once (the wizard is a signup-only concern).
+  const showAccountStep = mode === 'signin' || (mode === 'signup' && step === 1);
+  const showDetailsStep = mode === 'signup' && step === 2;
+  const showReviewStep = mode === 'signup' && step === 3;
 
   const requiredAsterisk = <span style={{ color: '#d66b6b' }}> *</span>;
 
@@ -385,7 +453,10 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   };
 
   const doSignIn = async () => {
-    if (!trimValue(email) || !trimValue(pass)) {
+    // Phone-registered users (supplier or buyer) authenticate with phone +
+    // password; everyone else with email + password.
+    const usePhone = signupMethod === 'phone';
+    if ((usePhone ? !supPhoneValid : !trimValue(email)) || !trimValue(pass)) {
       setShowValidation(true);
       setMsg(l.fillRequired);
       setMsgType('error');
@@ -397,7 +468,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     // user+profile and navigates itself), so the global SIGNED_IN reset doesn't
     // wipe that mid-flight and leave the user stuck on the form.
     window._passwordLoginTs = Date.now();
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    const { data, error } = usePhone
+      ? await sb.auth.signInWithPassword({ phone: supPhone, password: pass })
+      : await sb.auth.signInWithPassword({ email, password: pass });
     setLoading(false);
 
     if (error) {
@@ -414,7 +487,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       return;
     }
 
-    if (isSupplier && !data.user?.email_confirmed_at) {
+    // Phone suppliers have no email_confirmed_at — they are confirmed via
+    // phone_confirmed_at (set at signup, confirmations off). Accept either, else a
+    // phone-registered supplier could never sign in.
+    const identityConfirmed = data.user?.email_confirmed_at || data.user?.phone_confirmed_at;
+    if (isSupplier && !usePhone && !identityConfirmed) {
       await sb.auth.signOut();
       setSubmittedEmail(trimValue(email));
       setMsg(l.emailNotConfirmed);
@@ -463,6 +540,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     const errors = buildFieldErrorMap({
       isSupplier,
       mode,
+      signupMethod,
       values: {
         email,
         pass,
@@ -474,6 +552,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         country,
         supCity,
         speciality,
+        phoneValid: supPhoneValid,
       },
       agreedTerms,
       langPack: l,
@@ -488,12 +567,19 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
     setLoading(true);
 
+    // Registering by phone (supplier OR buyer): the phone is the auth identifier
+    // and email is optional. handle_new_user copies these fields (incl. phone)
+    // from the metadata, so pass the canonical E.164 through it. Keys are
+    // unchanged from the email flow — only phone's value source differs.
+    const usePhone = signupMethod === 'phone';
+
     const metaData = {
       role,
       status: isSupplier ? 'registered' : 'active',
       ...(!isSupplier && {
         full_name: `${trimValue(firstName)} ${trimValue(lastName)}`.trim(),
-        phone: trimValue(phone),
+        // Phone-method buyers have no separate phone field — supPhone IS the phone.
+        phone: usePhone ? supPhone : trimValue(phone),
         city: trimValue(city),
         company_name: trimValue(companyName),
       }),
@@ -506,25 +592,67 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
         city: trimValue(supCity),
         trade_link: trimValue(tradeLink),
         lang: effectiveLang === 'zh' ? 'zh' : 'en',
+        ...(usePhone && supPhone ? { phone: supPhone } : {}),
         ...(trimValue(referralCode) && { referral_code: trimValue(referralCode) }),
       }),
     };
 
-    const emailRedirectTo = getEmailConfirmationRedirect(
-      hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard'
-    );
-
-    const { data, error } = await sb.auth.signUp({
-      email: trimValue(email),
-      password: pass,
-      options: { emailRedirectTo, data: metaData },
-    });
+    let data, error;
+    if (usePhone) {
+      // Phone provider, confirmations OFF -> signUp returns a live, phone-confirmed
+      // session with no OTP. Guard the SIGNED_IN race the same way doSignIn does.
+      window._passwordLoginTs = Date.now();
+      ({ data, error } = await sb.auth.signUp({
+        phone: supPhone,
+        password: pass,
+        options: { data: metaData },
+      }));
+    } else {
+      const emailRedirectTo = getEmailConfirmationRedirect(
+        hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard'
+      );
+      ({ data, error } = await sb.auth.signUp({
+        email: trimValue(email),
+        password: pass,
+        options: { emailRedirectTo, data: metaData },
+      }));
+    }
 
     setLoading(false);
 
     if (error) {
       setMsg(error.message);
       setMsgType('error');
+      return;
+    }
+
+    // Phone signup (supplier or buyer): session is already live and the phone is
+    // confirmed, so there is no email-confirmation step — persist an optional email
+    // if given, then take them straight in like a successful sign-in.
+    if (usePhone) {
+      try {
+        if (data?.user?.id) {
+          const optionalEmail = trimValue(email);
+          if (optionalEmail) {
+            await sb.from('profiles').update({ email: optionalEmail }).eq('id', data.user.id)
+              .then(() => {}, () => {});
+          }
+          setUser(data.user);
+          const { data: prof } = await sb
+            .from('profiles')
+            .select('id,role,status,full_name,company_name,phone,city,country,speciality,wechat,whatsapp,trade_link,trade_links,reg_number,years_experience,license_photo,factory_photo')
+            .eq('id', data.user.id)
+            .single();
+          if (prof) {
+            setProfile(prof);
+            nav(isSupplier ? getSupplierPrimaryRoute(prof, data.user) : '/dashboard');
+            return;
+          }
+        }
+      } catch (phoneFlowError) {
+        console.error('[doSignUp] phone post-signup:', phoneFlowError);
+      }
+      nav(isSupplier ? '/dashboard/supplier' : '/dashboard');
       return;
     }
 
@@ -658,6 +786,37 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     fontSize: 12,
     color: 'var(--text-disabled)',
     lineHeight: 1.7,
+    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+  };
+
+  const primaryBtnStyle = {
+    width: '100%',
+    background: '#1a1a1a',
+    color: '#ffffff',
+    border: 'none',
+    padding: '14px',
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: loading ? 'not-allowed' : 'pointer',
+    marginTop: 8,
+    borderRadius: 'var(--radius-md)',
+    transition: 'all 0.2s',
+    opacity: loading ? 0.5 : 1,
+    letterSpacing: 0.3,
+    minHeight: 48,
+    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+  };
+  const secondaryBtnStyle = {
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)',
+    padding: '14px 20px',
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: loading ? 'not-allowed' : 'pointer',
+    marginTop: 8,
+    borderRadius: 'var(--radius-md)',
+    minHeight: 48,
     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
   };
 
@@ -877,20 +1036,127 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
           {!isSupplier || msgType !== 'success' ? (
             <>
-              <div style={fieldStyle}>
-                <label style={labelStyle}>{l.email}{requiredAsterisk}</label>
-                <input
-                  style={getFieldInputStyle('email')}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@email.com"
-                  autoComplete="email"
-                  dir="ltr"
-                />
-                {getErrorText('email')}
-              </div>
+              {mode === 'signup' && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                    {[1, 2, 3].map((n) => (
+                      <div key={n} style={{
+                        flex: 1,
+                        height: 3,
+                        borderRadius: 999,
+                        background: n <= step ? 'var(--text-primary)' : 'var(--border-default)',
+                        transition: 'background 0.2s',
+                      }} />
+                    ))}
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                  }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {wizardStepTitles[step - 1]}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-disabled)', letterSpacing: 1 }}>
+                      {isAr ? `خطوة ${step} من 3` : effectiveLang === 'zh' ? `第 ${step}/3 步` : `Step ${step} of 3`}
+                    </span>
+                  </div>
+                </div>
+              )}
 
+              {authMode && showAccountStep && (
+                <div style={{ ...fieldStyle, display: 'flex', gap: 8 }}>
+                  {[
+                    ['phone', isAr ? 'رقم الجوال' : effectiveLang === 'zh' ? '手机号' : 'Phone'],
+                    ['email', isAr ? 'البريد الإلكتروني' : effectiveLang === 'zh' ? '邮箱' : 'Email'],
+                  ].map(([m, label]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setSignupMethod(m)}
+                      style={{
+                        flex: 1,
+                        padding: '10px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                        border: signupMethod === m ? '1px solid var(--text-primary)' : '1px solid var(--border-default)',
+                        background: signupMethod === m ? 'var(--text-primary)' : 'transparent',
+                        color: signupMethod === m ? 'var(--bg-base)' : 'var(--text-secondary)',
+                        fontWeight: signupMethod === m ? 700 : 400,
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showAccountStep && (phoneIdentity ? (
+                <>
+                  <div style={fieldStyle}>
+                    <label style={labelStyle}>
+                      {isAr ? 'رقم الجوال' : effectiveLang === 'zh' ? '手机号' : 'Phone number'}{requiredAsterisk}
+                    </label>
+                    <PhoneField
+                      value={supPhone}
+                      onChange={(e164, valid) => { setSupPhone(e164); setSupPhoneValid(valid); }}
+                      defaultCountry="CN"
+                      lang={effectiveLang}
+                      inputStyle={inputStyle}
+                      selectStyle={inputStyle}
+                      invalid={showValidation && !!validationErrors.supPhone}
+                    />
+                    {getErrorText('supPhone')}
+                    {isSupplierSignup && (
+                      <p style={helperTextStyle}>
+                        {isAr
+                          ? 'سنتواصل معك على هذا الرقم. لا يلزم كود تحقق الآن — تُراجَع هويتك يدويًا لاحقًا.'
+                          : effectiveLang === 'zh'
+                            ? '我们将通过此号码联系您。现在无需验证码，稍后将人工审核您的身份。'
+                            : 'We will reach you on this number. No verification code now — your identity is reviewed manually later.'}
+                      </p>
+                    )}
+                  </div>
+                  {mode === 'signup' && (
+                    <div style={fieldStyle}>
+                      <label style={labelStyle}>
+                        {l.email}{' '}
+                        <span style={{ textTransform: 'none', opacity: 0.6 }}>
+                          {isAr ? '(اختياري)' : effectiveLang === 'zh' ? '（可选）' : '(optional)'}
+                        </span>
+                      </label>
+                      <input
+                        style={getFieldInputStyle('email')}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="example@email.com"
+                        autoComplete="email"
+                        dir="ltr"
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={fieldStyle}>
+                  <label style={labelStyle}>{l.email}{requiredAsterisk}</label>
+                  <input
+                    style={getFieldInputStyle('email')}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="example@email.com"
+                    autoComplete="email"
+                    dir="ltr"
+                  />
+                  {getErrorText('email')}
+                </div>
+              ))}
+
+              {showAccountStep && (
               <div style={fieldStyle}>
                 <label style={labelStyle}>{l.pass}{requiredAsterisk}</label>
                 <input
@@ -904,8 +1170,19 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 />
                 {getErrorText('pass')}
               </div>
+              )}
 
-              {!isSupplier && mode === 'signup' && (
+              {phoneIdentity && mode === 'signin' && (
+                <p style={{ ...helperTextStyle, marginTop: -6, marginBottom: 16 }}>
+                  {isAr
+                    ? 'نسيت كلمة المرور؟ تواصل مع الدعم لإعادة تعيينها (لا استعادة عبر رسالة حاليًا).'
+                    : effectiveLang === 'zh'
+                      ? '忘记密码？请联系客服重置（暂不支持短信找回）。'
+                      : 'Forgot your password? Contact support to reset it (no SMS reset yet).'}
+                </p>
+              )}
+
+              {!isSupplier && showDetailsStep && (
                 <>
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 16, marginTop: 8, fontWeight: 500 }}>
                     {l.buyerInfo}
@@ -923,11 +1200,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 14 }}>
-                    <div style={{ ...fieldStyle, flex: 1 }}>
-                      <label style={labelStyle}>{l.phone}{requiredAsterisk}</label>
-                      <input style={getFieldInputStyle('phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5x xxx xxxx" dir="ltr" />
-                      {getErrorText('phone')}
-                    </div>
+                    {!phoneIdentity && (
+                      <div style={{ ...fieldStyle, flex: 1 }}>
+                        <label style={labelStyle}>{l.phone}{requiredAsterisk}</label>
+                        <input style={getFieldInputStyle('phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5x xxx xxxx" dir="ltr" />
+                        {getErrorText('phone')}
+                      </div>
+                    )}
                     <div style={{ ...fieldStyle, flex: 1 }}>
                       <label style={labelStyle}>{l.city}{requiredAsterisk}</label>
                       <select style={{ ...getFieldInputStyle('city'), cursor: 'pointer' }} value={city} onChange={(e) => setCity(e.target.value)}>
@@ -944,7 +1223,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </>
               )}
 
-              {isSupplier && mode === 'signup' && (
+              {isSupplier && showDetailsStep && (
                 <>
                   <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, marginTop: 8, fontWeight: 500 }}>
                     {l.supInfo}
@@ -990,7 +1269,11 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                     </select>
                     {getErrorText('speciality')}
                   </div>
+                </>
+              )}
 
+              {isSupplier && showReviewStep && (
+                <>
                   <div style={fieldStyle}>
                     <label style={labelStyle}>{l.tradeLink}</label>
                     <textarea
@@ -1048,7 +1331,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </>
               )}
 
-              {mode === 'signup' && (
+              {showReviewStep && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{
                     display: 'flex',
@@ -1086,33 +1369,30 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </div>
               )}
 
-              <button
-                onClick={mode === 'signin' ? doSignIn : doSignUp}
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  background: '#1a1a1a',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '14px',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  marginTop: 8,
-                  borderRadius: 'var(--radius-md)',
-                  transition: 'all 0.2s',
-                  opacity: loading ? 0.5 : 1,
-                  letterSpacing: 0.3,
-                  minHeight: 48,
-                  fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-                }}
-              >
-                {loading ? '...' : mode === 'signin'
-                  ? l.signin
-                  : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
-              </button>
+              {mode === 'signin' ? (
+                <button onClick={doSignIn} disabled={loading} style={primaryBtnStyle}>
+                  {loading ? '...' : l.signin}
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {step > 1 && (
+                    <button type="button" onClick={goPrevStep} disabled={loading} style={secondaryBtnStyle}>
+                      {isAr ? 'رجوع' : effectiveLang === 'zh' ? '上一步' : 'Back'}
+                    </button>
+                  )}
+                  {step < 3 ? (
+                    <button type="button" onClick={goNextStep} style={{ ...primaryBtnStyle, flex: 1 }}>
+                      {isAr ? 'التالي' : effectiveLang === 'zh' ? '下一步' : 'Next'}
+                    </button>
+                  ) : (
+                    <button onClick={doSignUp} disabled={loading} style={{ ...primaryBtnStyle, flex: 1 }}>
+                      {loading ? '...' : (isSupplier ? (isAr ? 'إرسال طلب المورد' : lang === 'zh' ? '提交供应商申请' : 'Submit supplier application') : l.signup)}
+                    </button>
+                  )}
+                </div>
+              )}
 
-              {!isSupplier && (
+              {!isSupplier && showAccountStep && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
@@ -1175,6 +1455,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 <button
                   onClick={() => {
                     setMode(mode === 'signin' ? 'signup' : 'signin');
+                    setStep(1);
                     setMsg('');
                     setMsgType('');
                     setSubmittedEmail('');

@@ -999,6 +999,45 @@ const SERVER_ONLY_TYPES = new Set<string>([
   // (empty for now: direct_order_rejected is still sent by DashboardSupplier.jsx:1401)
 ]);
 
+// ─── Transactional path hardening ────────────────────────────────────────────
+// The transactional ({type,to,data}) path is still unauthenticated pending the
+// full B1 migration, so anyone holding the public anon key can call it. The two
+// guards below do not close that hole — they remove most of its value:
+//
+//   · recipientIsAllowed(): the abuse worth worrying about is mailing arbitrary
+//     OUTSIDE addresses under Maabar's brand and domain. Requiring the recipient
+//     to be an existing profile turns an open relay into "can only mail people
+//     who already have a Maabar account", which is not a phishing tool.
+//   · transactionalRateOk(): caps blast radius on whatever remains.
+//
+// Both exempt callers holding the internal secret, i.e. our own server-to-server
+// paths, which legitimately need to mail non-users (admin alerts) and in bulk.
+const TRANSACTIONAL_HOURLY_IP_CAP = 60;
+
+async function recipientIsAllowed(email: string, hasSecret: boolean): Promise<boolean> {
+  if (!email) return false;
+  if (hasSecret) return true;
+  if (email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase()) return true;
+  // Without the service-role client we cannot check, so don't hard-fail live mail.
+  if (!adminSb) return true;
+  const { data, error } = await adminSb.from('profiles').select('id').eq('email', email.trim()).maybeSingle();
+  if (error) { console.error('[send-email] recipient check failed:', error.message); return true; }
+  return Boolean(data);
+}
+
+async function transactionalRateOk(req: Request, hasSecret: boolean): Promise<boolean> {
+  if (hasSecret || !adminSb) return true;
+  const xff = req.headers.get('x-forwarded-for') || '';
+  const ip = xff.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown';
+  const hour = new Date(); hour.setUTCMinutes(0, 0, 0);
+  const { data, error } = await adminSb.rpc('ai_rate_bump', {
+    p_key: `ip:${ip}:send_email:hour`, p_window: hour.toISOString(),
+  });
+  // Fail-open: a limiter outage must never stop transactional mail.
+  if (error) { console.error('[send-email] rate limiter:', error.message); return true; }
+  return Number(data) <= TRANSACTIONAL_HOURLY_IP_CAP;
+}
+
 // ─── Supabase Auth Email Hook ───────────────────────────────────────────────
 const HOOK_SECRET_RAW = Deno.env.get('SEND_EMAIL_HOOK_SECRET') || '';
 
@@ -1119,17 +1158,33 @@ serve(async (req) => {
     // Legacy send-email API
     const { type, to, data } = body;
 
+    // Computed once: it decides the Phase-A type lockdown, the recipient guard and
+    // the rate limit below. Holding it means the caller is one of our own
+    // server-to-server paths.
+    const hasInternalSecret = secretsMatch(req.headers.get('X-Maabar-Internal') || '', INTERNAL_SECRET);
+
     // Phase-A lockdown: migrated types require the internal secret; un-migrated types
     // remain client-callable until their turn, so nothing breaks mid-migration.
-    if (SERVER_ONLY_TYPES.has(type)) {
-      if (!secretsMatch(req.headers.get('X-Maabar-Internal') || '', INTERNAL_SECRET)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized.' }),
-          { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
-      }
+    if (SERVER_ONLY_TYPES.has(type) && !hasInternalSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized.' }),
+        { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    if (!(await transactionalRateOk(req, hasInternalSecret))) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded.' }),
+        { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
     if (type === 'supplier_signup_bundle') {
       if (!data?.email) return new Response(JSON.stringify({ error: 'Missing supplier email' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      // This branch returns early and mails data.email directly, so it would
+      // otherwise skip the recipient guard entirely. The profile exists by now:
+      // handle_new_user creates it during signUp, before the client calls this.
+      if (!(await recipientIsAllowed(data.email, hasInternalSecret))) {
+        console.warn('[send-email] blocked non-user signup recipient:', data.email);
+        return new Response(JSON.stringify({ error: 'Recipient is not a Maabar user.' }),
+          { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
       const welcomeTpl = await templates.supplier_welcome(data || {});
       const welcomeResult = await sendEmail(data.email, welcomeTpl.subject, welcomeTpl.html);
       let adminResult = null;
@@ -1158,6 +1213,11 @@ serve(async (req) => {
     console.log('[handler] tpl:', JSON.stringify({ subject: tpl.subject, htmlLength: tpl.html?.length, htmlDefined: !!tpl.html }));
     const recipient = tpl.to || emailContext.recipient;
     if (!recipient) return new Response(JSON.stringify({ error: 'No recipient' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+    if (!(await recipientIsAllowed(recipient, hasInternalSecret))) {
+      console.warn('[send-email] blocked non-user recipient:', recipient, 'type:', type);
+      return new Response(JSON.stringify({ error: 'Recipient is not a Maabar user.' }),
+        { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
     const result = await sendEmail(recipient, tpl.subject, tpl.html);
     return new Response(JSON.stringify({ ok: true, result }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {

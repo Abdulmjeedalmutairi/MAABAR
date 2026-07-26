@@ -246,8 +246,11 @@ otp_expiry = 3600
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
-# If enabled, users need to confirm their phone number before signing in.
+# Suppliers register by phone (most Chinese suppliers have no email). Mirrors the
+# cloud dashboard, which is authoritative for the hosted project.
+enable_signup = true
+# Kept OFF on purpose: no OTP at signup — signUp({ phone }) returns a live,
+# phone-confirmed session immediately. Identity is verified later by manual review.
 enable_confirmations = false
 # Template for sending OTP to users
 template = "Your code is {{ .Code }}"

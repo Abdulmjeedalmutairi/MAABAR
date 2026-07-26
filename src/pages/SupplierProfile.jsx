@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
-import { isSupplierPubliclyVisible } from '../lib/supplierOnboarding';
+import { isSupplierDocsComplete } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
@@ -67,7 +67,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const [calcResult, setCalcResult] = useState(null);
 
   const isAr = lang === 'ar';
-  const isReviewedSupplier = isSupplierPubliclyVisible(supplier?.status);
+  // Docs-complete = passed the 8-field verification path. Drives the badge only.
+  const isReviewedSupplier = isSupplierDocsComplete(supplier?.status);
   const companyDescription = supplier?.company_description || supplier?.bio_en || supplier?.bio_ar || supplier?.bio_zh || '';
   const supplierLanguages = Array.isArray(supplier?.languages) ? supplier.languages : [];
   const exportMarkets = Array.isArray(supplier?.export_markets) ? supplier.export_markets : [];
@@ -356,7 +357,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                   }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
                     <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {isAr ? 'مورد موثّق' : lang === 'zh' ? '认证供应商' : 'Verified Supplier'}
+                      {isAr ? 'الملف مكتمل' : lang === 'zh' ? '资料完整' : 'Documents Complete'}
                     </span>
                   </div>
                 )}
@@ -528,7 +529,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20, flexShrink: 0 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
                   <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                    {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
+                    {isAr ? 'مكتمل' : lang === 'zh' ? '资料完整' : 'Complete'}
                   </span>
                 </div>
               )}
@@ -599,7 +600,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                         {isReviewedSupplier && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block', flexShrink: 0 }} />
-                            <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>مورد موثّق</span>
+                            <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>الملف مكتمل</span>
                           </div>
                         )}
                         <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>

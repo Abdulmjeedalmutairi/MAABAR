@@ -184,6 +184,16 @@ export function isSupplierPubliclyVisible(rawStatus) {
   return isSupplierApproved(rawStatus);
 }
 
+// Whether the supplier's legal/verification documents are complete — i.e. they
+// passed the 8-field submit_supplier_verification path and reached 'verified'.
+// Since visibility no longer gates on this (registered suppliers are already
+// vetted offline and are shown regardless), this flag now drives ONLY the
+// "documents complete" badge, not whether the supplier appears. Same predicate
+// as isSupplierPubliclyVisible, named for what it means post-visibility-change.
+export function isSupplierDocsComplete(rawStatus) {
+  return isSupplierApproved(rawStatus);
+}
+
 export function getSupplierMaabarId(profile = {}) {
   const rawValue = typeof profile === 'string' ? profile : profile?.maabar_supplier_id;
   const normalized = String(rawValue || '').trim().toUpperCase();
