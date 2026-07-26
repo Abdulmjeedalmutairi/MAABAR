@@ -69,7 +69,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const isAr = lang === 'ar';
   // Docs-complete = passed the 8-field verification path. Drives the badge only.
   const isReviewedSupplier = isSupplierDocsComplete(supplier?.status);
-  const companyDescription = supplier?.company_description || supplier?.bio_en || supplier?.bio_ar || supplier?.bio_zh || '';
+  const companyDescription = (isAr ? supplier?.bio_ar : lang === 'zh' ? supplier?.bio_zh : supplier?.bio_en) || supplier?.company_description || supplier?.bio_en || supplier?.bio_ar || supplier?.bio_zh || '';
   const supplierLanguages = Array.isArray(supplier?.languages) ? supplier.languages : [];
   const exportMarkets = Array.isArray(supplier?.export_markets) ? supplier.export_markets : [];
   const certifications = parseCerts(supplier?.certifications);
@@ -237,14 +237,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     return `${formatPriceLocale(built.displayAmount, lang, { fractionDigits: 0 })} ${built.displayCurrency}`;
   })();
 
-  // Phase 6A — hollow-profile callout: shown when supplier has nothing yet.
-  const isHollowProfile = (
-    products.length === 0
-    && certifications.length === 0
-    && supplierAggregateCertTypes.length === 0
-    && !companyDescription
-  );
-
   // Phase 6B — factory_images normalization.
   // The column historically holds two formats:
   //   (a) full public URLs to product-images bucket  → buyer-renderable
@@ -348,14 +340,25 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 {supplier.rating > 0 ? ` · ${stars(Math.round(supplier.rating || 0))}` : ''}
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {/* Field Verified — unconditional: every listed supplier is field-vetted offline. */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 10px', background: 'rgba(110,130,102,0.12)',
+                  border: '1px solid rgba(110,130,102,0.28)', borderRadius: 20,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#5E7256', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, color: '#5E7256', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {isAr ? 'تم التحقق ميدانيًا' : lang === 'zh' ? '实地核验' : 'Field Verified'}
+                  </span>
+                </div>
                 {isReviewedSupplier && (
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '3px 10px', background: 'rgba(45,122,79,0.1)',
-                    border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20,
+                    padding: '3px 10px', background: 'rgba(160,124,58,0.12)',
+                    border: '1px solid rgba(160,124,58,0.32)', borderRadius: 20,
                   }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
-                    <span style={{ fontSize: 11, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9A7636', display: 'inline-block' }} />
+                    <span style={{ fontSize: 11, color: '#9A7636', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                       {isAr ? 'موصى به' : lang === 'zh' ? '推荐' : 'Recommended'}
                     </span>
                   </div>
@@ -402,23 +405,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             </div>
           )}
 
-          {/* Stats row OR profile-being-setup callout (Phase 6A) */}
-          {isHollowProfile ? (
-            <div style={{
-              padding: '14px 16px',
-              borderRadius: 10,
-              background: 'rgba(0,0,0,0.04)',
-              border: '1px solid rgba(0,0,0,0.06)',
-              marginBottom: 16,
-              fontSize: 13,
-              color: '#6b6560',
-              fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif",
-              lineHeight: 1.6,
-              textAlign: 'center',
-            }}>
-              {tT.spProfileBeingSetup}
-            </div>
-          ) : stats.length > 0 && (
+          {/* Stats row */}
+          {stats.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.length}, 1fr)`, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
               {stats.map((stat, i) => (
                 <div key={i} style={{
@@ -442,7 +430,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             <button
               onClick={() => { if (!user) nav('/login'); else nav(`/chat/${supplier.id}`); }}
               style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 13, fontFamily: "'Tajawal', sans-serif", fontWeight: 600, cursor: 'pointer' }}>
-              {isAr ? 'تواصل مباشر' : lang === 'zh' ? '直接联系' : 'Direct Contact'}
+              {isAr ? 'مراسلة' : lang === 'zh' ? '发消息' : 'Message'}
             </button>
             {products.some(p => p.sample_available) && (
               <button
@@ -525,9 +513,9 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 <div style={{ flex: 1, height: 1, background: '#e8e5de' }} />
               </div>
               {isReviewedSupplier && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', borderRadius: 20, flexShrink: 0 }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block' }} />
-                  <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(160,124,58,0.10)', border: '1px solid rgba(160,124,58,0.30)', borderRadius: 20, flexShrink: 0 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#9A7636', display: 'inline-block' }} />
+                  <span style={{ fontSize: 10, color: '#9A7636', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {isAr ? 'موصى به' : lang === 'zh' ? '推荐' : 'Recommended'}
                   </span>
                 </div>
@@ -598,8 +586,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                       <div className="product-card-body">
                         {isReviewedSupplier && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a4f', display: 'inline-block', flexShrink: 0 }} />
-                            <span style={{ fontSize: 10, color: '#2d7a4f', fontFamily: 'var(--font-ar)' }}>موصى به</span>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9A7636', display: 'inline-block', flexShrink: 0 }} />
+                            <span style={{ fontSize: 10, color: '#9A7636', fontFamily: 'var(--font-ar)' }}>موصى به</span>
                           </div>
                         )}
                         <h3 className={`product-card-name${isAr ? ' ar' : ''}`}>
