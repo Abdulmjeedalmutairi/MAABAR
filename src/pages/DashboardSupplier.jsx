@@ -354,6 +354,20 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const showUploadProductsBanner = supplierState.isVerificationRequiredStatus || supplierState.isVerificationUnderReviewStatus;
   const showOnboardingSequence = supplierState.isApprovedStage && profile?.onboarding_completed !== true;
   const isOnboardingLimited = !supplierState.canAccessOperationalFeatures;
+
+  // First-visit nudge: invite a not-yet-verified supplier to add a product now
+  // (Products are unlocked pre-verification). Shows until they skip or save their
+  // first product — tracked by profiles.first_product_prompt_dismissed, which is
+  // deliberately NOT onboarding_completed (that gates the post-approval sequence).
+  const showFirstProductNudge = supplierState.canAccessProducts
+    && !supplierState.isVerifiedStatus
+    && profile?.first_product_prompt_dismissed !== true;
+
+  const dismissFirstProductNudge = () => {
+    setProfile?.(prev => ({ ...(prev || {}), first_product_prompt_dismissed: true }));
+    sb.from('profiles').update({ first_product_prompt_dismissed: true }).eq('id', user.id)
+      .then(() => {}, (e) => console.error('[nudge] dismiss failed:', e?.message));
+  };
   const isVerificationLocked = supplierState.isUnderReviewStage || supplierState.isApprovedStage;
   const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
   const verificationDraftSavedLabel = draftSavedAt ? formatDraftSavedAt(draftSavedAt, lang) : '';
@@ -2113,6 +2127,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     setVariantData(emptyVariantData());
     setProductComposerStep('edit');
     setProductSaveMsg(strippedColumns.length > 0 ? t.productSavedWithFallback : (isAr ? 'تم إضافة المنتج بنجاح' : lang === 'zh' ? '产品添加成功' : 'Product added successfully'));
+    // First product saved → retire the "add your first product" nudge for good.
+    if (profile?.first_product_prompt_dismissed !== true) {
+      setProfile?.(prev => ({ ...(prev || {}), first_product_prompt_dismissed: true }));
+      sb.from('profiles').update({ first_product_prompt_dismissed: true }).eq('id', user.id).then(() => {}, () => {});
+    }
     setTimeout(() => { setProductSaveMsg(''); setActiveTab('my-products'); }, 1800);
     loadStats();
   };
@@ -2771,6 +2790,31 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               )}
               {isOnboardingLimited ? (
                 <>
+                  {showFirstProductNudge && (
+                    <div style={{ marginBottom: 24, padding: '20px 24px', background: 'linear-gradient(135deg, #FCF8F0, #F1F7F1)', border: '1px solid rgba(45,122,79,0.28)', borderRadius: 'var(--radius-xl)' }}>
+                      <p style={{ fontSize: 10, letterSpacing: 2.8, textTransform: 'uppercase', color: '#2d7a4f', marginBottom: 8, fontWeight: 600, ...arFont }}>
+                        {isAr ? 'ابدأ الآن' : lang === 'zh' ? '开始' : 'Get started'}
+                      </p>
+                      <h3 style={{ fontSize: isAr ? 19 : 20, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
+                        {isAr ? 'تقدر تضيف منتجاتك من الآن — بدون انتظار التوثيق'
+                          : lang === 'zh' ? '现在就可以上架产品 — 无需先完成认证'
+                          : 'You can start listing products right away — no need to finish verification first'}
+                      </h3>
+                      <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 16, ...arFont }}>
+                        {isAr ? 'منتجاتك تبقى مخفية عن المشترين حتى يكتمل توثيقك، فابدأ بتجهيزها الآن.'
+                          : lang === 'zh' ? '在您通过认证前，产品对买家不可见 — 所以现在就可以先准备好。'
+                          : "Your products stay hidden from buyers until you're verified — so you can prepare them now."}
+                      </p>
+                      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button onClick={() => setActiveTab('add-product')} className="btn-dark-sm" style={{ fontSize: 12, minHeight: 38 }}>
+                          {isAr ? 'أضف أول منتج' : lang === 'zh' ? '添加第一个产品' : 'Add your first product'}
+                        </button>
+                        <button onClick={dismissFirstProductNudge} style={{ background: 'none', border: 'none', color: 'var(--text-disabled)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', ...arFont }}>
+                          {isAr ? 'لاحقاً' : lang === 'zh' ? '稍后' : 'Skip for now'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div style={{ marginBottom: 24, padding: '24px 26px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <div style={{ maxWidth: 720 }}>
