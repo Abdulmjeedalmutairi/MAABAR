@@ -255,7 +255,9 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const yearsExp = Number(supplier.years_experience);
   const yrsSuffix = isAr ? 'سنة' : lang === 'zh' ? '年' : 'yrs';
   const stats = [
-    { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
+    products.length > 0
+      ? { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length }
+      : null,
     Number.isFinite(yearsExp) && yearsExp > 0
       ? { label: isAr ? 'الخبرة' : lang === 'zh' ? '经验' : 'Experience', value: `${yearsExp} ${yrsSuffix}` }
       : null,
@@ -557,7 +559,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         )}
 
-        {/* ── Products ── */}
+        {/* ── Products (hidden entirely when the supplier has none — matches certs/factory/reviews) ── */}
+        {products.length > 0 && (
         <div id="sp-products" style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap' }}>
@@ -565,11 +568,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             </p>
             <div style={{ flex: 1, height: 1, background: '#e8e5de' }} />
           </div>
-          {products.length === 0 ? (
-            <p style={{ color: '#6b6560', fontSize: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? 'لا توجد منتجات بعد' : 'No products yet'}
-            </p>
-          ) : (
             <div className="product-grid">
               {products.map((p, idx) => {
                 const productPriceFrom = deriveProductPriceFrom(p);
@@ -682,8 +680,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 );
               })}
             </div>
-          )}
         </div>
+        )}
 
         {/* ── Price calculator ── */}
         {products.length > 0 && (
