@@ -597,14 +597,15 @@ OUTPUT: the romanized name only, nothing else.`;
         return json({ latin: name, romanized: false, error: 'empty_response' });
       }
 
-      // Persist under the service role, and ONLY when the column is still empty
-      // (idempotent; never overwrites an existing/edited value).
+      // Persist via the dedicated SECURITY DEFINER RPC, which sets the sanctioned
+      // GUC bypass the guard trigger honors (a bare service-role UPDATE is rejected
+      // by trg_profiles_guard_sensitive_fields). Idempotent + supplier-scoped inside
+      // the RPC — never overwrites an existing value.
       if (payload.id) {
-        const { error } = await admin
-          .from('profiles')
-          .update({ company_name_latin: latin })
-          .eq('id', payload.id)
-          .is('company_name_latin', null);
+        const { error } = await admin.rpc('set_company_name_latin', {
+          supplier_id: payload.id,
+          latin_name: latin,
+        });
         if (error) console.error('[maabar-ai][romanize][persist]', error.message);
       }
 
