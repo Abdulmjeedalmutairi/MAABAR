@@ -6,6 +6,7 @@ import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierDocsComplete } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
 import { resolveCompanyName, ensureCompanyRomanization } from '../lib/companyRomanize';
+import { buildSupplierBlurb } from '../lib/supplierBlurb';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
 import { T, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
@@ -220,6 +221,9 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   // Phase 5D — aggregate cert types across all of the supplier's products.
   // Computed once per render (cheap; products is already in memory).
   const tT = T[lang] || T.en;
+  // When there's no real bio, show a templated blurb built only from fields we
+  // actually have (sector/location/verified) — never a blank About section.
+  const supplierBlurb = companyDescription ? '' : buildSupplierBlurb(supplier, lang);
   const supplierAggregateCertTypes = (() => {
     const seen = new Set();
     const ordered = [];
@@ -477,12 +481,14 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         )}
 
-        {/* ── About (Phase 6B: AI translation when source ≠ viewer lang) ── */}
-        {companyDescription && (
+        {/* ── About — real bio (AI-translated) or a templated blurb from real fields ── */}
+        {(companyDescription || supplierBlurb) && (
           <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
             <SectionLabel label={isAr ? 'عن الشركة' : lang === 'zh' ? '公司介绍' : 'About'} isAr={isAr} />
             <div style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.85, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              <TranslatedText text={companyDescription} lang={lang} />
+              {companyDescription
+                ? <TranslatedText text={companyDescription} lang={lang} />
+                : supplierBlurb}
             </div>
           </div>
         )}
