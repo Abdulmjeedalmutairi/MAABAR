@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { isSupplierDocsComplete } from '../lib/supplierOnboarding';
+import { resolveCompanyName, ensureCompanyRomanization } from '../lib/companyRomanize';
 import { getSpecialtyLabel, UI_CATEGORIES as CATEGORIES } from '../lib/supplierDashboardConstants';
 
 const SkeletonCard = () => (
@@ -40,7 +41,16 @@ export default function Suppliers({ lang, user }) {
     if (activeCat !== 'all') query = query.eq('speciality', activeCat);
 
     const { data } = await query;
-    if (data) setSuppliers(data);
+    if (data) {
+      setSuppliers(data);
+      // Self-heal: romanize any Chinese company names not yet cached. Each call
+      // persists server-side and patches just its row as the Latin name resolves.
+      data.forEach((s) => {
+        ensureCompanyRomanization(s).then((latin) => {
+          if (latin) setSuppliers((prev) => prev.map((x) => (x.id === s.id ? { ...x, company_name_latin: latin } : x)));
+        });
+      });
+    }
     setLoading(false);
   };
 
@@ -48,6 +58,7 @@ export default function Suppliers({ lang, user }) {
     const q = search.toLowerCase();
     return [
       s.company_name,
+      s.company_name_latin,
       s.bio_ar,
       s.bio_en,
       s.speciality,
@@ -129,7 +140,8 @@ export default function Suppliers({ lang, user }) {
               const isReviewedSupplier = isSupplierDocsComplete(s.status);
               const factoryPhoto = (Array.isArray(s.factory_images) ? s.factory_images : [])
                 .find((img) => typeof img === 'string' && /^https?:\/\//i.test(img) && !img.includes('/supplier-docs/')) || '';
-              const initial = ((s.company_name || '?').trim()[0] || '?').toUpperCase();
+              const displayName = resolveCompanyName(s);
+              const initial = ((displayName || '?').trim()[0] || '?').toUpperCase();
               const cardDesc = (isAr ? s.bio_ar : lang === 'zh' ? s.bio_zh : s.bio_en) || s.company_description || s.bio_en || s.bio_ar || s.bio_zh || '';
               const cardLocation = [s.city, s.country].filter(Boolean).join(isAr ? '، ' : ', ');
               const exportMarketsText = (Array.isArray(s.export_markets) ? s.export_markets.filter(Boolean) : (s.export_markets ? [s.export_markets] : [])).slice(0, 2).join(' · ');
@@ -160,8 +172,8 @@ export default function Suppliers({ lang, user }) {
                 <div style={{ position: 'relative', height: 140, background: '#EFE8DC' }}>
                   {factoryPhoto
                     ? <img src={factoryPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 60, fontWeight: 300, color: '#C9BCA6', fontFamily: "'Cormorant Garamond', serif" }}>{initial}</span>
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8F5' }}>
+                        <span style={{ fontSize: 60, fontWeight: 300, color: '#8B7355', fontFamily: "'Cormorant Garamond', serif" }}>{initial}</span>
                       </div>}
                   <div style={{ position: 'absolute', bottom: -22, left: '50%', transform: 'translateX(-50%)', width: 52, height: 52, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E6DFD3', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {s.avatar_url
@@ -173,7 +185,7 @@ export default function Suppliers({ lang, user }) {
                 {/* BODY */}
                 <div style={{ padding: '32px 20px 20px', textAlign: 'center' }}>
                   <p style={{ fontSize: 16, fontWeight: 600, color: '#2A2420', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                    {s.company_name || '—'}
+                    {displayName || '—'}
                   </p>
                   {cardLocation && (
                     <p style={{ fontSize: 12, color: '#8A8178', margin: '0 0 12px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{cardLocation}</p>
@@ -208,7 +220,7 @@ export default function Suppliers({ lang, user }) {
                   )}
 
                   {/* CTA */}
-                  <button onClick={e => { e.stopPropagation(); nav(`/supplier/${s.id}`); }} style={{ width: '100%', padding: '10px', fontSize: 12.5, fontWeight: 600, color: '#FFFFFF', background: '#8B7355', border: 'none', borderRadius: 10, cursor: 'pointer', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  <button onClick={e => { e.stopPropagation(); nav(`/supplier/${s.id}`); }} style={{ width: '100%', padding: '10px', fontSize: 12.5, fontWeight: 600, color: '#FFFFFF', background: '#1a1814', border: 'none', borderRadius: 10, cursor: 'pointer', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {isAr ? 'عرض ملف المورد' : lang === 'zh' ? '查看供应商主页' : 'View supplier profile'}
                   </button>
                 </div>

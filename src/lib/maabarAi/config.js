@@ -17,6 +17,7 @@ export const MAABAR_AI_TASKS = {
   CHAT_TRANSLATION: 'chat_translation',
   CUSTOMER_SUPPORT: 'customer_support',
   HS_CODE_SUGGEST: 'hs_code_suggest',
+  COMPANY_ROMANIZATION: 'company_romanization',
 };
 
 export const MAABAR_AI_SUPPORT_CHANNELS = {

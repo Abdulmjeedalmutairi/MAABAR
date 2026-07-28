@@ -59,10 +59,17 @@ type ManagedBriefPayload = {
   response_deadline?: string | null;
 };
 
+type CompanyRomanizationPayload = {
+  // The supplier's id (optional). When present, the romanized result is
+  // persisted to profiles.company_name_latin under the service role.
+  id?: string;
+  name?: string;
+};
+
 type RequestBody = {
-  task?: 'idea_to_product' | 'product_conversation' | 'chat_translation' | 'customer_support' | 'managed_brief';
+  task?: 'idea_to_product' | 'product_conversation' | 'chat_translation' | 'customer_support' | 'managed_brief' | 'company_romanization';
   personaName?: string;
-  payload?: IdeaToProductPayload | ProductConversationPayload | ChatTranslationPayload | CustomerSupportPayload | ManagedBriefPayload;
+  payload?: IdeaToProductPayload | ProductConversationPayload | ChatTranslationPayload | CustomerSupportPayload | ManagedBriefPayload | CompanyRomanizationPayload;
 };
 
 function json(data: unknown, status = 200) {
@@ -88,6 +95,7 @@ const RATE_LIMITS: Record<string, { hour: number; day: number }> = {
   customer_support:     { hour: 20,  day: 60 },
   chat_translation:     { hour: 150, day: 800 },
   managed_brief:        { hour: 15,  day: 60 },
+  company_romanization: { hour: 120, day: 600 },
 };
 
 function clientIp(req: Request): string {
@@ -543,6 +551,65 @@ Rules:
       });
 
       return json({ result: JSON.parse(text) });
+    }
+
+    if (body.task === 'company_romanization') {
+      const payload = body.payload as CompanyRomanizationPayload;
+      const name = (payload.name || '').trim();
+
+      if (!name) {
+        return json({ error: 'Company name is required' }, 400);
+      }
+
+      // Only romanize names that actually contain Chinese characters. Anything
+      // already in Latin/Arabic script is returned untouched and never written,
+      // so callers can fire blindly without pre-filtering.
+      const hasChinese = /[一-鿿]/.test(name);
+      if (!hasChinese) {
+        return json({ latin: name, romanized: false });
+      }
+
+      const systemInstruction = `You are ${personaName}, Maabar's China-desk name specialist.
+
+TASK: ROMANIZE the given Chinese company name into Latin script. This is NOT translation.
+- Use standard Hanyu Pinyin (no tone marks) for proper nouns / brand names, capitalized (e.g. 江阴标榜 → "Jiangyin Biaobang").
+- Use the conventional ENGLISH equivalent for generic industry/descriptive words and legal suffixes (塑料制品 → "Plastic Products", 有限公司 → "Co., Ltd", 集团 → "Group", 科技 → "Technology", 电子 → "Electronics").
+- Preserve the original word order.
+- NEVER translate the name into Arabic. NEVER add commentary, quotes, or explanations.
+
+Example: 江阴标榜塑料制品有限公司 → Jiangyin Biaobang Plastic Products Co., Ltd
+
+OUTPUT: the romanized name only, nothing else.`;
+
+      let latin = '';
+      try {
+        latin = (await callProvider({
+          systemInstruction,
+          prompt: `Chinese company name:\n${name}`,
+          responseMimeType: 'text/plain',
+        })).trim();
+      } catch (err) {
+        console.error('[maabar-ai][romanize]', err instanceof Error ? err.message : err);
+        return json({ latin: name, romanized: false, error: 'romanization_failed' });
+      }
+
+      if (!latin) {
+        return json({ latin: name, romanized: false, error: 'empty_response' });
+      }
+
+      // Persist via the dedicated SECURITY DEFINER RPC, which sets the sanctioned
+      // GUC bypass the guard trigger honors (a bare service-role UPDATE is rejected
+      // by trg_profiles_guard_sensitive_fields). Idempotent + supplier-scoped inside
+      // the RPC — never overwrites an existing value.
+      if (payload.id) {
+        const { error } = await admin.rpc('set_company_name_latin', {
+          supplier_id: payload.id,
+          latin_name: latin,
+        });
+        if (error) console.error('[maabar-ai][romanize][persist]', error.message);
+      }
+
+      return json({ latin, romanized: true });
     }
 
     return json({ error: 'Unsupported task' }, 400);

@@ -5,6 +5,8 @@ import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierDocsComplete } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import { resolveCompanyName, ensureCompanyRomanization } from '../lib/companyRomanize';
+import { buildSupplierBlurb } from '../lib/supplierBlurb';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
 import { T, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
@@ -109,6 +111,13 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
 
     setSupplier(visibleSupplier);
 
+    // Lazily romanize a Chinese company name (pinyin, not translation). The edge
+    // task persists the result, so this fires at most once per supplier ever;
+    // meanwhile the raw name shows and swaps to Latin when ready.
+    ensureCompanyRomanization(visibleSupplier).then((latin) => {
+      if (latin) setSupplier((prev) => (prev && prev.id === visibleSupplier.id ? { ...prev, company_name_latin: latin } : prev));
+    });
+
     const [{ data: p }, { data: r }] = await Promise.all([
       sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}, ${PRODUCT_CERT_EMBED}`).eq('supplier_id', id).eq('is_active', true),
       sb.from('reviews').select('*').eq('supplier_id', id).order('created_at', { ascending: false }),
@@ -212,6 +221,9 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   // Phase 5D — aggregate cert types across all of the supplier's products.
   // Computed once per render (cheap; products is already in memory).
   const tT = T[lang] || T.en;
+  // When there's no real bio, show a templated blurb built only from fields we
+  // actually have (sector/location/verified) — never a blank About section.
+  const supplierBlurb = companyDescription ? '' : buildSupplierBlurb(supplier, lang);
   const supplierAggregateCertTypes = (() => {
     const seen = new Set();
     const ordered = [];
@@ -255,7 +267,9 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
   const yearsExp = Number(supplier.years_experience);
   const yrsSuffix = isAr ? 'سنة' : lang === 'zh' ? '年' : 'yrs';
   const stats = [
-    { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length },
+    products.length > 0
+      ? { label: isAr ? 'منتجات' : lang === 'zh' ? '产品' : 'Products', value: products.length }
+      : null,
     Number.isFinite(yearsExp) && yearsExp > 0
       ? { label: isAr ? 'الخبرة' : lang === 'zh' ? '经验' : 'Experience', value: `${yearsExp} ${yrsSuffix}` }
       : null,
@@ -306,14 +320,14 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
             <div style={{
               width: 64, height: 64, borderRadius: '50%',
-              background: '#d8d0be', overflow: 'hidden',
+              background: '#FAF8F5', border: '1px solid #E6DFD3', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, fontSize: 22, color: '#6b6560',
+              flexShrink: 0, fontSize: 24, fontWeight: 600, color: '#8B7355',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
               {supplier.avatar_url
                 ? <img src={supplier.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (supplier.company_name || '?')[0]}
+                : (resolveCompanyName(supplier) || '?')[0]}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{
@@ -321,7 +335,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif",
                 lineHeight: 1.3,
               }}>
-                {supplier.company_name}
+                {resolveCompanyName(supplier)}
               </h1>
               {/* Phase 6B Task 3 — specialty under company name */}
               {supplier.speciality && supplier.speciality !== 'other' && (
@@ -467,12 +481,14 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         )}
 
-        {/* ── About (Phase 6B: AI translation when source ≠ viewer lang) ── */}
-        {companyDescription && (
+        {/* ── About — real bio (AI-translated) or a templated blurb from real fields ── */}
+        {(companyDescription || supplierBlurb) && (
           <div style={{ background: '#faf9f7', border: '1px solid #e8e5de', borderRadius: 14, padding: 20, marginBottom: 16 }}>
             <SectionLabel label={isAr ? 'عن الشركة' : lang === 'zh' ? '公司介绍' : 'About'} isAr={isAr} />
             <div style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.85, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              <TranslatedText text={companyDescription} lang={lang} />
+              {companyDescription
+                ? <TranslatedText text={companyDescription} lang={lang} />
+                : supplierBlurb}
             </div>
           </div>
         )}
@@ -557,7 +573,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           </div>
         )}
 
-        {/* ── Products ── */}
+        {/* ── Products (hidden entirely when the supplier has none — matches certs/factory/reviews) ── */}
+        {products.length > 0 && (
         <div id="sp-products" style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <p style={{ fontSize: 10, fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif", letterSpacing: isAr ? 0 : '1.2px', textTransform: 'uppercase', color: '#b0ab9e', margin: 0, whiteSpace: 'nowrap' }}>
@@ -565,11 +582,6 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             </p>
             <div style={{ flex: 1, height: 1, background: '#e8e5de' }} />
           </div>
-          {products.length === 0 ? (
-            <p style={{ color: '#6b6560', fontSize: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? 'لا توجد منتجات بعد' : 'No products yet'}
-            </p>
-          ) : (
             <div className="product-grid">
               {products.map((p, idx) => {
                 const productPriceFrom = deriveProductPriceFrom(p);
@@ -579,9 +591,13 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                   <div key={p.id}>
                     <div className="product-card" style={animation} onClick={() => nav(`/products/${p.id}`)}>
                       <div className="product-card-img">
-                        {getPrimaryProductImage(p) && (
-                          <img src={getPrimaryProductImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        )}
+                        {getPrimaryProductImage(p)
+                          ? <img src={getPrimaryProductImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8F5' }}>
+                              <span style={{ fontSize: 30, fontWeight: 300, color: '#8B7355', fontFamily: "'Cormorant Garamond', serif" }}>
+                                {((isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar) || '?').trim()[0] || '?'}
+                              </span>
+                            </div>}
                       </div>
                       <div className="product-card-body">
                         {isReviewedSupplier && (
@@ -682,8 +698,8 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 );
               })}
             </div>
-          )}
         </div>
+        )}
 
         {/* ── Price calculator ── */}
         {products.length > 0 && (
