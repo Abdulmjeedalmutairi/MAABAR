@@ -172,8 +172,8 @@ export default function Suppliers({ lang, user }) {
                 <div style={{ position: 'relative', height: 140, background: '#EFE8DC' }}>
                   {factoryPhoto
                     ? <img src={factoryPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 60, fontWeight: 300, color: '#C9BCA6', fontFamily: "'Cormorant Garamond', serif" }}>{initial}</span>
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8F5' }}>
+                        <span style={{ fontSize: 60, fontWeight: 300, color: '#8B7355', fontFamily: "'Cormorant Garamond', serif" }}>{initial}</span>
                       </div>}
                   <div style={{ position: 'absolute', bottom: -22, left: '50%', transform: 'translateX(-50%)', width: 52, height: 52, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E6DFD3', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {s.avatar_url

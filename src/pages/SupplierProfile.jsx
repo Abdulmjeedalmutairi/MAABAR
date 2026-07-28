@@ -320,9 +320,9 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
             <div style={{
               width: 64, height: 64, borderRadius: '50%',
-              background: '#d8d0be', overflow: 'hidden',
+              background: '#FAF8F5', border: '1px solid #E6DFD3', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, fontSize: 22, color: '#6b6560',
+              flexShrink: 0, fontSize: 24, fontWeight: 600, color: '#8B7355',
               fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
             }}>
               {supplier.avatar_url
@@ -591,9 +591,13 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                   <div key={p.id}>
                     <div className="product-card" style={animation} onClick={() => nav(`/products/${p.id}`)}>
                       <div className="product-card-img">
-                        {getPrimaryProductImage(p) && (
-                          <img src={getPrimaryProductImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        )}
+                        {getPrimaryProductImage(p)
+                          ? <img src={getPrimaryProductImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8F5' }}>
+                              <span style={{ fontSize: 30, fontWeight: 300, color: '#8B7355', fontFamily: "'Cormorant Garamond', serif" }}>
+                                {((isAr ? p.name_ar || p.name_en : lang === 'zh' ? p.name_zh || p.name_en : p.name_en || p.name_ar) || '?').trim()[0] || '?'}
+                              </span>
+                            </div>}
                       </div>
                       <div className="product-card-body">
                         {isReviewedSupplier && (
