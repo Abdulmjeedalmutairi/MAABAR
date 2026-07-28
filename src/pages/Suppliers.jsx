@@ -220,7 +220,7 @@ export default function Suppliers({ lang, user }) {
                   )}
 
                   {/* CTA */}
-                  <button onClick={e => { e.stopPropagation(); nav(`/supplier/${s.id}`); }} style={{ width: '100%', padding: '10px', fontSize: 12.5, fontWeight: 600, color: '#FFFFFF', background: '#8B7355', border: 'none', borderRadius: 10, cursor: 'pointer', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  <button onClick={e => { e.stopPropagation(); nav(`/supplier/${s.id}`); }} style={{ width: '100%', padding: '10px', fontSize: 12.5, fontWeight: 600, color: '#FFFFFF', background: '#1a1814', border: 'none', borderRadius: 10, cursor: 'pointer', letterSpacing: 0.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {isAr ? 'عرض ملف المورد' : lang === 'zh' ? '查看供应商主页' : 'View supplier profile'}
                   </button>
                 </div>
