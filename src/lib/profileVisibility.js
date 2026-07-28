@@ -7,7 +7,7 @@ export async function fetchProfileDirectoryByIds(sb, ids = []) {
   if (!ids.length) return [];
   const { data } = await sb
     .from('profile_directory')
-    .select('id, full_name, company_name, role, status, avatar_url, city, country, speciality, maabar_supplier_id, lang, rating, reviews_count, years_experience, year_established, factory_images')
+    .select('id, full_name, company_name, company_name_latin, role, status, avatar_url, city, country, speciality, maabar_supplier_id, lang, rating, reviews_count, years_experience, year_established, factory_images')
     .in('id', ids);
   return data || [];
 }
@@ -16,7 +16,7 @@ export async function fetchSupplierPublicProfileById(sb, id) {
   if (!id) return null;
   const { data } = await sb
     .from('supplier_public_profiles')
-    .select('id, full_name, company_name, role, status, avatar_url, city, country, speciality, maabar_supplier_id, bio_ar, bio_en, bio_zh, factory_images, min_order_value, languages, rating, reviews_count, year_established, business_type, customization_support, company_address, company_description, export_markets, certifications, years_experience, completion_rate, company_website, export_years')
+    .select('id, full_name, company_name, company_name_latin, role, status, avatar_url, city, country, speciality, maabar_supplier_id, bio_ar, bio_en, bio_zh, factory_images, min_order_value, languages, rating, reviews_count, year_established, business_type, customization_support, company_address, company_description, export_markets, certifications, years_experience, completion_rate, company_website, export_years')
     .eq('id', id)
     .single();
   return data || null;

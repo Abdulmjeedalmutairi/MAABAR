@@ -5,6 +5,7 @@ import { buildDisplayPrice } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
 import { isSupplierDocsComplete } from '../lib/supplierOnboarding';
 import { fetchSupplierPublicProfileById } from '../lib/profileVisibility';
+import { resolveCompanyName, ensureCompanyRomanization } from '../lib/companyRomanize';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { PRODUCT_CERT_EMBED, getProductCertTypes } from '../lib/productCertLookup';
 import { T, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
@@ -108,6 +109,13 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
     // supplier_public_profiles first.
 
     setSupplier(visibleSupplier);
+
+    // Lazily romanize a Chinese company name (pinyin, not translation). The edge
+    // task persists the result, so this fires at most once per supplier ever;
+    // meanwhile the raw name shows and swaps to Latin when ready.
+    ensureCompanyRomanization(visibleSupplier).then((latin) => {
+      if (latin) setSupplier((prev) => (prev && prev.id === visibleSupplier.id ? { ...prev, company_name_latin: latin } : prev));
+    });
 
     const [{ data: p }, { data: r }] = await Promise.all([
       sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}, ${PRODUCT_CERT_EMBED}`).eq('supplier_id', id).eq('is_active', true),
@@ -315,7 +323,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
             }}>
               {supplier.avatar_url
                 ? <img src={supplier.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (supplier.company_name || '?')[0]}
+                : (resolveCompanyName(supplier) || '?')[0]}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{
@@ -323,7 +331,7 @@ export default function SupplierProfile({ lang, user, displayCurrency, exchangeR
                 fontFamily: isAr ? "'Tajawal', sans-serif" : "'Cormorant Garamond', serif",
                 lineHeight: 1.3,
               }}>
-                {supplier.company_name}
+                {resolveCompanyName(supplier)}
               </h1>
               {/* Phase 6B Task 3 — specialty under company name */}
               {supplier.speciality && supplier.speciality !== 'other' && (
