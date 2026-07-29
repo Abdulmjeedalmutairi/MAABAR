@@ -18,7 +18,17 @@ const C = {
     doneT: 'Offer submitted', doneB: 'Thank you. The Maabar team will review your offer and get back to you.',
     expired: 'This link has expired.', already: 'An offer has already been submitted for this request.',
     notFound: 'Request not found.', privacy: 'Buyer contact details are shared only after the deal proceeds through Maabar.',
-    errPrice: 'Please enter a valid unit price.', errAuth: 'Could not sign you in. Check your details and try again.',
+    errPrice: 'Please enter a valid unit price.',
+    errPhone: 'Please enter a valid phone number in international format (e.g. +8613800138000).',
+    errPassword: 'Please enter a password of at least 6 characters.',
+    errExists: 'This phone number is already registered — switch to “Sign in”.',
+    errCreds: 'Phone number or password is incorrect.',
+    errNeedRegister: 'Please register before submitting an offer.',
+    errExpired: 'This link has expired.',
+    errClaimed: 'This request was already claimed by another account.',
+    errAlreadyOffer: 'An offer has already been submitted for this request.',
+    errAuth: 'Could not sign you in. Please check your details and try again.',
+    errLoad: 'Could not load this request. Please try again.',
     errGeneric: 'Something went wrong. Please try again.',
   },
   zh: {
@@ -31,17 +41,42 @@ const C = {
     doneT: '报价已提交', doneB: '谢谢。Maabar 团队将审核您的报价并与您联系。',
     expired: '此链接已过期。', already: '此需求已提交过报价。',
     notFound: '未找到需求。', privacy: '买家联系方式仅在交易通过 Maabar 推进后共享。',
-    errPrice: '请输入有效的单价。', errAuth: '无法登录，请检查信息后重试。',
+    errPrice: '请输入有效的单价。',
+    errPhone: '请输入有效的电话号码（国际格式，如 +8613800138000）。',
+    errPassword: '请输入至少 6 位的密码。',
+    errExists: '该电话号码已注册，请切换到“登录”。',
+    errCreds: '电话号码或密码不正确。',
+    errNeedRegister: '提交报价前请先注册。',
+    errExpired: '此链接已过期。',
+    errClaimed: '此需求已被其他账户认领。',
+    errAlreadyOffer: '此需求已提交过报价。',
+    errAuth: '无法登录，请检查信息后重试。',
+    errLoad: '无法加载此需求，请重试。',
     errGeneric: '出错了，请重试。',
   },
 };
+
+// International phone sanity check (E.164-ish): leading +, 7–15 digits, no leading 0.
+const isValidPhone = (v) => /^\+[1-9]\d{6,14}$/.test(String(v || '').trim());
 
 export default function FactoryRequestView() {
   const { slug } = useParams();
   const [lang, setLang] = useState('en');
   const t = C[lang];
 
+  // Map raw RPC/exception text to a friendly, localized message (never show raw).
+  const mapRpc = (msg) => {
+    const m = String(msg || '').toLowerCase();
+    if (m.includes('expired')) return t.errExpired;
+    if (m.includes('already claimed')) return t.errClaimed;
+    if (m.includes('already been submitted')) return t.errAlreadyOffer;
+    if (m.includes('valid price')) return t.errPrice;
+    if (m.includes('register for this request')) return t.errNeedRegister;
+    return t.errGeneric;
+  };
+
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [invite, setInvite] = useState(null);      // { status, expired, factory_name, product_name, brief }
   const [phase, setPhase] = useState('brief');      // 'brief' | 'auth' | 'offer' | 'done'
   const [authMode, setAuthMode] = useState('register');
@@ -62,7 +97,9 @@ export default function FactoryRequestView() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [slug]);
   async function load() {
     setLoading(true);
-    const { data } = await sb.rpc('get_factory_invite', { p_slug: slug });
+    setLoadError(false);
+    const { data, error } = await sb.rpc('get_factory_invite', { p_slug: slug });
+    if (error) { setLoadError(true); setLoading(false); return; }
     const row = Array.isArray(data) ? data[0] : data;
     setInvite(row || null);
     if (row) {
@@ -76,13 +113,14 @@ export default function FactoryRequestView() {
   async function doRegister() {
     // Ensure the invite is linked to this (now authenticated) supplier.
     const { error: e } = await sb.rpc('register_factory_invite', { p_slug: slug });
-    if (e) { setError(e.message || t.errGeneric); return false; }
+    if (e) { setError(mapRpc(e.message)); return false; }
     return true;
   }
 
   async function handleAuth() {
     const ph = phone.trim();
-    if (!ph || !password) { setError(t.errAuth); return; }
+    if (!isValidPhone(ph)) { setError(t.errPhone); return; }
+    if (!password || password.length < 6) { setError(t.errPassword); return; }
     setBusy(true); setError('');
     try {
       let res;
@@ -94,7 +132,15 @@ export default function FactoryRequestView() {
           options: { data: { role: 'supplier', status: 'registered', company_name: company.trim() || (invite?.factory_name || ''), phone: ph, lang } },
         });
       }
-      if (res.error || !res.data?.user) { setBusy(false); setError(t.errAuth); return; }
+      if (res.error || !res.data?.user) {
+        setBusy(false);
+        const em = String(res.error?.message || '').toLowerCase();
+        if (authMode === 'register' && /already|registered|exists/.test(em)) setError(t.errExists);
+        else if (authMode === 'signin') setError(t.errCreds);
+        else if (em.includes('phone')) setError(t.errPhone);
+        else setError(t.errAuth);
+        return;
+      }
       const ok = await doRegister();
       setBusy(false);
       if (ok) setPhase('offer');
@@ -130,7 +176,7 @@ export default function FactoryRequestView() {
       p_note: note.trim() || null,
     });
     setBusy(false);
-    if (e) { setError(e.message || t.errGeneric); return; }
+    if (e) { setError(mapRpc(e.message)); return; }
     setPhase('done');
   }
 
@@ -151,6 +197,8 @@ export default function FactoryRequestView() {
 
         {loading ? (
           <p style={{ color: 'var(--text-secondary)' }}>…</p>
+        ) : loadError ? (
+          <div style={card}><p>{t.errLoad}</p></div>
         ) : !invite ? (
           <div style={card}><p>{t.notFound}</p></div>
         ) : invite.expired ? (
