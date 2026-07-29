@@ -194,11 +194,13 @@ begin
   select * into v_invite from public.request_factory_invites i where i.slug = p_slug;
   if not found then return; end if;
 
-  -- First view: sent → opened (never downgrade a later state).
+  -- First view: sent → opened (never downgrade a later state). The WHERE column
+  -- is qualified (request_factory_invites.status) to disambiguate it from the
+  -- RETURNS TABLE output parameter also named "status" (else 42702 at runtime).
   if v_invite.status = 'sent' then
     update public.request_factory_invites
       set status = 'opened', opened_at = now()
-      where id = v_invite.id and status = 'sent';
+      where id = v_invite.id and request_factory_invites.status = 'sent';
     v_invite.status := 'opened';
   end if;
 
