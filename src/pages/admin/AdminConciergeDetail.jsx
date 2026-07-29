@@ -106,6 +106,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   // loads". An explicit admin choice (including 'all') overrides that.
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [allSuppliers, setAllSuppliers] = useState([]);
+  const [factoryInvites, setFactoryInvites] = useState([]);
   const [searching, setSearching] = useState(false);
   const isAr = lang === 'ar';
 
@@ -118,6 +119,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
       { data: conns },
       { data: offers },
       { data: shortlist },
+      { data: invites },
     ] = await Promise.all([
       sb.from('requests')
         .select(`
@@ -151,6 +153,12 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         .select('id, offer_id, rank, status, supplier_id')
         .eq('request_id', id)
         .order('rank'),
+      // Factory invites on this request (Factories flow) — factory identity +
+      // lifecycle. Admin reads factory_directory (incl. email) via is_admin_user().
+      sb.from('request_factory_invites')
+        .select('id, slug, status, factory_email, opened_at, registered_at, offer_submitted_at, expires_at, created_at, factory:factory_id(company_name, city, country), product:factory_product_id(name_en, name_zh, name_ar, ref_code)')
+        .eq('request_id', id)
+        .order('created_at', { ascending: false }),
     ]);
 
     if (reqError) console.error('[AdminConciergeDetail] load error:', reqError);
@@ -194,6 +202,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     setConnections(conns || []);
     setSupplierOffers(offers || []);
     setShortlistRows(shortlist || []);
+    setFactoryInvites(invites || []);
     setLoading(false);
   }, [id]);
 
@@ -741,6 +750,38 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
               </p>
             )}
           </SectionCard>
+
+          {/* Factory invites (Factories flow) — factory identity + lifecycle.
+              Their offers appear under "Supplier Offers" above (admin_only). */}
+          {factoryInvites.length > 0 && (
+            <SectionCard title={isAr ? `دعوات المصانع (${factoryInvites.length})` : `Factory Invites (${factoryInvites.length})`}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {factoryInvites.map((inv) => {
+                  const fname = inv.factory?.company_name || '—';
+                  const pname = inv.product?.name_en || inv.product?.name_zh || inv.product?.name_ar || null;
+                  return (
+                    <div key={inv.id} style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8, padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary, #1a1814)', fontWeight: 600 }}>{fname}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'rgba(0,0,0,0.5)' }}>
+                            {inv.factory_email}{pname ? ` · ${pname}` : ''}{inv.product?.ref_code ? ` (${inv.product.ref_code})` : ''}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.6)' }}>{inv.status}</span>
+                      </div>
+                      <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(0,0,0,0.45)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        {inv.opened_at && <span>{isAr ? 'فُتح' : 'Opened'}</span>}
+                        {inv.registered_at && <span>{isAr ? 'سُجّل' : 'Registered'}</span>}
+                        {inv.offer_submitted_at && <span>{isAr ? 'قدّم عرضًا' : 'Offer submitted'}</span>}
+                        <a href={`/f/${inv.slug}`} target="_blank" rel="noreferrer" style={{ color: '#8B7355' }}>/f/{inv.slug}</a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
 
           {/* Notes */}
           <SectionCard>
