@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
+import ProductRequestModal from '../components/factory/ProductRequestModal';
 
 // Factory detail — real name + photos + info + full catalog. Request actions
 // (product modal + factory-level "custom request" button) are wired in Phase 3
 // Commit 6. Placeholder styling.
-export default function FactoryDetail({ lang = 'ar' }) {
+export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const { id } = useParams();
+  const nav = useNavigate();
   const isAr = lang === 'ar';
   usePageTitle('suppliers', lang);
   const [factory, setFactory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [modalProduct, setModalProduct] = useState(null);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
   async function load() {
@@ -60,7 +63,11 @@ export default function FactoryDetail({ lang = 'ar' }) {
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 24, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{desc}</p>
         )}
 
-        {/* Factory-level "custom request" button + product-request modal land in Commit 6. */}
+        {/* Factory-level custom request → the general wizard, bound to this factory. */}
+        <button className="btn-outline" onClick={() => nav(`/request/new?factory=${factory.id}`)}
+          style={{ marginBottom: 24, minHeight: 42, padding: '10px 20px', fontSize: 13 }}>
+          {isAr ? 'اطلب طلبًا مخصصًا من هذا المصنع' : lang === 'zh' ? '向该工厂发出定制需求' : 'Request something custom from this factory'}
+        </button>
 
         <h2 style={{ fontSize: 16, color: 'var(--text-primary)', margin: '0 0 14px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
           {isAr ? 'الكتالوج' : lang === 'zh' ? '产品目录' : 'Catalog'}
@@ -72,7 +79,8 @@ export default function FactoryDetail({ lang = 'ar' }) {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
             {products.map((p) => (
-              <div key={p.id} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 12, overflow: 'hidden' }}>
+              <div key={p.id} onClick={() => setModalProduct(p)}
+                style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
                 <div style={{ aspectRatio: '1 / 1', background: '#FAF8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {p.image
                     ? <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -87,6 +95,18 @@ export default function FactoryDetail({ lang = 'ar' }) {
           </div>
         )}
       </div>
+
+      {modalProduct && (
+        <ProductRequestModal
+          lang={lang}
+          user={user}
+          factory={factory}
+          product={modalProduct}
+          displayCurrency={displayCurrency}
+          onClose={() => setModalProduct(null)}
+        />
+      )}
+
       <Footer lang={lang} />
     </div>
   );

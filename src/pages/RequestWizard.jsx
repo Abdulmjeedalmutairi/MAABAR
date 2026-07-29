@@ -6,6 +6,7 @@ import IdeaToProduct from '../components/IdeaToProduct';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
 import { DISPLAY_CURRENCIES, normalizeDisplayCurrency } from '../lib/displayCurrency';
 import { createManagedRequest } from '../lib/createManagedRequest';
+import { sb } from '../supabase';
 
 const DRAFT_KEY = 'maabar_wizard_draft';
 
@@ -104,9 +105,13 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
   const params = new URLSearchParams(location.search);
   const prefillCategory = params.get('category') || params.get('sector') || '';
   const prefillTitle = params.get('prefillTitle') || '';
+  // Factory-level "custom request to this factory" binding (from a factory page).
+  const factoryId = params.get('factory') || '';
 
   // null → show the product-vs-idea choice; 'product' → form; 'idea' → IdeaToProduct.
-  const [pathType, setPathType] = useState(null);
+  // Factory-bound requests skip the choice — you're requesting from a specific
+  // factory, so go straight to the product form.
+  const [pathType, setPathType] = useState(factoryId ? 'product' : null);
   const [step, setStep] = useState(0); // product path: 0 Requirements, 1 Budget
   const [form, setForm] = useState(() => {
     let base = { ...EMPTY_FORM, budget_currency: viewerCurrency };
@@ -150,6 +155,12 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
     const { request, error: submitErr } = await createManagedRequest({ user, form, lang, viewerCurrency });
     setSubmitting(false);
     if (submitErr || !request?.id) { setError(t.errGeneric); return; }
+
+    // Factory-bound custom request: create the invite + email the factory
+    // server-side (best-effort; the request already exists either way).
+    if (factoryId) {
+      try { await sb.functions.invoke('factory-request-email', { body: { requestId: request.id, factoryId } }); } catch {}
+    }
 
     try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
     nav('/dashboard?tab=requests&request=' + request.id);
