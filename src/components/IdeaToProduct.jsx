@@ -10,6 +10,7 @@ import {
   saveIdeaFlowDraft,
 } from '../lib/ideaToProductFlow';
 import { buildTranslatedRequestFields } from '../lib/requestTranslation';
+import { buildManagedBriefRow, generateManagedBriefWithAI } from '../lib/managedSourcing';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { UI_CATEGORIES, getSpecialtyLabel } from '../lib/supplierDashboardConstants';
 import {
@@ -566,18 +567,45 @@ export default function IdeaToProduct({ lang, user, onClose, displayCurrency }) 
       payment_plan: normalizedDraft.payment_plan ? parseInt(normalizedDraft.payment_plan, 10) : null,
       sample_requirement: normalizedDraft.sample_requirement || null,
       reference_image: normalizedDraft.reference_image || normalizedDraft.image_url || null,
+      // Idea-to-product requests are managed (decision #1) and tagged with the
+      // fine-grained kind (decision #8) so they enter the Concierge pipeline.
+      sourcing_mode: 'managed',
+      request_kind: 'idea_to_product',
+      managed_status: 'submitted',
+      managed_review_state: 'pending',
     };
 
     const { data, error: requestError } = await runWithOptionalColumns({
       table: 'requests',
       payload,
-      optionalKeys: ['description_ar', 'description_en', 'description_zh'],
+      optionalKeys: ['description_ar', 'description_en', 'description_zh', 'request_kind'],
       execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('id').single(),
     });
     setSubmitting(false);
     if (requestError) {
       setError(t.error);
       return;
+    }
+
+    // Managed brief → admin_review so the idea request lands in Concierge like
+    // other managed requests. Fire-and-forget: never blocks the success nav.
+    if (data?.id) {
+      (async () => {
+        try {
+          const brief = await generateManagedBriefWithAI({ request: payload, lang });
+          await sb.from('managed_request_briefs').upsert(
+            buildManagedBriefRow({ requestId: data.id, buyerId: user.id, brief }),
+            { onConflict: 'request_id' },
+          );
+          await sb.from('requests').update({
+            managed_status: 'admin_review',
+            managed_priority: brief.priority || 'normal',
+            managed_ai_ready_at: new Date().toISOString(),
+          }).eq('id', data.id);
+        } catch (briefErr) {
+          console.error('[IdeaToProduct] managed brief setup error:', briefErr?.message || briefErr);
+        }
+      })();
     }
 
     clearIdeaFlowDraft();
