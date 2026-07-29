@@ -23,6 +23,8 @@ export const CATEGORIES = {
     { val: 'packaging', label: 'تعبئة وتغليف' },
     { val: 'gifts', label: 'هدايا' },
     { val: 'agriculture', label: 'زراعة' },
+    { val: 'industrial_machinery', label: 'آلات ومعدات صناعية' },
+    { val: 'hospitality_supplies', label: 'معدات مطابخ تجارية وأدوات طهي' },
     { val: 'other', label: 'أخرى' },
   ],
   en: [
@@ -49,6 +51,8 @@ export const CATEGORIES = {
     { val: 'packaging', label: 'Packaging' },
     { val: 'gifts', label: 'Gifts' },
     { val: 'agriculture', label: 'Agriculture' },
+    { val: 'industrial_machinery', label: 'Industrial Machinery & Equipment' },
+    { val: 'hospitality_supplies', label: 'Commercial Kitchen & Cookware' },
     { val: 'other', label: 'Other' },
   ],
   zh: [
@@ -75,6 +79,8 @@ export const CATEGORIES = {
     { val: 'packaging', label: '包装材料' },
     { val: 'gifts', label: '礼品' },
     { val: 'agriculture', label: '农业' },
+    { val: 'industrial_machinery', label: '工业机械与设备' },
+    { val: 'hospitality_supplies', label: '商用厨房设备与炊具' },
     { val: 'other', label: '其他' },
   ],
 };
