@@ -176,6 +176,12 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
     if (user && !isSupplier && profile?.role === 'supplier') nav('/login/supplier');
   }, [user, profile]);
 
+  // Request-first: buyers create requests through the wizard (/request/new), not
+  // this page's legacy form. Suppliers keep this page (browse requests + offer).
+  useEffect(() => {
+    if (profile?.role === 'buyer') nav('/request/new', { replace: true });
+  }, [profile, nav]);
+
   useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile, showAllRequests]);
 
   const loadRequests = async () => {

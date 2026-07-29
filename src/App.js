@@ -29,7 +29,6 @@ import BuyerRegister from './pages/BuyerRegister';
 import BuyerWaiting from './pages/BuyerWaiting';
 import PreviewAccess from './pages/PreviewAccess';
 import Home from './pages/Home';
-import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
@@ -45,7 +44,6 @@ import FactoryCategory from './pages/FactoryCategory';
 import FactoryDetail from './pages/FactoryDetail';
 import FactoryRequestView from './pages/FactoryRequestView';
 import SupplierProfile from './pages/SupplierProfile';
-import Suppliers from './pages/Suppliers';
 import Chat from './pages/Chat';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
@@ -321,7 +319,11 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/"               element={<Home            {...sharedProps} />} />
         <Route path="/buyer"          element={<BuyerRegister   user={user} />} />
         <Route path="/preview"        element={<PreviewAccess   {...sharedProps} />} />
-        <Route path="/products"       element={<Products        {...sharedProps} />} />
+        {/* Request-first: the browse directories are replaced by Factories.
+            Detail pages (/products/:id, /supplier/:id) stay — used by chat,
+            managed shortlists, invites. These redirects guarantee no browse
+            directory survives, regardless of any lingering links to them. */}
+        <Route path="/products"       element={<Navigate to="/factories" replace />} />
         <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
         <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
         <Route path="/login"          element={<Login           {...sharedProps} />} />
@@ -339,7 +341,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/supplier"       element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
-        <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
+        <Route path="/suppliers"      element={<Navigate to="/factories" replace />} />
         <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
         <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
