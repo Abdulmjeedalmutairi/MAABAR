@@ -11,18 +11,27 @@ import { createManagedRequest } from './createManagedRequest';
  *
  * @returns {Promise<{ request: object|null, error: any, emailError?: any }>}
  */
-export async function createFactoryRequest({ user, factory, product, quantity, notes, lang = 'ar', viewerCurrency = 'SAR' }) {
+export async function createFactoryRequest({ user, factory, product, subject, quantity, notes, lang = 'ar', viewerCurrency = 'SAR' }) {
   const isAr = lang === 'ar';
   const productName = product
     ? ((isAr ? product.name_ar : lang === 'zh' ? product.name_zh : product.name_en) || product.name_en || product.name_ar || product.name_zh || '')
     : '';
-  const title = productName || factory?.company_name || '';
+  // Product-bound → the catalog product name is the title. General inquiry
+  // (no product) → the buyer's free-text subject drives the title; the factory
+  // name is the last-resort fallback.
+  const subjectText = (subject || '').trim();
+  const title = productName || subjectText.slice(0, 80) || factory?.company_name || '';
+  // For an inquiry the full subject belongs in the brief body (with any extra
+  // notes). Product path keeps its previous behaviour (subject is undefined).
+  const description = subjectText
+    ? (notes ? `${subjectText}\n\n${notes}` : subjectText)
+    : (notes || '');
 
   const form = {
     title_ar: isAr ? title : '',
     title_en: !isAr ? title : '',
     quantity: String(quantity || ''),
-    description: notes || '',
+    description,
     category: factory?.category || 'other',
     budget_per_unit: '',      // no budget — factory quotes
     budget_currency: viewerCurrency,

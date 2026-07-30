@@ -1,22 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
 import ProductRequestModal from '../components/factory/ProductRequestModal';
+import FactoryInquiryModal from '../components/factory/FactoryInquiryModal';
 
 // Factory detail — real name + photos + info + full catalog. Request actions
 // (product modal + factory-level "custom request" button) are wired in Phase 3
 // Commit 6. Placeholder styling.
 export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const { id } = useParams();
-  const nav = useNavigate();
   const isAr = lang === 'ar';
   usePageTitle('suppliers', lang);
   const [factory, setFactory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalProduct, setModalProduct] = useState(null);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
   async function load() {
@@ -63,10 +64,11 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 24, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{desc}</p>
         )}
 
-        {/* Factory-level custom request → the general wizard, bound to this factory. */}
-        <button className="btn-outline" onClick={() => nav(`/request/new?factory=${factory.id}`)}
+        {/* Factory-level inquiry / custom request → inline modal (same pipeline as a
+            product request, but not bound to a catalog product). */}
+        <button className="btn-outline" onClick={() => setInquiryOpen(true)}
           style={{ marginBottom: 24, minHeight: 42, padding: '10px 20px', fontSize: 13 }}>
-          {isAr ? 'اطلب طلبًا مخصصًا من هذا المصنع' : lang === 'zh' ? '向该工厂发出定制需求' : 'Request something custom from this factory'}
+          {isAr ? 'استفسار / طلب مخصص من هذا المصنع' : lang === 'zh' ? '向该工厂咨询 / 定制需求' : 'Inquire / request something custom'}
         </button>
 
         <h2 style={{ fontSize: 16, color: 'var(--text-primary)', margin: '0 0 14px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -104,6 +106,16 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
           product={modalProduct}
           displayCurrency={displayCurrency}
           onClose={() => setModalProduct(null)}
+        />
+      )}
+
+      {inquiryOpen && (
+        <FactoryInquiryModal
+          lang={lang}
+          user={user}
+          factory={factory}
+          displayCurrency={displayCurrency}
+          onClose={() => setInquiryOpen(false)}
         />
       )}
 
