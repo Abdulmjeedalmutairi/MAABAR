@@ -11,6 +11,15 @@ export function getPrimaryProductImage(product) {
   return getProductGalleryImages(product)[0] || null;
 }
 
+// Factory catalog products use `image` (primary) + `gallery_images` (extras),
+// unlike transactional products (`image_url`). Primary first, then extras; same
+// dedup + cap so the factory product page matches the product page's gallery.
+export function getFactoryProductImages(product) {
+  const gallery = Array.isArray(product?.gallery_images) ? product.gallery_images : [];
+  const primary = product?.image ? [product.image] : [];
+  return [...new Set([...primary, ...gallery].filter(Boolean))].slice(0, PRODUCT_GALLERY_LIMIT);
+}
+
 export function normalizeProductDraftMedia(product) {
   const galleryImages = [...new Set((product?.gallery_images || []).filter(Boolean))].slice(0, PRODUCT_GALLERY_LIMIT);
   return {

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
-import ProductRequestModal from '../components/factory/ProductRequestModal';
 import FactoryInquiryModal from '../components/factory/FactoryInquiryModal';
 
 // Factory detail — real name + photos + info + full catalog. Request actions
@@ -11,12 +10,12 @@ import FactoryInquiryModal from '../components/factory/FactoryInquiryModal';
 // Commit 6. Placeholder styling.
 export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const { id } = useParams();
+  const nav = useNavigate();
   const isAr = lang === 'ar';
   usePageTitle('suppliers', lang);
   const [factory, setFactory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalProduct, setModalProduct] = useState(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
@@ -81,7 +80,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
             {products.map((p) => (
-              <div key={p.id} onClick={() => setModalProduct(p)}
+              <div key={p.id} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}
                 style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
                 <div style={{ aspectRatio: '1 / 1', background: '#FAF8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {p.image
@@ -97,17 +96,6 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
           </div>
         )}
       </div>
-
-      {modalProduct && (
-        <ProductRequestModal
-          lang={lang}
-          user={user}
-          factory={factory}
-          product={modalProduct}
-          displayCurrency={displayCurrency}
-          onClose={() => setModalProduct(null)}
-        />
-      )}
 
       {inquiryOpen && (
         <FactoryInquiryModal

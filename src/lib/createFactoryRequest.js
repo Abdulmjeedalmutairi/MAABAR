@@ -21,11 +21,21 @@ export async function createFactoryRequest({ user, factory, product, subject, qu
   // name is the last-resort fallback.
   const subjectText = (subject || '').trim();
   const title = productName || subjectText.slice(0, 80) || factory?.company_name || '';
-  // For an inquiry the full subject belongs in the brief body (with any extra
-  // notes). Product path keeps its previous behaviour (subject is undefined).
-  const description = subjectText
-    ? (notes ? `${subjectText}\n\n${notes}` : subjectText)
-    : (notes || '');
+  // Three brief-body modes, all fed into managed_request_briefs:
+  //   product only             → straight RFQ (notes only)
+  //   product + subject         → custom design ON this product; frame it so the
+  //                               factory sees it's a modification, not the catalog
+  //                               item as-is (factory_product_id is still set)
+  //   subject only (no product) → factory-level generic inquiry
+  const isProductCustom = !!(product && subjectText);
+  const customLead = isProductCustom
+    ? (isAr
+        ? `طلب تصميم مخصص بناءً على: ${productName}${product?.ref_code ? ` [${product.ref_code}]` : ''}`
+        : lang === 'zh'
+          ? `基于以下产品的定制设计需求：${productName}${product?.ref_code ? ` [${product.ref_code}]` : ''}`
+          : `Custom design request based on: ${productName}${product?.ref_code ? ` [${product.ref_code}]` : ''}`)
+    : '';
+  const description = [customLead, subjectText, notes].filter(Boolean).join('\n\n');
 
   const form = {
     title_ar: isAr ? title : '',
