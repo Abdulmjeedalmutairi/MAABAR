@@ -17,6 +17,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
   async function load() {
@@ -38,6 +39,14 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     || factory.description_en || factory.description_ar || factory.description_zh || '';
   const photos = (Array.isArray(factory.factory_images) ? factory.factory_images : []).filter((u) => typeof u === 'string' && /^https?:\/\//i.test(u));
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
+
+  // Client-side catalog search: filter the already-loaded products by name (any
+  // language) or ref_code. No new API call — the full catalog is already in state.
+  const q = query.trim().toLowerCase();
+  const shownProducts = q
+    ? products.filter((p) =>
+        [p.name_ar, p.name_en, p.name_zh, p.ref_code].filter(Boolean).join(' ').toLowerCase().includes(q))
+    : products;
 
   return (
     <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}>
@@ -78,8 +87,27 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
             {isAr ? 'لا يوجد كتالوج بعد.' : lang === 'zh' ? '暂无产品目录。' : 'No catalog yet.'}
           </p>
         ) : (
+          <>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={isAr ? 'ابحث عن منتج...' : lang === 'zh' ? '搜索产品...' : 'Search products...'}
+              dir={isAr ? 'rtl' : 'ltr'}
+              style={{
+                width: '100%', maxWidth: 360, padding: '9px 12px', marginBottom: 14,
+                border: '1px solid var(--border-muted)', borderRadius: 8, fontSize: 13,
+                color: 'var(--text-primary)', background: 'var(--bg-raised, #fff)',
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            {shownProducts.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                {isAr ? 'لا توجد نتائج مطابقة.' : lang === 'zh' ? '无匹配产品。' : 'No matching products.'}
+              </p>
+            ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-            {products.map((p) => (
+            {shownProducts.map((p) => (
               <div key={p.id} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}
                 style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
                 <div style={{ aspectRatio: '1 / 1', background: '#FAF8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -94,6 +122,8 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
               </div>
             ))}
           </div>
+            )}
+          </>
         )}
       </div>
 
