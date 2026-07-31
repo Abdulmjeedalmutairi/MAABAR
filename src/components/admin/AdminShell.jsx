@@ -9,6 +9,7 @@ const PATHS = {
   suppliers: 'M3 21V9l6-4 6 4v12M9 21v-5h3v5M15 21V11l6 3v7M3 21h18',
   referrals: 'M16 6a3 3 0 1 0 0-.01M6 14a3 3 0 1 0 0-.01M16 20a3 3 0 1 0 0-.01M8.6 12.7l4.8-3.4M8.6 15.3l4.8 3.4',
   concierge: 'M12 3a7 7 0 0 0-7 7v5M19 15v-5a7 7 0 0 0-2.1-5M4 15h2v5H4zM18 15h2v5h-2zM12 21h4',
+  import:    'M12 3v10M8 9l4 4 4-4M20 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2',
   disputes:  'M12 3l9 16H3zM12 9v5M12 17v.5',
   traders:   'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-.01M22 20v-2a4 4 0 0 0-3-3.8',
   orders:    'M3 6h18l-1.5 12H4.5zM3 6l-.7-3H1M8 11v4M12 11v4M16 11v4',
@@ -44,6 +45,7 @@ const NAV_GROUPS = [
     items: [
       { path: '/admin/overview',  icon: 'overview',  en: 'Overview',   ar: 'نظرة عامة' },
       { path: '/admin/suppliers', icon: 'suppliers', en: 'Suppliers',  ar: 'الموردون' },
+      { path: '/admin/catalog-import', icon: 'import', en: 'Catalog Import', ar: 'استيراد الكتالوج' },
       { path: '/admin/referrals', icon: 'referrals', en: 'Referrals',  ar: 'الإحالات' },
       { path: '/admin/concierge', icon: 'concierge', en: 'Concierge',  ar: 'الكونسيرج' },
     ],
