@@ -20,6 +20,16 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
     </div>
   );
 
+  const toggle = (label, key, hint) => (
+    <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, cursor: 'pointer' }}>
+      <input type="checkbox" checked={!!value[key]} onChange={(e) => set(key, e.target.checked)} style={{ marginTop: 3 }} />
+      <span>
+        <span className="ci-label" style={{ display: 'inline', margin: 0 }}>{label}</span>
+        {hint && <p className="ci-hint" style={{ margin: '1px 0 0' }}>{hint}</p>}
+      </span>
+    </label>
+  );
+
   // Optional trust-signal fields — shown as badges on the factory profile page.
   // Editable in BOTH modes (prefilled from extraction, or the existing factory).
   const profileFields = (
@@ -28,6 +38,12 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
         { ltr: true, ph: '2012', hint: isAr ? 'اختياري — يظهر كـ "تأسّست 2012"' : 'Optional — shows as "Est. 2012"' })}
       {field(isAr ? 'أسواق التصدير' : 'Export markets', 'export_markets',
         { ltr: true, ph: '30+ countries', hint: isAr ? 'اختياري — يظهر كـ "يصدّر إلى ‎30+ دولة"' : 'Optional — shows as "Exports to 30+ countries"' })}
+      <div style={{ marginTop: 8 }}>
+        {toggle(isAr ? 'مصنع موثّق' : 'Verified factory', 'is_verified',
+          isAr ? 'يعرض شارة "موثّق" في صفحة المصنع' : 'Shows a "Verified" badge on the profile')}
+        {toggle(isAr ? 'موصى به (مميّز)' : 'Recommended (featured)', 'is_featured',
+          isAr ? 'يعرض شارة "موصى به"' : 'Shows a "Recommended" badge')}
+      </div>
     </>
   );
 

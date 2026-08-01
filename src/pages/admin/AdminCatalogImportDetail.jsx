@@ -96,7 +96,11 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       const next = { ...prev };
       if (empty(prev.founded_year) && f.founded_year != null) next.founded_year = String(f.founded_year);
       if (empty(prev.export_markets) && f.export_markets) next.export_markets = f.export_markets;
-      return (next.founded_year === prev.founded_year && next.export_markets === prev.export_markets) ? prev : next;
+      if (prev.is_verified === undefined) next.is_verified = !!f.is_verified;
+      if (prev.is_featured === undefined) next.is_featured = !!f.is_featured;
+      const changed = next.founded_year !== prev.founded_year || next.export_markets !== prev.export_markets
+        || next.is_verified !== prev.is_verified || next.is_featured !== prev.is_featured;
+      return changed ? next : prev;
     });
   }, [mode, existingId, factories]);
 

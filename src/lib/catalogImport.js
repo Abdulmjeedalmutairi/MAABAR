@@ -43,7 +43,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets')
+    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets, is_verified, is_featured')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -63,6 +63,8 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       country: fields.country || 'China',
       founded_year: yr(fields.founded_year),
       export_markets: nf(fields.export_markets),
+      is_verified: !!fields.is_verified,
+      is_featured: !!fields.is_featured,
       profile_image: profileImage || null,
       is_active: true,
     };
@@ -72,7 +74,12 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
   } else {
     // Attach to existing: refresh the profile image (only if a new one was picked)
     // plus the admin-editable profile fields (founded_year / export_markets).
-    const patch = { founded_year: yr(fields.founded_year), export_markets: nf(fields.export_markets) };
+    const patch = {
+      founded_year: yr(fields.founded_year),
+      export_markets: nf(fields.export_markets),
+      is_verified: !!fields.is_verified,
+      is_featured: !!fields.is_featured,
+    };
     if (profileImage) patch.profile_image = profileImage;
     await sb.from('factory_directory').update(patch).eq('id', factoryId);
   }
@@ -96,6 +103,7 @@ function mapProduct(factoryId, staged, meta = {}) {
   }
   return {
     factory_id: factoryId,
+    import_id: staged.import_id || null,   // traceability → "Available Catalogs" grouping
     name_ar: nameAr,
     name_en: nameEn,
     description_ar: tri(ej.description, 'ar'),
