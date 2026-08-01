@@ -88,6 +88,29 @@ export const FACTORY_DISPLAY_CATEGORIES = [
   },
 ];
 
+// Professional fallback description shown when a factory has no description_* —
+// a category-based "مصنع متخصص في …" line so the profile is never left blank.
+const FACTORY_TAGLINES = {
+  electrical_home_electronics: { ar: 'مصنع متخصص في تصميم وتصنيع الأجهزة الكهربائية وإلكترونيات المنزل.', en: 'A factory specialized in designing and manufacturing electrical appliances and home electronics.', zh: '专注于电器与家用电子产品设计与制造的工厂。' },
+  auto_parts_equipment: { ar: 'مصنع متخصص في تصنيع قطع غيار ومعدات وإكسسوارات السيارات.', en: 'A factory specialized in manufacturing auto parts, equipment, and accessories.', zh: '专注于汽车配件、设备与周边制造的工厂。' },
+  industrial_machinery: { ar: 'مصنع متخصص في تصنيع الآلات والمعدات الصناعية.', en: 'A factory specialized in manufacturing industrial machinery and equipment.', zh: '专注于工业机械与设备制造的工厂。' },
+  building_construction: { ar: 'مصنع متخصص في إنتاج مواد ومستلزمات البناء والتشييد.', en: 'A factory specialized in producing building and construction materials and supplies.', zh: '专注于建筑与施工材料及用品生产的工厂。' },
+  furniture_decor: { ar: 'مصنع متخصص في تصميم وتصنيع الأثاث المنزلي والمكتبي والديكور.', en: 'A factory specialized in designing and manufacturing home and office furniture and décor.', zh: '专注于家居与办公家具及装饰设计制造的工厂。' },
+  clothing_footwear: { ar: 'مصنع متخصص في إنتاج الملابس والأحذية.', en: 'A factory specialized in producing clothing and footwear.', zh: '专注于服装与鞋类生产的工厂。' },
+  beauty_personal_care: { ar: 'مصنع متخصص في إنتاج مستحضرات التجميل ومنتجات العناية الشخصية.', en: 'A factory specialized in producing cosmetics and personal care products.', zh: '专注于化妆品与个人护理产品生产的工厂。' },
+  toys_kids: { ar: 'مصنع متخصص في تصنيع الألعاب ومنتجات الأطفال.', en: "A factory specialized in manufacturing toys and children's products.", zh: '专注于玩具与儿童用品制造的工厂。' },
+  medical_nonpharma: { ar: 'مصنع متخصص في تصنيع المعدات الطبية والمستلزمات الصحية غير الدوائية.', en: 'A factory specialized in manufacturing medical equipment and non-pharmaceutical health supplies.', zh: '专注于医疗设备与非药品健康用品制造的工厂。' },
+  restaurant_hospitality: { ar: 'مصنع متخصص في تصنيع مستلزمات المطاعم والضيافة ومعدات المطابخ.', en: 'A factory specialized in manufacturing restaurant, hospitality, and kitchen supplies.', zh: '专注于餐饮、酒店与厨房用品制造的工厂。' },
+};
+
+// Category-based professional fallback when a factory has no description.
+export function factoryTaglineForCode(code, lang = 'ar') {
+  const c = displayCategoryForCode(code);
+  const t = c ? FACTORY_TAGLINES[c.key] : null;
+  if (t) return t[lang] || t.en;
+  return lang === 'ar' ? 'مصنع مورّد موثوق عبر منصة معبر.' : lang === 'zh' ? '通过 Maabar 平台供应的工厂。' : 'A trusted supplier factory on the Maabar platform.';
+}
+
 // Localized list for rendering the landing grid. The category art lives as static
 // WebP under public/categories/<key>.webp (matched to each key by filename); an
 // explicit `image` on the entry overrides it.
