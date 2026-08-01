@@ -71,6 +71,7 @@ export async function createFactoryRequest({
     quantity: String(quantity || ''),
     unit: unit || '',
     description,
+    request_kind: 'factory',   // distinguishes factory quotes from generic managed
     category: factory?.category || 'other',
     budget_per_unit: '',      // no budget — factory quotes
     budget_currency: viewerCurrency,

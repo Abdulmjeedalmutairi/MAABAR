@@ -59,7 +59,7 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
     sample_requirement: form.sample_requirement || null,
     reference_image: form.reference_image || form.image_url || null,
     sourcing_mode: 'managed',
-    request_kind: 'managed',
+    request_kind: form.request_kind || 'managed',
     managed_status: 'submitted',
     managed_review_state: 'pending',
     response_deadline: form.response_deadline || null,

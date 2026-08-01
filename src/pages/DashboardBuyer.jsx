@@ -39,7 +39,7 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
-import { isManagedRequest } from '../lib/managedSourcing';
+import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
   const urls = {
@@ -148,18 +148,18 @@ function timelineIndexFromStatus(status) {
   return map[status] ?? 0;
 }
 
-function StatusTimeline({ status, isAr }) {
-  const current = timelineIndexFromStatus(status);
+// Generic timeline renderer — a step list + the active index. Reused by both the
+// direct-order lifecycle and the managed/factory sourcing timeline.
+function TimelineBar({ steps, current, isAr }) {
   return (
     <div style={{ overflowX: 'auto', margin: '12px 0 4px', paddingBottom: 2 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 360, position: 'relative' }}>
         {/* connector track */}
         <div style={{ position: 'absolute', top: 7, left: 7, right: 7, height: 1, background: 'var(--border-subtle)', zIndex: 0 }} />
-        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(45,122,79,0.55)', width: `calc(${(current / (TIMELINE_STEPS.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
-        {TIMELINE_STEPS.map((step, i) => {
-          const done    = i < current;
-          const active  = i === current;
-          const future  = i > current;
+        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(45,122,79,0.55)', width: `calc(${(current / (steps.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
+        {steps.map((step, i) => {
+          const done   = i < current;
+          const active = i === current;
           return (
             <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
               <div style={{
@@ -184,6 +184,48 @@ function StatusTimeline({ status, isAr }) {
       </div>
     </div>
   );
+}
+
+function StatusTimeline({ status, isAr }) {
+  return <TimelineBar steps={TIMELINE_STEPS} current={timelineIndexFromStatus(status)} isAr={isAr} />;
+}
+
+/* ─── Sourcing timeline (buyer-facing) — steps differ by request type,
+       but the stage index is shared (all run through the admin pipeline). ─── */
+const SOURCING_STEPS = {
+  managed: [
+    { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
+    { key: 'review',    ar: 'مراجعة مَعبر', en: 'Maabar review' },
+    { key: 'sourcing',  ar: 'جمع العروض', en: 'Sourcing' },
+    { key: 'offers',    ar: 'وصلتك عروض', en: 'Offers ready' },
+    { key: 'done',      ar: 'مكتمل', en: 'Completed' },
+  ],
+  factory: [
+    { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
+    { key: 'review',    ar: 'مراجعة مَعبر', en: 'Maabar review' },
+    { key: 'contact',   ar: 'تواصل مع المصنع', en: 'Contacting factory' },
+    { key: 'offer',     ar: 'وصل العرض', en: 'Offer received' },
+    { key: 'done',      ar: 'مكتمل', en: 'Completed' },
+  ],
+  idea: [
+    { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
+    { key: 'review',    ar: 'مراجعة مَعبر', en: 'Maabar review' },
+    { key: 'sample',    ar: 'تطوير العيّنة', en: 'Sample dev' },
+    { key: 'offer',     ar: 'عروض التصنيع', en: 'Mfg. offers' },
+    { key: 'done',      ar: 'مكتمل', en: 'Completed' },
+  ],
+};
+function managedTimelineIndex(status, hasShortlist) {
+  const s = String(status || '');
+  if (['buyer_selected', 'completed'].includes(s)) return 4;
+  if (hasShortlist || ['shortlist_ready', 'buyer_review'].includes(s)) return 3;
+  if (['sourcing', 'matching'].includes(s)) return 2;
+  if (s === 'admin_review') return 1;
+  return 0; // submitted / null
+}
+function ManagedStatusTimeline({ type = 'managed', status, hasShortlist, isAr }) {
+  const steps = SOURCING_STEPS[type] || SOURCING_STEPS.managed;
+  return <TimelineBar steps={steps} current={managedTimelineIndex(status, hasShortlist)} isAr={isAr} />;
 }
 
 /* ─── PaymentBadge ───────────────────────── */
@@ -1758,11 +1800,17 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                             {isAr ? (r.category_ar || r.category) : (r.category_en || r.category)}
                           </span>
                         )}
-                        {managed && (
-                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-chip)' }}>
-                            {isAr ? 'طلب مُدار' : 'Managed'}
-                          </span>
-                        )}
+                        {(() => {
+                          const ty = requestType(r);
+                          const label = ty === 'factory' ? (isAr ? 'عرض سعر مصنع' : 'Factory quote')
+                            : ty === 'idea' ? (isAr ? 'تصنيع فكرة' : 'Idea to product')
+                              : ty === 'managed' ? (isAr ? 'طلب مُدار' : 'Managed') : null;
+                          return label ? (
+                            <span style={{ fontSize: 9, letterSpacing: isAr ? 0 : 1.5, textTransform: isAr ? 'none' : 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-chip)' }}>
+                              {label}
+                            </span>
+                          ) : null;
+                        })()}
                         <span style={{ fontSize: 10, color: 'var(--text-disabled)', marginInlineStart: 'auto' }}>
                           {relativeTime(r.created_at, isAr)}
                         </span>
@@ -1838,6 +1886,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                   {/* ── Status timeline ── */}
                   {!managed && <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />}
+                  {managed && <ManagedStatusTimeline type={requestType(r)} status={r.managed_status} hasShortlist={(r.managedShortlist || []).length > 0} isAr={isAr} />}
 
                   {/* ── Payment plan row ── */}
                   {!managed && acceptedOffer && (
