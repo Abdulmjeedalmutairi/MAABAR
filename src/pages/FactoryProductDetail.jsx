@@ -17,6 +17,8 @@ const T = {
     note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.', signin: 'سيُطلب منك تسجيل الدخول عند الإرسال.',
     doneT: 'تم إرسال طلبك إلى المصنع', doneB: 'سيتم إشعارك عند رد المصنع بعرضه عبر مَعبر.',
     notFound: 'المنتج غير موجود', loading: '…',
+    specsLabel: 'المواصفات', descLabel: 'الوصف', customLabel: 'خيارات التخصيص', moqLabel: 'الحد الأدنى للطلب',
+    contactDetails: 'تواصل مع المورد للتفاصيل',
   },
   en: {
     back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom',
@@ -28,6 +30,8 @@ const T = {
     note: 'The factory responds with pricing — no budget needed.', signin: 'You will be asked to sign in when submitting.',
     doneT: 'Your request has been sent to the factory', doneB: "You'll be notified when the factory responds with its offer through Maabar.",
     notFound: 'Product not found', loading: '…',
+    specsLabel: 'Specifications', descLabel: 'Description', customLabel: 'Customization options', moqLabel: 'MOQ',
+    contactDetails: 'Contact supplier for details',
   },
   zh: {
     back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大',
@@ -39,6 +43,8 @@ const T = {
     note: '工厂会回复价格——无需填写预算。', signin: '提交时会要求您登录。',
     doneT: '您的需求已发送至工厂', doneB: '工厂通过 Maabar 回复报价后会通知您。',
     notFound: '未找到产品', loading: '…',
+    specsLabel: '规格', descLabel: '描述', customLabel: '定制选项', moqLabel: '起订量',
+    contactDetails: '详情请联系供应商',
   },
 };
 
@@ -117,6 +123,15 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const gallery = getFactoryProductImages(product);
   const mainImg = selectedImage || gallery[0] || null;
 
+  // Display fields (ar/en, fall back to the other language). Missing values show
+  // "Contact supplier for details" rather than a blank. Order: specs → desc → custom.
+  const specs = (isAr ? product.specifications_ar : product.specifications_en) || product.specifications_en || product.specifications_ar || '';
+  const descr = (isAr ? product.description_ar : product.description_en) || product.description_en || product.description_ar || '';
+  const custom = Array.isArray(product.customization_options) ? product.customization_options : [];
+  const orContact = (v) => v || c.contactDetails;
+  const dLabel = { fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+  const dVal = { fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+
   async function submit() {
     if (tab === 'product' && !String(qty).trim()) { setError(c.errQty); return; }
     if (tab === 'custom' && !subject.trim()) { setError(c.errSubject); return; }
@@ -190,10 +205,40 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
               {c.byFactory}: <Link to={`/factory/${factoryId}`} style={{ color: 'var(--text-primary)', textDecoration: 'underline', textUnderlineOffset: 3 }}>{factoryName}</Link>
             </p>
             {product.ref_code && (
-              <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 20px', fontSize: 12 }}>{c.ref}: {product.ref_code}</p>
+              <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12 }}>{c.ref}: {product.ref_code}</p>
             )}
 
-            <div className="fx-panel" style={{ marginTop: product.ref_code ? 0 : 16, padding: 20 }}>
+            {/* Details: specifications → description → customization */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 14 }}>
+                <div style={dLabel}>{c.specsLabel}</div>
+                <p style={dVal}>{orContact(specs)}</p>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={dLabel}>{c.descLabel}</div>
+                <p style={dVal}>{orContact(descr)}</p>
+              </div>
+              {custom.length > 0 && (
+                <div>
+                  <div style={dLabel}>{c.customLabel}</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {custom.map((x, i) => {
+                      const label = (isAr ? x.ar : x.en) || x.en || x.ar || '';
+                      return label ? (
+                        <span key={i} style={{ padding: '3px 11px', borderRadius: 20, background: 'var(--bg-hero)', fontSize: 12, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{label}</span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* MOQ sits next to the request action (it's a commercial term). */}
+            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 12px', fontSize: 12.5 }}>
+              {c.moqLabel}: <span style={{ color: 'var(--text-primary)' }}>{orContact(product.moq)}</span>
+            </p>
+
+            <div className="fx-panel" style={{ marginTop: 0, padding: 20 }}>
               {done ? (
                 <>
                   <h3 className={arc.trim()} style={{ fontSize: 16, color: 'var(--text-primary)', margin: '0 0 8px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.doneT}</h3>

@@ -18,17 +18,37 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [loading, setLoading] = useState(true);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [visible, setVisible] = useState(60);
+  useEffect(() => { setVisible(60); }, [query]);  // reset the window when the search changes
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
   async function load() {
     setLoading(true);
-    const [{ data: f }, { data: p }] = await Promise.all([
+    const [{ data: f }, prods] = await Promise.all([
       sb.from('factory_directory_public').select('*').eq('id', id).maybeSingle(),
-      sb.from('factory_products').select('*').eq('factory_id', id).order('sort_order', { ascending: true }),
+      fetchAllFactoryProducts(id),
     ]);
     setFactory(f || null);
-    setProducts(p || []);
+    setProducts(prods);
     setLoading(false);
+  }
+
+  // Page through the full catalog — a plain select caps at 1000 rows, which would
+  // silently drop products for large factories (e.g. a 1156-product catalog).
+  async function fetchAllFactoryProducts(factoryId) {
+    const pageSize = 1000;
+    const all = [];
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await sb.from('factory_products').select('*').eq('factory_id', factoryId)
+        .order('sort_order', { ascending: true }).range(from, from + pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      all.push(...data);
+      if (data.length < pageSize) break;
+    }
+    return all;
   }
 
   if (loading) return <div className="full-page"><div className="list-wrap"><p style={{ color: 'var(--text-secondary)' }}>…</p></div></div>;
@@ -40,13 +60,16 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const photos = (Array.isArray(factory.factory_images) ? factory.factory_images : []).filter((u) => typeof u === 'string' && /^https?:\/\//i.test(u));
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
 
-  // Client-side catalog search: filter the already-loaded products by name (any
-  // language) or ref_code. No new API call — the full catalog is already in state.
+  // Only products with a usable image are showcased in the grid (no-image
+  // products are excluded, per the display decision).
+  const catalog = products.filter((p) => p.image);
+  // Client-side search over the full (already-loaded) catalog by name / ref_code.
   const q = query.trim().toLowerCase();
-  const shownProducts = q
-    ? products.filter((p) =>
+  const matched = q
+    ? catalog.filter((p) =>
         [p.name_ar, p.name_en, p.name_zh, p.ref_code].filter(Boolean).join(' ').toLowerCase().includes(q))
-    : products;
+    : catalog;
+  const visibleProducts = matched.slice(0, visible);  // "Load more" windowing
 
   return (
     <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}>
@@ -82,7 +105,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         <h2 style={{ fontSize: 16, color: 'var(--text-primary)', margin: '0 0 14px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
           {isAr ? 'الكتالوج' : lang === 'zh' ? '产品目录' : 'Catalog'}
         </h2>
-        {products.length === 0 ? (
+        {catalog.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
             {isAr ? 'لا يوجد كتالوج بعد.' : lang === 'zh' ? '暂无产品目录。' : 'No catalog yet.'}
           </p>
@@ -101,27 +124,35 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                 fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', outline: 'none', boxSizing: 'border-box',
               }}
             />
-            {shownProducts.length === 0 ? (
+            {matched.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                 {isAr ? 'لا توجد نتائج مطابقة.' : lang === 'zh' ? '无匹配产品。' : 'No matching products.'}
               </p>
             ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-            {shownProducts.map((p) => (
-              <div key={p.id} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}
-                style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
-                <div style={{ aspectRatio: '1 / 1', background: '#FAF8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {p.image
-                    ? <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontSize: 24, color: '#8B7355', fontFamily: "'Cormorant Garamond', serif" }}>{(productName(p) || '?')[0]}</span>}
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+                  {visibleProducts.map((p) => (
+                    <div key={p.id} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}
+                      style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
+                      <div style={{ aspectRatio: '1 / 1', background: '#FAF8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div style={{ padding: '10px 12px' }}>
+                        <p style={{ fontSize: 12.5, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName(p) || '—'}</p>
+                        {p.ref_code && <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '2px 0 0' }}>{p.ref_code}</p>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ padding: '10px 12px' }}>
-                  <p style={{ fontSize: 12.5, color: 'var(--text-primary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName(p) || '—'}</p>
-                  {p.ref_code && <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '2px 0 0' }}>{p.ref_code}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
+                {matched.length > visible && (
+                  <div style={{ textAlign: 'center', marginTop: 22 }}>
+                    <button className="btn-outline" onClick={() => setVisible((v) => v + 60)}
+                      style={{ minHeight: 42, padding: '10px 24px', fontSize: 13 }}>
+                      {isAr ? 'عرض المزيد' : lang === 'zh' ? '加载更多' : 'Load more'} ({matched.length - visible})
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
