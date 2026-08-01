@@ -16,7 +16,19 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
       <label className="ci-label">{label}{opts.req ? ' *' : ''}</label>
       <input className="ci-input" value={nf(value[key])} onChange={(e) => set(key, e.target.value)}
         dir={opts.ltr ? 'ltr' : (isAr ? 'rtl' : 'ltr')} placeholder={opts.ph || ''} />
+      {opts.hint && <p className="ci-hint">{opts.hint}</p>}
     </div>
+  );
+
+  // Optional trust-signal fields — shown as badges on the factory profile page.
+  // Editable in BOTH modes (prefilled from extraction, or the existing factory).
+  const profileFields = (
+    <>
+      {field(isAr ? 'سنة التأسيس' : 'Founded year', 'founded_year',
+        { ltr: true, ph: '2012', hint: isAr ? 'اختياري — يظهر كـ "تأسّست 2012"' : 'Optional — shows as "Est. 2012"' })}
+      {field(isAr ? 'أسواق التصدير' : 'Export markets', 'export_markets',
+        { ltr: true, ph: '30+ countries', hint: isAr ? 'اختياري — يظهر كـ "يصدّر إلى ‎30+ دولة"' : 'Optional — shows as "Exports to 30+ countries"' })}
+    </>
   );
 
   return (
@@ -42,6 +54,7 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
             ))}
           </select>
           <p className="ci-hint">{isAr ? 'ستُضاف المنتجات إلى هذا المصنع.' : 'Products will be added to this factory.'}</p>
+          {existingId && profileFields}
         </div>
       ) : (
         <>
@@ -60,6 +73,7 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
               <p className="ci-hint">{isAr ? 'من الكتالوج: ' : 'From catalog: '}{value.category_hint}</p>
             )}
           </div>
+          <div style={{ marginTop: 12 }}>{profileFields}</div>
         </>
       )}
     </div>

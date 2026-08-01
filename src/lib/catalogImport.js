@@ -9,6 +9,11 @@ export const HIGH_CONF = 0.7;
 
 const nf = (v) => (v && v !== 'not_found' ? v : null);
 const tri = (o, k) => (o && o[k] && o[k] !== 'not_found' ? o[k] : null);
+// Founded year → a plausible 4-digit int, else null (drops "not_found"/garbage).
+const yr = (v) => {
+  const n = parseInt(String(v ?? '').trim(), 10);
+  return Number.isFinite(n) && n >= 1800 && n <= 2100 ? n : null;
+};
 
 // ── Reads ───────────────────────────────────────────────────────────────────
 export async function fetchImports() {
@@ -38,7 +43,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city')
+    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -56,14 +61,20 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       category: fields.category,             // required UI_CATEGORIES code
       city: nf(fields.city),
       country: fields.country || 'China',
+      founded_year: yr(fields.founded_year),
+      export_markets: nf(fields.export_markets),
       profile_image: profileImage || null,
       is_active: true,
     };
     const { data, error } = await sb.from('factory_directory').insert(row).select('id').single();
     if (error) throw error;
     factoryId = data.id;
-  } else if (profileImage) {
-    await sb.from('factory_directory').update({ profile_image: profileImage }).eq('id', factoryId);
+  } else {
+    // Attach to existing: refresh the profile image (only if a new one was picked)
+    // plus the admin-editable profile fields (founded_year / export_markets).
+    const patch = { founded_year: yr(fields.founded_year), export_markets: nf(fields.export_markets) };
+    if (profileImage) patch.profile_image = profileImage;
+    await sb.from('factory_directory').update(patch).eq('id', factoryId);
   }
   await sb.from('factory_catalog_imports').update({ factory_id: factoryId, status: 'reviewing' }).eq('id', importId);
   return factoryId;

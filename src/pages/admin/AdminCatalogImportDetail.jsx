@@ -84,6 +84,22 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { fetchFactories().then(setFactories).catch(() => {}); }, []);
 
+  // When attaching to an existing factory, seed the trust fields (founded_year /
+  // export_markets) from that factory so the admin sees + edits current values.
+  // Only fills empties — never clobbers a typed edit or an extracted value.
+  useEffect(() => {
+    if (mode !== 'existing' || !existingId) return;
+    const f = factories.find((x) => x.id === existingId);
+    if (!f) return;
+    setFields((prev) => {
+      const empty = (v) => !v || v === 'not_found';
+      const next = { ...prev };
+      if (empty(prev.founded_year) && f.founded_year != null) next.founded_year = String(f.founded_year);
+      if (empty(prev.export_markets) && f.export_markets) next.export_markets = f.export_markets;
+      return (next.founded_year === prev.founded_year && next.export_markets === prev.export_markets) ? prev : next;
+    });
+  }, [mode, existingId, factories]);
+
   const candidates = (fields?.profile_candidates && fields.profile_candidates.length)
     ? fields.profile_candidates
     : (batch?.profile_image_path ? [batch.profile_image_path] : []);
