@@ -3,56 +3,37 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
-import { createFactoryRequest } from '../lib/createFactoryRequest';
+import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { getFactoryProductImages } from '../lib/productMedia';
 
 const T = {
   ar: {
     back: 'رجوع إلى المصنع', byFactory: 'المصنع', ref: 'رمز المنتج', zoom: 'اضغط للتكبير',
-    tabProduct: 'اطلب هذا المنتج', tabCustom: 'تصميم مخصص بناءً عليه',
-    qtyReq: 'الكمية المطلوبة *', qtyOpt: 'الكمية التقريبية (اختياري)', notes: 'ملاحظات (اختياري)',
-    subject: 'اوصف التعديل أو التصميم المطلوب *', subjectPh: 'مثال: نفس المنتج بلون مختلف، أو بشعارنا، أو بمواصفات معدّلة',
-    submit: 'إرسال الطلب', sending: 'جارٍ الإرسال...', close: 'إغلاق',
-    errQty: 'يرجى إدخال الكمية.', errSubject: 'يرجى وصف ما تريد.', errGeneric: 'حدث خطأ، حاول مرة أخرى.',
-    note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.', signin: 'سيُطلب منك تسجيل الدخول عند الإرسال.',
-    doneT: 'تم إرسال طلبك إلى المصنع', doneB: 'سيتم إشعارك عند رد المصنع بعرضه عبر مَعبر.',
+    requestCta: 'اطلب عرض سعر أو تعديلاً',
     notFound: 'المنتج غير موجود', loading: '…',
     specsLabel: 'المواصفات', descLabel: 'الوصف', customLabel: 'خيارات التخصيص', moqLabel: 'الحد الأدنى للطلب',
-    contactDetails: 'تواصل مع المورد للتفاصيل',
+    contactDetails: 'تواصل مع المورد للتفاصيل', note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.',
   },
   en: {
     back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom',
-    tabProduct: 'Request this product', tabCustom: 'Custom design based on this',
-    qtyReq: 'Required quantity *', qtyOpt: 'Approx. quantity (optional)', notes: 'Notes (optional)',
-    subject: 'Describe the change or custom design *', subjectPh: 'e.g. same product in a different color, with our logo, or modified specs',
-    submit: 'Send request', sending: 'Sending...', close: 'Close',
-    errQty: 'Please enter a quantity.', errSubject: 'Please describe what you want.', errGeneric: 'Something went wrong, please try again.',
-    note: 'The factory responds with pricing — no budget needed.', signin: 'You will be asked to sign in when submitting.',
-    doneT: 'Your request has been sent to the factory', doneB: "You'll be notified when the factory responds with its offer through Maabar.",
+    requestCta: 'Request a quote or customization',
     notFound: 'Product not found', loading: '…',
     specsLabel: 'Specifications', descLabel: 'Description', customLabel: 'Customization options', moqLabel: 'MOQ',
-    contactDetails: 'Contact supplier for details',
+    contactDetails: 'Contact supplier for details', note: 'The factory responds with pricing — no budget needed.',
   },
   zh: {
     back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大',
-    tabProduct: '需求此产品', tabCustom: '基于此产品的定制设计',
-    qtyReq: '所需数量 *', qtyOpt: '大约数量（可选）', notes: '备注（可选）',
-    subject: '描述修改或定制设计 *', subjectPh: '例如：相同产品不同颜色、加我们的 logo，或修改规格',
-    submit: '发送需求', sending: '发送中...', close: '关闭',
-    errQty: '请输入数量。', errSubject: '请描述您的需求。', errGeneric: '出错了，请重试。',
-    note: '工厂会回复价格——无需填写预算。', signin: '提交时会要求您登录。',
-    doneT: '您的需求已发送至工厂', doneB: '工厂通过 Maabar 回复报价后会通知您。',
+    requestCta: '请求报价或定制',
     notFound: '未找到产品', loading: '…',
     specsLabel: '规格', descLabel: '描述', customLabel: '定制选项', moqLabel: '起订量',
-    contactDetails: '详情请联系供应商',
+    contactDetails: '详情请联系供应商', note: '工厂会回复价格——无需填写预算。',
   },
 };
 
-// Standalone factory catalog product page (replaces ProductRequestModal).
+// Standalone factory catalog product page.
 //   /factory/:factoryId/product/:productId
-// Gallery + lightbox, then two request paths (tabs), both feeding the factory
-// request pipeline (createFactoryRequest): (a) request this product as-is,
-// (b) custom design based on it. Both set factory_product_id.
+// Gallery + lightbox + product details, then a single CTA that opens the shared
+// RequestQuoteModal (product pre-attached → factory_product_id set).
 export default function FactoryProductDetail({ lang = 'ar', user, displayCurrency }) {
   const { factoryId, productId } = useParams();
   const nav = useNavigate();
@@ -67,14 +48,17 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightbox, setLightbox] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const [origin, setOrigin] = useState({ x: 50, y: 50 });
+  const [reqOpen, setReqOpen] = useState(false);
 
-  const [tab, setTab] = useState('product'); // 'product' | 'custom'
-  const [qty, setQty] = useState('');
-  const [notes, setNotes] = useState('');
-  const [subject, setSubject] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
+  const openLightbox = () => { setZoom(false); setOrigin({ x: 50, y: 50 }); setLightbox(true); };
+  const closeLightbox = () => { setZoom(false); setLightbox(false); };
+  const onLightboxMove = (e) => {
+    if (!zoom) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setOrigin({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -95,7 +79,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   }, [factoryId, productId]);
 
   // Esc closes the lightbox.
-  const onKey = useCallback((e) => { if (e.key === 'Escape') setLightbox(false); }, []);
+  const onKey = useCallback((e) => { if (e.key === 'Escape') { setZoom(false); setLightbox(false); } }, []);
   useEffect(() => {
     if (!lightbox) return;
     window.addEventListener('keydown', onKey);
@@ -132,35 +116,6 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const dLabel = { fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const dVal = { fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
 
-  async function submit() {
-    if (tab === 'product' && !String(qty).trim()) { setError(c.errQty); return; }
-    if (tab === 'custom' && !subject.trim()) { setError(c.errSubject); return; }
-    if (!user) { nav('/login/buyer'); return; }
-    setSubmitting(true);
-    setError('');
-    const { request, error: e } = await createFactoryRequest({
-      user, factory, product,
-      subject: tab === 'custom' ? subject : undefined,
-      quantity: qty, notes, lang, viewerCurrency: displayCurrency,
-    });
-    setSubmitting(false);
-    if (e || !request) { setError(c.errGeneric); return; }
-    setDone(true);
-  }
-
-  const segBtn = (key, label) => (
-    <button type="button" onClick={() => { setTab(key); setError(''); }}
-      className={isAr ? 'ar' : ''}
-      style={{
-        flex: 1, padding: '10px 12px', fontSize: 13, cursor: 'pointer',
-        border: 'none', borderRadius: 'var(--radius-control)',
-        background: tab === key ? 'var(--ink)' : 'transparent',
-        color: tab === key ? '#fff' : 'var(--text-secondary)',
-        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
-        fontWeight: tab === key ? 500 : 400, transition: 'var(--transition)',
-      }}>{label}</button>
-  );
-
   return (
     <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="fx-wrap">
@@ -169,7 +124,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
         <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'flex-start', marginTop: 8 }}>
           {/* ── Gallery ── */}
           <div style={{ flex: '1 1 380px', minWidth: 280 }}>
-            <button type="button" onClick={() => mainImg && setLightbox(true)}
+            <button type="button" onClick={() => mainImg && openLightbox()}
               title={mainImg ? c.zoom : undefined}
               style={{
                 width: '100%', aspectRatio: '1 / 1', border: '1px solid var(--border)',
@@ -234,61 +189,45 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
             </div>
 
             {/* MOQ sits next to the request action (it's a commercial term). */}
-            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 12px', fontSize: 12.5 }}>
+            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12.5 }}>
               {c.moqLabel}: <span style={{ color: 'var(--text-primary)' }}>{orContact(product.moq)}</span>
             </p>
 
-            <div className="fx-panel" style={{ marginTop: 0, padding: 20 }}>
-              {done ? (
-                <>
-                  <h3 className={arc.trim()} style={{ fontSize: 16, color: 'var(--text-primary)', margin: '0 0 8px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.doneT}</h3>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 18px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.doneB}</p>
-                  <button className={`fx-btn-ghost${arc}`} onClick={() => nav(`/factory/${factoryId}`)}>{c.close}</button>
-                </>
-              ) : (
-                <>
-                  {/* segmented tabs */}
-                  <div style={{ display: 'flex', gap: 4, padding: 4, background: 'var(--bg-hero)', borderRadius: 'var(--radius-control)', marginBottom: 18 }}>
-                    {segBtn('product', c.tabProduct)}
-                    {segBtn('custom', c.tabCustom)}
-                  </div>
-
-                  {tab === 'custom' && (
-                    <div className="form-group">
-                      <label className={`form-label${arc}`}>{c.subject}</label>
-                      <textarea className="form-input" rows={3} style={{ resize: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
-                        value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={c.subjectPh} dir={isAr ? 'rtl' : 'ltr'} />
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label className={`form-label${arc}`}>{tab === 'product' ? c.qtyReq : c.qtyOpt}</label>
-                    <input className="form-input" value={qty} onChange={(e) => setQty(e.target.value)} inputMode="numeric" placeholder={isAr ? 'مثال: 500' : 'e.g. 500'} dir={isAr ? 'rtl' : 'ltr'} />
-                  </div>
-
-                  <div className="form-group">
-                    <label className={`form-label${arc}`}>{c.notes}</label>
-                    <textarea className="form-input" rows={2} style={{ resize: 'vertical', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}
-                      value={notes} onChange={(e) => setNotes(e.target.value)} dir={isAr ? 'rtl' : 'ltr'} />
-                  </div>
-
-                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '2px 0 14px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.note}</p>
-                  {!!error && <p style={{ color: '#a05050', fontSize: 13, margin: '0 0 12px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{error}</p>}
-                  {!user && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 12px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.signin}</p>}
-
-                  <button className={`fx-btn-primary${arc}`} onClick={submit} disabled={submitting}>{submitting ? c.sending : c.submit}</button>
-                </>
-              )}
-            </div>
+            <button className={`fx-btn-primary${arc}`} onClick={() => setReqOpen(true)}>{c.requestCta}</button>
+            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '10px 0 0', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.note}</p>
           </div>
         </div>
       </div>
 
-      {/* ── Lightbox ── */}
+      {/* ── Lightbox (fills the viewport; click the image to magnify + pan) ── */}
       {lightbox && mainImg && (
-        <div className="fx-modal-bg" onClick={() => setLightbox(false)} style={{ cursor: 'zoom-out' }}>
-          <img src={mainImg} alt={productName} style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain', borderRadius: 8 }} />
+        <div className="fx-modal-bg" onClick={closeLightbox} style={{ padding: 0 }}>
+          <button type="button" onClick={(e) => { e.stopPropagation(); closeLightbox(); }} aria-label={isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
+            style={{ position: 'fixed', top: 18, insetInlineEnd: 20, width: 44, height: 44, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 24, lineHeight: 1, cursor: 'pointer', zIndex: 2 }}>×</button>
+          <div
+            onClick={(e) => { e.stopPropagation(); setZoom((z) => !z); }}
+            onMouseMove={onLightboxMove}
+            style={{ width: '96vw', height: '94vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: zoom ? 'zoom-out' : 'zoom-in' }}>
+            <img src={mainImg} alt={productName}
+              style={{
+                width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6,
+                transition: 'transform 0.18s ease',
+                transform: zoom ? 'scale(2.4)' : 'scale(1)',
+                transformOrigin: `${origin.x}% ${origin.y}%`,
+              }} />
+          </div>
         </div>
+      )}
+
+      {reqOpen && (
+        <RequestQuoteModal
+          lang={lang}
+          user={user}
+          factory={factory}
+          product={product}
+          displayCurrency={displayCurrency}
+          onClose={() => setReqOpen(false)}
+        />
       )}
 
       <Footer lang={lang} />

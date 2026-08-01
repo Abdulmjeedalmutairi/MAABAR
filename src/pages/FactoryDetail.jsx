@@ -4,7 +4,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
 import { sb } from '../supabase';
-import FactoryInquiryModal from '../components/factory/FactoryInquiryModal';
+import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode } from '../lib/factoryCategories';
 
 // Factory profile page — logo hero + info + full catalog. Two request paths:
@@ -64,8 +64,22 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
 
   const backCat = displayCategoryForCode(factory.category);
-  const backLabel = backCat ? (backCat.label[lang] || backCat.label.en) : (isAr ? 'المصانع' : lang === 'zh' ? '工厂' : 'Factories');
+  const categoryLabel = backCat ? (backCat.label[lang] || backCat.label.en) : null;
+  const backLabel = categoryLabel || (isAr ? 'المصانع' : lang === 'zh' ? '工厂' : 'Factories');
   const backTo = backCat ? `/factories/${backCat.key}` : '/factories';
+  // Prefer a real factory photo for the banner; otherwise use the profile image as
+  // the cover (it's a photo in practice, not a logo). Show a distinct logo avatar
+  // only when the banner came from a separate factory photo.
+  const heroPhoto = photos[0] || factory.profile_image || null;
+  const hasBanner = !!heroPhoto;
+  const avatarImg = photos.length > 0 ? factory.profile_image : null;
+
+  // Trust badges — Category always shows (so the row is never bare); Est. and
+  // Exports appear only when the factory has that data.
+  const stats = [];
+  if (factory.founded_year) stats.push({ key: 'est', label: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立' : 'Established', value: String(factory.founded_year) });
+  if (factory.export_markets) stats.push({ key: 'exp', label: isAr ? 'أسواق التصدير' : lang === 'zh' ? '出口市场' : 'Exports to', value: factory.export_markets });
+  if (categoryLabel) stats.push({ key: 'cat', label: isAr ? 'التصنيف' : lang === 'zh' ? '类别' : 'Category', value: categoryLabel });
 
   // Only products with a usable image are showcased in the grid (no-image
   // products are excluded, per the display decision).
@@ -81,29 +95,48 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
       <div className="fx-wrap">
         <button className={`fx-back${arc}`} onClick={() => nav(backTo)}>{isAr ? '→ ' : '← '}{backLabel}</button>
 
-        {/* ── Hero: prominent logo + identity ── */}
-        <div className="fx-hero">
-          <div className="fx-hero-logo">
-            {factory.profile_image
-              ? <img src={factory.profile_image} alt={name} />
-              : <span className="fx-media-initial">{(name || '?')[0]}</span>}
-          </div>
-          <div className="fx-hero-body">
-            <h1 className={`fx-h1${arc}`} style={{ margin: 0 }}>{name}</h1>
-            {(factory.city || factory.country) && (
-              <p className={`fx-hero-loc${arc}`}>{[factory.city, factory.country].filter(Boolean).join(isAr ? '، ' : ', ')}</p>
+        {/* ── Hero band: optional banner + identity + trust badges ── */}
+        <div className="fx-hero-wrap">
+          {hasBanner && (
+            <div className="fx-hero-banner"><img src={heroPhoto} alt="" /></div>
+          )}
+          <div className={`fx-hero${hasBanner ? ' fx-hero--under-banner' : ''}${hasBanner && !avatarImg ? ' fx-hero--no-avatar' : ''}`}>
+            {(!hasBanner || avatarImg) && (
+              <div className="fx-hero-media">
+                <div className="fx-hero-logo">
+                  {avatarImg
+                    ? <img src={avatarImg} alt={name} />
+                    : <span className="fx-media-initial">{(name || '?')[0]}</span>}
+                </div>
+              </div>
             )}
-            {desc && <p className={`fx-hero-desc${arc}`}>{desc}</p>}
-            <button className={`fx-btn-ghost${arc}`} onClick={() => setInquiryOpen(true)}>
-              {isAr ? 'استفسار / طلب مخصص من هذا المصنع' : lang === 'zh' ? '向该工厂咨询 / 定制需求' : 'Inquire / request something custom'}
-            </button>
+            <div className="fx-hero-info">
+              <h1 className={`fx-h1${arc}`} style={{ margin: 0 }}>{name}</h1>
+              {(factory.city || factory.country) && (
+                <p className={`fx-hero-loc${arc}`}>{[factory.city, factory.country].filter(Boolean).join(isAr ? '، ' : ', ')}</p>
+              )}
+              {stats.length > 0 && (
+                <div className="fx-stats">
+                  {stats.map((s) => (
+                    <div className="fx-stat" key={s.key}>
+                      <span className={`fx-stat-label${arc}`}>{s.label}</span>
+                      <span className={`fx-stat-value${arc}`}>{s.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {desc && <p className={`fx-hero-desc${arc}`}>{desc}</p>}
+              <button className={`fx-btn-ghost${arc}`} onClick={() => setInquiryOpen(true)}>
+                {isAr ? 'استفسار / طلب مخصص من هذا المصنع' : lang === 'zh' ? '向该工厂咨询 / 定制需求' : 'Inquire / request something custom'}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Secondary factory photos */}
-        {photos.length > 0 && (
+        {/* Additional factory photos (the banner already shows the first) */}
+        {photos.length > (hasBanner ? 1 : 0) && (
           <div className="fx-photos">
-            {photos.slice(0, 8).map((u, i) => (
+            {photos.slice(hasBanner ? 1 : 0, hasBanner ? 9 : 8).map((u, i) => (
               <span key={i}><img src={u} alt="" loading="lazy" /></span>
             ))}
           </div>
@@ -160,10 +193,11 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
       </div>
 
       {inquiryOpen && (
-        <FactoryInquiryModal
+        <RequestQuoteModal
           lang={lang}
           user={user}
           factory={factory}
+          product={null}
           displayCurrency={displayCurrency}
           onClose={() => setInquiryOpen(false)}
         />

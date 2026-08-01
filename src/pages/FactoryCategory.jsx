@@ -55,17 +55,17 @@ export default function FactoryCategory({ lang = 'ar' }) {
           <div className="fx-grid fx-grid-fac" ref={revealRef}>
             {factories.map((f, i) => {
               const photo = (Array.isArray(f.factory_images) ? f.factory_images : []).find((u) => typeof u === 'string' && /^https?:\/\//i.test(u));
-              const logo = f.profile_image;
+              // profile_image is, in practice, a cover/product photo → fill the
+              // tile (cover) rather than treating it as a padded logo.
+              const img = photo || f.profile_image;
               const name = resolveName(f);
               return (
                 <button key={f.id} type="button" className="fx-card reveal" style={{ '--i': i }}
                   onClick={() => nav(`/factory/${f.id}`)}>
                   <div className="fx-media" style={{ aspectRatio: '4 / 3' }}>
-                    {photo
-                      ? <img src={photo} alt="" loading="lazy" />
-                      : logo
-                        ? <img src={logo} alt="" loading="lazy" style={{ objectFit: 'contain', padding: '16%' }} />
-                        : <span className="fx-media-initial" style={{ fontSize: 44 }}>{(name || '?')[0]}</span>}
+                    {img
+                      ? <img src={img} alt="" loading="lazy" />
+                      : <span className="fx-media-initial" style={{ fontSize: 44 }}>{(name || '?')[0]}</span>}
                   </div>
                   <div className="fx-card-body">
                     <h3 className={`fx-card-title${arc}`}>{name || '—'}</h3>

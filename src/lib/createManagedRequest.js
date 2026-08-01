@@ -46,6 +46,7 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
     title_en: translated.title_en || titleEn || fallbackTitle,
     title_zh: translated.title_zh || titleEn || titleAr || fallbackTitle,
     quantity: Number.isFinite(qtyNum) ? qtyNum : null,
+    unit: form.unit || null,
     description,
     description_ar: translated.description_ar || null,
     description_en: translated.description_en || null,
@@ -69,7 +70,7 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
   const { data: request, error } = await runWithOptionalColumns({
     table: 'requests',
     payload,
-    optionalKeys: ['description_ar', 'description_en', 'description_zh', 'request_kind'],
+    optionalKeys: ['description_ar', 'description_en', 'description_zh', 'request_kind', 'unit'],
     execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('*').single(),
   });
 
