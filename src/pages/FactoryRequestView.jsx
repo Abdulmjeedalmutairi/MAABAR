@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
+import { CUSTOMIZATION_CHIPS, DELIVERY_TIMEFRAMES, REQUEST_UNITS, labelFor } from '../lib/requestFormOptions';
 
 // Factory-facing request page (public, opened from the emailed link).
 // Shows the buyer-stripped brief, lets the factory register phone-only, then
@@ -10,6 +11,7 @@ import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
 const C = {
   en: {
     heading: 'Quote request', from: 'via Maabar', details: 'Request details', factory: 'Factory', product: 'Product',
+    specs: 'Specifications', qty: 'Quantity', customization: 'Customization', timeframe: 'Delivery timeframe', destination: 'Ship to', attachments: 'Attachments',
     respond: 'Respond to this request', haveAccount: 'Already registered? Sign in', newAccount: 'New factory? Register',
     phone: 'Phone (international, e.g. +8613800138000)', password: 'Password', company: 'Factory / company name',
     register: 'Register & continue', signin: 'Sign in & continue', working: 'Please wait…',
@@ -33,6 +35,7 @@ const C = {
   },
   zh: {
     heading: '报价请求', from: '来自 Maabar', details: '需求详情', factory: '工厂', product: '产品',
+    specs: '规格', qty: '数量', customization: '定制', timeframe: '交付时间', destination: '收货地', attachments: '附件',
     respond: '回复此需求', haveAccount: '已注册？登录', newAccount: '新工厂？注册',
     phone: '电话（国际格式，如 +8613800138000）', password: '密码', company: '工厂／公司名称',
     register: '注册并继续', signin: '登录并继续', working: '请稍候…',
@@ -77,7 +80,8 @@ export default function FactoryRequestView() {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [invite, setInvite] = useState(null);      // { status, expired, factory_name, product_name, brief }
+  const [invite, setInvite] = useState(null);      // { status, expired, factory_name, product_name, brief, + structured }
+  const [attachUrls, setAttachUrls] = useState({}); // { path: signedUrl }
   const [phase, setPhase] = useState('brief');      // 'brief' | 'auth' | 'offer' | 'done'
   const [authMode, setAuthMode] = useState('register');
   const [busy, setBusy] = useState(false);
@@ -94,7 +98,10 @@ export default function FactoryRequestView() {
   const [moq, setMoq] = useState('');
   const [note, setNote] = useState('');
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [slug]);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
   async function load() {
     setLoading(true);
     setLoadError(false);
@@ -106,6 +113,12 @@ export default function FactoryRequestView() {
       setCompany(row.factory_name || '');
       if (row.status === 'registered') setPhase('offer'); // already registered → straight to offer
       if (row.status === 'offer_submitted') setPhase('done');
+      // Mint short-lived signed URLs for attachments (private bucket, slug-gated).
+      if (Array.isArray(row.attachment_paths) && row.attachment_paths.length) {
+        sb.functions.invoke('factory-attachment-url', { body: { slug, paths: row.attachment_paths } })
+          .then(({ data }) => { if (data?.urls) setAttachUrls(data.urls); })
+          .catch(() => {});
+      }
     }
     setLoading(false);
   }
@@ -187,6 +200,20 @@ export default function FactoryRequestView() {
   const btn = { background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 22px', fontSize: 14, cursor: 'pointer' };
   const link = { background: 'none', border: 'none', color: '#8B7355', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 };
 
+  // Structured specs (identity-safe fields the RPC returns) + attachments.
+  const uLabel = (key) => { const u = REQUEST_UNITS.find((x) => x.key === key); return u ? labelFor(u, lang) : (key || ''); };
+  const specsRows = invite ? [
+    invite.quantity ? { k: t.qty, v: `${invite.quantity}${invite.unit ? ` ${uLabel(invite.unit)}` : ''}` } : null,
+    (invite.customization_types && invite.customization_types.length)
+      ? { k: t.customization, v: invite.customization_types.map((k) => { const c = CUSTOMIZATION_CHIPS.find((x) => x.key === k); return c ? labelFor(c, lang) : k; }).join(', ') } : null,
+    invite.delivery_timeframe
+      ? { k: t.timeframe, v: (() => { const d = DELIVERY_TIMEFRAMES.find((x) => x.key === invite.delivery_timeframe); return d ? labelFor(d, lang) : invite.delivery_timeframe; })() } : null,
+    (invite.ship_city || invite.ship_country) ? { k: t.destination, v: [invite.ship_city, invite.ship_country].filter(Boolean).join(', ') } : null,
+  ].filter(Boolean) : [];
+  const attachments = invite && Array.isArray(invite.attachment_paths) ? invite.attachment_paths : [];
+  const fileName = (p) => { const seg = decodeURIComponent(String(p).split('/').pop() || ''); const i = seg.indexOf('_'); return i >= 0 ? seg.slice(i + 1) : seg; };
+  const isImg = (n) => /\.(jpe?g|png|webp|gif)$/i.test(n);
+
   return (
     <div style={{ background: '#f5f3ef', minHeight: '100dvh' }}>
       <div style={wrap}>
@@ -211,6 +238,43 @@ export default function FactoryRequestView() {
               <p style={{ ...label }}>{t.details}</p>
               {invite.product_name && <p style={{ fontSize: 14, color: '#1a1814', margin: '0 0 8px' }}><strong>{t.product}:</strong> {invite.product_name}</p>}
               <p style={{ fontSize: 14, color: '#3d3a35', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{invite.brief || (invite.product_name || '')}</p>
+
+              {specsRows.length > 0 && (
+                <div style={{ marginTop: 16, borderTop: '1px solid #e8e5de', paddingTop: 14 }}>
+                  <p style={{ ...label, marginBottom: 8 }}>{t.specs}</p>
+                  {specsRows.map((r, i) => (
+                    <p key={i} style={{ fontSize: 13.5, color: '#1a1814', margin: '0 0 6px' }}>
+                      <span style={{ color: '#6b6560' }}>{r.k}:</span> {r.v}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {attachments.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <p style={{ ...label, marginBottom: 8 }}>{t.attachments} ({attachments.length})</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {attachments.map((p, i) => {
+                      const name = fileName(p); const url = attachUrls[p]; const img = isImg(name);
+                      return (
+                        <a key={i} href={url || undefined} target="_blank" rel="noreferrer" title={name}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: img ? 72 : 'auto', height: 72, maxWidth: 200, padding: img ? 0 : '0 12px',
+                            border: '1px solid #e8e5de', borderRadius: 8, overflow: 'hidden',
+                            background: '#fff', textDecoration: 'none', color: '#3d3a35', fontSize: 12,
+                            cursor: url ? 'pointer' : 'default', opacity: url ? 1 : 0.5,
+                          }}>
+                          {img && url
+                            ? <img src={url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <p style={{ fontSize: 11.5, color: '#b0ab9e', marginTop: 16 }}>{t.privacy}</p>
             </div>
 
