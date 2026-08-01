@@ -88,12 +88,14 @@ export const FACTORY_DISPLAY_CATEGORIES = [
   },
 ];
 
-// Localized list for rendering the landing grid.
+// Localized list for rendering the landing grid. The category art lives as static
+// WebP under public/categories/<key>.webp (matched to each key by filename); an
+// explicit `image` on the entry overrides it.
 export function displayCategoriesForLang(lang = 'ar') {
   return FACTORY_DISPLAY_CATEGORIES.map((c) => ({
     key: c.key,
     codes: c.codes,
-    image: c.image,
+    image: c.image || `/categories/${c.key}.webp`,
     label: c.label[lang] || c.label.en,
     desc: c.desc[lang] || c.desc.en,
   }));

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
+import useReveal from '../hooks/useReveal';
 import { sb } from '../supabase';
 import { getFactoryDisplayCategory, codesForDisplayCategory } from '../lib/factoryCategories';
 
@@ -11,12 +12,17 @@ export default function FactoryCategory({ lang = 'ar' }) {
   const nav = useNavigate();
   const { key } = useParams();
   const isAr = lang === 'ar';
+  const arc = isAr ? ' ar' : '';
   usePageTitle('suppliers', lang);
   const cat = getFactoryDisplayCategory(key);
   const [factories, setFactories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const revealRef = useReveal([lang, loading]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [key]);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   async function load() {
     setLoading(true);
     const codes = codesForDisplayCategory(key);
@@ -33,43 +39,41 @@ export default function FactoryCategory({ lang = 'ar' }) {
 
   return (
     <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="page-header">
-        <div>
-          <p style={{ fontSize: 12, color: 'var(--text-disabled)', cursor: 'pointer', margin: '0 0 4px' }} onClick={() => nav('/factories')}>
-            {isAr ? '← المصانع' : lang === 'zh' ? '← 工厂' : '← Factories'}
-          </p>
-          <h1 className={`page-title${isAr ? ' ar' : ''}`}>{label}</h1>
-        </div>
-      </div>
-      <div className="list-wrap">
+      <div className="fx-wrap">
+        <button className={`fx-back${arc}`} onClick={() => nav('/factories')}>
+          {isAr ? '→ ' : '← '}{isAr ? 'المصانع' : lang === 'zh' ? '工厂' : 'Factories'}
+        </button>
+        <h1 className={`fx-h1${arc}`}>{label}</h1>
+
         {loading ? (
-          <p style={{ color: 'var(--text-secondary)' }}>…</p>
+          <p className={`fx-sub${arc}`}>{isAr ? 'جارٍ التحميل...' : '…'}</p>
         ) : factories.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+          <p className={`fx-sub${arc}`}>
             {isAr ? 'لا توجد مصانع في هذه الفئة بعد.' : lang === 'zh' ? '该类别暂无工厂。' : 'No factories in this category yet.'}
           </p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-            {factories.map((f) => {
+          <div className="fx-grid fx-grid-fac" ref={revealRef}>
+            {factories.map((f, i) => {
               const photo = (Array.isArray(f.factory_images) ? f.factory_images : []).find((u) => typeof u === 'string' && /^https?:\/\//i.test(u));
+              const logo = f.profile_image;
               const name = resolveName(f);
               return (
-                <div key={f.id} onClick={() => nav(`/factory/${f.id}`)}
-                  style={{ cursor: 'pointer', background: 'var(--bg-subtle)', border: '1px solid var(--border-muted)', borderRadius: 14, overflow: 'hidden' }}>
-                  <div style={{ height: 130, background: '#EFE8DC', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button key={f.id} type="button" className="fx-card reveal" style={{ '--i': i }}
+                  onClick={() => nav(`/factory/${f.id}`)}>
+                  <div className="fx-media" style={{ aspectRatio: '4 / 3' }}>
                     {photo
-                      ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 40, color: '#8B7355', fontFamily: "'Cormorant Garamond', serif" }}>{(name || '?')[0]}</span>}
+                      ? <img src={photo} alt="" loading="lazy" />
+                      : logo
+                        ? <img src={logo} alt="" loading="lazy" style={{ objectFit: 'contain', padding: '16%' }} />
+                        : <span className="fx-media-initial" style={{ fontSize: 44 }}>{(name || '?')[0]}</span>}
                   </div>
-                  <div style={{ padding: 16 }}>
-                    <h3 style={{ fontSize: 15, color: 'var(--text-primary)', margin: '0 0 4px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{name || '—'}</h3>
+                  <div className="fx-card-body">
+                    <h3 className={`fx-card-title${arc}`}>{name || '—'}</h3>
                     {(f.city || f.country) && (
-                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {[f.city, f.country].filter(Boolean).join(isAr ? '، ' : ', ')}
-                      </p>
+                      <p className={`fx-card-meta${arc}`}>{[f.city, f.country].filter(Boolean).join(isAr ? '، ' : ', ')}</p>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
