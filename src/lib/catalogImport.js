@@ -70,12 +70,23 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
 }
 
 // ── Product approval (staged → factory_products) ────────────────────────────
-function mapProduct(factoryId, staged) {
+// meta = { factoryName, categoryAr, categoryEn } — used ONLY to synthesize a
+// fallback name when the catalog genuinely had none.
+function mapProduct(factoryId, staged, meta = {}) {
   const ej = staged.extracted_json || {};
+  let nameAr = tri(ej.product_name, 'ar');
+  let nameEn = tri(ej.product_name, 'en');
+  if (!nameAr && !nameEn) {
+    // Name genuinely absent → store a professional fallback (not a blank), kept
+    // consistent everywhere: "{Category} — {Factory}" / "Product — {Factory}".
+    const fac = meta.factoryName || 'Factory';
+    nameAr = `${meta.categoryAr || 'منتج'} — ${fac}`;
+    nameEn = `${meta.categoryEn || 'Product'} — ${fac}`;
+  }
   return {
     factory_id: factoryId,
-    name_ar: tri(ej.product_name, 'ar'),
-    name_en: tri(ej.product_name, 'en'),
+    name_ar: nameAr,
+    name_en: nameEn,
     description_ar: tri(ej.description, 'ar'),
     description_en: tri(ej.description, 'en'),
     specifications_ar: tri(ej.specifications, 'ar'),
@@ -92,9 +103,9 @@ function mapProduct(factoryId, staged) {
 // Batched insert into factory_products, then mark the staged rows approved.
 // approved_product_id is linked only for a single-row approve (deck), to avoid
 // N round-trips on a bulk approve of hundreds.
-export async function approveProducts(factoryId, stagedRows) {
+export async function approveProducts(factoryId, stagedRows, meta = {}) {
   if (!stagedRows.length) return { count: 0 };
-  const rows = stagedRows.map((s) => mapProduct(factoryId, s));
+  const rows = stagedRows.map((s) => mapProduct(factoryId, s, meta));
   const { data: inserted, error } = await sb.from('factory_products').insert(rows).select('id');
   if (error) throw error;
   const ids = stagedRows.map((s) => s.id);
@@ -106,13 +117,13 @@ export async function approveProducts(factoryId, stagedRows) {
   return { count: rows.length };
 }
 
-export function approveProduct(factoryId, staged) {
-  return approveProducts(factoryId, [staged]);
+export function approveProduct(factoryId, staged, meta = {}) {
+  return approveProducts(factoryId, [staged], meta);
 }
 
-export function bulkApproveHighConfidence(factoryId, products, threshold = HIGH_CONF) {
+export function bulkApproveHighConfidence(factoryId, products, meta = {}, threshold = HIGH_CONF) {
   const rows = products.filter((p) => p.status === 'pending' && (p.confidence_score ?? 0) >= threshold);
-  return approveProducts(factoryId, rows);
+  return approveProducts(factoryId, rows, meta);
 }
 
 export async function updateStagedProduct(id, extracted_json) {

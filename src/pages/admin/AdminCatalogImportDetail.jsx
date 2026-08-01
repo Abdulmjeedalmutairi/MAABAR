@@ -9,6 +9,7 @@ import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
 } from '../../lib/catalogImport';
+import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
 const FH = "'Cormorant Garamond', Georgia, serif";
 const FB = "'Tajawal', sans-serif";
@@ -135,10 +136,31 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
   const moveDeck = (d) => { setDeckIdx((i) => Math.max(0, Math.min(reviewQueue.length - 1, i + d))); refocusDeck(); };
   const errMsg = (e) => setActionMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') });
 
+  // Factory display name + category labels, used to synthesize fallback product
+  // names at approval time (for products the catalog left unnamed).
+  const buildMeta = () => {
+    const nfv = (v) => (v && v !== 'not_found' ? v : '');
+    let name;
+    let catCode;
+    if (mode === 'existing') {
+      const f = factories.find((x) => x.id === existingId);
+      name = nfv(f?.company_name_latin) || nfv(f?.company_name);
+      catCode = f?.category;
+    } else {
+      name = nfv(fields.name_en) || nfv(fields.name_original);
+      catCode = fields.category;
+    }
+    return {
+      factoryName: name || 'Factory',
+      categoryAr: (UI_CATEGORIES.ar.find((c) => c.val === catCode) || {}).label,
+      categoryEn: (UI_CATEGORIES.en.find((c) => c.val === catCode) || {}).label,
+    };
+  };
+
   const approveCurrent = async () => {
     if (!current || busy) return;
     setBusy(true); setActionMsg({ ok: false, text: '' });
-    try { await approveProduct(savedFactoryId, { ...current, extracted_json: jsonFor(current) }); markStatus(current.id, 'approved'); }
+    try { await approveProduct(savedFactoryId, { ...current, extracted_json: jsonFor(current) }, buildMeta()); markStatus(current.id, 'approved'); }
     catch (e) { errMsg(e); }
     setBusy(false); refocusDeck();
   };
@@ -153,7 +175,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     if (busy) return;
     setBusy(true); setActionMsg({ ok: false, text: '' });
     try {
-      const { count } = await bulkApproveHighConfidence(savedFactoryId, products);
+      const { count } = await bulkApproveHighConfidence(savedFactoryId, products, buildMeta());
       setProducts((ps) => ps.map((p) => (p.status === 'pending' && (p.confidence_score ?? 0) >= HIGH_CONF ? { ...p, status: 'approved' } : p)));
       setActionMsg({ ok: true, text: isAr ? `تم اعتماد ${count} منتج.` : `Approved ${count} products.` });
     } catch (e) { errMsg(e); }
