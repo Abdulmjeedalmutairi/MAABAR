@@ -1,10 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
 import FactoryFieldsPanel from '../../components/admin/catalog/FactoryFieldsPanel';
 import ProfileImagePicker from '../../components/admin/catalog/ProfileImagePicker';
-import { fetchImport, fetchFactories, resolveFactory, HIGH_CONF } from '../../lib/catalogImport';
+import ProductReviewCard from '../../components/admin/catalog/ProductReviewCard';
+import {
+  fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
+  approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
+} from '../../lib/catalogImport';
 
 const FH = "'Cormorant Garamond', Georgia, serif";
 const FB = "'Tajawal', sans-serif";
@@ -28,6 +32,19 @@ const CSS = (isAr) => `
   .ci-btn-primary:disabled { opacity: 0.55; cursor: default; }
   .ci-stat-n { font-size: 22px; font-weight: 600; color: rgba(0,0,0,0.85); font-family: ${FB}; font-variant-numeric: lining-nums; }
   .ci-stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(0,0,0,0.4); font-family: ${FB}; margin-top: 2px; }
+  .ci-conf { position: absolute; top: 6px; ${isAr ? 'left' : 'right'}: 6px; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px; font-family: ${FB}; }
+  .ci-conf.hi { background: #3f9d5a; } .ci-conf.mid { background: #c9863f; } .ci-conf.lo { background: #c0503f; } .ci-conf.na { background: #999; }
+  .ci-chip-ro { padding: 3px 10px; border-radius: 99px; background: rgba(0,0,0,0.05); font-size: 11.5px; color: rgba(0,0,0,0.6); font-family: ${FB}; }
+  .ci-deck { border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 16px; margin-top: 8px; outline: none; }
+  .ci-deck:focus { border-color: rgba(0,0,0,0.28); box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+  .ci-deck-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.7); font-family: ${FB}; }
+  .ci-deck-keys { font-size: 11px; font-weight: 400; color: rgba(0,0,0,0.4); }
+  .ci-deck-nav { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+  .ci-btn-ghost { background: transparent; border: 1px solid rgba(0,0,0,0.14); border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: ${FB}; }
+  .ci-btn-ghost:disabled { opacity: 0.4; cursor: default; }
+  .ci-skip { background: transparent; border: 1px solid #c0503f; color: #c0503f; border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: ${FB}; }
+  .ci-approve { background: #3f9d5a; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: ${FB}; margin-${isAr ? 'right' : 'left'}: auto; }
+  .ci-approve:disabled, .ci-skip:disabled { opacity: 0.5; cursor: default; }
   @media (max-width: 900px) { .a-page { padding: 22px 16px; } }
 `;
 
@@ -100,6 +117,72 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     skipped: products.filter((p) => p.status === 'skipped').length,
   };
 
+  // ── Product review (bulk + keyboard deck) ──
+  const [edits, setEdits] = useState({});
+  const [deckIdx, setDeckIdx] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState({ ok: false, text: '' });
+  const deckRef = useRef(null);
+
+  const reviewQueue = products
+    .filter((p) => p.status === 'pending')
+    .sort((a, b) => ((a.confidence_score ?? 0) - (b.confidence_score ?? 0)) || ((a.sort_order ?? 0) - (b.sort_order ?? 0)));
+  const current = reviewQueue.length ? reviewQueue[Math.min(deckIdx, reviewQueue.length - 1)] : null;
+
+  const jsonFor = (p) => edits[p.id] ?? (p.extracted_json || {});
+  const markStatus = (pid, status) => setProducts((ps) => ps.map((p) => (p.id === pid ? { ...p, status } : p)));
+  const refocusDeck = () => setTimeout(() => deckRef.current?.focus(), 0);
+  const moveDeck = (d) => { setDeckIdx((i) => Math.max(0, Math.min(reviewQueue.length - 1, i + d))); refocusDeck(); };
+  const errMsg = (e) => setActionMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') });
+
+  const approveCurrent = async () => {
+    if (!current || busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try { await approveProduct(savedFactoryId, { ...current, extracted_json: jsonFor(current) }); markStatus(current.id, 'approved'); }
+    catch (e) { errMsg(e); }
+    setBusy(false); refocusDeck();
+  };
+  const skipCurrent = async () => {
+    if (!current || busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try { await skipProduct(current.id); markStatus(current.id, 'skipped'); }
+    catch (e) { errMsg(e); }
+    setBusy(false); refocusDeck();
+  };
+  const handleBulk = async () => {
+    if (busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try {
+      const { count } = await bulkApproveHighConfidence(savedFactoryId, products);
+      setProducts((ps) => ps.map((p) => (p.status === 'pending' && (p.confidence_score ?? 0) >= HIGH_CONF ? { ...p, status: 'approved' } : p)));
+      setActionMsg({ ok: true, text: isAr ? `تم اعتماد ${count} منتج.` : `Approved ${count} products.` });
+    } catch (e) { errMsg(e); }
+    setBusy(false);
+  };
+  const handleFinalize = async () => {
+    if (busy) return;
+    setBusy(true);
+    try { await finalizeImport(id); setBatch((b) => ({ ...b, status: 'approved' })); setActionMsg({ ok: true, text: isAr ? 'تم إنهاء الاستيراد.' : 'Import finalized.' }); }
+    catch (e) { errMsg(e); }
+    setBusy(false);
+  };
+
+  // Keyboard: Enter=approve, Del/Esc=skip, arrows=navigate — ignored while typing in a field.
+  useEffect(() => {
+    if (!savedFactoryId || reviewQueue.length === 0) return undefined;
+    const onKey = (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') { if (e.key === 'Escape') e.target.blur(); return; }
+      if (e.key === 'Enter') { e.preventDefault(); approveCurrent(); }
+      else if (e.key === 'Delete' || e.key === 'Escape') { e.preventDefault(); skipCurrent(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); moveDeck(isAr ? -1 : 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); moveDeck(isAr ? 1 : -1); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedFactoryId, reviewQueue.length, deckIdx, current?.id, busy, edits, isAr]);
+
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
       <AdminShell user={user} profile={profile} lang={lang}>
@@ -163,12 +246,54 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                     <div key={l}><div className="ci-stat-n">{v}</div><div className="ci-stat-l">{l}</div></div>
                   ))}
                 </div>
-                <p className="ci-hint">
-                  {savedFactoryId
-                    ? (isAr ? 'أدوات الاعتماد (اعتماد جماعي للثقة العالية + مراجعة فردية بلوحة المفاتيح) تُضاف في الخطوة التالية.'
-                      : 'Approval tools (bulk-approve high-confidence + keyboard card review) arrive in the next commit.')
-                    : (isAr ? 'احفظ المصنع أولاً لتفعيل اعتماد المنتجات.' : 'Save the factory first to enable product approval.')}
-                </p>
+                {actionMsg.text && (
+                  <div style={{ margin: '4px 0 14px', fontSize: 13, color: actionMsg.ok ? '#3f9d5a' : '#c0392b', fontFamily: FB }}>{actionMsg.text}</div>
+                )}
+                {!savedFactoryId ? (
+                  <p className="ci-hint">{isAr ? 'احفظ المصنع أولاً لتفعيل اعتماد المنتجات.' : 'Save the factory first to enable product approval.'}</p>
+                ) : (
+                  <>
+                    {counts.high > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <button className="ci-btn-primary" onClick={handleBulk} disabled={busy}>
+                          {isAr ? `اعتماد كل ذوي الثقة العالية (${counts.high})` : `Approve All High-Confidence (${counts.high})`}
+                        </button>
+                        <p className="ci-hint">
+                          {isAr ? `يضيف ${counts.high} منتجاً بثقة ≥ 0.7 إلى الكتالوج الحي دفعة واحدة.` : `Adds the ${counts.high} products scoring ≥ 0.7 to the live catalog in one step.`}
+                        </p>
+                      </div>
+                    )}
+                    {reviewQueue.length > 0 && current ? (
+                      <div className="ci-deck" tabIndex={0} ref={deckRef}>
+                        <div className="ci-deck-head">
+                          <span>{isAr ? 'مراجعة' : 'Review'} {Math.min(deckIdx + 1, reviewQueue.length)} / {reviewQueue.length}</span>
+                          <span className="ci-deck-keys">{isAr ? 'Enter اعتماد · Del/Esc تخطٍّ · ← → تنقّل' : 'Enter approve · Del/Esc skip · ← → navigate'}</span>
+                        </div>
+                        <ProductReviewCard key={current.id} value={jsonFor(current)}
+                          onChange={(j) => setEdits((e) => ({ ...e, [current.id]: j }))} product={current} lang={lang} />
+                        <div className="ci-deck-nav">
+                          <button className="ci-btn-ghost" onClick={() => moveDeck(-1)} disabled={deckIdx <= 0}>← {isAr ? 'السابق' : 'Prev'}</button>
+                          <button className="ci-btn-ghost" onClick={() => moveDeck(1)} disabled={deckIdx >= reviewQueue.length - 1}>{isAr ? 'التالي' : 'Next'} →</button>
+                          <button className="ci-skip" onClick={skipCurrent} disabled={busy}>{isAr ? 'تخطٍّ' : 'Skip'}</button>
+                          <button className="ci-approve" onClick={approveCurrent} disabled={busy}>{isAr ? 'اعتماد' : 'Approve'} ↵</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '6px 0' }}>
+                        <p style={{ color: '#3f9d5a', fontSize: 14, fontFamily: FB, margin: '0 0 12px' }}>
+                          {isAr ? 'تمت مراجعة جميع المنتجات المعلّقة.' : 'All pending products reviewed.'}
+                        </p>
+                        {batch.status !== 'approved' ? (
+                          <button className="ci-btn-primary" onClick={handleFinalize} disabled={busy}>
+                            {isAr ? 'إنهاء الاستيراد' : 'Finalize import'}
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: 13, color: '#3f9d5a', fontFamily: FB }}>{isAr ? '✓ تم إنهاء الاستيراد' : '✓ Import finalized'}</span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </>
           )}
