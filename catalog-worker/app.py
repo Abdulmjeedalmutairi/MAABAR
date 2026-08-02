@@ -22,6 +22,7 @@ Environment (Cloud Run):
   ALLOWED_ORIGIN              (optional) — CORS origin for the admin app (default *)
   GEMINI_MODEL / CHUNK_PAGES  (optional) — extraction tuning
 """
+import json
 import os
 import tempfile
 import time
@@ -127,6 +128,24 @@ def extract():
             except Exception:  # noqa: BLE001
                 pass
 
+    # Cancellation check — the admin sets status='cancelled'; the extractor polls
+    # this at each milestone (cached ~2s to avoid hammering the DB).
+    _cancel = {"t": 0.0, "v": False}
+
+    def should_cancel():
+        now = time.time()
+        if not _cancel["v"] and (now - _cancel["t"]) > 2.0:
+            _cancel["t"] = now
+            try:
+                q = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/factory_catalog_imports?id=eq.{import_id}&select=status",
+                    headers=SR_HEADERS, timeout=10)
+                rows = q.json() if q.ok else []
+                _cancel["v"] = bool(rows) and rows[0].get("status") == "cancelled"
+            except requests.RequestException:
+                pass
+        return _cancel["v"]
+
     tmp = None
     try:
         supa.update("factory_catalog_imports", import_id,
@@ -144,8 +163,17 @@ def extract():
             log=lambda *a: print(*a, flush=True),
             progress=progress,
             hint=row.get("import_notes"),  # optional per-catalog admin guidance
+            should_cancel=should_cancel,
         )
         return jsonify({"ok": True, **summary}), 200
+    except ci.CancelledError:
+        # Admin cancelled — leave the row 'cancelled' (already set by the UI).
+        try:
+            supa.update("factory_catalog_imports", import_id,
+                        {"status": "cancelled", "progress": None})
+        except Exception:  # noqa: BLE001
+            pass
+        return jsonify({"cancelled": True}), 200
     except Exception as e:  # noqa: BLE001 — record any failure on the row
         traceback.print_exc()
         try:
@@ -159,6 +187,84 @@ def extract():
                 os.unlink(tmp)
             except OSError:
                 pass
+
+
+# ── Gemini assist (per-field suggestions + ask-about-this-factory) ───────────
+_BILINGUAL = {"type": "object",
+              "properties": {"ar": {"type": "string"}, "en": {"type": "string"}},
+              "required": ["ar", "en"]}
+
+FIELD_WANT = {
+    "product_name":  "a short, specific product NAME (type + 1-2 key visual traits, e.g. 'Modern 3-seater leather sofa')",
+    "description":   "a concise 1-2 sentence product DESCRIPTION (style, material, use)",
+    "specifications": "key SPECIFICATIONS (materials, dimensions, capacity, and the variant range if grouped)",
+    "name_en":       "an English company/brand name or transliteration",
+    "description_ar": "a concise 2-3 sentence FACTORY description (what it makes + capabilities)",
+    "description_en": "a concise 2-3 sentence FACTORY description (what it makes + capabilities)",
+}
+
+
+def _gemini(prompt, image_bytes=None, json_schema=None, max_tokens=1024):
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    parts = []
+    if image_bytes:
+        parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
+    parts.append(prompt)
+    cfg = types.GenerateContentConfig(temperature=0.3, max_output_tokens=max_tokens)
+    if json_schema:
+        cfg.response_mime_type = "application/json"
+        cfg.response_schema = json_schema
+    resp = client.models.generate_content(model=GEMINI_MODEL, contents=parts, config=cfg)
+    return resp.text or ""
+
+
+@app.route("/assist", methods=["POST", "OPTIONS"])
+def assist():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    if not _is_admin(token):
+        return jsonify({"error": "forbidden"}), 403
+    body = request.get_json(silent=True) or {}
+    mode = body.get("mode")
+    try:
+        if mode == "field":
+            want = FIELD_WANT.get(str(body.get("field", "")), "the requested value")
+            context = body.get("context", {})
+            img = None
+            url = body.get("image_url")
+            if url:
+                try:
+                    r = requests.get(url, timeout=20)
+                    img = r.content if r.ok else None
+                except requests.RequestException:
+                    img = None
+            prompt = (
+                "You help curate a B2B factory supplier profile for Saudi buyers. "
+                f"Suggest {want}, in BOTH Arabic and English. Base it ONLY on the product image (if given) and this "
+                "context — never invent facts not supported by them. Keep it concise and professional. If you truly "
+                "cannot tell, return empty strings.\n\nCONTEXT:\n" + json.dumps(context, ensure_ascii=False)[:4000])
+            raw = _gemini(prompt, image_bytes=img, json_schema=_BILINGUAL, max_tokens=512)
+            data = json.loads(raw) if raw else {}
+            return jsonify({"ar": data.get("ar", ""), "en": data.get("en", "")}), 200
+
+        if mode == "ask":
+            question = str(body.get("question", ""))[:2000]
+            context = body.get("context", {})
+            prompt = (
+                "You are an assistant helping an admin curate a factory's supplier profile. Answer the question "
+                "CONCISELY, based ONLY on the provided factory/catalog data. If the data does not contain the answer, "
+                "say so plainly. Reply in the SAME language as the question.\n\nDATA:\n"
+                + json.dumps(context, ensure_ascii=False)[:12000] + "\n\nQUESTION: " + question)
+            raw = _gemini(prompt, max_tokens=1024)
+            return jsonify({"answer": raw.strip()}), 200
+
+        return jsonify({"error": "bad mode"}), 400
+    except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
+        return jsonify({"error": str(e)[:300]}), 500
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
+  cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -198,12 +199,33 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       }
       const fid = await resolveFactory({ importId: id, mode, fields, existingId, profileImage: profileSel });
       setSavedFactoryId(fid);
-      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المصنع.' : 'Factory saved.' });
+      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المصنع كمسودة.' : 'Factory saved as draft.' });
       await load();
+      fetchFactories().then(setFactories).catch(() => {});   // so the draft/published state reflects the new row
     } catch (e) {
       setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') });
     }
     setSaving(false);
+  }
+
+  // Save draft — persist inline product edits + factory fields WITHOUT publishing
+  // or re-extracting (the extracted data already lives in staging → no re-run).
+  const [savingDraft, setSavingDraft] = useState(false);
+  async function saveDraft() {
+    setSavingDraft(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      const editedIds = new Set([...Object.keys(edits), ...Object.keys(imgEdits)]);
+      const toSave = products.filter((p) => editedIds.has(p.id));
+      await Promise.all(toSave.map((p) =>
+        updateStagedProduct(p.id, edits[p.id] ?? p.extracted_json ?? {}, imgEdits[p.id] ?? p.image_path)));
+      await updateImportFields(id, fields);
+      setProducts((ps) => ps.map((p) => (editedIds.has(p.id)
+        ? { ...p, extracted_json: edits[p.id] ?? p.extracted_json, image_path: imgEdits[p.id] ?? p.image_path,
+            status: p.status === 'pending' ? 'edited' : p.status }
+        : p)));
+      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المسودة — لن تُستخرج مرّة أخرى.' : 'Draft saved — no re-extraction needed.' });
+    } catch (e) { setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setSavingDraft(false);
   }
 
   // ── Factory removal (archive / permanent delete) ──
@@ -289,6 +311,43 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     };
   };
 
+  // ✨ Gemini suggest for a bilingual field of the current product (uses the whole
+  // context: the extracted data + the factory fields + the product image).
+  const suggestField = async (field) => {
+    if (!current) return;
+    const res = await assistField({
+      field,
+      context: { factory: fields, product: jsonFor(current) },
+      imageUrl: imgEdits[current.id] ?? current.image_path,
+    });
+    setEdits((e) => {
+      const cur = e[current.id] ?? (current.extracted_json || {});
+      return { ...e, [current.id]: { ...cur, [field]: { ar: res.ar || '', en: res.en || '' } } };
+    });
+  };
+
+  // Ask Gemini about this factory / catalog.
+  const [askQ, setAskQ] = useState('');
+  const [askAns, setAskAns] = useState('');
+  const [asking, setAsking] = useState(false);
+  const doAsk = async () => {
+    if (!askQ.trim() || asking) return;
+    setAsking(true); setAskAns('');
+    try {
+      const res = await assistAsk({
+        question: askQ,
+        context: {
+          factory: fields,
+          products: products.slice(0, 80).map((p) => ({
+            name: p.extracted_json?.product_name, ref: p.extracted_json?.ref_code,
+          })),
+        },
+      });
+      setAskAns(res.answer || '');
+    } catch (e) { setAskAns((isAr ? 'خطأ: ' : 'Error: ') + (e.message || '')); }
+    setAsking(false);
+  };
+
   const approveCurrent = async () => {
     if (!current || busy) return;
     setBusy(true); setActionMsg({ ok: false, text: '' });
@@ -337,9 +396,27 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedFactoryId, reviewQueue.length, deckIdx, current?.id, busy, edits, isAr]);
 
+  // Stop a running extraction, or delete the whole import.
+  const [canceling, setCanceling] = useState(false);
+  const stopExtraction = useCallback(async () => {
+    setCanceling(true); setError('');
+    try {
+      await cancelImport(id);
+      setBatch((b) => (b ? { ...b, status: 'cancelled', progress: null } : b));   // optimistic
+    } catch (e) { setError((isAr ? 'خطأ: ' : 'Error: ') + (e.message || '')); }
+    setCanceling(false);
+  }, [id, isAr]);
+  const removeImport = useCallback(async () => {
+    if (!window.confirm(isAr ? 'حذف هذا الاستيراد نهائياً؟' : 'Delete this import permanently?')) return;
+    setCanceling(true); setError('');
+    try { await deleteImport(id); nav('/admin/catalog-import'); }
+    catch (e) { setError((isAr ? 'تعذّر الحذف: ' : 'Delete failed: ') + (e.message || '')); setCanceling(false); }
+  }, [id, isAr, nav]);
+
   // Extraction must finish before the review steps are meaningful.
   const ready = !!batch && ['extracted', 'reviewing', 'approved'].includes(batch.status);
   const extracting = !!batch && (batch.status === 'extracting' || batch.status === 'queued');
+  const cancelled = !!batch && batch.status === 'cancelled';
 
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
@@ -407,14 +484,37 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                           </div>
                         </div>
 
-                        {queued && (
+                        {queued ? (
                           <button className="ci-btn-primary" style={{ marginTop: 18 }} onClick={startExtraction} disabled={starting}>
                             {isAr ? 'بدء الاستخراج الآن' : 'Start extraction now'}
                           </button>
+                        ) : (
+                          <div style={{ marginTop: 18 }}>
+                            <button className="ci-skip" onClick={stopExtraction} disabled={canceling}>
+                              {canceling ? (isAr ? 'جارٍ الإيقاف…' : 'Stopping…') : (isAr ? 'إيقاف الاستخراج' : 'Stop extraction')}
+                            </button>
+                            <p className="ci-hint" style={{ margin: '8px auto 0', maxWidth: 420 }}>
+                              {isAr ? 'يتوقّف عند أقرب مرحلة (قد يكمل نداء التحليل الجاري أولاً).' : 'Stops at the next stage (a running analysis call may finish first).'}
+                            </p>
+                          </div>
                         )}
                       </>
                     );
-                  })() : (
+                  })() : cancelled ? (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: 'rgba(0,0,0,0.7)', marginBottom: 6 }}>
+                        {isAr ? 'أُلغي الاستخراج' : 'Extraction cancelled'}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 12, flexWrap: 'wrap' }}>
+                        <button className="ci-btn-primary" onClick={startExtraction} disabled={starting}>
+                          {isAr ? 'إعادة الاستخراج' : 'Restart extraction'}
+                        </button>
+                        <button className="ci-skip" onClick={removeImport} disabled={canceling}>
+                          {isAr ? 'حذف الاستيراد' : 'Delete import'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
                     <>
                       <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: '#c0392b', marginBottom: 6 }}>
                         {isAr ? 'فشل الاستخراج' : 'Extraction failed'}
@@ -422,9 +522,14 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                       {batch.error && (
                         <p className="ci-hint" style={{ margin: '0 auto 4px', maxWidth: 520, color: 'rgba(0,0,0,0.55)', wordBreak: 'break-word' }}>{batch.error}</p>
                       )}
-                      <button className="ci-btn-primary" style={{ marginTop: 14 }} onClick={startExtraction} disabled={starting}>
-                        {isAr ? 'إعادة المحاولة' : 'Retry extraction'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+                        <button className="ci-btn-primary" onClick={startExtraction} disabled={starting}>
+                          {isAr ? 'إعادة المحاولة' : 'Retry extraction'}
+                        </button>
+                        <button className="ci-skip" onClick={removeImport} disabled={canceling}>
+                          {isAr ? 'حذف الاستيراد' : 'Delete import'}
+                        </button>
+                      </div>
                     </>
                   )}
                   {!workerConfigured() && (
@@ -466,6 +571,29 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                 )}
               </div>
 
+              {/* Ask Gemini about this factory / catalog */}
+              {workerConfigured() && (
+                <div className="ci-card">
+                  <h2 className="ci-h2">{isAr ? '💬 اسأل جيميني عن هذا المصنع' : '💬 Ask Gemini about this factory'}</h2>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    <input className="ci-input" style={{ flex: 1, minWidth: 220 }} value={askQ}
+                      onChange={(e) => setAskQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') doAsk(); }}
+                      dir={isAr ? 'rtl' : 'ltr'}
+                      placeholder={isAr ? 'مثال: وحّد أسماء المنتجات · اقترح تصنيفاً · لخّص قدرات المصنع' : 'e.g. unify product names · suggest a category · summarize capabilities'} />
+                    <button className="ci-btn-primary" onClick={doAsk} disabled={asking || !askQ.trim()}>
+                      {asking ? (isAr ? '… يفكّر' : '… thinking') : (isAr ? 'اسأل' : 'Ask')}
+                    </button>
+                  </div>
+                  {askAns && (
+                    <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(0,0,0,0.03)', borderRadius: 8,
+                      fontSize: 13.5, lineHeight: 1.7, color: 'rgba(0,0,0,0.78)', fontFamily: FB, whiteSpace: 'pre-wrap' }}
+                      dir={isAr ? 'rtl' : 'ltr'}>
+                      {askAns}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Step 1 — factory */}
               <div className="ci-card">
                 <h2 className="ci-h2">{isAr ? '١) بيانات المصنع' : '1) Factory details'}</h2>
@@ -482,16 +610,40 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                 <ProfileImagePicker candidates={candidates} selected={profileSel} onSelect={setProfileSel} lang={lang} />
               </div>
 
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 22, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
                 <button className="ci-btn-primary" onClick={saveFactory} disabled={saving}>
                   {saving ? (isAr ? 'جارٍ الحفظ...' : 'Saving…')
                     : savedFactoryId ? (isAr ? 'تحديث المصنع' : 'Update factory')
                       : (isAr ? 'حفظ المصنع + الصورة' : 'Save factory + image')}
                 </button>
+                <button className="ci-btn-ghost" onClick={saveDraft} disabled={savingDraft}>
+                  {savingDraft ? (isAr ? 'جارٍ الحفظ…' : 'Saving…') : (isAr ? 'حفظ كمسودة' : 'Save draft')}
+                </button>
                 {saveMsg.text && (
                   <span style={{ fontSize: 13, color: saveMsg.ok ? '#3f9d5a' : '#c0392b', fontFamily: FB }}>{saveMsg.text}</span>
                 )}
               </div>
+
+              {/* Draft vs published — new factories start hidden until published */}
+              {savedFactoryId && (
+                <div style={{ marginBottom: 22, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {savedFactory && savedFactory.is_active ? (
+                    <span style={{ fontSize: 13, fontFamily: FB, color: '#3f9d5a', fontWeight: 600 }}>
+                      {isAr ? '● منشور — ظاهر للمشترين' : '● Published — visible to buyers'}
+                    </span>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: 13, fontFamily: FB, color: '#b8860b', fontWeight: 600 }}>
+                        {isAr ? '● مسودة — غير ظاهر للمشترين' : '● Draft — hidden from buyers'}
+                      </span>
+                      <button className="ci-btn-primary" style={{ padding: '8px 18px' }} disabled={removing}
+                        onClick={() => handleArchive(true)}>
+                        {isAr ? 'نشر المصنع' : 'Publish factory'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Factory management — archive / permanent delete (only once saved) */}
               {savedFactoryId && (
@@ -593,7 +745,8 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                         <ProductReviewCard key={current.id} value={jsonFor(current)}
                           onChange={(j) => setEdits((e) => ({ ...e, [current.id]: j }))} product={current} lang={lang}
                           candidates={candidates} image={imgEdits[current.id] ?? current.image_path}
-                          onImageChange={(url) => setImgEdits((m) => ({ ...m, [current.id]: url ?? current.image_path }))} />
+                          onImageChange={(url) => setImgEdits((m) => ({ ...m, [current.id]: url ?? current.image_path }))}
+                          onSuggest={workerConfigured() ? suggestField : undefined} />
                         <div className="ci-deck-nav">
                           <button className="ci-btn-ghost" onClick={() => moveDeck(-1)} disabled={deckIdx <= 0}>← {isAr ? 'السابق' : 'Prev'}</button>
                           <button className="ci-btn-ghost" onClick={() => moveDeck(1)} disabled={deckIdx >= reviewQueue.length - 1}>{isAr ? 'التالي' : 'Next'} →</button>

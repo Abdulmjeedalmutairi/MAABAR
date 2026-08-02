@@ -44,6 +44,30 @@ export async function createImport(file, notes = '') {
   return id;
 }
 
+// Cancel a running extraction — the worker checks this at its next milestone
+// and aborts cooperatively (best-effort; a single long Gemini call finishes first).
+export async function cancelImport(importId) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ status: 'cancelled', progress: null }).eq('id', importId);
+  if (error) throw error;
+}
+
+// Delete an import entirely: the row (staged products cascade) + its storage
+// objects (source PDF + extracted images). Storage cleanup is best-effort.
+export async function deleteImport(importId) {
+  try {
+    const [{ data: imgs }] = await Promise.all([
+      sb.storage.from('factory-images').list(importId, { limit: 1000 }),
+    ]);
+    if (imgs?.length) {
+      await sb.storage.from('factory-images').remove(imgs.map((f) => `${importId}/${f.name}`));
+    }
+    await sb.storage.from('factory-catalogs').remove([`${importId}/source.pdf`]);
+  } catch { /* best-effort storage cleanup */ }
+  const { error } = await sb.from('factory_catalog_imports').delete().eq('id', importId);
+  if (error) throw error;
+}
+
 // Update the per-catalog guidance (used to re-curate with new instructions).
 export async function updateImportNotes(importId, notes) {
   const { error } = await sb.from('factory_catalog_imports')
@@ -69,6 +93,30 @@ export async function triggerExtraction(importId) {
     throw new Error(`extract ${res.status}: ${t.slice(0, 200)}`);
   }
   return res.json().catch(() => ({}));
+}
+
+// Shared POST to the worker with the caller's admin token.
+async function callWorker(path, payload) {
+  if (!CATALOG_WORKER_URL) throw new Error('worker_not_configured');
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('not_authenticated');
+  const res = await fetch(`${CATALOG_WORKER_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`${res.status}: ${t.slice(0, 160)}`); }
+  return res.json();
+}
+
+// Gemini assist — suggest a field's value (uses the whole context + product image),
+// or answer a question about this factory/catalog. Both run on the worker (key stays server-side).
+export function assistField({ field, context, imageUrl }) {
+  return callWorker('/assist', { mode: 'field', field, context, image_url: imageUrl || null });
+}
+export function assistAsk({ question, context }) {
+  return callWorker('/assist', { mode: 'ask', question, context });
 }
 
 // ── Reads ───────────────────────────────────────────────────────────────────
@@ -126,7 +174,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
       profile_image: profileImage || null,
-      is_active: true,
+      is_active: false,   // DRAFT — hidden from buyers until the admin publishes
     };
     const { data, error } = await sb.from('factory_directory').insert(row).select('id').single();
     if (error) throw error;
@@ -234,9 +282,18 @@ export function bulkApproveHighConfidence(factoryId, products, meta = {}, thresh
   return approveProducts(factoryId, rows, meta);
 }
 
-export async function updateStagedProduct(id, extracted_json) {
-  const { error } = await sb.from('factory_catalog_import_products')
-    .update({ extracted_json, status: 'edited' }).eq('id', id);
+export async function updateStagedProduct(id, extracted_json, image_path) {
+  const patch = { extracted_json, status: 'edited' };
+  if (image_path !== undefined) patch.image_path = image_path;
+  const { error } = await sb.from('factory_catalog_import_products').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+// Save a draft: persist the admin's factory-field edits back onto the import row
+// (NOT the live factory), without publishing or re-extracting.
+export async function updateImportFields(importId, fields) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ factory_fields: fields, status: 'reviewing' }).eq('id', importId);
   if (error) throw error;
 }
 
