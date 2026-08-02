@@ -20,6 +20,15 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
     </div>
   );
 
+  const textarea = (label, key, opts = {}) => (
+    <div style={{ marginBottom: 12 }}>
+      <label className="ci-label">{label}</label>
+      <textarea className="ci-input" value={nf(value[key])} onChange={(e) => set(key, e.target.value)} rows={opts.rows || 2}
+        dir={opts.ltr ? 'ltr' : (isAr ? 'rtl' : 'ltr')} placeholder={opts.ph || ''} style={{ resize: 'vertical', minHeight: 54 }} />
+      {opts.hint && <p className="ci-hint">{opts.hint}</p>}
+    </div>
+  );
+
   const toggle = (label, key, hint) => (
     <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, cursor: 'pointer' }}>
       <input type="checkbox" checked={!!value[key]} onChange={(e) => set(key, e.target.checked)} style={{ marginTop: 3 }} />
@@ -34,6 +43,9 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
   // Editable in BOTH modes (prefilled from extraction, or the existing factory).
   const profileFields = (
     <>
+      {textarea(isAr ? 'الوصف (عربي)' : 'Description (Arabic)', 'description_ar',
+        { hint: isAr ? 'يظهر في صفحة المصنع' : 'Shown on the factory profile' })}
+      {textarea(isAr ? 'الوصف (إنجليزي)' : 'Description (English)', 'description_en', { ltr: true })}
       {field(isAr ? 'سنة التأسيس' : 'Founded year', 'founded_year',
         { ltr: true, ph: '2012', hint: isAr ? 'اختياري — يظهر كـ "تأسّست 2012"' : 'Optional — shows as "Est. 2012"' })}
       {field(isAr ? 'أسواق التصدير' : 'Export markets', 'export_markets',
@@ -69,8 +81,14 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
               </option>
             ))}
           </select>
-          <p className="ci-hint">{isAr ? 'ستُضاف المنتجات إلى هذا المصنع.' : 'Products will be added to this factory.'}</p>
-          {existingId && profileFields}
+          <p className="ci-hint">{isAr ? 'ستُضاف المنتجات إلى هذا المصنع، ويمكنك تعديل بياناته أدناه.' : 'Products will be added to this factory; you can edit its details below.'}</p>
+          {existingId && (
+            <div style={{ marginTop: 12 }}>
+              {field(isAr ? 'اسم المصنع' : 'Factory name', 'name_original')}
+              {field(isAr ? 'الاسم بالإنجليزية' : 'English name', 'name_en', { ltr: true })}
+              {profileFields}
+            </div>
+          )}
         </div>
       ) : (
         <>

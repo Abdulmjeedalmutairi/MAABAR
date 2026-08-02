@@ -96,17 +96,23 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       const next = { ...prev };
       if (empty(prev.founded_year) && f.founded_year != null) next.founded_year = String(f.founded_year);
       if (empty(prev.export_markets) && f.export_markets) next.export_markets = f.export_markets;
+      if (empty(prev.description_ar) && f.description_ar) next.description_ar = f.description_ar;
+      if (empty(prev.description_en) && f.description_en) next.description_en = f.description_en;
+      if (empty(prev.name_original) && f.company_name) next.name_original = f.company_name;
+      if (empty(prev.name_en) && f.company_name_latin) next.name_en = f.company_name_latin;
       if (prev.is_verified === undefined) next.is_verified = !!f.is_verified;
       if (prev.is_featured === undefined) next.is_featured = !!f.is_featured;
-      const changed = next.founded_year !== prev.founded_year || next.export_markets !== prev.export_markets
-        || next.is_verified !== prev.is_verified || next.is_featured !== prev.is_featured;
-      return changed ? next : prev;
+      return Object.keys(next).some((k) => next[k] !== prev[k]) ? next : prev;
     });
   }, [mode, existingId, factories]);
 
-  const candidates = (fields?.profile_candidates && fields.profile_candidates.length)
-    ? fields.profile_candidates
-    : (batch?.profile_image_path ? [batch.profile_image_path] : []);
+  // The logo can be picked from ANY image: the flagged candidates first, then
+  // every product image from this import.
+  const candidates = Array.from(new Set([
+    ...(fields?.profile_candidates || []),
+    ...(batch?.profile_image_path ? [batch.profile_image_path] : []),
+    ...products.map((p) => p.image_path).filter(Boolean),
+  ]));
 
   async function saveFactory() {
     setSaving(true); setSaveMsg({ ok: false, text: '' });

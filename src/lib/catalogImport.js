@@ -43,7 +43,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets, is_verified, is_featured')
+    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets, description_ar, description_en, is_verified, is_featured')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -63,6 +63,8 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       country: fields.country || 'China',
       founded_year: yr(fields.founded_year),
       export_markets: nf(fields.export_markets),
+      description_ar: nf(fields.description_ar),
+      description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
       profile_image: profileImage || null,
@@ -77,10 +79,14 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
     const patch = {
       founded_year: yr(fields.founded_year),
       export_markets: nf(fields.export_markets),
+      description_ar: nf(fields.description_ar),
+      description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
     };
     if (profileImage) patch.profile_image = profileImage;
+    if (nf(fields.name_original)) patch.company_name = nf(fields.name_original);   // guarded — never blank the name
+    if (nf(fields.name_en)) patch.company_name_latin = nf(fields.name_en);
     await sb.from('factory_directory').update(patch).eq('id', factoryId);
   }
   await sb.from('factory_catalog_imports').update({ factory_id: factoryId, status: 'reviewing' }).eq('id', importId);
