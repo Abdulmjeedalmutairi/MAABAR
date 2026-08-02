@@ -3,7 +3,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Amazon-style fullscreen image viewer: navigate (arrows / keyboard / swipe),
 // zoom (click / wheel) + pan (drag), thumbnail strip, counter. Shows the image
 // at full resolution. Mount it conditionally; it fills the screen while open.
-export default function ImageLightbox({ images = [], start = 0, onClose, alt = '' }) {
+// Optional per-image `captions` (string[]) and `actions`
+// ([{ label, onClick(idx), primary? }]) show a caption + action bar — e.g. a
+// product name + "Request a quote" while browsing a factory's product photos.
+export default function ImageLightbox({ images = [], start = 0, onClose, alt = '', captions = null, actions = null }) {
   const list = (Array.isArray(images) ? images : []).filter(Boolean);
   const n = list.length;
   const [idx, setIdx] = useState(Math.min(Math.max(start, 0), Math.max(0, n - 1)));
@@ -28,6 +31,9 @@ export default function ImageLightbox({ images = [], start = 0, onClose, alt = '
   }, [go, close]);
 
   if (!n) return null;
+
+  const caption = Array.isArray(captions) ? captions[idx] : null;
+  const acts = Array.isArray(actions) ? actions : [];
 
   const onImgClick = (e) => {
     e.stopPropagation();
@@ -71,6 +77,15 @@ export default function ImageLightbox({ images = [], start = 0, onClose, alt = '
           style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, cursor: zoom > 1 ? 'grab' : 'zoom-in' }}
         />
       </div>
+
+      {(caption || acts.length > 0) && (
+        <div className="ilb-bar" style={{ bottom: n > 1 ? 84 : 22 }} onClick={(e) => e.stopPropagation()}>
+          {caption && <span className="ilb-caption">{caption}</span>}
+          {acts.map((a, i) => (
+            <button key={i} type="button" className={`ilb-action${a.primary ? ' primary' : ''}`} onClick={() => a.onClick(idx)}>{a.label}</button>
+          ))}
+        </div>
+      )}
 
       {n > 1 && (
         <div className="ilb-thumbs" onClick={(e) => e.stopPropagation()}>

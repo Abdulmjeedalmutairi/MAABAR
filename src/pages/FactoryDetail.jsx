@@ -110,6 +110,9 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [galleryOpen, setGalleryOpen] = useState(false); // fullscreen photo viewer
   const [galleryStart, setGalleryStart] = useState(0);
   const openGallery = (i = 0) => { setGalleryStart(i); setGalleryOpen(true); };
+  const [prodViewOpen, setProdViewOpen] = useState(false);   // product-photos viewer
+  const [prodViewStart, setProdViewStart] = useState(0);
+  const [viewerReqProduct, setViewerReqProduct] = useState(null); // request from inside the viewer
 
   useEffect(() => {
     load();
@@ -291,8 +294,8 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
               </div>
             )}
             <div className="fp-prods">
-              {shown.map((p) => (
-                <button key={p.id} type="button" className="fp-prod" onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)} title={productName(p)}>
+              {shown.map((p, i) => (
+                <button key={p.id} type="button" className="fp-prod" onClick={() => { setProdViewStart(i); setProdViewOpen(true); }} title={productName(p)}>
                   <img src={p.image} alt={productName(p)} loading="lazy" />
                 </button>
               ))}
@@ -321,6 +324,23 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
       {/* ── Fullscreen photo gallery (navigate + zoom + thumbnails) ── */}
       {galleryOpen && heroImages.length > 0 && (
         <ImageLightbox images={heroImages} start={galleryStart} alt={name} onClose={() => setGalleryOpen(false)} />
+      )}
+
+      {/* ── Product-photos viewer: browse all products fullscreen + request/details ── */}
+      {prodViewOpen && filtered.length > 0 && (
+        <ImageLightbox
+          images={filtered.map((p) => p.image)}
+          captions={filtered.map((p) => productName(p) || '—')}
+          start={prodViewStart}
+          actions={[
+            { label: isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote', primary: true, onClick: (i) => { setProdViewOpen(false); setViewerReqProduct(filtered[i]); } },
+            { label: isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details', onClick: (i) => nav(`/factory/${factory.id}/product/${filtered[i].id}`) },
+          ]}
+          onClose={() => setProdViewOpen(false)}
+        />
+      )}
+      {viewerReqProduct && (
+        <RequestQuoteModal lang={lang} user={user} factory={factory} product={viewerReqProduct} displayCurrency={displayCurrency} onClose={() => setViewerReqProduct(null)} />
       )}
 
       {reqOpen && (
