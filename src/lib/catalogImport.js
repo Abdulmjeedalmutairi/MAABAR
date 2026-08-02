@@ -44,6 +44,13 @@ export async function createImport(file, notes = '') {
   return id;
 }
 
+// Update the per-catalog guidance (used to re-curate with new instructions).
+export async function updateImportNotes(importId, notes) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ import_notes: (notes || '').trim() || null }).eq('id', importId);
+  if (error) throw error;
+}
+
 // Kick off extraction on the Cloud Run worker. The worker verifies the caller is
 // an admin via this access token, runs the (multi-minute) job, and updates the
 // import row itself — the UI should poll the row's status rather than block here.
