@@ -24,6 +24,7 @@ Environment (Cloud Run):
 """
 import os
 import tempfile
+import time
 import traceback
 
 import requests
@@ -106,9 +107,27 @@ def extract():
         return jsonify({"error": "import has no source_pdf_path"}), 400
 
     supa = ci.Supa(SUPABASE_URL, SERVICE_KEY)
+
+    # Throttled progress writer — updates the row's `progress` at most every ~1.5s
+    # (plus on every stage change). Best-effort: never fails the extraction.
+    _last = {"t": 0.0, "stage": None}
+
+    def progress(stage, pct, note=None):
+        now = time.time()
+        if stage != _last["stage"] or (now - _last["t"]) > 1.5:
+            _last["t"] = now
+            _last["stage"] = stage
+            try:
+                supa.update("factory_catalog_imports", import_id,
+                            {"progress": {"stage": stage, "pct": pct, "note": note}})
+            except Exception:  # noqa: BLE001
+                pass
+
     tmp = None
     try:
-        supa.update("factory_catalog_imports", import_id, {"status": "extracting", "error": None})
+        supa.update("factory_catalog_imports", import_id,
+                    {"status": "extracting", "error": None,
+                     "progress": {"stage": "downloading", "pct": 3, "note": None}})
         pdf_bytes = supa.download("factory-catalogs", src)
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
             tf.write(pdf_bytes)
@@ -119,6 +138,7 @@ def extract():
             csv_path=None,                 # no local CSV in the cloud — admin fills contact in review
             model=GEMINI_MODEL, chunk_pages=CHUNK_PAGES,
             log=lambda *a: print(*a, flush=True),
+            progress=progress,
         )
         return jsonify({"ok": True, **summary}), 200
     except Exception as e:  # noqa: BLE001 — record any failure on the row

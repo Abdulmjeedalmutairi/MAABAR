@@ -498,7 +498,7 @@ class Supa:
 
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
-                   supa=None, import_id=None, original_filename=None, log=print):
+                   supa=None, import_id=None, original_filename=None, log=print, progress=None):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -506,19 +506,30 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
       import_id is None   → create a NEW import row (CLI: uploads the source PDF).
       import_id provided  → UPDATE that existing row (worker: the admin UI already
                             uploaded the PDF + created the 'queued' row).
+      progress            → optional callable(stage, pct, note=None) for a live
+                            progress bar in the admin panel (best-effort).
 
     Returns a summary dict. Raises on failure (the worker records it as 'failed').
     """
+    def _p(stage, pct, note=None):
+        if progress:
+            try:
+                progress(stage, pct, note)
+            except Exception:  # noqa: BLE001 — progress is best-effort, never fatal
+                pass
+
     pdf_path = Path(pdf_path)
     doc = fitz.open(str(pdf_path))
     try:
         page_count = len(doc)
         log(f"PDF: {pdf_path.name}  ({page_count} pages)")
 
+        _p("images", 8, "reading images")
         log("[1/4] PyMuPDF image extraction")
         images = extract_images(doc, min_dim)
         log(f"  {len(images)} embedded images (>= {min_dim}px)")
 
+        _p("analyzing", 15, "reading the catalog")
         log("[2/4] Gemini extraction")
         gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages)
         products = gem.get("products") or []
@@ -528,6 +539,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             log(f"  merged over-split: {_before} -> {len(products)} products")
         log(f"  {len(products)} products, {tokens} tokens")
 
+        _p("matching", 60, "matching images")
         log("[3/4] Image matching + confidence")
         profile_imgs = match_and_score(products, images, gem.get("profile_images") or [])
         csv_fields = csv_prefill(csv_path, pdf_path) if csv_path else {}
@@ -590,11 +602,13 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         # profile images -> public bucket: upload ALL flagged candidates; first is
         # the default, the rest go in factory_fields.profile_candidates for choice.
+        _p("uploading", 65, "uploading images")
         profile_urls = [put_image(pi, f"profile_p{pi['page']}_{pi['xref']}") for pi in profile_imgs]
         profile_url = profile_urls[0] if profile_urls else None
         factory_fields["profile_candidates"] = profile_urls
 
         # product images -> public bucket (only matched ones, browser-safe)
+        total = len(products)
         rows, uploaded = [], 0
         for i, pr in enumerate(products):
             image_url = None
@@ -602,23 +616,30 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             if im is not None:
                 image_url = put_image(im, f"p{im['page']}_{im['xref']}"); uploaded += 1
             rows.append(product_row(pr, i, image_url))
+            if total and (i % 10 == 0 or i == total - 1):
+                _p("uploading", 65 + int(32 * (i + 1) / total), f"{i + 1}/{total}")
 
         imp = {
             "status": "extracted", "factory_fields": factory_fields, "profile_image_path": profile_url,
             "page_count": page_count, "model": model, "tokens_used": tokens, "error": None,
         }
+        for r in rows:
+            r["import_id"] = import_id
         if creating:
+            # The import row must exist before its products (FK) — insert it first.
             imp.update({"id": import_id, "source_pdf_path": src_path,
                         "original_filename": original_filename or pdf_path.name})
             supa.insert("factory_catalog_imports", [imp])
+            for k in range(0, len(rows), 100):
+                supa.insert("factory_catalog_import_products", rows[k:k + 100])
         else:
-            # Idempotent retry: clear any products from a previous run of this import.
+            # Worker retry: insert products FIRST, then flip status to 'extracted'
+            # LAST — so the UI never sees 'extracted' with a half-inserted catalog.
             supa.delete("factory_catalog_import_products", f"import_id=eq.{import_id}")
+            for k in range(0, len(rows), 100):
+                supa.insert("factory_catalog_import_products", rows[k:k + 100])
+            _p("done", 100, "finalizing")
             supa.update("factory_catalog_imports", import_id, imp)
-        for r in rows:
-            r["import_id"] = import_id
-        for k in range(0, len(rows), 100):  # batch to keep request sizes sane
-            supa.insert("factory_catalog_import_products", rows[k:k + 100])
 
         log(f"  uploaded {uploaded} product images + {'1 profile' if profile_url else 'no profile'} image")
         log(f"  wrote {len(rows)} product rows ({'created' if creating else 'updated'} import {import_id})")

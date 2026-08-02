@@ -71,6 +71,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [upName, setUpName] = useState('');
   const fileRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -88,7 +89,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
     if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
       setError(isAr ? 'الملف يجب أن يكون PDF.' : 'File must be a PDF.'); return;
     }
-    setUploading(true); setError('');
+    setUploading(true); setUpName(file.name); setError('');
     try {
       const importId = await createImport(file);
       // Fire extraction (the worker runs it async); the detail page polls status.
@@ -96,7 +97,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
       nav(`/admin/catalog-import/${importId}`);
     } catch (err) {
       setError((isAr ? 'تعذّر الرفع: ' : 'Upload failed: ') + (err.message || ''));
-      setUploading(false);
+      setUploading(false); setUpName('');
     }
   };
 
@@ -143,6 +144,18 @@ export default function AdminCatalogImport({ user, profile, lang }) {
               </button>
             ))}
           </div>
+
+          {uploading && (
+            <div style={{ margin: '0 0 16px', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(201,134,63,0.25)',
+              background: 'rgba(201,134,63,0.06)', display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT_BODY }}>
+              <span style={{ width: 16, height: 16, borderRadius: 99, border: '2px solid rgba(201,134,63,0.35)', borderTopColor: '#c9863f',
+                display: 'inline-block', animation: 'ci-spin 0.8s linear infinite', flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: 'rgba(0,0,0,0.7)' }}>
+                {isAr ? 'جارٍ رفع الملف' : 'Uploading'} «{upName}» … {isAr ? 'ثم يبدأ الاستخراج' : 'then extraction starts'}
+              </span>
+              <style>{'@keyframes ci-spin { to { transform: rotate(360deg); } }'}</style>
+            </div>
+          )}
 
           {error && <div className="a-error">{isAr ? 'تعذّر التحميل: ' : 'Failed to load: '}{error}</div>}
 

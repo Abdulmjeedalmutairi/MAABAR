@@ -15,6 +15,17 @@ import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 const FH = "'Cormorant Garamond', Georgia, serif";
 const FB = "'Tajawal', sans-serif";
 
+// Live extraction steps (order matches the worker's progress stages).
+const EXTRACT_STEPS = [
+  { key: 'upload', ar: 'رفع الملف', en: 'Upload' },
+  { key: 'downloading', ar: 'التحضير', en: 'Prepare' },
+  { key: 'images', ar: 'استخراج الصور', en: 'Read images' },
+  { key: 'analyzing', ar: 'تحليل الكتالوج', en: 'Analyze catalog' },
+  { key: 'matching', ar: 'مطابقة الصور', en: 'Match images' },
+  { key: 'uploading', ar: 'رفع الصور', en: 'Upload images' },
+  { key: 'done', ar: 'الإنهاء', en: 'Finalize' },
+];
+
 const CSS = (isAr) => `
   .a-page { padding: 34px 30px; max-width: 900px; }
   .a-page-title { margin: 0 0 4px; font-size: 24px; font-weight: 400; color: rgba(0,0,0,0.88); font-family: ${FH}; line-height: 1.15; word-break: break-word; }
@@ -47,6 +58,21 @@ const CSS = (isAr) => `
   .ci-skip { background: transparent; border: 1px solid #c0503f; color: #c0503f; border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: ${FB}; }
   .ci-approve { background: #3f9d5a; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: ${FB}; margin-${isAr ? 'right' : 'left'}: auto; }
   .ci-approve:disabled, .ci-skip:disabled { opacity: 0.5; cursor: default; }
+  .ci-prog-wrap { max-width: 520px; margin: 0 auto; }
+  .ci-prog-track { height: 8px; border-radius: 99px; background: rgba(0,0,0,0.08); overflow: hidden; position: relative; }
+  .ci-prog-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #c9863f, #8B7355); transition: width 0.5s ease; }
+  .ci-prog-fill.pulse { background-size: 30px 30px; background-image: linear-gradient(45deg, rgba(255,255,255,0.28) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.28) 75%, transparent 75%, transparent); animation: ci-stripes 0.9s linear infinite; }
+  @keyframes ci-stripes { from { background-position: 0 0; } to { background-position: 30px 0; } }
+  .ci-prog-pct { font-variant-numeric: lining-nums; font-size: 12px; color: rgba(0,0,0,0.5); font-family: ${FB}; margin-top: 6px; }
+  .ci-steps { display: flex; flex-direction: column; gap: 2px; max-width: 340px; margin: 20px auto 0; text-align: ${isAr ? 'right' : 'left'}; }
+  .ci-step { display: flex; align-items: center; gap: 10px; padding: 7px 4px; font-size: 13px; font-family: ${FB}; color: rgba(0,0,0,0.35); }
+  .ci-step.done { color: rgba(0,0,0,0.75); }
+  .ci-step.active { color: #8B5e2b; font-weight: 600; }
+  .ci-step-dot { width: 20px; height: 20px; border-radius: 99px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1.5px solid rgba(0,0,0,0.15); background: #fff; }
+  .ci-step.done .ci-step-dot { background: #3f9d5a; border-color: #3f9d5a; color: #fff; }
+  .ci-step.active .ci-step-dot { border-color: #c9863f; }
+  .ci-step.active .ci-step-dot::after { content: ''; width: 8px; height: 8px; border-radius: 99px; background: #c9863f; animation: ci-pulse 1s ease-in-out infinite; }
+  @keyframes ci-pulse { 0%,100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
   @media (max-width: 900px) { .a-page { padding: 22px 16px; } }
 `;
 
@@ -320,22 +346,49 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
               {/* Extraction state — queued / extracting / failed (before review) */}
               {!ready && (
                 <div className="ci-card" style={{ textAlign: 'center', padding: '30px 22px' }}>
-                  {extracting ? (
-                    <>
-                      <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: 'rgba(0,0,0,0.8)', marginBottom: 6 }}>
-                        {batch.status === 'queued' ? (isAr ? 'بانتظار بدء الاستخراج' : 'Waiting to extract') : (isAr ? 'جارٍ استخراج الكتالوج…' : 'Extracting the catalog…')}
-                      </div>
-                      <p className="ci-hint" style={{ margin: '0 auto', maxWidth: 440 }}>
-                        {isAr ? 'يعمل خادم الاستخراج (PyMuPDF + Gemini). قد يستغرق عدة دقائق للكتالوجات الكبيرة — تُحدَّث الحالة تلقائياً.'
-                              : 'The worker is running (PyMuPDF + Gemini). Large catalogs can take a few minutes — this updates automatically.'}
-                      </p>
-                      {batch.status === 'queued' && (
-                        <button className="ci-btn-primary" style={{ marginTop: 16 }} onClick={startExtraction} disabled={starting}>
-                          {isAr ? 'بدء الاستخراج الآن' : 'Start extraction now'}
-                        </button>
-                      )}
-                    </>
-                  ) : (
+                  {extracting ? (() => {
+                    const stage = batch.progress?.stage;
+                    const queued = batch.status === 'queued';
+                    const activeIdx = queued ? 0.5 : (() => { const f = EXTRACT_STEPS.findIndex((s) => s.key === stage); return f < 0 ? 1 : f; })();
+                    const pct = Math.max(0, Math.min(100, batch.progress?.pct ?? (queued ? 0 : 5)));
+                    const note = batch.progress?.note;
+                    return (
+                      <>
+                        <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: 'rgba(0,0,0,0.8)', marginBottom: 4 }}>
+                          {queued ? (isAr ? 'بانتظار بدء الاستخراج' : 'Waiting to extract') : (isAr ? 'جارٍ استخراج الكتالوج…' : 'Extracting the catalog…')}
+                        </div>
+                        <p className="ci-hint" style={{ margin: '0 auto 18px', maxWidth: 440 }}>
+                          {isAr ? 'يُحدَّث تلقائياً — تقدر تغادر الصفحة وترجع لها.' : 'Updates automatically — you can leave and come back.'}
+                        </p>
+
+                        <div className="ci-prog-wrap">
+                          <div className="ci-prog-track">
+                            <div className={`ci-prog-fill${stage === 'analyzing' ? ' pulse' : ''}`} style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="ci-prog-pct">{pct}%{note ? ` · ${note}` : ''}</div>
+
+                          <div className="ci-steps">
+                            {EXTRACT_STEPS.map((s, i) => {
+                              const done = i < activeIdx;
+                              const active = i === activeIdx;
+                              return (
+                                <div key={s.key} className={`ci-step${done ? ' done' : ''}${active ? ' active' : ''}`}>
+                                  <span className="ci-step-dot">{done ? '✓' : ''}</span>
+                                  <span>{isAr ? s.ar : s.en}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {queued && (
+                          <button className="ci-btn-primary" style={{ marginTop: 18 }} onClick={startExtraction} disabled={starting}>
+                            {isAr ? 'بدء الاستخراج الآن' : 'Start extraction now'}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })() : (
                     <>
                       <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: '#c0392b', marginBottom: 6 }}>
                         {isAr ? 'فشل الاستخراج' : 'Extraction failed'}
