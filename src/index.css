@@ -1657,9 +1657,29 @@ footer {
   .fp-band { flex-direction: column; align-items: stretch; }
   .fp-band-btn { width: 100%; justify-content: center; }
 }
-@media (max-width: 520px) {
-  .fp-name { font-size: 27px; }
-  .fp-stats { grid-template-columns: 1fr; }
+/* Phones — tighten the rich profile so it isn't oversized, and stop any chip
+   from forcing horizontal overflow. */
+@media (max-width: 560px) {
+  .fx-wrap { padding: 18px 16px 56px; }
+  .fp-cover { min-height: 0; aspect-ratio: 16 / 11; }
+  .fp-cover-initial { font-size: 64px; }
+  .fp-name { font-size: 23px; }
+  .fp-cat-line { font-size: 13px; margin-top: 8px; }
+  .fp-desc { font-size: 14px; line-height: 1.7; margin: 12px 0 14px; }
+  .fp-fact { white-space: normal; font-size: 12px; padding: 5px 10px; }   /* wrap → no overflow */
+  .fp-stats { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .fp-stat { padding: 11px 6px; }
+  .fp-stat-t { font-size: 16px; }
+  .fp-stat-b { font-size: 10px; }
+  .fp-cta { font-size: 15px; padding: 13px 20px; }
+  .fp-sec { margin-top: 26px; }
+  .fp-sec-title { font-size: 18px; }
+  .fp-cats { grid-template-columns: 1fr; gap: 12px; }
+  .fp-cat-cover-t { font-size: 14px; letter-spacing: 2px; }
+  .fp-prods { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .fp-sources { padding: 18px 16px; margin-top: 26px; }
+  .fp-band { padding: 20px 18px; }
+  .fp-band-t { font-size: 18px; }
 }
 
 /* ══════════════════════════════════════════
