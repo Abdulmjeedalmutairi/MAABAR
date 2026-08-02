@@ -9,21 +9,21 @@ import { getFactoryProductImages } from '../lib/productMedia';
 const T = {
   ar: {
     back: 'رجوع إلى المصنع', byFactory: 'المصنع', ref: 'رمز المنتج', zoom: 'اضغط للتكبير',
-    requestCta: 'اطلب عرض سعر أو تعديلاً',
+    requestCta: 'اطلب عرض سعر أو تعديلاً', inquireCta: 'استفسر عن المنتج',
     notFound: 'المنتج غير موجود', loading: '…',
     specsLabel: 'المواصفات', descLabel: 'الوصف', customLabel: 'خيارات التخصيص', moqLabel: 'الحد الأدنى للطلب',
     contactDetails: 'تواصل مع المورد للتفاصيل', note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.',
   },
   en: {
     back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom',
-    requestCta: 'Request a quote or customization',
+    requestCta: 'Request a quote or customization', inquireCta: 'Inquire about product',
     notFound: 'Product not found', loading: '…',
     specsLabel: 'Specifications', descLabel: 'Description', customLabel: 'Customization options', moqLabel: 'MOQ',
     contactDetails: 'Contact supplier for details', note: 'The factory responds with pricing — no budget needed.',
   },
   zh: {
     back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大',
-    requestCta: '请求报价或定制',
+    requestCta: '请求报价或定制', inquireCta: '咨询此产品',
     notFound: '未找到产品', loading: '…',
     specsLabel: '规格', descLabel: '描述', customLabel: '定制选项', moqLabel: '起订量',
     contactDetails: '详情请联系供应商', note: '工厂会回复价格——无需填写预算。',
@@ -51,6 +51,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const [zoom, setZoom] = useState(false);
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
   const [reqOpen, setReqOpen] = useState(false);
+  const [reqMode, setReqMode] = useState('quote'); // 'quote' | 'inquiry'
 
   const openLightbox = () => { setZoom(false); setOrigin({ x: 50, y: 50 }); setLightbox(true); };
   const closeLightbox = () => { setZoom(false); setLightbox(false); };
@@ -188,12 +189,19 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
               )}
             </div>
 
-            {/* MOQ sits next to the request action (it's a commercial term). */}
+            {/* Price + MOQ sit next to the request action (commercial terms).
+                Catalogs carry no fixed prices — pricing is quote-based. */}
+            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 6px', fontSize: 13 }}>
+              {isAr ? 'السعر' : lang === 'zh' ? '价格' : 'Price'}: <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request'}</span>
+            </p>
             <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12.5 }}>
               {c.moqLabel}: <span style={{ color: 'var(--text-primary)' }}>{orContact(product.moq)}</span>
             </p>
 
-            <button className={`fx-btn-primary${arc}`} onClick={() => setReqOpen(true)}>{c.requestCta}</button>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button className={`fx-btn-primary${arc}`} onClick={() => { setReqMode('quote'); setReqOpen(true); }}>{c.requestCta}</button>
+              <button className={`fx-btn-ghost${arc}`} onClick={() => { setReqMode('inquiry'); setReqOpen(true); }}>{c.inquireCta}</button>
+            </div>
             <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '10px 0 0', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.note}</p>
           </div>
         </div>
@@ -225,6 +233,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
           user={user}
           factory={factory}
           product={product}
+          mode={reqMode}
           displayCurrency={displayCurrency}
           onClose={() => setReqOpen(false)}
         />

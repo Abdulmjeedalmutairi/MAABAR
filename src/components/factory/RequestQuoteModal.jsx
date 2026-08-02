@@ -13,6 +13,8 @@ const T = {
   ar: {
     title: 'اطلب عرض سعر من المصنع',
     subtitle: 'سيتم إرسال طلبك مباشرة إلى المصنع. وسيصلك إشعار عند استلام عرض السعر أو أي تحديث على الطلب.',
+    titleInquiry: 'استفسر عن المنتج',
+    subtitleInquiry: 'أرسل سؤالك عن المنتج، وسنعرض لك رد المصنع هنا.',
     safe: 'طلبك آمن ومباشر',
     secInfo: 'معلومات الطلب', qty: 'الكمية المطلوبة',
     secCustom: 'هل يحتاج تخصيص؟', customDetails: 'اكتب التفاصيل', customDetailsPh: 'اكتب التفاصيل هنا',
@@ -36,6 +38,8 @@ const T = {
   en: {
     title: 'Request a quote from the factory',
     subtitle: "Your request goes straight to the factory. You'll be notified when a quote arrives or the request is updated.",
+    titleInquiry: 'Inquire about this product',
+    subtitleInquiry: "Send your question about this product; we'll show the factory's reply here.",
     safe: 'Safe & direct',
     secInfo: 'Request information', qty: 'Required quantity',
     secCustom: 'Does it need customization?', customDetails: 'Add details', customDetailsPh: 'Write the details here',
@@ -59,6 +63,8 @@ const T = {
   zh: {
     title: '向工厂请求报价',
     subtitle: '您的需求将直接发送至工厂。收到报价或需求更新时会通知您。',
+    titleInquiry: '咨询此产品',
+    subtitleInquiry: '发送您对此产品的问题，工厂的回复将显示在此处。',
     safe: '安全直达',
     secInfo: '需求信息', qty: '所需数量',
     secCustom: '需要定制吗？', customDetails: '填写详情', customDetailsPh: '在此填写详情',
@@ -104,10 +110,11 @@ function Icon({ name, size = 18 }) {
 // Shared factory request-quote modal — product-bound (product set) or a
 // factory-level inquiry (product null). Same form + pipeline; the only difference
 // is whether a specific catalog product is pre-attached (left card + factory_product_id).
-export default function RequestQuoteModal({ lang = 'ar', user, factory, product = null, displayCurrency = 'SAR', onClose }) {
+export default function RequestQuoteModal({ lang = 'ar', user, factory, product = null, displayCurrency = 'SAR', mode = 'quote', onClose }) {
   const isAr = lang === 'ar';
   const ar = isAr ? ' ar' : '';
   const c = T[lang] || T.ar;
+  const isInquiry = mode === 'inquiry'; // lighter "ask a question" variant (qty optional; fewer fields)
   const nav = useNavigate();
   const picker = useAttachmentPicker(lang);
   const fileRef = useRef(null);
@@ -149,7 +156,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
 
   const submit = useCallback(async () => {
     setError('');
-    if (!String(qty).trim()) { setError(c.errQty); return; }
+    if (!isInquiry && !String(qty).trim()) { setError(c.errQty); return; }
     if (!requestDetails.trim()) { setError(c.errDetails); return; }
     if (!user) { onClose?.(); nav('/login/buyer'); return; }
     setSubmitting(true);
@@ -186,8 +193,8 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
         <div className="rq-head">
           <span className={`rq-badge${ar}`}><Icon name="shield" size={13} />{c.safe}</span>
           <button className="rq-close" onClick={onClose} aria-label={c.close}>×</button>
-          <h2 className={`rq-title${ar}`}>{c.title}</h2>
-          <p className={`rq-subtitle${ar}`}>{c.subtitle}</p>
+          <h2 className={`rq-title${ar}`}>{isInquiry ? c.titleInquiry : c.title}</h2>
+          <p className={`rq-subtitle${ar}`}>{isInquiry ? c.subtitleInquiry : c.subtitle}</p>
         </div>
 
         {done ? (
@@ -232,7 +239,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
               <div className="rq-form">
                 <h4 className={`rq-sec${ar}`}>{c.secInfo}</h4>
                 <label className={`rq-sec${ar}`} style={{ fontSize: 13, fontWeight: 400, margin: '0 0 8px', display: 'block' }}>
-                  {c.qty} <span className="rq-req">*</span>
+                  {c.qty} {!isInquiry && <span className="rq-req">*</span>}
                 </label>
                 <div className="rq-qty">
                   <select className={`rq-select${ar}`} value={unit} onChange={(e) => setUnit(e.target.value)}>
@@ -241,6 +248,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
                   <input className={`rq-input${ar}`} value={qty} onChange={(e) => setQty(e.target.value)} inputMode="numeric" placeholder="100" dir="ltr" />
                 </div>
 
+                {!isInquiry && (<>
                 <h4 className={`rq-sec${ar}`}>{c.secCustom}</h4>
                 <div className="rq-chips">
                   {CUSTOMIZATION_CHIPS.map((chip) => (
@@ -256,6 +264,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
                     <input className={`rq-input${ar}`} value={customDetails} onChange={(e) => setCustomDetails(e.target.value)} placeholder={c.customDetailsPh} dir={isAr ? 'rtl' : 'ltr'} />
                   </div>
                 )}
+                </>)}
 
                 <h4 className={`rq-sec${ar}`}>{c.secDetails} <span className="rq-req">*</span></h4>
                 <textarea className={`rq-textarea${ar}`} rows={5} value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} placeholder={c.detailsPh} dir={isAr ? 'rtl' : 'ltr'} />
@@ -280,6 +289,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
                 )}
                 {picker.error && <p className={`rq-err${ar}`}>{picker.error}</p>}
 
+                {!isInquiry && (<>
                 <h4 className={`rq-sec${ar}`}>{c.secDelivery}</h4>
                 <div className="rq-pills">
                   {DELIVERY_TIMEFRAMES.map((t) => (
@@ -304,6 +314,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
                 ) : (
                   <input className={`rq-input${ar}`} value={city} onChange={(e) => setCity(e.target.value)} placeholder={c.cityOtherPh} dir={isAr ? 'rtl' : 'ltr'} />
                 )}
+                </>)}
 
                 <h4 className={`rq-sec${ar}`}>{c.secNotes}</h4>
                 <textarea className={`rq-textarea${ar}`} rows={2} value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} placeholder={c.notesPh} dir={isAr ? 'rtl' : 'ltr'} />
@@ -323,7 +334,7 @@ export default function RequestQuoteModal({ lang = 'ar', user, factory, product 
               </div>
               <div className="rq-submit-wrap">
                 <button className={`rq-submit${ar}`} onClick={submit} disabled={submitting}>
-                  <Icon name="send" size={17} />{submitting ? c.sending : c.submit}
+                  <Icon name="send" size={17} />{submitting ? c.sending : (isInquiry ? (isAr ? 'إرسال الاستفسار' : lang === 'zh' ? '发送咨询' : 'Send inquiry') : c.submit)}
                 </button>
                 <p className={`rq-submit-note${ar}`}>{c.disclaimer}</p>
               </div>
