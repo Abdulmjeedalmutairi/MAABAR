@@ -25,11 +25,13 @@ export default function FactoryCategory({ lang = 'ar' }) {
   }, [key]);
   async function load() {
     setLoading(true);
-    const codes = codesForDisplayCategory(key);
-    if (!codes.length) { setFactories([]); setLoading(false); return; }
-    const { data } = await sb
-      .from('factory_directory_public').select('*')
-      .in('category', codes).order('sort_order', { ascending: true });
+    let q = sb.from('factory_directory_public').select('*').order('sort_order', { ascending: true });
+    if (!cat?.all) {   // the 'all' card lists EVERY factory; others filter by their codes
+      const codes = codesForDisplayCategory(key);
+      if (!codes.length) { setFactories([]); setLoading(false); return; }
+      q = q.in('category', codes);
+    }
+    const { data } = await q;
     setFactories(data || []);
     setLoading(false);
   }

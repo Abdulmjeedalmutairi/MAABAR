@@ -12,6 +12,16 @@
 
 export const FACTORY_DISPLAY_CATEGORIES = [
   {
+    // Catch-all — lists EVERY active factory (no code filter), so a factory whose
+    // real code isn't grouped into one of the cards below is still reachable.
+    key: 'all',
+    codes: [],
+    all: true,
+    image: '',
+    label: { ar: 'كل المصانع', en: 'All factories', zh: '全部工厂' },
+    desc:  { ar: 'تصفّح جميع المصانع على المنصّة.', en: 'Browse every factory on the platform.', zh: '浏览平台上的所有工厂。' },
+  },
+  {
     key: 'electrical_home_electronics',
     codes: ['electronics', 'home_appliances'],
     image: '',
@@ -118,6 +128,7 @@ export function displayCategoriesForLang(lang = 'ar') {
   return FACTORY_DISPLAY_CATEGORIES.map((c) => ({
     key: c.key,
     codes: c.codes,
+    all: !!c.all,
     image: c.image || `/categories/${c.key}.webp`,
     label: c.label[lang] || c.label.en,
     desc: c.desc[lang] || c.desc.en,
