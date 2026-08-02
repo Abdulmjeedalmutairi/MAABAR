@@ -52,9 +52,13 @@ def _cors(resp):
     return resp
 
 
+# Admin roles — MUST mirror the DB's is_admin_user() gate, which accepts both.
+ADMIN_ROLES = {"admin", "super_admin"}
+
+
 def _is_admin(token: str) -> bool:
     """The caller must present their own Supabase access token, and their profile
-    role must be 'admin' — the same rule as the DB's is_admin_user()."""
+    role must be an admin role — the same rule as the DB's is_admin_user()."""
     if not token or not SERVICE_KEY:
         return False
     try:
@@ -68,7 +72,7 @@ def _is_admin(token: str) -> bool:
         p = requests.get(f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{uid}&select=role",
                          headers=SR_HEADERS, timeout=15)
         rows = p.json() if p.ok else []
-        return bool(rows) and str(rows[0].get("role", "")).lower() == "admin"
+        return bool(rows) and str(rows[0].get("role", "")).lower() in ADMIN_ROLES
     except requests.RequestException:
         return False
 

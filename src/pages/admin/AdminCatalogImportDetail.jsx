@@ -128,7 +128,12 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     }
     setStarting(true); setError('');
     setBatch((b) => (b ? { ...b, status: 'extracting', error: null } : b));   // optimistic
-    triggerExtraction(id).catch(() => {});   // fire; polling reflects the real status
+    // Fire it — the worker responds only when done (minutes), so we DON'T await the
+    // happy path; polling reflects progress. But a fast failure (403/CORS/network)
+    // rejects in seconds — surface it instead of silently reverting to 'queued'.
+    triggerExtraction(id).catch((e) => {
+      setError((isAr ? 'تعذّر بدء الاستخراج: ' : "Couldn't start extraction: ") + (e.message || ''));
+    });
     setStarting(false);
   }, [id, isAr]);
 
