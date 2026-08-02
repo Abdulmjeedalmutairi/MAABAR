@@ -39,7 +39,6 @@ import Contact from './pages/Contact';
 import Support from './pages/Support';
 import Requests from './pages/Requests';
 import Factories from './pages/Factories';
-import FactoryCategory from './pages/FactoryCategory';
 import FactoryDetail from './pages/FactoryDetail';
 import FactoryProductDetail from './pages/FactoryProductDetail';
 import FactoryRequestView from './pages/FactoryRequestView';
@@ -336,7 +335,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/support"        element={<Support         {...sharedProps} />} />
         <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
         <Route path="/factories"          element={<Factories       {...sharedProps} />} />
-        <Route path="/factories/:key"     element={<FactoryCategory {...sharedProps} />} />
+        <Route path="/factories/:key"     element={<Factories       {...sharedProps} />} />
         <Route path="/factory/:id"        element={<FactoryDetail   {...sharedProps} />} />
         <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
         <Route path="/f/:slug"            element={<FactoryRequestView />} />

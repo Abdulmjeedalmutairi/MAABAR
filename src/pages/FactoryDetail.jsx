@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
@@ -109,6 +109,9 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [catalogs, setCatalogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reqOpen, setReqOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  // Opened from the "Request a quote" button on the factories list (/factory/:id?request=1).
+  useEffect(() => { if (searchParams.get('request') === '1') setReqOpen(true); }, [searchParams]);
   const [activeCatalog, setActiveCatalog] = useState(null); // import_id filter
   const [visible, setVisible] = useState(20);
   const [galleryOpen, setGalleryOpen] = useState(false); // fullscreen photo viewer
