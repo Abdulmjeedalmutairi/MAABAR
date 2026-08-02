@@ -190,42 +190,21 @@ function StatusTimeline({ status, isAr }) {
   return <TimelineBar steps={TIMELINE_STEPS} current={timelineIndexFromStatus(status)} isAr={isAr} />;
 }
 
-/* ─── Sourcing timeline (buyer-facing) — steps differ by request type,
-       but the stage index is shared (all run through the admin pipeline). ─── */
-const SOURCING_STEPS = {
-  managed: [
-    { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
-    { key: 'review',    ar: 'مراجعة مَعبر', en: 'Maabar review' },
-    { key: 'sourcing',  ar: 'جمع العروض', en: 'Sourcing' },
-    { key: 'offers',    ar: 'وصلتك عروض', en: 'Offers ready' },
-    { key: 'done',      ar: 'مكتمل', en: 'Completed' },
-  ],
-  factory: [
-    { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
-    { key: 'review',    ar: 'مراجعة مَعبر', en: 'Maabar review' },
-    { key: 'contact',   ar: 'تواصل مع المصنع', en: 'Contacting factory' },
-    { key: 'offer',     ar: 'وصل العرض', en: 'Offer received' },
-    { key: 'done',      ar: 'مكتمل', en: 'Completed' },
-  ],
-  idea: [
-    { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
-    { key: 'review',    ar: 'مراجعة مَعبر', en: 'Maabar review' },
-    { key: 'sample',    ar: 'تطوير العيّنة', en: 'Sample dev' },
-    { key: 'offer',     ar: 'عروض التصنيع', en: 'Mfg. offers' },
-    { key: 'done',      ar: 'مكتمل', en: 'Completed' },
-  ],
-};
-function managedTimelineIndex(status, hasShortlist) {
+/* ─── Sourcing timeline (buyer-facing) — a simple, neutral 3-step that hides the
+       internal Maabar pipeline. The buyer just sees: submitted → awaiting → offer.
+       (After acceptance the request moves to "My Orders" with the order timeline.) ─── */
+const SOURCING_STEPS = [
+  { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
+  { key: 'waiting',   ar: 'بانتظار العرض', en: 'Awaiting offer' },
+  { key: 'offer',     ar: 'وصلك عرض', en: 'Offer received' },
+];
+function sourcingTimelineIndex(status, hasShortlist) {
   const s = String(status || '');
-  if (['buyer_selected', 'completed'].includes(s)) return 4;
-  if (hasShortlist || ['shortlist_ready', 'buyer_review'].includes(s)) return 3;
-  if (['sourcing', 'matching'].includes(s)) return 2;
-  if (s === 'admin_review') return 1;
-  return 0; // submitted / null
+  if (hasShortlist || ['shortlist_ready', 'buyer_review', 'buyer_selected', 'completed'].includes(s)) return 2;
+  return 1; // submitted / admin_review / sourcing / matching → awaiting the offer
 }
-function ManagedStatusTimeline({ type = 'managed', status, hasShortlist, isAr }) {
-  const steps = SOURCING_STEPS[type] || SOURCING_STEPS.managed;
-  return <TimelineBar steps={steps} current={managedTimelineIndex(status, hasShortlist)} isAr={isAr} />;
+function ManagedStatusTimeline({ status, hasShortlist, isAr }) {
+  return <TimelineBar steps={SOURCING_STEPS} current={sourcingTimelineIndex(status, hasShortlist)} isAr={isAr} />;
 }
 
 /* ─── PaymentBadge ───────────────────────── */
@@ -572,6 +551,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   // Sub-filters (mobile)
   const [reqSubFilter, setReqSubFilter] = useState('all');
+  const [reqTypeFilter, setReqTypeFilter] = useState('all'); // all | factory | managed | idea | direct
+  const [expandedReq, setExpandedReq] = useState(null);      // request id whose card is expanded
   const [msgSubFilter, setMsgSubFilter] = useState('all');
   const [moreOpen, setMoreOpen]         = useState(false);
 
@@ -1678,6 +1659,28 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 ]}
               />
 
+              {/* Type filter — factory quote / managed / idea / direct */}
+              {myRequests.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '4px 0 8px' }}>
+                  {[
+                    { id: 'all',     label: isAr ? 'الكل' : 'All' },
+                    { id: 'factory', label: isAr ? 'عروض المصانع' : 'Factory' },
+                    { id: 'managed', label: isAr ? 'مُدارة' : 'Managed' },
+                    { id: 'idea',    label: isAr ? 'تصنيع فكرة' : 'Idea' },
+                    { id: 'direct',  label: isAr ? 'مباشرة' : 'Direct' },
+                  ].map(t => (
+                    <button key={t.id} type="button" onClick={() => setReqTypeFilter(t.id)}
+                      style={{
+                        fontSize: 12, padding: '5px 12px', borderRadius: 'var(--radius-pill)', cursor: 'pointer',
+                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                        border: '1px solid ' + (reqTypeFilter === t.id ? 'var(--text-primary)' : 'var(--border-subtle)'),
+                        background: reqTypeFilter === t.id ? 'var(--text-primary)' : 'transparent',
+                        color: reqTypeFilter === t.id ? 'var(--bg-raised)' : 'var(--text-secondary)',
+                      }}>{t.label}</button>
+                  ))}
+                </div>
+              )}
+
               {/* Loading skeleton */}
               {loadingRequests && [1, 2].map(i => (
                 <div key={i} style={{ borderTop: '1px solid var(--border-subtle)', padding: '28px 0' }}>
@@ -1701,6 +1704,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               {/* Requests list */}
               {!loadingRequests && (() => {
                 const filteredRequests = myRequests.filter(r => {
+                  if (reqTypeFilter !== 'all' && requestType(r) !== reqTypeFilter) return false;
                   if (reqSubFilter === 'open')      return ['open','offers_received'].includes(r.status);
                   if (reqSubFilter === 'active')    return !['open','offers_received','delivered'].includes(r.status);
                   if (reqSubFilter === 'completed') return r.status === 'delivered';
@@ -1723,6 +1727,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   return best;
                 }, null);
                 const isFocusedRequest = String(focusedRequestId || '') === String(r.id);
+                const isExpanded = expandedReq === r.id || isFocusedRequest;
                 const nextStepCopy = (() => {
                   if (managed) {
                     if ((r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready') {
@@ -1814,8 +1819,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <span style={{ fontSize: 10, color: 'var(--text-disabled)', marginInlineStart: 'auto' }}>
                           {relativeTime(r.created_at, isAr)}
                         </span>
+                        <button type="button" onClick={() => setExpandedReq(isExpanded ? null : r.id)}
+                          aria-label={isExpanded ? (isAr ? 'طيّ' : 'Collapse') : (isAr ? 'توسيع' : 'Expand')}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1, padding: '2px 4px', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</button>
                       </div>
-                      <h3 style={{ fontSize: 16, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                      <h3 onClick={() => setExpandedReq(isExpanded ? null : r.id)} style={{ fontSize: 16, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', lineHeight: 1.3, cursor: 'pointer' }}>
                         {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
                       </h3>
                       <p style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -1884,9 +1892,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     </div>
                   )}
 
+                  {/* ── Folded detail: everything below shows only when expanded ── */}
+                  {isExpanded && (<>
                   {/* ── Status timeline ── */}
                   {!managed && <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />}
-                  {managed && <ManagedStatusTimeline type={requestType(r)} status={r.managed_status} hasShortlist={(r.managedShortlist || []).length > 0} isAr={isAr} />}
+                  {managed && <ManagedStatusTimeline status={r.managed_status} hasShortlist={(r.managedShortlist || []).length > 0} isAr={isAr} />}
 
                   {/* ── Payment plan row ── */}
                   {!managed && acceptedOffer && (
@@ -1898,13 +1908,22 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                   {/* Managed next-step banner (kept for managed only) */}
                   {managed && (() => {
-                    const hasShortlist = (r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready';
-                    const title = hasShortlist
-                      ? (isAr ? 'الخطوة التالية: راجع العروض المختارة لك' : 'Next step: review your selected offers')
-                      : (isAr ? 'الطلب الآن داخل المسار المُدار' : 'This request is now inside the managed flow');
-                    const body = hasShortlist
-                      ? (isAr ? 'اختر العرض المناسب، اطلب تفاوضاً، أو اطلب من معبر إعادة البحث.' : 'Choose the right offer, request negotiation, or ask Maabar to search again.')
-                      : (isAr ? 'معبر يجهّز الـ brief ويطابق الموردين المناسبين قبل إظهار أفضل 3 عروض لك.' : 'Maabar is matching suitable suppliers before showing your top 3 here.');
+                    const ty = requestType(r);
+                    const hasOffers = (r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready';
+                    let title, body;
+                    if (hasOffers) {
+                      title = isAr ? 'وصلك عرض — راجعه' : 'An offer is ready — review it';
+                      body = isAr ? 'راجع العرض بالأسفل واقبله للمتابعة.' : 'Review the offer below and accept to proceed.';
+                    } else if (ty === 'factory') {
+                      title = isAr ? 'بانتظار رد المصنع' : 'Awaiting the factory';
+                      body = isAr ? 'سنعرض لك العرض هنا فور وصوله.' : "We'll show the offer here as soon as it arrives.";
+                    } else if (ty === 'idea') {
+                      title = isAr ? 'جارٍ تطوير فكرتك' : 'Developing your idea';
+                      body = isAr ? 'سنعرض لك عروض التصنيع هنا فور جاهزيتها.' : "We'll show manufacturing offers here once they're ready.";
+                    } else {
+                      title = isAr ? 'بانتظار العروض' : 'Awaiting offers';
+                      body = isAr ? 'سنعرض لك العروض هنا فور وصولها.' : "We'll show offers here as soon as they arrive.";
+                    }
                     return (
                       <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{title}</p>
@@ -1913,7 +1932,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     );
                   })()}
 
-                  {managed && (
+                  {/* Offer-review panel — only once an offer actually arrives (keeps
+                      the internal sourcing process hidden from the buyer before that). */}
+                  {managed && (r.managedShortlist || []).length > 0 && (
                     <ManagedBuyerRequestPanel
                       request={r}
                       lang={lang}
@@ -2205,6 +2226,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       {isAr ? 'لا توجد عروض بعد' : 'No offers yet'}
                     </p>
                   )}
+                  </>)}
                 </div>
               );
               });
