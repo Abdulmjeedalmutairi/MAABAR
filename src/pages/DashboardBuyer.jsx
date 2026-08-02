@@ -22,7 +22,6 @@ import {
   getSupplierMaabarId,
   isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
-import { shouldResumeIdeaFlow } from '../lib/ideaToProductFlow';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { T } from '../lib/supplierDashboardConstants';
 import { formatPriceLocale } from '../lib/formatLocale';
@@ -40,7 +39,7 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
-import { isManagedRequest } from '../lib/managedSourcing';
+import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
   const urls = {
@@ -149,18 +148,18 @@ function timelineIndexFromStatus(status) {
   return map[status] ?? 0;
 }
 
-function StatusTimeline({ status, isAr }) {
-  const current = timelineIndexFromStatus(status);
+// Generic timeline renderer — a step list + the active index. Reused by both the
+// direct-order lifecycle and the managed/factory sourcing timeline.
+function TimelineBar({ steps, current, isAr }) {
   return (
     <div style={{ overflowX: 'auto', margin: '12px 0 4px', paddingBottom: 2 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 360, position: 'relative' }}>
         {/* connector track */}
         <div style={{ position: 'absolute', top: 7, left: 7, right: 7, height: 1, background: 'var(--border-subtle)', zIndex: 0 }} />
-        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(45,122,79,0.55)', width: `calc(${(current / (TIMELINE_STEPS.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
-        {TIMELINE_STEPS.map((step, i) => {
-          const done    = i < current;
-          const active  = i === current;
-          const future  = i > current;
+        <div style={{ position: 'absolute', top: 7, left: 7, height: 1, zIndex: 0, background: 'rgba(45,122,79,0.55)', width: `calc(${(current / (steps.length - 1)) * 100}% - 14px)`, transition: 'width 0.4s ease' }} />
+        {steps.map((step, i) => {
+          const done   = i < current;
+          const active = i === current;
           return (
             <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
               <div style={{
@@ -185,6 +184,27 @@ function StatusTimeline({ status, isAr }) {
       </div>
     </div>
   );
+}
+
+function StatusTimeline({ status, isAr }) {
+  return <TimelineBar steps={TIMELINE_STEPS} current={timelineIndexFromStatus(status)} isAr={isAr} />;
+}
+
+/* ─── Sourcing timeline (buyer-facing) — a simple, neutral 3-step that hides the
+       internal Maabar pipeline. The buyer just sees: submitted → awaiting → offer.
+       (After acceptance the request moves to "My Orders" with the order timeline.) ─── */
+const SOURCING_STEPS = [
+  { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
+  { key: 'waiting',   ar: 'بانتظار العرض', en: 'Awaiting offer' },
+  { key: 'offer',     ar: 'وصلك عرض', en: 'Offer received' },
+];
+function sourcingTimelineIndex(status, hasShortlist) {
+  const s = String(status || '');
+  if (hasShortlist || ['shortlist_ready', 'buyer_review', 'buyer_selected', 'completed'].includes(s)) return 2;
+  return 1; // submitted / admin_review / sourcing / matching → awaiting the offer
+}
+function ManagedStatusTimeline({ status, hasShortlist, isAr }) {
+  return <TimelineBar steps={SOURCING_STEPS} current={sourcingTimelineIndex(status, hasShortlist)} isAr={isAr} />;
 }
 
 /* ─── PaymentBadge ───────────────────────── */
@@ -402,7 +422,7 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
         return (
           <button key={item.id}
             onClick={() => {
-              if (item.id === 'new')  { nav('/requests'); return; }
+              if (item.id === 'new')  { nav('/factories'); return; }
               if (item.id === 'more') { setMoreOpen(o => !o); return; }
               setActiveTab(item.id);
               setMoreOpen(false);
@@ -488,17 +508,13 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const location = useLocation();
   const isAr     = lang === 'ar';
 
-  // Handle dashboard query params (tab focus / custom manufacturing resume)
+  // Handle dashboard query params (tab focus). The idea-flow resume
+  // (?ai_report_resume=1) is handled by the global AIHub widget itself.
   useEffect(() => {
-    if (shouldResumeIdeaFlow(location.search)) {
-      nav('/requests?flow=custom');
-      return;
-    }
-
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tab) setActiveTab(tab);
-  }, [location.search, nav]);
+  }, [location.search]);
 
   const [stats, setStats]                 = useState({ requests: 0, messages: 0, offers: 0, productInquiries: 0 });
   const [myRequests, setMyRequests]       = useState([]);
@@ -535,6 +551,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
   // Sub-filters (mobile)
   const [reqSubFilter, setReqSubFilter] = useState('all');
+  const [reqTypeFilter, setReqTypeFilter] = useState('all'); // all | factory | managed | idea | direct
+  const [expandedReq, setExpandedReq] = useState(null);      // request id whose card is expanded
   const [msgSubFilter, setMsgSubFilter] = useState('all');
   const [moreOpen, setMoreOpen]         = useState(false);
 
@@ -1566,8 +1584,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
                   <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary isAr={isAr} />
-                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/requests')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/requests?flow=custom')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/factories')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/factories')} isAr={isAr} />
                   <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'} sub={isAr ? 'تابع الطلبات، العروض، والدفع' : 'Track requests, offers, and payment steps'} onClick={() => setActiveTab('requests')} isAr={isAr} />
                 </div>
               </div>
@@ -1598,7 +1616,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 }}>
                   {isAr ? 'طلباتي' : 'My Requests'}
                 </h2>
-                <button className="btn-dark-sm" onClick={() => nav('/requests')}
+                <button className="btn-dark-sm" onClick={() => nav('/factories')}
                   style={{ fontSize: 11, letterSpacing: 1, minHeight: 36 }}>
                   {isAr ? '+ طلب جديد' : '+ New Request'}
                 </button>
@@ -1641,6 +1659,28 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 ]}
               />
 
+              {/* Type filter — factory quote / managed / idea / direct */}
+              {myRequests.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '4px 0 8px' }}>
+                  {[
+                    { id: 'all',     label: isAr ? 'الكل' : 'All' },
+                    { id: 'factory', label: isAr ? 'عروض المصانع' : 'Factory' },
+                    { id: 'managed', label: isAr ? 'مُدارة' : 'Managed' },
+                    { id: 'idea',    label: isAr ? 'تصنيع فكرة' : 'Idea' },
+                    { id: 'direct',  label: isAr ? 'مباشرة' : 'Direct' },
+                  ].map(t => (
+                    <button key={t.id} type="button" onClick={() => setReqTypeFilter(t.id)}
+                      style={{
+                        fontSize: 12, padding: '5px 12px', borderRadius: 'var(--radius-pill)', cursor: 'pointer',
+                        fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                        border: '1px solid ' + (reqTypeFilter === t.id ? 'var(--text-primary)' : 'var(--border-subtle)'),
+                        background: reqTypeFilter === t.id ? 'var(--text-primary)' : 'transparent',
+                        color: reqTypeFilter === t.id ? 'var(--bg-raised)' : 'var(--text-secondary)',
+                      }}>{t.label}</button>
+                  ))}
+                </div>
+              )}
+
               {/* Loading skeleton */}
               {loadingRequests && [1, 2].map(i => (
                 <div key={i} style={{ borderTop: '1px solid var(--border-subtle)', padding: '28px 0' }}>
@@ -1655,7 +1695,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   <p style={{ fontSize: 14, color: 'var(--text-disabled)', marginBottom: 24, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {isAr ? 'ما عندك طلبات بعد' : 'No requests yet'}
                   </p>
-                  <button className="btn-dark-sm" onClick={() => nav('/requests')} style={{ minHeight: 40 }}>
+                  <button className="btn-dark-sm" onClick={() => nav('/factories')} style={{ minHeight: 40 }}>
                     {isAr ? 'ارفع أول طلب' : 'Post First Request'}
                   </button>
                 </div>
@@ -1664,6 +1704,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
               {/* Requests list */}
               {!loadingRequests && (() => {
                 const filteredRequests = myRequests.filter(r => {
+                  if (reqTypeFilter !== 'all' && requestType(r) !== reqTypeFilter) return false;
                   if (reqSubFilter === 'open')      return ['open','offers_received'].includes(r.status);
                   if (reqSubFilter === 'active')    return !['open','offers_received','delivered'].includes(r.status);
                   if (reqSubFilter === 'completed') return r.status === 'delivered';
@@ -1686,6 +1727,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   return best;
                 }, null);
                 const isFocusedRequest = String(focusedRequestId || '') === String(r.id);
+                const isExpanded = expandedReq === r.id || isFocusedRequest;
                 const nextStepCopy = (() => {
                   if (managed) {
                     if ((r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready') {
@@ -1763,16 +1805,25 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                             {isAr ? (r.category_ar || r.category) : (r.category_en || r.category)}
                           </span>
                         )}
-                        {managed && (
-                          <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-chip)' }}>
-                            {isAr ? 'طلب مُدار' : 'Managed'}
-                          </span>
-                        )}
+                        {(() => {
+                          const ty = requestType(r);
+                          const label = ty === 'factory' ? (isAr ? 'عرض سعر مصنع' : 'Factory quote')
+                            : ty === 'idea' ? (isAr ? 'تصنيع فكرة' : 'Idea to product')
+                              : ty === 'managed' ? (isAr ? 'طلب مُدار' : 'Managed') : null;
+                          return label ? (
+                            <span style={{ fontSize: 9, letterSpacing: isAr ? 0 : 1.5, textTransform: isAr ? 'none' : 'uppercase', color: 'var(--text-disabled)', border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-chip)' }}>
+                              {label}
+                            </span>
+                          ) : null;
+                        })()}
                         <span style={{ fontSize: 10, color: 'var(--text-disabled)', marginInlineStart: 'auto' }}>
                           {relativeTime(r.created_at, isAr)}
                         </span>
+                        <button type="button" onClick={() => setExpandedReq(isExpanded ? null : r.id)}
+                          aria-label={isExpanded ? (isAr ? 'طيّ' : 'Collapse') : (isAr ? 'توسيع' : 'Expand')}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1, padding: '2px 4px', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</button>
                       </div>
-                      <h3 style={{ fontSize: 16, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                      <h3 onClick={() => setExpandedReq(isExpanded ? null : r.id)} style={{ fontSize: 16, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', color: 'var(--text-primary)', lineHeight: 1.3, cursor: 'pointer' }}>
                         {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
                       </h3>
                       <p style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
@@ -1841,8 +1892,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     </div>
                   )}
 
+                  {/* ── Folded detail: everything below shows only when expanded ── */}
+                  {isExpanded && (<>
                   {/* ── Status timeline ── */}
                   {!managed && <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />}
+                  {managed && <ManagedStatusTimeline status={r.managed_status} hasShortlist={(r.managedShortlist || []).length > 0} isAr={isAr} />}
 
                   {/* ── Payment plan row ── */}
                   {!managed && acceptedOffer && (
@@ -1854,13 +1908,22 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                   {/* Managed next-step banner (kept for managed only) */}
                   {managed && (() => {
-                    const hasShortlist = (r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready';
-                    const title = hasShortlist
-                      ? (isAr ? 'الخطوة التالية: راجع العروض المختارة لك' : 'Next step: review your selected offers')
-                      : (isAr ? 'الطلب الآن داخل المسار المُدار' : 'This request is now inside the managed flow');
-                    const body = hasShortlist
-                      ? (isAr ? 'اختر العرض المناسب، اطلب تفاوضاً، أو اطلب من معبر إعادة البحث.' : 'Choose the right offer, request negotiation, or ask Maabar to search again.')
-                      : (isAr ? 'معبر يجهّز الـ brief ويطابق الموردين المناسبين قبل إظهار أفضل 3 عروض لك.' : 'Maabar is matching suitable suppliers before showing your top 3 here.');
+                    const ty = requestType(r);
+                    const hasOffers = (r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready';
+                    let title, body;
+                    if (hasOffers) {
+                      title = isAr ? 'وصلك عرض — راجعه' : 'An offer is ready — review it';
+                      body = isAr ? 'راجع العرض بالأسفل واقبله للمتابعة.' : 'Review the offer below and accept to proceed.';
+                    } else if (ty === 'factory') {
+                      title = isAr ? 'بانتظار رد المصنع' : 'Awaiting the factory';
+                      body = isAr ? 'سنعرض لك العرض هنا فور وصوله.' : "We'll show the offer here as soon as it arrives.";
+                    } else if (ty === 'idea') {
+                      title = isAr ? 'جارٍ تطوير فكرتك' : 'Developing your idea';
+                      body = isAr ? 'سنعرض لك عروض التصنيع هنا فور جاهزيتها.' : "We'll show manufacturing offers here once they're ready.";
+                    } else {
+                      title = isAr ? 'بانتظار العروض' : 'Awaiting offers';
+                      body = isAr ? 'سنعرض لك العروض هنا فور وصولها.' : "We'll show offers here as soon as they arrive.";
+                    }
                     return (
                       <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
                         <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{title}</p>
@@ -1869,7 +1932,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     );
                   })()}
 
-                  {managed && (
+                  {/* Offer-review panel — only once an offer actually arrives (keeps
+                      the internal sourcing process hidden from the buyer before that). */}
+                  {managed && (r.managedShortlist || []).length > 0 && (
                     <ManagedBuyerRequestPanel
                       request={r}
                       lang={lang}
@@ -2161,6 +2226,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       {isAr ? 'لا توجد عروض بعد' : 'No offers yet'}
                     </p>
                   )}
+                  </>)}
                 </div>
               );
               });

@@ -2,7 +2,6 @@ import usePageTitle from '../hooks/usePageTitle';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
-import IdeaToProduct from '../components/IdeaToProduct';
 import Footer from '../components/Footer';
 
 // Trilingual copy — mirrors the mobile app's public home (PublicHomeScreen).
@@ -98,16 +97,13 @@ const ICONS = {
 
 const APP_STORE_URL = 'https://apps.apple.com/sa/app/maabar-%D9%85%D8%B9%D8%A8%D8%B1/id6780046671';
 
-export default function Home({ lang, user }) {
+export default function Home({ lang }) {
   const nav = useNavigate();
   const t = T[lang] || T.ar;
   const isAr = lang === 'ar';
   usePageTitle('home', lang);
-  const [ideaOpen, setIdeaOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const rootRef = useRef(null);
-
-  useEffect(() => () => setIdeaOpen(false), []);
 
   // Latest active products for the carousel teaser (drafts are is_active=false).
   useEffect(() => {
@@ -147,7 +143,7 @@ export default function Home({ lang, user }) {
   const svcOnClick = {
     products:    () => nav('/products'),
     suppliers:   () => nav('/suppliers'),
-    manufacture: () => setIdeaOpen(true),
+    manufacture: () => nav('/factories'),
     support:     () => nav('/contact'),
   };
   const productName = (p) => lang === 'zh' ? (p.name_zh || p.name_en || p.name_ar || '—')
@@ -164,7 +160,7 @@ export default function Home({ lang, user }) {
           <h1 className="home2-title" style={arFont}>{t.heroTitle}</h1>
           <p className="home2-sub" style={arFont}>{t.heroSub}</p>
           <div className="home2-actions">
-            <button className="btn-primary" onClick={() => nav('/requests')}>{t.heroBtn1}</button>
+            <button className="btn-primary" onClick={() => nav('/factories')}>{t.heroBtn1}</button>
             <button className="btn-outline" onClick={() => nav('/suppliers')}>{t.heroBtn2}</button>
           </div>
         </div>
@@ -215,7 +211,7 @@ export default function Home({ lang, user }) {
               <li key={i} style={arFont}><span className="home2-check">✓</span>{b}</li>
             ))}
           </ul>
-          <button className="btn-primary home2-managed-btn" onClick={() => nav('/requests?mode=managed')}>{t.mgBtn}</button>
+          <button className="btn-primary home2-managed-btn" onClick={() => nav('/factories')}>{t.mgBtn}</button>
         </div>
       </section>
 
@@ -248,7 +244,7 @@ export default function Home({ lang, user }) {
         <div className="home2-cta-body">
           <h2 className="home2-cta-title" style={arFont}>{t.ctaTitle}</h2>
           <p className="home2-cta-text" style={arFont}>{t.ctaText}</p>
-          <button className="btn-primary" onClick={() => nav('/requests?mode=managed')}>{t.ctaBtn}</button>
+          <button className="btn-primary" onClick={() => nav('/factories')}>{t.ctaBtn}</button>
         </div>
         <div className="home2-cta-img"><img src="/home/boxes-pallets.png" alt="" loading="lazy" /></div>
       </section>
@@ -271,10 +267,6 @@ export default function Home({ lang, user }) {
       </section>
 
       <Footer lang={lang} />
-
-      {ideaOpen && (
-        <IdeaToProduct lang={lang} user={user} onClose={() => setIdeaOpen(false)} />
-      )}
     </div>
   );
 }

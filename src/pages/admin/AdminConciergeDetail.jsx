@@ -6,6 +6,7 @@ import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminNoteThread from '../../components/admin/AdminNoteThread';
 import { sb, SUPABASE_FUNCTIONS_URL, SUPABASE_ANON_KEY } from '../../supabase';
 import { logAdminAction } from '../../lib/adminAudit';
+import { CUSTOMIZATION_CHIPS, DELIVERY_TIMEFRAMES, REQUEST_UNITS, labelFor } from '../../lib/requestFormOptions';
 
 const SEND_EMAIL_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 
@@ -106,6 +107,9 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
   // loads". An explicit admin choice (including 'all') overrides that.
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [allSuppliers, setAllSuppliers] = useState([]);
+  const [factoryInvites, setFactoryInvites] = useState([]);
+  const [customization, setCustomization] = useState(null);
+  const [attachUrls, setAttachUrls] = useState({}); // { path: signedUrl }
   const [searching, setSearching] = useState(false);
   const isAr = lang === 'ar';
 
@@ -118,10 +122,12 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
       { data: conns },
       { data: offers },
       { data: shortlist },
+      { data: invites },
+      { data: cust },
     ] = await Promise.all([
       sb.from('requests')
         .select(`
-          id, buyer_id, category, description, budget_per_unit, quantity, created_at,
+          id, buyer_id, category, description, budget_per_unit, quantity, unit, created_at,
           sourcing_mode, managed_status, payment_plan, sample_requirement, response_deadline,
           requester:profiles!requests_buyer_id_fkey(full_name, email, company_name, whatsapp, wechat),
           brief:managed_request_briefs(
@@ -151,6 +157,14 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         .select('id, offer_id, rank, status, supplier_id')
         .eq('request_id', id)
         .order('rank'),
+      // Factory invites on this request (Factories flow) — factory identity +
+      // lifecycle. Admin reads factory_directory (incl. email) via is_admin_user().
+      sb.from('request_factory_invites')
+        .select('id, slug, status, factory_email, opened_at, registered_at, offer_submitted_at, expires_at, created_at, factory:factory_id(company_name, city, country, phone), product:factory_product_id(name_en, name_zh, name_ar, ref_code)')
+        .eq('request_id', id)
+        .order('created_at', { ascending: false }),
+      // Buyer-authored structured customization (admin sees everything).
+      sb.from('request_customization').select('*').eq('request_id', id).maybeSingle(),
     ]);
 
     if (reqError) console.error('[AdminConciergeDetail] load error:', reqError);
@@ -169,6 +183,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
         request_type: req.category || 'managed',
         category: req.category || null,
         quantity: req.quantity || null,
+        unit: req.unit || null,
         payment_plan: req.payment_plan ?? null,
         sample_requirement: req.sample_requirement || null,
         response_deadline: req.response_deadline || null,
@@ -194,7 +209,23 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     setConnections(conns || []);
     setSupplierOffers(offers || []);
     setShortlistRows(shortlist || []);
+    setFactoryInvites(invites || []);
+    setCustomization(cust || null);
     setLoading(false);
+
+    // Sign the buyer's attachments so the admin can view/download (admin RLS +
+    // the request-attachments admin-read policy make createSignedUrls work).
+    const paths = Array.isArray(cust?.attachment_paths) ? cust.attachment_paths : [];
+    if (paths.length) {
+      const { data: signed } = await sb.storage.from('request-attachments').createSignedUrls(paths, 600);
+      if (Array.isArray(signed)) {
+        const map = {};
+        signed.forEach((s) => { if (s?.path && s?.signedUrl) map[s.path] = s.signedUrl; });
+        setAttachUrls(map);
+      }
+    } else {
+      setAttachUrls({});
+    }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -401,6 +432,39 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     @media (max-width: 900px) { .cd-page { padding: 22px 16px; } }
   `;
 
+  // ── Factory-request display helpers ──
+  const uLabel = (k) => { const u = REQUEST_UNITS.find((x) => x.key === k); return u ? labelFor(u, lang) : (k || ''); };
+  const custTypes = (customization?.customization_types || []).map((k) => { const c = CUSTOMIZATION_CHIPS.find((x) => x.key === k); return c ? labelFor(c, lang) : k; });
+  const custTimeframe = customization?.delivery_timeframe
+    ? (() => { const d = DELIVERY_TIMEFRAMES.find((x) => x.key === customization.delivery_timeframe); return d ? labelFor(d, lang) : customization.delivery_timeframe; })()
+    : null;
+  const custDest = [customization?.ship_city, customization?.ship_country].filter(Boolean).join(isAr ? '، ' : ', ');
+  const custAttachments = Array.isArray(customization?.attachment_paths) ? customization.attachment_paths : [];
+  const attName = (p) => { const seg = decodeURIComponent(String(p).split('/').pop() || ''); const i = seg.indexOf('_'); return i >= 0 ? seg.slice(i + 1) : seg; };
+  const isImg = (n) => /\.(jpe?g|png|webp|gif)$/i.test(n);
+  const hasCustomization = !!(customization && (custTypes.length || custTimeframe || custDest || customization.additional_notes || customization.customization_details || custAttachments.length));
+  const miniLabel = { fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', fontFamily: FONT_BODY, marginBottom: 6 };
+  const inviteLink = (slug) => `${window.location.origin}/f/${slug}`;
+  const copyLink = (slug) => { try { navigator.clipboard?.writeText(inviteLink(slug)); showFlash(isAr ? 'تم نسخ الرابط' : 'Link copied'); } catch { /* noop */ } };
+  const waHref = (inv) => {
+    const digits = String(inv.factory?.phone || '').replace(/[^0-9]/g, '');
+    if (!digits) return null;
+    const text = encodeURIComponent(`Maabar — new quote request: ${inviteLink(inv.slug)}`);
+    return `https://wa.me/${digits}?text=${text}`;
+  };
+  const resendInvite = async (inv) => {
+    setSaving(true);
+    try {
+      const { data, error } = await sb.functions.invoke('factory-invite-resend', { body: { inviteId: inv.id } });
+      if (error || data?.ok === false) { showFlash(isAr ? 'تعذّر إعادة الإرسال' : 'Resend failed'); }
+      else {
+        await logAdminAction({ actorId: user.id, action: 'factory_invite_resend', entityType: 'concierge', entityId: id, beforeState: null, afterState: { invite_id: inv.id, slug: inv.slug } });
+        showFlash(isAr ? 'أُعيد إرسال الدعوة للمصنع' : 'Invite re-sent to the factory');
+      }
+    } catch { showFlash(isAr ? 'تعذّر إعادة الإرسال' : 'Resend failed'); }
+    setSaving(false);
+  };
+
   if (loading) return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
       <AdminShell user={user} profile={profile} lang={lang}>
@@ -478,7 +542,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
                   ? ((CATEGORY_LABELS[request.category]?.[lang]) || (CATEGORY_LABELS[request.category]?.en) || request.category)
                   : null}
               />
-              <InfoItem label={isAr ? 'الكمية' : 'Quantity'} value={request.quantity} />
+              <InfoItem label={isAr ? 'الكمية' : 'Quantity'} value={request.quantity ? `${request.quantity}${request.unit ? ' ' + uLabel(request.unit) : ''}` : null} />
               <InfoItem label={isAr ? 'الميزانية للوحدة' : 'Budget/unit'} value={request.budget ? `${request.budget} ${request.currency}` : null} />
               <InfoItem
                 label={isAr ? 'خطة الدفع' : 'Payment plan'}
@@ -503,6 +567,54 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
               </div>
             )}
           </SectionCard>
+
+          {/* Customization & shipping (factory request) + attachments — the admin
+              sees everything the buyer entered, including files. */}
+          {hasCustomization && (
+            <SectionCard title={isAr ? 'التخصيص والشحن' : 'Customization & shipping'}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px 24px' }}>
+                <InfoItem label={isAr ? 'التخصيص المطلوب' : 'Customization'} value={custTypes.length ? custTypes.join(isAr ? '، ' : ', ') : null} />
+                <InfoItem label={isAr ? 'الموعد المتوقّع' : 'Delivery timeframe'} value={custTimeframe} />
+                <InfoItem label={isAr ? 'وجهة الشحن' : 'Ship to'} value={custDest || null} />
+              </div>
+              {customization.customization_details && (
+                <div style={{ paddingTop: 14, marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div style={miniLabel}>{isAr ? 'تفاصيل التخصيص' : 'Customization details'}</div>
+                  <p style={{ margin: 0, fontSize: 13, color: 'rgba(0,0,0,0.70)', lineHeight: 1.7, fontFamily: FONT_BODY, whiteSpace: 'pre-wrap' }}>{customization.customization_details}</p>
+                </div>
+              )}
+              {customization.additional_notes && (
+                <div style={{ paddingTop: 14, marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div style={miniLabel}>{isAr ? 'ملاحظات إضافية' : 'Additional notes'}</div>
+                  <p style={{ margin: 0, fontSize: 13, color: 'rgba(0,0,0,0.70)', lineHeight: 1.7, fontFamily: FONT_BODY, whiteSpace: 'pre-wrap' }}>{customization.additional_notes}</p>
+                </div>
+              )}
+              {custAttachments.length > 0 && (
+                <div style={{ paddingTop: 14, marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div style={miniLabel}>{isAr ? `المرفقات (${custAttachments.length})` : `Attachments (${custAttachments.length})`}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    {custAttachments.map((p, i) => {
+                      const name = attName(p); const url = attachUrls[p]; const img = isImg(name);
+                      return (
+                        <a key={i} href={url || undefined} target="_blank" rel="noreferrer" title={name}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: img ? 72 : 'auto', height: 72, maxWidth: 220, padding: img ? 0 : '0 12px',
+                            border: '1px solid rgba(0,0,0,0.1)', borderRadius: 8, overflow: 'hidden',
+                            background: 'var(--bg-raised,#fff)', textDecoration: 'none', color: 'rgba(0,0,0,0.6)',
+                            fontSize: 12, fontFamily: FONT_BODY, cursor: url ? 'pointer' : 'default', opacity: url ? 1 : 0.5,
+                          }}>
+                          {img && url
+                            ? <img src={url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </SectionCard>
+          )}
 
           {/* AI summary — amber tint, no purple. Renders structured brief fields
               (supplier_brief_all by language, extracted_specs list, admin
@@ -741,6 +853,45 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
               </p>
             )}
           </SectionCard>
+
+          {/* Factory invites (Factories flow) — factory identity + lifecycle.
+              Their offers appear under "Supplier Offers" above (admin_only). */}
+          {factoryInvites.length > 0 && (
+            <SectionCard title={isAr ? `دعوات المصانع (${factoryInvites.length})` : `Factory Invites (${factoryInvites.length})`}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {factoryInvites.map((inv) => {
+                  const fname = inv.factory?.company_name || '—';
+                  const pname = inv.product?.name_en || inv.product?.name_zh || inv.product?.name_ar || null;
+                  return (
+                    <div key={inv.id} style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8, padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary, #1a1814)', fontWeight: 600 }}>{fname}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'rgba(0,0,0,0.5)' }}>
+                            {inv.factory_email}{inv.factory?.phone ? ` · ${inv.factory.phone}` : ''}{pname ? ` · ${pname}` : ''}{inv.product?.ref_code ? ` (${inv.product.ref_code})` : ''}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.6)' }}>{inv.status}</span>
+                      </div>
+                      <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(0,0,0,0.45)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        {inv.opened_at && <span>{isAr ? '✓ فُتح' : '✓ Opened'}</span>}
+                        {inv.registered_at && <span>{isAr ? '✓ سُجّل' : '✓ Registered'}</span>}
+                        {inv.offer_submitted_at && <span>{isAr ? '✓ قدّم عرضًا' : '✓ Offer submitted'}</span>}
+                      </div>
+                      <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button type="button" className="cd-btn" onClick={() => copyLink(inv.slug)}>{isAr ? 'نسخ الرابط' : 'Copy link'}</button>
+                        <a className="cd-btn" href={`/f/${inv.slug}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>{isAr ? 'فتح الرابط' : 'Open'}</a>
+                        {waHref(inv) && <a className="cd-btn" href={waHref(inv)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>WhatsApp</a>}
+                        {inv.status !== 'offer_submitted' && (
+                          <button type="button" className="cd-btn" disabled={saving} onClick={() => resendInvite(inv)}>{isAr ? 'إعادة إرسال' : 'Resend'}</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
 
           {/* Notes */}
           <SectionCard>

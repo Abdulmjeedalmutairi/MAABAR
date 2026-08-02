@@ -1,0 +1,583 @@
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import AdminShell from '../../components/admin/AdminShell';
+import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
+import FactoryFieldsPanel from '../../components/admin/catalog/FactoryFieldsPanel';
+import ProfileImagePicker from '../../components/admin/catalog/ProfileImagePicker';
+import ProductReviewCard from '../../components/admin/catalog/ProductReviewCard';
+import {
+  fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
+  approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
+  archiveFactory, deleteFactory, triggerExtraction, workerConfigured,
+} from '../../lib/catalogImport';
+import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
+
+const FH = "'Cormorant Garamond', Georgia, serif";
+const FB = "'Tajawal', sans-serif";
+
+// Live extraction steps (order matches the worker's progress stages).
+const EXTRACT_STEPS = [
+  { key: 'upload', ar: 'رفع الملف', en: 'Upload' },
+  { key: 'downloading', ar: 'التحضير', en: 'Prepare' },
+  { key: 'images', ar: 'استخراج الصور', en: 'Read images' },
+  { key: 'analyzing', ar: 'تحليل الكتالوج', en: 'Analyze catalog' },
+  { key: 'matching', ar: 'مطابقة الصور', en: 'Match images' },
+  { key: 'uploading', ar: 'رفع الصور', en: 'Upload images' },
+  { key: 'done', ar: 'الإنهاء', en: 'Finalize' },
+];
+
+const CSS = (isAr) => `
+  .a-page { padding: 34px 30px; max-width: 900px; }
+  .a-page-title { margin: 0 0 4px; font-size: 24px; font-weight: 400; color: rgba(0,0,0,0.88); font-family: ${FH}; line-height: 1.15; word-break: break-word; }
+  .a-page-sub { margin: 0 0 20px; font-size: 12px; color: rgba(0,0,0,0.42); font-family: ${FB}; }
+  .a-error { margin: 0 0 16px; padding: 11px 14px; border-radius: 8px; background: rgba(192,57,43,0.06); border: 1px solid rgba(192,57,43,0.18); color: #c0392b; font-size: 12px; font-family: ${FB}; }
+  .ci-back { background: none; border: none; cursor: pointer; color: rgba(0,0,0,0.45); font-size: 12px; font-family: ${FB}; padding: 0; margin-bottom: 12px; }
+  .ci-back:hover { color: rgba(0,0,0,0.7); }
+  .ci-card { background: var(--bg-raised,#fff); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+  .ci-h2 { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.8); font-family: ${FB}; }
+  .ci-label { display: block; font-size: 11px; color: rgba(0,0,0,0.5); font-family: ${FB}; margin-bottom: 4px; letter-spacing: 0.3px; }
+  .ci-input { width: 100%; max-width: 420px; padding: 9px 12px; border: 1px solid rgba(0,0,0,0.14); border-radius: 8px; font-size: 14px; font-family: ${FB}; background: #fff; outline: none; box-sizing: border-box; }
+  .ci-input:focus { border-color: rgba(0,0,0,0.35); }
+  .ci-hint { font-size: 11.5px; color: rgba(0,0,0,0.4); font-family: ${FB}; margin: 4px 0 0; }
+  .ci-seg { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.14); background: transparent; cursor: pointer; font-size: 13px; font-family: ${FB}; }
+  .ci-seg.on { background: #1a1814; color: #fff; border-color: #1a1814; }
+  .ci-btn-primary { background: #1a1814; color: #fff; border: none; border-radius: 8px; padding: 11px 22px; font-size: 14px; cursor: pointer; font-family: ${FB}; }
+  .ci-btn-primary:disabled { opacity: 0.55; cursor: default; }
+  .ci-stat-n { font-size: 22px; font-weight: 600; color: rgba(0,0,0,0.85); font-family: ${FB}; font-variant-numeric: lining-nums; }
+  .ci-stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(0,0,0,0.4); font-family: ${FB}; margin-top: 2px; }
+  .ci-conf { position: absolute; top: 6px; ${isAr ? 'left' : 'right'}: 6px; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px; font-family: ${FB}; }
+  .ci-conf.hi { background: #3f9d5a; } .ci-conf.mid { background: #c9863f; } .ci-conf.lo { background: #c0503f; } .ci-conf.na { background: #999; }
+  .ci-chip-ro { padding: 3px 10px; border-radius: 99px; background: rgba(0,0,0,0.05); font-size: 11.5px; color: rgba(0,0,0,0.6); font-family: ${FB}; }
+  .ci-deck { border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 16px; margin-top: 8px; outline: none; }
+  .ci-deck:focus { border-color: rgba(0,0,0,0.28); box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+  .ci-deck-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.7); font-family: ${FB}; }
+  .ci-deck-keys { font-size: 11px; font-weight: 400; color: rgba(0,0,0,0.4); }
+  .ci-deck-nav { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+  .ci-btn-ghost { background: transparent; border: 1px solid rgba(0,0,0,0.14); border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: ${FB}; }
+  .ci-btn-ghost:disabled { opacity: 0.4; cursor: default; }
+  .ci-skip { background: transparent; border: 1px solid #c0503f; color: #c0503f; border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: ${FB}; }
+  .ci-approve { background: #3f9d5a; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: ${FB}; margin-${isAr ? 'right' : 'left'}: auto; }
+  .ci-approve:disabled, .ci-skip:disabled { opacity: 0.5; cursor: default; }
+  .ci-prog-wrap { max-width: 520px; margin: 0 auto; }
+  .ci-prog-track { height: 8px; border-radius: 99px; background: rgba(0,0,0,0.08); overflow: hidden; position: relative; }
+  .ci-prog-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #c9863f, #8B7355); transition: width 0.5s ease; }
+  .ci-prog-fill.pulse { background-size: 30px 30px; background-image: linear-gradient(45deg, rgba(255,255,255,0.28) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.28) 75%, transparent 75%, transparent); animation: ci-stripes 0.9s linear infinite; }
+  @keyframes ci-stripes { from { background-position: 0 0; } to { background-position: 30px 0; } }
+  .ci-prog-pct { font-variant-numeric: lining-nums; font-size: 12px; color: rgba(0,0,0,0.5); font-family: ${FB}; margin-top: 6px; }
+  .ci-steps { display: flex; flex-direction: column; gap: 2px; max-width: 340px; margin: 20px auto 0; text-align: ${isAr ? 'right' : 'left'}; }
+  .ci-step { display: flex; align-items: center; gap: 10px; padding: 7px 4px; font-size: 13px; font-family: ${FB}; color: rgba(0,0,0,0.35); }
+  .ci-step.done { color: rgba(0,0,0,0.75); }
+  .ci-step.active { color: #8B5e2b; font-weight: 600; }
+  .ci-step-dot { width: 20px; height: 20px; border-radius: 99px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1.5px solid rgba(0,0,0,0.15); background: #fff; }
+  .ci-step.done .ci-step-dot { background: #3f9d5a; border-color: #3f9d5a; color: #fff; }
+  .ci-step.active .ci-step-dot { border-color: #c9863f; }
+  .ci-step.active .ci-step-dot::after { content: ''; width: 8px; height: 8px; border-radius: 99px; background: #c9863f; animation: ci-pulse 1s ease-in-out infinite; }
+  @keyframes ci-pulse { 0%,100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+  @media (max-width: 900px) { .a-page { padding: 22px 16px; } }
+`;
+
+export default function AdminCatalogImportDetail({ user, profile, lang }) {
+  const { id } = useParams();
+  const nav = useNavigate();
+  const isAr = lang === 'ar';
+
+  const [batch, setBatch] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [factories, setFactories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [fields, setFields] = useState({});
+  const [mode, setMode] = useState('new');
+  const [existingId, setExistingId] = useState('');
+  const [profileSel, setProfileSel] = useState(null);
+  const [savedFactoryId, setSavedFactoryId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState({ ok: false, text: '' });
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const { batch: b, products: p } = await fetchImport(id);
+      setBatch(b); setProducts(p);
+      setFields(b?.factory_fields || {});
+      setSavedFactoryId(b?.factory_id || null);
+      setProfileSel(b?.profile_image_path || null);
+      if (b?.factory_id) { setMode('existing'); setExistingId(b.factory_id); }
+      if (!silent) setError('');
+    } catch (e) { if (!silent) setError(e.message || 'Failed to load'); }
+    if (!silent) setLoading(false);
+  }, [id]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { fetchFactories().then(setFactories).catch(() => {}); }, []);
+
+  // While the worker is extracting (or the row is queued), poll the status.
+  const bStatus = batch?.status;
+  useEffect(() => {
+    if (bStatus !== 'queued' && bStatus !== 'extracting') return undefined;
+    const t = setInterval(() => { load(true); }, 3000);
+    return () => clearInterval(t);
+  }, [bStatus, load]);
+
+  // Start / retry extraction on the Cloud Run worker.
+  const [starting, setStarting] = useState(false);
+  const startExtraction = useCallback(async () => {
+    if (!workerConfigured()) {
+      setError(isAr ? 'خادم الاستخراج غير مُعدّ (REACT_APP_CATALOG_WORKER_URL).' : 'Extraction worker not configured (REACT_APP_CATALOG_WORKER_URL).');
+      return;
+    }
+    setStarting(true); setError('');
+    setBatch((b) => (b ? { ...b, status: 'extracting', error: null } : b));   // optimistic
+    // Fire it — the worker responds only when done (minutes), so we DON'T await the
+    // happy path; polling reflects progress. But a fast failure (403/CORS/network)
+    // rejects in seconds — surface it instead of silently reverting to 'queued'.
+    triggerExtraction(id).catch((e) => {
+      setError((isAr ? 'تعذّر بدء الاستخراج: ' : "Couldn't start extraction: ") + (e.message || ''));
+    });
+    setStarting(false);
+  }, [id, isAr]);
+
+  // When attaching to an existing factory, seed the trust fields (founded_year /
+  // export_markets) from that factory so the admin sees + edits current values.
+  // Only fills empties — never clobbers a typed edit or an extracted value.
+  useEffect(() => {
+    if (mode !== 'existing' || !existingId) return;
+    const f = factories.find((x) => x.id === existingId);
+    if (!f) return;
+    setFields((prev) => {
+      const empty = (v) => !v || v === 'not_found';
+      const next = { ...prev };
+      if (empty(prev.founded_year) && f.founded_year != null) next.founded_year = String(f.founded_year);
+      if (empty(prev.export_markets) && f.export_markets) next.export_markets = f.export_markets;
+      if (empty(prev.moq) && f.moq_note) next.moq = f.moq_note;
+      if (prev.private_label === undefined) next.private_label = !!f.private_label;
+      if (empty(prev.description_ar) && f.description_ar) next.description_ar = f.description_ar;
+      if (empty(prev.description_en) && f.description_en) next.description_en = f.description_en;
+      if (empty(prev.name_original) && f.company_name) next.name_original = f.company_name;
+      if (empty(prev.name_en) && f.company_name_latin) next.name_en = f.company_name_latin;
+      if (prev.is_verified === undefined) next.is_verified = !!f.is_verified;
+      if (prev.is_featured === undefined) next.is_featured = !!f.is_featured;
+      return Object.keys(next).some((k) => next[k] !== prev[k]) ? next : prev;
+    });
+  }, [mode, existingId, factories]);
+
+  // The logo can be picked from ANY image: the flagged candidates first, then
+  // every product image from this import.
+  const candidates = Array.from(new Set([
+    ...(fields?.profile_candidates || []),
+    ...(batch?.profile_image_path ? [batch.profile_image_path] : []),
+    ...products.map((p) => p.image_path).filter(Boolean),
+  ]));
+
+  async function saveFactory() {
+    setSaving(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      if (mode === 'new' && !(fields.email && fields.email !== 'not_found')) {
+        setSaveMsg({ ok: false, text: isAr ? 'البريد الإلكتروني مطلوب لمصنع جديد.' : 'Email is required for a new factory.' }); setSaving(false); return;
+      }
+      if (mode === 'new' && !fields.category) {
+        setSaveMsg({ ok: false, text: isAr ? 'التصنيف مطلوب.' : 'Category is required.' }); setSaving(false); return;
+      }
+      if (mode === 'existing' && !existingId) {
+        setSaveMsg({ ok: false, text: isAr ? 'اختر مصنعاً.' : 'Choose a factory.' }); setSaving(false); return;
+      }
+      const fid = await resolveFactory({ importId: id, mode, fields, existingId, profileImage: profileSel });
+      setSavedFactoryId(fid);
+      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المصنع.' : 'Factory saved.' });
+      await load();
+    } catch (e) {
+      setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') });
+    }
+    setSaving(false);
+  }
+
+  // ── Factory removal (archive / permanent delete) ──
+  const [danger, setDanger] = useState(false);   // reveal the destructive zone
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const savedFactory = factories.find((x) => x.id === savedFactoryId) || null;
+
+  async function handleArchive(active) {
+    setRemoving(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      await archiveFactory(savedFactoryId, active);
+      setSaveMsg({ ok: true, text: active ? (isAr ? 'تم إظهار المصنع.' : 'Factory is live again.') : (isAr ? 'تم إخفاء المصنع من الموقع.' : 'Factory hidden from the site.') });
+      setFactories((fs) => fs.map((f) => (f.id === savedFactoryId ? { ...f, is_active: active } : f)));
+    } catch (e) { setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setRemoving(false);
+  }
+
+  async function handleDelete() {
+    setRemoving(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      await deleteFactory(savedFactoryId);
+      // Row gone → detach from this import and reset the panel to "new".
+      setSavedFactoryId(null); setMode('new'); setExistingId('');
+      setFactories((fs) => fs.filter((f) => f.id !== savedFactoryId));
+      setDanger(false); setConfirmDel(false);
+      setSaveMsg({ ok: true, text: isAr ? 'تم حذف المصنع وكل منتجاته نهائياً.' : 'Factory and all its products permanently deleted.' });
+    } catch (e) {
+      const msg = e.code === 'HAS_REQUESTS'
+        ? (isAr ? 'لا يمكن الحذف النهائي — يوجد طلب تاجر مرتبط بهذا المصنع. استخدم "إخفاء" بدلاً من ذلك.'
+                : 'Cannot permanently delete — a buyer request is linked to this factory. Use “Hide” instead.')
+        : (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '');
+      setSaveMsg({ ok: false, text: msg });
+    }
+    setRemoving(false);
+  }
+
+  const counts = {
+    total: products.length,
+    high: products.filter((p) => p.status === 'pending' && (p.confidence_score ?? 0) >= HIGH_CONF).length,
+    mid: products.filter((p) => p.status === 'pending' && (p.confidence_score ?? 0) < HIGH_CONF).length,
+    approved: products.filter((p) => p.status === 'approved').length,
+    skipped: products.filter((p) => p.status === 'skipped').length,
+  };
+
+  // ── Product review (bulk + keyboard deck) ──
+  const [edits, setEdits] = useState({});
+  const [imgEdits, setImgEdits] = useState({});   // { [pid]: url } — admin-swapped product image
+  const [deckIdx, setDeckIdx] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState({ ok: false, text: '' });
+  const deckRef = useRef(null);
+
+  const reviewQueue = products
+    .filter((p) => p.status === 'pending')
+    .sort((a, b) => ((a.confidence_score ?? 0) - (b.confidence_score ?? 0)) || ((a.sort_order ?? 0) - (b.sort_order ?? 0)));
+  const current = reviewQueue.length ? reviewQueue[Math.min(deckIdx, reviewQueue.length - 1)] : null;
+
+  const jsonFor = (p) => edits[p.id] ?? (p.extracted_json || {});
+  const markStatus = (pid, status) => setProducts((ps) => ps.map((p) => (p.id === pid ? { ...p, status } : p)));
+  const refocusDeck = () => setTimeout(() => deckRef.current?.focus(), 0);
+  const moveDeck = (d) => { setDeckIdx((i) => Math.max(0, Math.min(reviewQueue.length - 1, i + d))); refocusDeck(); };
+  const errMsg = (e) => setActionMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') });
+
+  // Factory display name + category labels, used to synthesize fallback product
+  // names at approval time (for products the catalog left unnamed).
+  const buildMeta = () => {
+    const nfv = (v) => (v && v !== 'not_found' ? v : '');
+    let name;
+    let catCode;
+    if (mode === 'existing') {
+      const f = factories.find((x) => x.id === existingId);
+      name = nfv(f?.company_name_latin) || nfv(f?.company_name);
+      catCode = f?.category;
+    } else {
+      name = nfv(fields.name_en) || nfv(fields.name_original);
+      catCode = fields.category;
+    }
+    return {
+      factoryName: name || 'Factory',
+      categoryAr: (UI_CATEGORIES.ar.find((c) => c.val === catCode) || {}).label,
+      categoryEn: (UI_CATEGORIES.en.find((c) => c.val === catCode) || {}).label,
+    };
+  };
+
+  const approveCurrent = async () => {
+    if (!current || busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try { await approveProduct(savedFactoryId, { ...current, extracted_json: jsonFor(current), image_path: imgEdits[current.id] ?? current.image_path }, buildMeta()); markStatus(current.id, 'approved'); }
+    catch (e) { errMsg(e); }
+    setBusy(false); refocusDeck();
+  };
+  const skipCurrent = async () => {
+    if (!current || busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try { await skipProduct(current.id); markStatus(current.id, 'skipped'); }
+    catch (e) { errMsg(e); }
+    setBusy(false); refocusDeck();
+  };
+  const handleBulk = async () => {
+    if (busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try {
+      const { count } = await bulkApproveHighConfidence(savedFactoryId, products, buildMeta());
+      setProducts((ps) => ps.map((p) => (p.status === 'pending' && (p.confidence_score ?? 0) >= HIGH_CONF ? { ...p, status: 'approved' } : p)));
+      setActionMsg({ ok: true, text: isAr ? `تم اعتماد ${count} منتج.` : `Approved ${count} products.` });
+    } catch (e) { errMsg(e); }
+    setBusy(false);
+  };
+  const handleFinalize = async () => {
+    if (busy) return;
+    setBusy(true);
+    try { await finalizeImport(id); setBatch((b) => ({ ...b, status: 'approved' })); setActionMsg({ ok: true, text: isAr ? 'تم إنهاء الاستيراد.' : 'Import finalized.' }); }
+    catch (e) { errMsg(e); }
+    setBusy(false);
+  };
+
+  // Keyboard: Enter=approve, Del/Esc=skip, arrows=navigate — ignored while typing in a field.
+  useEffect(() => {
+    if (!savedFactoryId || reviewQueue.length === 0) return undefined;
+    const onKey = (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') { if (e.key === 'Escape') e.target.blur(); return; }
+      if (e.key === 'Enter') { e.preventDefault(); approveCurrent(); }
+      else if (e.key === 'Delete' || e.key === 'Escape') { e.preventDefault(); skipCurrent(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); moveDeck(isAr ? -1 : 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); moveDeck(isAr ? 1 : -1); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedFactoryId, reviewQueue.length, deckIdx, current?.id, busy, edits, isAr]);
+
+  // Extraction must finish before the review steps are meaningful.
+  const ready = !!batch && ['extracted', 'reviewing', 'approved'].includes(batch.status);
+  const extracting = !!batch && (batch.status === 'extracting' || batch.status === 'queued');
+
+  return (
+    <AdminRouteGuard user={user} profile={profile} lang={lang}>
+      <AdminShell user={user} profile={profile} lang={lang}>
+        <style>{CSS(isAr)}</style>
+        <div className="a-page" dir={isAr ? 'rtl' : 'ltr'}>
+          <button className="ci-back" onClick={() => nav('/admin/catalog-import')}>
+            {isAr ? '→ رجوع إلى القائمة' : '← Back to imports'}
+          </button>
+
+          {loading ? (
+            <p className="a-page-sub">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</p>
+          ) : error ? (
+            <div className="a-error">{error}</div>
+          ) : !batch ? (
+            <div className="a-error">{isAr ? 'الاستيراد غير موجود' : 'Import not found'}</div>
+          ) : (
+            <>
+              <h1 className="a-page-title">{batch.original_filename}</h1>
+              <p className="a-page-sub">
+                {counts.total} {isAr ? 'منتج' : 'products'} · {batch.page_count ?? '—'} {isAr ? 'صفحة' : 'pages'} · {isAr ? 'الحالة' : 'status'}: {batch.status}
+              </p>
+              {batch.import_notes && (
+                <p style={{ margin: '-12px 0 18px', fontSize: 12, color: 'rgba(0,0,0,0.5)', fontFamily: FB,
+                  background: 'rgba(201,134,63,0.07)', border: '1px solid rgba(201,134,63,0.2)', borderRadius: 8, padding: '8px 12px' }}>
+                  <strong style={{ fontWeight: 600 }}>{isAr ? 'توجيهاتك: ' : 'Your guidance: '}</strong>{batch.import_notes}
+                </p>
+              )}
+
+              {/* Extraction state — queued / extracting / failed (before review) */}
+              {!ready && (
+                <div className="ci-card" style={{ textAlign: 'center', padding: '30px 22px' }}>
+                  {extracting ? (() => {
+                    const stage = batch.progress?.stage;
+                    const queued = batch.status === 'queued';
+                    const activeIdx = queued ? 0.5 : (() => { const f = EXTRACT_STEPS.findIndex((s) => s.key === stage); return f < 0 ? 1 : f; })();
+                    const pct = Math.max(0, Math.min(100, batch.progress?.pct ?? (queued ? 0 : 5)));
+                    const note = batch.progress?.note;
+                    return (
+                      <>
+                        <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: 'rgba(0,0,0,0.8)', marginBottom: 4 }}>
+                          {queued ? (isAr ? 'بانتظار بدء الاستخراج' : 'Waiting to extract') : (isAr ? 'جارٍ استخراج الكتالوج…' : 'Extracting the catalog…')}
+                        </div>
+                        <p className="ci-hint" style={{ margin: '0 auto 18px', maxWidth: 440 }}>
+                          {isAr ? 'يُحدَّث تلقائياً — تقدر تغادر الصفحة وترجع لها.' : 'Updates automatically — you can leave and come back.'}
+                        </p>
+
+                        <div className="ci-prog-wrap">
+                          <div className="ci-prog-track">
+                            <div className={`ci-prog-fill${stage === 'analyzing' ? ' pulse' : ''}`} style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="ci-prog-pct">{pct}%{note ? ` · ${note}` : ''}</div>
+
+                          <div className="ci-steps">
+                            {EXTRACT_STEPS.map((s, i) => {
+                              const done = i < activeIdx;
+                              const active = i === activeIdx;
+                              return (
+                                <div key={s.key} className={`ci-step${done ? ' done' : ''}${active ? ' active' : ''}`}>
+                                  <span className="ci-step-dot">{done ? '✓' : ''}</span>
+                                  <span>{isAr ? s.ar : s.en}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {queued && (
+                          <button className="ci-btn-primary" style={{ marginTop: 18 }} onClick={startExtraction} disabled={starting}>
+                            {isAr ? 'بدء الاستخراج الآن' : 'Start extraction now'}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })() : (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: '#c0392b', marginBottom: 6 }}>
+                        {isAr ? 'فشل الاستخراج' : 'Extraction failed'}
+                      </div>
+                      {batch.error && (
+                        <p className="ci-hint" style={{ margin: '0 auto 4px', maxWidth: 520, color: 'rgba(0,0,0,0.55)', wordBreak: 'break-word' }}>{batch.error}</p>
+                      )}
+                      <button className="ci-btn-primary" style={{ marginTop: 14 }} onClick={startExtraction} disabled={starting}>
+                        {isAr ? 'إعادة المحاولة' : 'Retry extraction'}
+                      </button>
+                    </>
+                  )}
+                  {!workerConfigured() && (
+                    <p style={{ margin: '12px 0 0', fontSize: 11.5, color: '#b8860b', fontFamily: FB }}>
+                      {isAr ? 'ملاحظة: خادم الاستخراج غير مُعدّ بعد (REACT_APP_CATALOG_WORKER_URL).' : 'Note: extraction worker not configured (REACT_APP_CATALOG_WORKER_URL).'}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {ready && (<>
+              {/* Step 1 — factory */}
+              <div className="ci-card">
+                <h2 className="ci-h2">{isAr ? '١) بيانات المصنع' : '1) Factory details'}</h2>
+                <FactoryFieldsPanel value={fields} onChange={setFields} mode={mode} onModeChange={setMode}
+                  existingId={existingId} onExistingChange={setExistingId} factories={factories} lang={lang} />
+              </div>
+
+              {/* Step 2 — profile image */}
+              <div className="ci-card">
+                <h2 className="ci-h2">{isAr ? '٢) صورة المصنع (الشعار)' : '2) Factory profile image'}</h2>
+                <p className="ci-hint" style={{ marginBottom: 12 }}>
+                  {isAr ? 'اختر الصورة التي تُستخدم كشعار/واجهة للمصنع.' : 'Pick the image to use as the factory logo/avatar.'}
+                </p>
+                <ProfileImagePicker candidates={candidates} selected={profileSel} onSelect={setProfileSel} lang={lang} />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 22, flexWrap: 'wrap' }}>
+                <button className="ci-btn-primary" onClick={saveFactory} disabled={saving}>
+                  {saving ? (isAr ? 'جارٍ الحفظ...' : 'Saving…')
+                    : savedFactoryId ? (isAr ? 'تحديث المصنع' : 'Update factory')
+                      : (isAr ? 'حفظ المصنع + الصورة' : 'Save factory + image')}
+                </button>
+                {saveMsg.text && (
+                  <span style={{ fontSize: 13, color: saveMsg.ok ? '#3f9d5a' : '#c0392b', fontFamily: FB }}>{saveMsg.text}</span>
+                )}
+              </div>
+
+              {/* Factory management — archive / permanent delete (only once saved) */}
+              {savedFactoryId && (
+                <div style={{ marginBottom: 22 }}>
+                  {!danger ? (
+                    <button
+                      type="button"
+                      onClick={() => setDanger(true)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: 0 }}
+                    >
+                      {isAr ? 'إدارة المصنع (إخفاء / حذف)…' : 'Manage factory (hide / delete)…'}
+                    </button>
+                  ) : (
+                    <div style={{ border: '1px solid rgba(192,57,43,0.25)', borderRadius: 10, padding: '14px 16px', background: 'rgba(192,57,43,0.03)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, fontFamily: FB, color: '#a23628', marginBottom: 4 }}>
+                        {isAr ? 'إدارة المصنع' : 'Manage factory'}
+                      </div>
+                      <p className="ci-hint" style={{ margin: '0 0 12px' }}>
+                        {savedFactory && savedFactory.is_active === false
+                          ? (isAr ? 'هذا المصنع مخفيّ حالياً من الموقع.' : 'This factory is currently hidden from the site.')
+                          : (isAr ? 'الإخفاء يزيل المصنع من الموقع مع الاحتفاظ ببياناته. الحذف النهائي يمسحه هو وكل منتجاته.'
+                                  : 'Hiding removes the factory from the site but keeps its data. Permanent delete removes it and all its products.')}
+                      </p>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {savedFactory && savedFactory.is_active === false ? (
+                          <button type="button" className="ci-btn-ghost" disabled={removing} onClick={() => handleArchive(true)}>
+                            {isAr ? 'إظهار المصنع' : 'Make live'}
+                          </button>
+                        ) : (
+                          <button type="button" className="ci-btn-ghost" disabled={removing} onClick={() => handleArchive(false)}>
+                            {isAr ? 'إخفاء من الموقع' : 'Hide from site'}
+                          </button>
+                        )}
+                        {!confirmDel ? (
+                          <button type="button" className="ci-skip" disabled={removing} onClick={() => setConfirmDel(true)}>
+                            {isAr ? 'حذف نهائي' : 'Delete permanently'}
+                          </button>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: 12.5, fontFamily: FB, color: '#a23628' }}>
+                              {isAr ? 'متأكد؟ لا يمكن التراجع.' : 'Sure? This cannot be undone.'}
+                            </span>
+                            <button type="button" className="ci-skip" disabled={removing} onClick={handleDelete}
+                              style={{ background: '#c0503f', color: '#fff' }}>
+                              {removing ? (isAr ? 'جارٍ الحذف…' : 'Deleting…') : (isAr ? 'نعم، احذف' : 'Yes, delete')}
+                            </button>
+                            <button type="button" className="ci-btn-ghost" disabled={removing} onClick={() => setConfirmDel(false)}>
+                              {isAr ? 'إلغاء' : 'Cancel'}
+                            </button>
+                          </>
+                        )}
+                        <button type="button" onClick={() => { setDanger(false); setConfirmDel(false); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 12, color: 'rgba(0,0,0,0.4)', marginInlineStart: 'auto' }}>
+                          {isAr ? 'إغلاق' : 'Close'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3 — products (approval UI lands in commit 3) */}
+              <div className="ci-card">
+                <h2 className="ci-h2">{isAr ? '٣) مراجعة المنتجات' : '3) Product review'}</h2>
+                <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {[
+                    [isAr ? 'إجمالي' : 'Total', counts.total],
+                    [isAr ? 'ثقة عالية' : 'High-conf', counts.high],
+                    [isAr ? 'للمراجعة' : 'To review', counts.mid],
+                    [isAr ? 'معتمد' : 'Approved', counts.approved],
+                    [isAr ? 'متخطّى' : 'Skipped', counts.skipped],
+                  ].map(([l, v]) => (
+                    <div key={l}><div className="ci-stat-n">{v}</div><div className="ci-stat-l">{l}</div></div>
+                  ))}
+                </div>
+                {actionMsg.text && (
+                  <div style={{ margin: '4px 0 14px', fontSize: 13, color: actionMsg.ok ? '#3f9d5a' : '#c0392b', fontFamily: FB }}>{actionMsg.text}</div>
+                )}
+                {!savedFactoryId ? (
+                  <p className="ci-hint">{isAr ? 'احفظ المصنع أولاً لتفعيل اعتماد المنتجات.' : 'Save the factory first to enable product approval.'}</p>
+                ) : (
+                  <>
+                    {counts.high > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <button className="ci-btn-primary" onClick={handleBulk} disabled={busy}>
+                          {isAr ? `اعتماد كل ذوي الثقة العالية (${counts.high})` : `Approve All High-Confidence (${counts.high})`}
+                        </button>
+                        <p className="ci-hint">
+                          {isAr ? `يضيف ${counts.high} منتجاً بثقة ≥ 0.7 إلى الكتالوج الحي دفعة واحدة.` : `Adds the ${counts.high} products scoring ≥ 0.7 to the live catalog in one step.`}
+                        </p>
+                      </div>
+                    )}
+                    {reviewQueue.length > 0 && current ? (
+                      <div className="ci-deck" tabIndex={0} ref={deckRef}>
+                        <div className="ci-deck-head">
+                          <span>{isAr ? 'مراجعة' : 'Review'} {Math.min(deckIdx + 1, reviewQueue.length)} / {reviewQueue.length}</span>
+                          <span className="ci-deck-keys">{isAr ? 'Enter اعتماد · Del/Esc تخطٍّ · ← → تنقّل' : 'Enter approve · Del/Esc skip · ← → navigate'}</span>
+                        </div>
+                        <ProductReviewCard key={current.id} value={jsonFor(current)}
+                          onChange={(j) => setEdits((e) => ({ ...e, [current.id]: j }))} product={current} lang={lang}
+                          candidates={candidates} image={imgEdits[current.id] ?? current.image_path}
+                          onImageChange={(url) => setImgEdits((m) => ({ ...m, [current.id]: url ?? current.image_path }))} />
+                        <div className="ci-deck-nav">
+                          <button className="ci-btn-ghost" onClick={() => moveDeck(-1)} disabled={deckIdx <= 0}>← {isAr ? 'السابق' : 'Prev'}</button>
+                          <button className="ci-btn-ghost" onClick={() => moveDeck(1)} disabled={deckIdx >= reviewQueue.length - 1}>{isAr ? 'التالي' : 'Next'} →</button>
+                          <button className="ci-skip" onClick={skipCurrent} disabled={busy}>{isAr ? 'تخطٍّ' : 'Skip'}</button>
+                          <button className="ci-approve" onClick={approveCurrent} disabled={busy}>{isAr ? 'اعتماد' : 'Approve'} ↵</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '6px 0' }}>
+                        <p style={{ color: '#3f9d5a', fontSize: 14, fontFamily: FB, margin: '0 0 12px' }}>
+                          {isAr ? 'تمت مراجعة جميع المنتجات المعلّقة.' : 'All pending products reviewed.'}
+                        </p>
+                        {batch.status !== 'approved' ? (
+                          <button className="ci-btn-primary" onClick={handleFinalize} disabled={busy}>
+                            {isAr ? 'إنهاء الاستيراد' : 'Finalize import'}
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: 13, color: '#3f9d5a', fontFamily: FB }}>{isAr ? '✓ تم إنهاء الاستيراد' : '✓ Import finalized'}</span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              </>)}
+            </>
+          )}
+        </div>
+      </AdminShell>
+    </AdminRouteGuard>
+  );
+}

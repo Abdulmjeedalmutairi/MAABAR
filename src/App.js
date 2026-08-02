@@ -29,7 +29,6 @@ import BuyerRegister from './pages/BuyerRegister';
 import BuyerWaiting from './pages/BuyerWaiting';
 import PreviewAccess from './pages/PreviewAccess';
 import Home from './pages/Home';
-import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
@@ -39,8 +38,12 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Support from './pages/Support';
 import Requests from './pages/Requests';
+import Factories from './pages/Factories';
+import FactoryCategory from './pages/FactoryCategory';
+import FactoryDetail from './pages/FactoryDetail';
+import FactoryProductDetail from './pages/FactoryProductDetail';
+import FactoryRequestView from './pages/FactoryRequestView';
 import SupplierProfile from './pages/SupplierProfile';
-import Suppliers from './pages/Suppliers';
 import Chat from './pages/Chat';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
@@ -57,6 +60,8 @@ import PaymentSuccess from './pages/PaymentSuccess';
 // Admin dashboard (Phase 1)
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
+import AdminCatalogImport from './pages/admin/AdminCatalogImport';
+import AdminCatalogImportDetail from './pages/admin/AdminCatalogImportDetail';
 import AdminSupplierDetail from './pages/admin/AdminSupplierDetail';
 import AdminReferrals from './pages/admin/AdminReferrals';
 import SupplierShareView from './pages/SupplierShareView';
@@ -316,7 +321,11 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/"               element={<Home            {...sharedProps} />} />
         <Route path="/buyer"          element={<BuyerRegister   user={user} />} />
         <Route path="/preview"        element={<PreviewAccess   {...sharedProps} />} />
-        <Route path="/products"       element={<Products        {...sharedProps} />} />
+        {/* Request-first: the browse directories are replaced by Factories.
+            Detail pages (/products/:id, /supplier/:id) stay — used by chat,
+            managed shortlists, invites. These redirects guarantee no browse
+            directory survives, regardless of any lingering links to them. */}
+        <Route path="/products"       element={<Navigate to="/factories" replace />} />
         <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
         <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
         <Route path="/login"          element={<Login           {...sharedProps} />} />
@@ -326,10 +335,15 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/contact"        element={<Contact         {...sharedProps} />} />
         <Route path="/support"        element={<Support         {...sharedProps} />} />
         <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
+        <Route path="/factories"          element={<Factories       {...sharedProps} />} />
+        <Route path="/factories/:key"     element={<FactoryCategory {...sharedProps} />} />
+        <Route path="/factory/:id"        element={<FactoryDetail   {...sharedProps} />} />
+        <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
+        <Route path="/f/:slug"            element={<FactoryRequestView />} />
         <Route path="/supplier"       element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
-        <Route path="/suppliers"      element={<Suppliers       {...sharedProps} />} />
+        <Route path="/suppliers"      element={<Navigate to="/factories" replace />} />
         <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
         <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
@@ -345,6 +359,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin/overview"          element={<AdminOverview        {...sharedProps} />} />
         <Route path="/admin/suppliers"         element={<AdminSuppliers       {...sharedProps} />} />
         <Route path="/admin/suppliers/:id"     element={<AdminSupplierDetail  {...sharedProps} />} />
+        <Route path="/admin/catalog-import"    element={<AdminCatalogImport   {...sharedProps} />} />
+        <Route path="/admin/catalog-import/:id" element={<AdminCatalogImportDetail {...sharedProps} />} />
         <Route path="/admin/referrals"         element={<AdminReferrals       {...sharedProps} />} />
         <Route path="/s/supplier/:token"       element={<SupplierShareView    lang={lang} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />

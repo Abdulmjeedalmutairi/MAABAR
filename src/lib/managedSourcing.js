@@ -1,7 +1,26 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase';
 
 export function isManagedRequest(request) {
-  return request?.type === 'managed' || request?.is_managed === true;
+  // The canonical signal on the requests table is sourcing_mode='managed'
+  // (factory quote-requests + wizard managed requests). `type`/`is_managed` are
+  // kept for any legacy/normalized shapes that set them.
+  return request?.type === 'managed'
+    || request?.is_managed === true
+    || String(request?.sourcing_mode || '') === 'managed';
+}
+
+// One source of truth for a request's user-facing TYPE, used by both the buyer
+// dashboard (badge + timeline) and the admin queue (badge + adaptive detail).
+//   factory → quote from ONE known factory (admin relays)
+//   idea    → idea-to-product (AI tool → sample development)
+//   managed → concierge sourcing (admin matches suppliers)
+//   direct  → open RFQ (admin reviews, then suppliers bid)
+export function requestType(request) {
+  const kind = String(request?.request_kind || '');
+  if (kind === 'factory') return 'factory';
+  if (kind === 'idea_to_product') return 'idea';
+  if (kind === 'managed' || isManagedRequest(request)) return 'managed';
+  return 'direct';
 }
 
 export function buildManagedBriefRow({ requestId, buyerId, brief }) {

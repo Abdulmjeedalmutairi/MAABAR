@@ -3,7 +3,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import Footer from '../components/Footer';
-import IdeaToProduct from '../components/IdeaToProduct';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
@@ -124,7 +123,6 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRef, setUploadingRef] = useState(false);
   const [showAllRequests, setShowAllRequests] = useState(true);
-  const [ideaOpen, setIdeaOpen] = useState(false);
   const [expandedDetails, setExpandedDetails] = useState({}); // لتوسيع تفاصيل الطلب
   const [translatedRequests, setTranslatedRequests] = useState({}); // ترجمة عناوين الطلبات
   const refImageRef = useRef(null);
@@ -154,11 +152,7 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
   useEffect(() => {
     if (isSupplier) return;
     const params = new URLSearchParams(location.search);
-    const flow = params.get('flow');
     const mode = String(params.get('mode') || '').toLowerCase();
-    if (['custom', 'private-label', 'idea'].includes(String(flow || '').toLowerCase())) {
-      setIdeaOpen(true);
-    }
     if (mode === 'managed') {
       setNewReq((prev) => ({ ...prev, sourcing_mode: 'managed' }));
     }
@@ -175,6 +169,12 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
   useEffect(() => {
     if (user && !isSupplier && profile?.role === 'supplier') nav('/login/supplier');
   }, [user, profile]);
+
+  // Request-first: buyers discover + request through the Factories flow, not this
+  // page's legacy form. Suppliers keep this page (browse requests + offer).
+  useEffect(() => {
+    if (profile?.role === 'buyer') nav('/factories', { replace: true });
+  }, [profile, nav]);
 
   useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile, showAllRequests]);
 
@@ -596,15 +596,8 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
                 text: isAr ? 'إذا كان المنتج واضحاً عندك وتريد عروضاً مباشرة، استخدم نموذج الطلب القياسي.' : lang === 'zh' ? '如果产品已经明确并想直接收报价，请使用标准需求表单。' : 'If the product is already clear and you want direct quotes, use the standard request form.',
                 onClick: () => setNewReq(prev => ({ ...prev, sourcing_mode: 'direct' })),
               },
-              {
-                key: 'idea',
-                title: isAr ? 'حوّل فكرتك إلى منتج' : lang === 'zh' ? '将您的想法变成产品' : 'Turn your idea into a product',
-                eyebrow: isAr ? 'للـ OEM / Private Label' : lang === 'zh' ? '适合 OEM / 自有品牌' : 'For OEM / private label',
-                text: isAr ? 'إذا كانت البداية مجرد فكرة أو علامة خاصة، افتح هذا المسار حتى يرتّب معبر brief أوضح قبل التوريد.' : lang === 'zh' ? '如果现在还是一个想法或自有品牌方向，请进入这个路径，让 Maabar 先整理更清晰的 brief。' : 'If you are starting from an idea or private-label concept, use this path so Maabar can structure a clearer brief first.',
-                action: () => setIdeaOpen(true),
-              },
             ].map((option) => {
-              const active = option.key === 'idea' ? false : (option.key === 'managed' ? isManagedMode : !isManagedMode);
+              const active = option.key === 'managed' ? isManagedMode : !isManagedMode;
               return (
                 <div key={option.key} style={{ background: option.featured ? 'var(--bg-subtle)' : 'var(--bg-subtle)', border: `1px solid ${active ? 'rgba(0,0,0,0.15)' : option.featured ? 'rgba(0,0,0,0.08)' : 'var(--border-subtle)'}`, borderRadius: 'var(--radius-xl)', padding: '18px 20px' }}>
                   <p style={{ fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: option.featured ? 'var(--text-primary)' : 'var(--text-disabled)', marginBottom: 8 }}>
@@ -614,12 +607,10 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
                   <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 14, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {option.text}
                   </p>
-                  <button type="button" className={option.key === 'idea' ? 'btn-outline' : active ? 'btn-primary' : 'btn-outline'} onClick={option.action || option.onClick} style={{ minHeight: 36, fontSize: 12 }}>
+                  <button type="button" className={active ? 'btn-primary' : 'btn-outline'} onClick={option.onClick} style={{ minHeight: 36, fontSize: 12 }}>
                     {option.key === 'managed'
                       ? (isAr ? 'اختيار الطلب المُدار' : lang === 'zh' ? '选择托管需求' : 'Choose managed sourcing')
-                      : option.key === 'direct'
-                        ? (isAr ? 'اختيار الطلب القياسي' : lang === 'zh' ? '选择标准需求' : 'Choose standard request')
-                        : (isAr ? 'ابدأ المسار' : lang === 'zh' ? '开始' : 'Start')}
+                      : (isAr ? 'اختيار الطلب القياسي' : lang === 'zh' ? '选择标准需求' : 'Choose standard request')}
                   </button>
                 </div>
               );
@@ -853,10 +844,6 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
             </div>
           </div>
         </div>
-      )}
-
-      {ideaOpen && !isSupplier && (
-        <IdeaToProduct lang={lang} user={user} onClose={() => setIdeaOpen(false)} />
       )}
 
       {/* ════════════════════════════════════

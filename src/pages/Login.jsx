@@ -533,7 +533,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
       }
     })();
 
-    nav(hasDraft ? '/requests' : '/dashboard');
+    nav(hasDraft ? '/factories' : '/dashboard');
   };
 
   const doSignUp = async () => {

@@ -414,6 +414,12 @@ verify_jwt = false
 [functions.auto-reject-orders]
 verify_jwt = false
 
+# admin-send-email is only ever called by a signed-in admin from the dashboard, so
+# the platform gate applies on top of the in-code admin check. This is the one place
+# bulk outreach can be triggered, and it must never be reachable without a JWT.
+[functions.admin-send-email]
+verify_jwt = true
+
 # supplier-share is opened by a partner who has no Maabar account — the share token
 # IS the credential, validated in code against supplier_share_links (expiry,
 # revocation, 64-hex format) with a per-IP ceiling. A JWT gate would make the
@@ -426,6 +432,11 @@ verify_jwt = false
 # Real abuse control is the in-function IP rate limit (ai_rate_limits).
 [functions.maabar-ai]
 verify_jwt = true
+
+# Public (slug-gated) — the factory has no account when it opens /f/<slug>, so no
+# JWT is required; access is gated by the secret slug + a path-ownership check.
+[functions.factory-attachment-url]
+verify_jwt = false
 
 # [experimental.pgdelta]
 # When enabled, pg-delta becomes the active engine for supported schema flows.
