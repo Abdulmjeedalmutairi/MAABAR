@@ -30,7 +30,16 @@ export default function Factories({ lang = 'ar' }) {
             <button key={c.key} type="button" className="fx-card reveal" style={{ '--i': i }}
               onClick={() => nav(`/factories/${c.key}`)}>
               <div className="fx-media" style={{ aspectRatio: '3 / 2' }}>
-                <img src={c.image} alt="" loading="lazy" />
+                {c.all ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #8B7355, #5c4a30)', color: '#fff' }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 40, letterSpacing: '0.02em' }}>
+                      {isAr ? 'الكل' : lang === 'zh' ? '全部' : 'All'}
+                    </span>
+                  </div>
+                ) : (
+                  <img src={c.image} alt="" loading="lazy" />
+                )}
               </div>
               <div className="fx-card-body">
                 <h3 className={`fx-card-title${arc}`}>{c.label}</h3>
