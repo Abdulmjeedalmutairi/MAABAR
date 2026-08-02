@@ -147,7 +147,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, is_active')
+    .select('id, company_name, company_name_latin, category, city, address, email, phone, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, is_active')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -164,6 +164,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       phone: nf(fields.phone),
       category: fields.category,             // required UI_CATEGORIES code
       city: nf(fields.city),
+      address: nf(fields.address),           // buyer-visible
       country: fields.country || 'China',
       founded_year: yr(fields.founded_year),
       export_markets: nf(fields.export_markets),
@@ -195,6 +196,10 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
     if (profileImage) patch.profile_image = profileImage;
     if (nf(fields.name_original)) patch.company_name = nf(fields.name_original);   // guarded — never blank the name
     if (nf(fields.name_en)) patch.company_name_latin = nf(fields.name_en);
+    if (nf(fields.city)) patch.city = nf(fields.city);
+    if (nf(fields.address)) patch.address = nf(fields.address);      // buyer-visible
+    if (nf(fields.email)) patch.email = nf(fields.email);            // admin-only, guarded (NOT NULL)
+    if (nf(fields.phone)) patch.phone = nf(fields.phone);            // admin-only
     await sb.from('factory_directory').update(patch).eq('id', factoryId);
   }
   await sb.from('factory_catalog_imports').update({ factory_id: factoryId, status: 'reviewing' }).eq('id', importId);

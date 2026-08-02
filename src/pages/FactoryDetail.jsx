@@ -87,6 +87,7 @@ function Icon({ name, size = 20 }) {
     case 'globe': return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 010 18a15 15 0 010-18z" /></svg>;
     case 'box': return <svg {...p}><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" /><path d="M3 8l9 5 9-5M12 13v8" /></svg>;
     case 'tag': return <svg {...p}><path d="M20 12l-8 8-9-9V3h8l9 9z" /><circle cx="7.5" cy="7.5" r="1.4" /></svg>;
+    case 'pin': return <svg {...p}><path d="M12 21s-6-5.3-6-10a6 6 0 0112 0c0 4.7-6 10-6 10z" /><circle cx="12" cy="11" r="2.2" /></svg>;
     default: return null;
   }
 }
@@ -227,6 +228,13 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
               <p className={`fp-cat-line${ar}`}>
                 {categoryLabel && <span>{categoryLabel}</span>}
                 {location && <span className="loc">{flagFor(factory.country)} {location}</span>}
+              </p>
+            )}
+            {factory.address && (
+              <p className={`fp-addr${ar}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, margin: '2px 0 0',
+                fontSize: 13, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                <span style={{ color: '#8B7355', flexShrink: 0, marginTop: 2 }}><Icon name="pin" size={13} /></span>
+                <span>{factory.address}</span>
               </p>
             )}
             <p className={`fp-desc${ar}`}>{desc}</p>

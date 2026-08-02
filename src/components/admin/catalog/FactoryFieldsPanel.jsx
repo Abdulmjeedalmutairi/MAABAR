@@ -45,6 +45,8 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
   // Editable in BOTH modes (prefilled from extraction, or the existing factory).
   const profileFields = (
     <>
+      {field(isAr ? 'عنوان المصنع' : 'Factory address', 'address',
+        { hint: isAr ? 'يظهر للمشترين في صفحة المصنع' : 'Shown to buyers on the profile' })}
       {textarea(isAr ? 'الوصف (عربي)' : 'Description (Arabic)', 'description_ar',
         { hint: isAr ? 'يظهر في صفحة المصنع' : 'Shown on the factory profile' })}
       {textarea(isAr ? 'الوصف (إنجليزي)' : 'Description (English)', 'description_en', { ltr: true })}
@@ -97,6 +99,9 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
             <div style={{ marginTop: 12 }}>
               {field(isAr ? 'اسم المصنع' : 'Factory name', 'name_original')}
               {field(isAr ? 'الاسم بالإنجليزية' : 'English name', 'name_en', { ltr: true })}
+              {field(isAr ? 'البريد الإلكتروني (يظهر لك فقط)' : 'Email (admin-only)', 'email', { ltr: true, ph: 'sales@example.com' })}
+              {field(isAr ? 'واتساب / جوال (يظهر لك فقط)' : 'WhatsApp / phone (admin-only)', 'phone', { ltr: true })}
+              {field(isAr ? 'المدينة' : 'City', 'city')}
               {profileFields}
             </div>
           )}
@@ -105,8 +110,8 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
         <>
           {field(isAr ? 'الاسم الأصلي (للتواصل)' : 'Original name (for contact)', 'name_original')}
           {field(isAr ? 'الاسم بالإنجليزية' : 'English name', 'name_en', { ltr: true })}
-          {field(isAr ? 'البريد الإلكتروني' : 'Email', 'email', { req: true, ltr: true, ph: 'factory@example.com' })}
-          {field(isAr ? 'واتساب / هاتف' : 'WhatsApp / phone', 'phone', { ltr: true })}
+          {field(isAr ? 'البريد الإلكتروني (يظهر لك فقط)' : 'Email (admin-only)', 'email', { req: true, ltr: true, ph: 'factory@example.com' })}
+          {field(isAr ? 'واتساب / جوال (يظهر لك فقط)' : 'WhatsApp / phone (admin-only)', 'phone', { ltr: true })}
           {field(isAr ? 'المدينة' : 'City', 'city')}
           <div style={{ marginBottom: 4 }}>
             <label className="ci-label">{isAr ? 'التصنيف' : 'Category'} *</label>

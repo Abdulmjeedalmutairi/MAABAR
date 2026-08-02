@@ -167,6 +167,10 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       if (empty(prev.export_markets) && f.export_markets) next.export_markets = f.export_markets;
       if (empty(prev.moq) && f.moq_note) next.moq = f.moq_note;
       if (prev.private_label === undefined) next.private_label = !!f.private_label;
+      if (empty(prev.address) && f.address) next.address = f.address;
+      if (empty(prev.city) && f.city) next.city = f.city;
+      if (empty(prev.email) && f.email) next.email = f.email;
+      if (empty(prev.phone) && f.phone) next.phone = f.phone;
       if (empty(prev.description_ar) && f.description_ar) next.description_ar = f.description_ar;
       if (empty(prev.description_en) && f.description_en) next.description_en = f.description_en;
       if (empty(prev.name_original) && f.company_name) next.name_original = f.company_name;
