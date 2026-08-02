@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
+import ImageLightbox from '../components/ImageLightbox';
 import { getFactoryProductImages } from '../lib/productMedia';
 
 const T = {
@@ -48,18 +49,8 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightbox, setLightbox] = useState(false);
-  const [zoom, setZoom] = useState(false);
-  const [origin, setOrigin] = useState({ x: 50, y: 50 });
   const [reqOpen, setReqOpen] = useState(false);
   const [reqMode, setReqMode] = useState('quote'); // 'quote' | 'inquiry'
-
-  const openLightbox = () => { setZoom(false); setOrigin({ x: 50, y: 50 }); setLightbox(true); };
-  const closeLightbox = () => { setZoom(false); setLightbox(false); };
-  const onLightboxMove = (e) => {
-    if (!zoom) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    setOrigin({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -78,14 +69,6 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
     })();
     return () => { cancelled = true; };
   }, [factoryId, productId]);
-
-  // Esc closes the lightbox.
-  const onKey = useCallback((e) => { if (e.key === 'Escape') { setZoom(false); setLightbox(false); } }, []);
-  useEffect(() => {
-    if (!lightbox) return;
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [lightbox, onKey]);
 
   if (loading) {
     return <div className="full-page"><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)' }}>{c.loading}</p></div></div>;
@@ -125,7 +108,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
         <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'flex-start', marginTop: 8 }}>
           {/* ── Gallery ── */}
           <div style={{ flex: '1 1 380px', minWidth: 280 }}>
-            <button type="button" onClick={() => mainImg && openLightbox()}
+            <button type="button" onClick={() => mainImg && setLightbox(true)}
               title={mainImg ? c.zoom : undefined}
               style={{
                 width: '100%', aspectRatio: '1 / 1', border: '1px solid var(--border)',
@@ -207,24 +190,14 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
         </div>
       </div>
 
-      {/* ── Lightbox (fills the viewport; click the image to magnify + pan) ── */}
-      {lightbox && mainImg && (
-        <div className="fx-modal-bg" onClick={closeLightbox} style={{ padding: 0 }}>
-          <button type="button" onClick={(e) => { e.stopPropagation(); closeLightbox(); }} aria-label={isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close'}
-            style={{ position: 'fixed', top: 18, insetInlineEnd: 20, width: 44, height: 44, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 24, lineHeight: 1, cursor: 'pointer', zIndex: 2 }}>×</button>
-          <div
-            onClick={(e) => { e.stopPropagation(); setZoom((z) => !z); }}
-            onMouseMove={onLightboxMove}
-            style={{ width: '96vw', height: '94vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: zoom ? 'zoom-out' : 'zoom-in' }}>
-            <img src={mainImg} alt={productName}
-              style={{
-                width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6,
-                transition: 'transform 0.18s ease',
-                transform: zoom ? 'scale(2.4)' : 'scale(1)',
-                transformOrigin: `${origin.x}% ${origin.y}%`,
-              }} />
-          </div>
-        </div>
+      {/* ── Fullscreen viewer (navigate + zoom + pan) ── */}
+      {lightbox && gallery.length > 0 && (
+        <ImageLightbox
+          images={gallery}
+          start={Math.max(0, gallery.indexOf(mainImg))}
+          alt={productName}
+          onClose={() => setLightbox(false)}
+        />
       )}
 
       {reqOpen && (

@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
+import ImageLightbox from '../components/ImageLightbox';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
 
 const T = {
@@ -106,7 +107,9 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [reqOpen, setReqOpen] = useState(false);
   const [activeCatalog, setActiveCatalog] = useState(null); // import_id filter
   const [visible, setVisible] = useState(20);
-  const [gallery, setGallery] = useState(-1); // index into hero images, -1 = closed
+  const [galleryOpen, setGalleryOpen] = useState(false); // fullscreen photo viewer
+  const [galleryStart, setGalleryStart] = useState(0);
+  const openGallery = (i = 0) => { setGalleryStart(i); setGalleryOpen(true); };
 
   useEffect(() => {
     load();
@@ -140,12 +143,6 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     return all;
   }
 
-  const onKey = useCallback((e) => { if (e.key === 'Escape') setGallery(-1); }, []);
-  useEffect(() => {
-    if (gallery < 0) return undefined;
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [gallery, onKey]);
 
   if (loading) return <div className="full-page"><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)' }}>{c.loading}</p></div></div>;
   if (!factory) return <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.notFound}</p></div></div>;
@@ -200,14 +197,16 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         <div className="fp-hero">
           <div className="fp-cover">
             {collage.length >= 4 ? (
-              <div className="fp-collage">{collage.map((u, i) => <span key={i}><img src={u} alt="" /></span>)}</div>
+              <div className="fp-collage">{collage.map((u, i) => (
+                <span key={i} onClick={() => openGallery(i)} style={{ cursor: 'zoom-in' }}><img src={u} alt="" /></span>
+              ))}</div>
             ) : collage.length >= 1 ? (
-              <div className="fp-cover-single"><img src={collage[0]} alt={name} /></div>
+              <div className="fp-cover-single" onClick={() => openGallery(0)} style={{ cursor: 'zoom-in' }}><img src={collage[0]} alt={name} /></div>
             ) : (
               <div className="fp-cover-initial">{(name || '?')[0]}</div>
             )}
             {heroImages.length > 0 && (
-              <button className={`fp-viewall${ar}`} onClick={() => setGallery(0)}>
+              <button className={`fp-viewall${ar}`} onClick={() => openGallery(0)}>
                 <Icon name="images" size={14} />{c.viewAll} ({heroImages.length})
               </button>
             )}
@@ -319,25 +318,9 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         <p className={`fp-srcline${ar}`}>{c.srcline}</p>
       </div>
 
-      {/* ── Photo gallery lightbox ── */}
-      {gallery >= 0 && heroImages[gallery] && (
-        <div className="fx-modal-bg" onClick={() => setGallery(-1)} style={{ padding: 0 }}>
-          <button type="button" onClick={(e) => { e.stopPropagation(); setGallery(-1); }} aria-label="close"
-            style={{ position: 'fixed', top: 18, insetInlineEnd: 20, width: 44, height: 44, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 24, cursor: 'pointer', zIndex: 2 }}>×</button>
-          {heroImages.length > 1 && (
-            <>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setGallery((g) => (g - 1 + heroImages.length) % heroImages.length); }}
-                style={{ position: 'fixed', insetInlineStart: 16, top: '50%', transform: 'translateY(-50%)', width: 46, height: 46, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 22, cursor: 'pointer', zIndex: 2 }}>‹</button>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setGallery((g) => (g + 1) % heroImages.length); }}
-                style={{ position: 'fixed', insetInlineEnd: 16, top: '50%', transform: 'translateY(-50%)', width: 46, height: 46, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 22, cursor: 'pointer', zIndex: 2 }}>›</button>
-            </>
-          )}
-          <img src={heroImages[gallery]} alt="" onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain', borderRadius: 6 }} />
-          <span style={{ position: 'fixed', bottom: 18, insetInlineStart: '50%', transform: 'translateX(-50%)', color: '#fff', fontSize: 13, fontFamily: 'var(--font-sans)', background: 'rgba(0,0,0,0.4)', padding: '4px 12px', borderRadius: 20 }}>
-            {gallery + 1} / {heroImages.length}
-          </span>
-        </div>
+      {/* ── Fullscreen photo gallery (navigate + zoom + thumbnails) ── */}
+      {galleryOpen && heroImages.length > 0 && (
+        <ImageLightbox images={heroImages} start={galleryStart} alt={name} onClose={() => setGalleryOpen(false)} />
       )}
 
       {reqOpen && (
