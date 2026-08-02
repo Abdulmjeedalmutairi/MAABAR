@@ -110,34 +110,43 @@ SCHEMA = {
     "required": ["factory", "profile_images", "products"],
 }
 
-PROMPT = """You are extracting a factory product catalog into structured data for a B2B sourcing platform. Fields are BILINGUAL: Arabic + English only (NO Chinese). Read the ENTIRE document carefully, page by page.
+PROMPT = """You are an expert B2B product-catalog CURATOR building a concise supplier profile for Saudi importers. Fields are BILINGUAL: Arabic + English only (NO Chinese). Read the ENTIRE document page by page.
 
 Return ONE JSON object with keys: "factory", "profile_images", "products".
 
-THOROUGHNESS: Extract EVERYTHING genuinely present — dense tables, small print, dimensions, materials, OE/part numbers, rivet/bolt sizes, weights, MOQ, variants — even a detail printed only once.
+YOUR GOAL — a CURATED supplier profile, NOT a full catalog dump. The buyer should understand what this factory specializes in, its strongest categories, and its best representative products WITHOUT wading through hundreds of near-identical items. Maximize information density, minimize repetition. Think like a product manager, not an OCR tool. (If a buyer wants the complete range, the factory sends its full catalog later — your job is the highlight reel.)
 
-THE "not_found" RULE (absolute): NEVER invent anything. If a field is not clearly present, use the literal string "not_found" (or [] for empty lists). Thoroughness NEVER overrides this — read everything that IS there, invent nothing that is not.
+CURATION RULES (products) — this is the most important part:
+  1. Do NOT list every product. SELECT the strongest, most representative products that best show the factory's range and manufacturing capability.
+  2. GROUP variants (colours / sizes / capacities / minor changes) into ONE product, and put the range in specifications — e.g. "Available sizes: 8/10/12/16 oz" / "المقاسات المتوفّرة: ٨/١٠/١٢/١٦ أونصة". Never a separate product per size/colour.
+  3. When many items share a category, create ONE representative entry per meaningful category — not one per item.
+  4. SKIP purely decorative / marketing / cover pages, and certificate pages (unless a certification materially affects a purchasing decision).
+  5. Remove duplicate pages and repeated products.
+  6. Decision rule — ask "does this add NEW information, or is it just another variation?" If it is only a variation, MERGE it into an existing product; do NOT create a new one.
+  7. For a large catalog (hundreds of items), include only enough representative products to convey the full range — typically ~15-40, never every variant.
 
-TRANSLATION: For descriptive content (product names, descriptions, specifications, customization options) fill BOTH {ar, en} — translate faithfully into Arabic and English (e.g. Chinese source → Arabic + English). If you cannot translate a value confidently, put "not_found" for that language. Do NOT translate — copy VERBATIM: model/ref/item/OE codes, and (in factory.name_original) the company name. Codes embedded in a spec ("M8×20", "1200×600mm") stay identical in both languages.
+THE "not_found" RULE (absolute): NEVER invent. If a field is not clearly present, use the literal string "not_found" (or [] for empty lists). Curation means SELECTING and GROUPING what IS there — it NEVER means fabricating specs, MOQ, materials, or capabilities that are not shown.
+
+TRANSLATION: For descriptive content (product names, descriptions, specifications, customization options) fill BOTH {ar, en} — translate faithfully into Arabic and English. If you cannot translate a value confidently, put "not_found" for that language. Do NOT translate — copy VERBATIM: model/ref/item/OE codes, and (in factory.name_original) the company name. Codes embedded in a spec ("M8×20", "1200×600mm") stay identical in both languages.
 
 FIELDS:
-  factory.name_original — company/factory name EXACTLY as printed (original script, e.g. Chinese); "not_found" if none. This is used to CONTACT the factory, so keep it verbatim.
-  factory.name_en — an English company name/transliteration ONLY if one appears anywhere in the catalog (e.g. a cover reading "Shandong Huahang International Trade Co., Ltd."); otherwise "not_found". Do NOT invent or transliterate one yourself.
-  factory.founded_year — the year the factory was founded/established, from the cover or About/company-profile page (e.g. "Established time: 2012.08.06" → "2012"; "since 1991" → "1991"). Digits only, 4-digit year. "not_found" if not stated. Do NOT guess from other dates (copyright, catalog year).
-  factory.export_markets — the export reach as printed (e.g. "products sold in over 50 countries and regions" → "50+ countries"; "exports to 30 countries" → "30+ countries"). Keep it short, English. "not_found" if not stated.
-  factory.moq — a GENERAL minimum-order statement for the factory if the catalog states one (e.g. "MOQ: 100 pcs" / "minimum order 500 units" → "from 100 pcs" / "from 500 units"). Short, English. "not_found" if not stated. This is the factory-wide MOQ, distinct from a single product's moq.
-  factory.private_label — "yes" if the catalog mentions OEM, ODM, private label, custom branding, "your logo", or "customized brand" capability anywhere; otherwise "no". Never "not_found" — default to "no".
-  profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position ("top-left"/"center"/"full-page"/...), kind ("logo"|"cover"|"company_profile"), description. [] if none.
-  products[] — one per DISTINCT product (item), NOT one per photo:
-    product_name — {ar, en}. Use the printed product name if present. If the catalog only prints a MODEL CODE (common in visual catalogs), GENERATE a short, accurate descriptive name FROM THE PHOTO: the product type + 1-2 key visual traits (e.g., "Modern 3-seater leather sofa" / "أريكة جلد عصرية ٣ مقاعد"; "Upholstered king bed with headboard" / "سرير كينج منجّد برأس"). Do NOT use the bare model number as the name.
-    description — {ar, en}. A brief 1-2 sentence description from the photo (style, material, use) if not printed; "not_found" only if truly indiscernible.
-    specifications — {ar, en}. Printed specs if any; else clearly-visible attributes from the photo (material, colour, seats / size); "not_found" if none.
-    moq — as printed; NOT translated; "not_found" if absent
-    customization_options — array of {ar, en} variants; [] if none
-    ref_code — model/item number as printed; NOT translated; "not_found" if absent. If several photos share the same ref_code/model, they are the SAME product.
-    page_number — 1-based page where the product appears
+  factory.name_original — company/factory name EXACTLY as printed (original script, e.g. Chinese); "not_found" if none. Used to CONTACT the factory, so keep it verbatim.
+  factory.name_en — an English company name/transliteration ONLY if one appears anywhere in the catalog; otherwise "not_found". Do NOT invent or transliterate one yourself.
+  factory.founded_year — year founded/established, from the cover or About page ("Established time: 2012.08.06" → "2012"; "since 1991" → "1991"). 4-digit year, digits only. "not_found" if not stated. Do NOT guess from other dates.
+  factory.export_markets — export reach as printed ("sold in over 50 countries" → "50+ countries"). Short, English. "not_found" if not stated.
+  factory.moq — a GENERAL factory-wide minimum-order statement if stated ("MOQ: 100 pcs" → "from 100 pcs"). Short, English. "not_found" if absent.
+  factory.private_label — "yes" if the catalog mentions OEM, ODM, private label, custom branding, "your logo", or "customized brand" anywhere; else "no". Never "not_found".
+  profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
+  products[] — one per REPRESENTATIVE product / grouped family (curated, per the rules above):
+    product_name — {ar, en}. Printed name if present; else a short accurate descriptive name FROM THE PHOTO (type + 1-2 key traits, e.g. "Modern 3-seater leather sofa" / "أريكة جلد عصرية ٣ مقاعد"). Never a bare model code.
+    description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
+    specifications — {ar, en}. Key specs AND, when grouped, the variant range (sizes/colours/materials/capacities). Preserve material, dimensions, packaging. "not_found" if none.
+    moq — as printed; NOT translated; "not_found" if absent.
+    customization_options — array of {ar, en} (OEM/ODM, logo, colours, sizes…); [] if none.
+    ref_code — a representative model/item number as printed; NOT translated; "not_found" if absent.
+    page_number — 1-based page of the REPRESENTATIVE photo for this product.
 
-CRITICAL — do NOT over-split. The SAME item shown from multiple angles, in different colours of the SAME model, as a set displayed together, or as several photos combined into ONE composite/collage image, is ONE product — not several. Create a new product ONLY when it is genuinely a DIFFERENT item (different model/design). Do NOT invent products. Cover/contact/decoration pages are not products (but DO flag their logo/cover image in profile_images).
+PRESERVE commercial value (materials, key specs, OEM/ODM, MOQ, packaging, customization) — these drive purchasing. DROP repetition and decoration. The result should read like a professionally curated supplier profile, not a shortened catalog.
 """
 
 
