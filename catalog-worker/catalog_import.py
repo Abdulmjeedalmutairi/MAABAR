@@ -76,9 +76,13 @@ SCHEMA = {
                 "export_markets": {"type": "string"},  # e.g. "30+ countries"; "not_found" if absent
                 "moq": {"type": "string"},             # general MOQ, e.g. "from 100 pcs"; "not_found" if absent
                 "private_label": {"type": "string"},   # "yes"|"no" — OEM/ODM/private-label capability
+                "email": {"type": "string"},           # contact email; "not_found" if absent
+                "phone": {"type": "string"},           # phone / mobile / WhatsApp; "not_found" if absent
+                "address": {"type": "string"},         # full factory address as printed; "not_found" if absent
+                "city": {"type": "string"},            # city; "not_found" if absent
             },
             "required": ["name_original", "name_en", "founded_year", "export_markets",
-                         "moq", "private_label"],
+                         "moq", "private_label", "email", "phone", "address", "city"],
         },
         "profile_images": {
             "type": "array",
@@ -140,6 +144,10 @@ FIELDS:
   factory.export_markets — export reach as printed ("sold in over 50 countries" → "50+ countries"). Short, English. "not_found" if not stated.
   factory.moq — a GENERAL factory-wide minimum-order statement if stated ("MOQ: 100 pcs" → "from 100 pcs"). Short, English. "not_found" if absent.
   factory.private_label — "yes" if the catalog mentions OEM, ODM, private label, custom branding, "your logo", or "customized brand" anywhere; else "no". Never "not_found".
+  factory.email — the factory's CONTACT EMAIL as printed (cover / contact / back page), verbatim (e.g. "sales@huahang.com"). "not_found" if none. ADMIN-ONLY — extract it whenever present.
+  factory.phone — the factory's phone / mobile / WhatsApp number as printed, verbatim with country code if shown (e.g. "+86 138 0000 0000"). "not_found" if none. ADMIN-ONLY.
+  factory.address — the factory's full ADDRESS as printed (street / district / city / province), verbatim; e.g. "No. 12 Xingye Rd, Shunde District, Foshan, Guangdong, China". "not_found" if none. Shown to buyers.
+  factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per REPRESENTATIVE product / grouped family (curated, per the rules above):
     product_name — {ar, en}. Printed name if present; else a short accurate descriptive name FROM THE PHOTO (type + 1-2 key traits, e.g. "Modern 3-seater leather sofa" / "أريكة جلد عصرية ٣ مقاعد"). Never a bare model code.
@@ -580,8 +588,12 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             "export_markets": gfac.get("export_markets") if _filled(gfac.get("export_markets")) else "not_found",
             "moq": gfac.get("moq") if _filled(gfac.get("moq")) else "not_found",
             "private_label": "yes" if str(gfac.get("private_label", "")).strip().lower() in ("yes", "true", "1") else "no",
-            "email": csv_fields.get("email", "not_found"),
-            "phone": csv_fields.get("phone", "not_found"),
+            # Contact — Gemini-extracted (falls back to the CSV when running locally). ADMIN-ONLY.
+            "email": gfac.get("email") if _filled(gfac.get("email")) else csv_fields.get("email", "not_found"),
+            "phone": gfac.get("phone") if _filled(gfac.get("phone")) else csv_fields.get("phone", "not_found"),
+            # Address is buyer-visible; city feeds the location line.
+            "address": gfac.get("address") if _filled(gfac.get("address")) else "not_found",
+            "city": gfac.get("city") if _filled(gfac.get("city")) else csv_fields.get("city", "not_found"),
             "category_hint": csv_fields.get("category_hint", ""),
         }
         hi = sum(1 for p in products if p.get("_confidence", 0) >= 0.7)
