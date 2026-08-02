@@ -9,7 +9,7 @@ import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
-  cancelImport, deleteImport,
+  cancelImport, deleteImport, assistField, assistAsk,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -290,6 +290,43 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     };
   };
 
+  // ✨ Gemini suggest for a bilingual field of the current product (uses the whole
+  // context: the extracted data + the factory fields + the product image).
+  const suggestField = async (field) => {
+    if (!current) return;
+    const res = await assistField({
+      field,
+      context: { factory: fields, product: jsonFor(current) },
+      imageUrl: imgEdits[current.id] ?? current.image_path,
+    });
+    setEdits((e) => {
+      const cur = e[current.id] ?? (current.extracted_json || {});
+      return { ...e, [current.id]: { ...cur, [field]: { ar: res.ar || '', en: res.en || '' } } };
+    });
+  };
+
+  // Ask Gemini about this factory / catalog.
+  const [askQ, setAskQ] = useState('');
+  const [askAns, setAskAns] = useState('');
+  const [asking, setAsking] = useState(false);
+  const doAsk = async () => {
+    if (!askQ.trim() || asking) return;
+    setAsking(true); setAskAns('');
+    try {
+      const res = await assistAsk({
+        question: askQ,
+        context: {
+          factory: fields,
+          products: products.slice(0, 80).map((p) => ({
+            name: p.extracted_json?.product_name, ref: p.extracted_json?.ref_code,
+          })),
+        },
+      });
+      setAskAns(res.answer || '');
+    } catch (e) { setAskAns((isAr ? 'خطأ: ' : 'Error: ') + (e.message || '')); }
+    setAsking(false);
+  };
+
   const approveCurrent = async () => {
     if (!current || busy) return;
     setBusy(true); setActionMsg({ ok: false, text: '' });
@@ -513,6 +550,29 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                 )}
               </div>
 
+              {/* Ask Gemini about this factory / catalog */}
+              {workerConfigured() && (
+                <div className="ci-card">
+                  <h2 className="ci-h2">{isAr ? '💬 اسأل جيميني عن هذا المصنع' : '💬 Ask Gemini about this factory'}</h2>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    <input className="ci-input" style={{ flex: 1, minWidth: 220 }} value={askQ}
+                      onChange={(e) => setAskQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') doAsk(); }}
+                      dir={isAr ? 'rtl' : 'ltr'}
+                      placeholder={isAr ? 'مثال: وحّد أسماء المنتجات · اقترح تصنيفاً · لخّص قدرات المصنع' : 'e.g. unify product names · suggest a category · summarize capabilities'} />
+                    <button className="ci-btn-primary" onClick={doAsk} disabled={asking || !askQ.trim()}>
+                      {asking ? (isAr ? '… يفكّر' : '… thinking') : (isAr ? 'اسأل' : 'Ask')}
+                    </button>
+                  </div>
+                  {askAns && (
+                    <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(0,0,0,0.03)', borderRadius: 8,
+                      fontSize: 13.5, lineHeight: 1.7, color: 'rgba(0,0,0,0.78)', fontFamily: FB, whiteSpace: 'pre-wrap' }}
+                      dir={isAr ? 'rtl' : 'ltr'}>
+                      {askAns}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Step 1 — factory */}
               <div className="ci-card">
                 <h2 className="ci-h2">{isAr ? '١) بيانات المصنع' : '1) Factory details'}</h2>
@@ -640,7 +700,8 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                         <ProductReviewCard key={current.id} value={jsonFor(current)}
                           onChange={(j) => setEdits((e) => ({ ...e, [current.id]: j }))} product={current} lang={lang}
                           candidates={candidates} image={imgEdits[current.id] ?? current.image_path}
-                          onImageChange={(url) => setImgEdits((m) => ({ ...m, [current.id]: url ?? current.image_path }))} />
+                          onImageChange={(url) => setImgEdits((m) => ({ ...m, [current.id]: url ?? current.image_path }))}
+                          onSuggest={workerConfigured() ? suggestField : undefined} />
                         <div className="ci-deck-nav">
                           <button className="ci-btn-ghost" onClick={() => moveDeck(-1)} disabled={deckIdx <= 0}>← {isAr ? 'السابق' : 'Prev'}</button>
                           <button className="ci-btn-ghost" onClick={() => moveDeck(1)} disabled={deckIdx >= reviewQueue.length - 1}>{isAr ? 'التالي' : 'Next'} →</button>

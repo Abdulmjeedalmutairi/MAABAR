@@ -95,6 +95,30 @@ export async function triggerExtraction(importId) {
   return res.json().catch(() => ({}));
 }
 
+// Shared POST to the worker with the caller's admin token.
+async function callWorker(path, payload) {
+  if (!CATALOG_WORKER_URL) throw new Error('worker_not_configured');
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('not_authenticated');
+  const res = await fetch(`${CATALOG_WORKER_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`${res.status}: ${t.slice(0, 160)}`); }
+  return res.json();
+}
+
+// Gemini assist — suggest a field's value (uses the whole context + product image),
+// or answer a question about this factory/catalog. Both run on the worker (key stays server-side).
+export function assistField({ field, context, imageUrl }) {
+  return callWorker('/assist', { mode: 'field', field, context, image_url: imageUrl || null });
+}
+export function assistAsk({ question, context }) {
+  return callWorker('/assist', { mode: 'ask', question, context });
+}
+
 // ── Reads ───────────────────────────────────────────────────────────────────
 export async function fetchImports() {
   const { data, error } = await sb

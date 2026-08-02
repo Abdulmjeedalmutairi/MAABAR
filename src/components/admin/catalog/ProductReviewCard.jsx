@@ -7,13 +7,26 @@ const FB = "'Tajawal', sans-serif";
 // Controlled — `value` is the extracted_json, `onChange` returns the edited json.
 // The product image can be swapped for any of the import's `candidates`; the
 // chosen url is reported via `onImageChange` (parent applies it at approval).
-export default function ProductReviewCard({ value, onChange, product, lang, candidates = [], image, onImageChange }) {
+export default function ProductReviewCard({ value, onChange, product, lang, candidates = [], image, onImageChange, onSuggest }) {
   const isAr = lang === 'ar';
   const ej = value || {};
   const setBi = (field, k, v) => onChange({ ...ej, [field]: { ...(ej[field] || {}), [k]: v } });
   const setStr = (field, v) => onChange({ ...ej, [field]: v });
 
   const [picking, setPicking] = useState(false);
+  const [busyField, setBusyField] = useState(null);
+  const suggest = async (field) => {
+    if (!onSuggest || busyField) return;
+    setBusyField(field);
+    try { await onSuggest(field); } catch { /* surfaced by the parent */ }
+    setBusyField(null);
+  };
+  const SparkBtn = ({ field }) => (onSuggest ? (
+    <button type="button" onClick={() => suggest(field)} disabled={!!busyField} title={isAr ? 'اقتراح من جيميني' : 'Suggest with Gemini'}
+      style={{ background: 'none', border: 'none', cursor: busyField ? 'default' : 'pointer', fontFamily: FB, fontSize: 11.5, color: '#8B5e2b', padding: 0 }}>
+      {busyField === field ? (isAr ? '… يقترح' : '… suggesting') : (isAr ? '✨ اقترح' : '✨ Suggest')}
+    </button>
+  ) : null);
   const shownImg = image || product.image_path;
   const canPick = typeof onImageChange === 'function' && candidates.length > 0;
 
@@ -22,7 +35,13 @@ export default function ProductReviewCard({ value, onChange, product, lang, cand
   const custom = Array.isArray(ej.customization_options) ? ej.customization_options : [];
 
   const biField = (labelAr, labelEn, field, textarea) => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+    <div style={{ marginBottom: 8 }}>
+      {onSuggest && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2 }}>
+          <SparkBtn field={field} />
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
       <div>
         <label className="ci-label">{labelAr} (ع)</label>
         {textarea
@@ -34,6 +53,7 @@ export default function ProductReviewCard({ value, onChange, product, lang, cand
         {textarea
           ? <textarea className="ci-input" rows={2} dir="ltr" style={{ resize: 'vertical' }} value={nf(ej[field]?.en)} onChange={(e) => setBi(field, 'en', e.target.value)} />
           : <input className="ci-input" dir="ltr" value={nf(ej[field]?.en)} onChange={(e) => setBi(field, 'en', e.target.value)} />}
+      </div>
       </div>
     </div>
   );
