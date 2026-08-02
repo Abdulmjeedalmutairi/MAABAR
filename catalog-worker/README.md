@@ -16,9 +16,9 @@ Admin panel ──POST /extract { import_id }──►  this service
 Admin panel ──polls status──►  review + approve
 ```
 
-The image reuses `catalog-poc/catalog_import.py` (the shared pipeline), so the
-Docker build context is the **repo root**, and the Dockerfile lives at
-`catalog-worker/Dockerfile`.
+This folder is **self-contained** — the Dockerfile, the HTTP wrapper (`app.py`),
+and the extraction pipeline (`catalog_import.py`) all live here, so Cloud Run's
+build (whose context is the Dockerfile's own directory) needs nothing outside it.
 
 ## Deploy from GitHub (continuous deployment)
 
@@ -27,7 +27,7 @@ Docker build context is the **repo root**, and the Dockerfile lives at
 2. Pick this GitHub repo + branch. Build configuration:
    - **Build type:** Dockerfile
    - **Source location:** `/catalog-worker/Dockerfile`
-   - (leave the build context at the repo root — the default)
+     (its directory, `catalog-worker/`, is the build context)
 3. Service settings:
    - **Authentication:** Allow unauthenticated invocations
      (the service does its own admin check on the Supabase token).
@@ -70,10 +70,14 @@ worker isn't configured.
 ## Local run
 
 ```
-docker build -f catalog-worker/Dockerfile -t catalog-worker .
+docker build -t catalog-worker catalog-worker/
 docker run -p 8080:8080 \
   -e SUPABASE_SERVICE_ROLE_KEY=... -e GEMINI_API_KEY=... catalog-worker
 ```
 
-The local CLI (`catalog-poc/catalog_import.py --pdf ...`) still works for
-one-off/offline imports and shares the exact same extraction code.
+The same file doubles as the offline CLI — from the repo root, with the
+catalog-poc virtualenv:
+
+```
+catalog-poc/.venv/Scripts/python.exe catalog-worker/catalog_import.py --pdf "...\catalog.pdf" --dry-run
+```
