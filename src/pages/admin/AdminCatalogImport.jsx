@@ -71,7 +71,9 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [upName, setUpName] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [selFile, setSelFile] = useState(null);
   const fileRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -82,22 +84,30 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const onPickFile = async (e) => {
+  const openModal = () => { setNotes(''); setSelFile(null); setError(''); setModalOpen(true); };
+  const closeModal = () => { if (!uploading) { setModalOpen(false); setSelFile(null); setNotes(''); } };
+
+  const onFileChosen = (e) => {
     const file = e.target.files?.[0];
     if (fileRef.current) fileRef.current.value = '';   // allow re-picking the same file
     if (!file) return;
     if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
       setError(isAr ? 'الملف يجب أن يكون PDF.' : 'File must be a PDF.'); return;
     }
-    setUploading(true); setUpName(file.name); setError('');
+    setError(''); setSelFile(file);
+  };
+
+  const doUpload = async () => {
+    if (!selFile || uploading) return;
+    setUploading(true); setError('');
     try {
-      const importId = await createImport(file);
-      // Fire extraction (the worker runs it async); the detail page polls status.
+      const importId = await createImport(selFile, notes);
+      // Notes are saved on the row; extraction stays automatic.
       if (workerConfigured()) triggerExtraction(importId).catch(() => {});
       nav(`/admin/catalog-import/${importId}`);
     } catch (err) {
       setError((isAr ? 'تعذّر الرفع: ' : 'Upload failed: ') + (err.message || ''));
-      setUploading(false); setUpName('');
+      setUploading(false);
     }
   };
 
@@ -121,13 +131,11 @@ export default function AdminCatalogImport({ user, profile, lang }) {
               </p>
             </div>
             <div style={{ textAlign: isAr ? 'left' : 'right' }}>
-              <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickFile} style={{ display: 'none' }} />
               <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
+                onClick={openModal}
                 style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px',
-                  fontSize: 13, fontWeight: 600, cursor: uploading ? 'default' : 'pointer', fontFamily: FONT_BODY, opacity: uploading ? 0.6 : 1 }}>
-                {uploading ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : (isAr ? '+ استيراد كتالوج جديد' : '+ New catalog import')}
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT_BODY }}>
+                {isAr ? '+ استيراد كتالوج جديد' : '+ New catalog import'}
               </button>
               {!workerConfigured() && (
                 <p style={{ margin: '6px 0 0', fontSize: 11, color: '#b8860b', fontFamily: FONT_BODY }}>
@@ -145,19 +153,64 @@ export default function AdminCatalogImport({ user, profile, lang }) {
             ))}
           </div>
 
-          {uploading && (
-            <div style={{ margin: '0 0 16px', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(201,134,63,0.25)',
-              background: 'rgba(201,134,63,0.06)', display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT_BODY }}>
-              <span style={{ width: 16, height: 16, borderRadius: 99, border: '2px solid rgba(201,134,63,0.35)', borderTopColor: '#c9863f',
-                display: 'inline-block', animation: 'ci-spin 0.8s linear infinite', flexShrink: 0 }} />
-              <span style={{ fontSize: 13, color: 'rgba(0,0,0,0.7)' }}>
-                {isAr ? 'جارٍ رفع الملف' : 'Uploading'} «{upName}» … {isAr ? 'ثم يبدأ الاستخراج' : 'then extraction starts'}
-              </span>
-              <style>{'@keyframes ci-spin { to { transform: rotate(360deg); } }'}</style>
+          {error && <div className="a-error">{isAr ? 'تعذّر التحميل: ' : 'Failed to load: '}{error}</div>}
+
+          {modalOpen && (
+            <div onClick={closeModal}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 2000,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+              <div onClick={(e) => e.stopPropagation()} dir={isAr ? 'rtl' : 'ltr'}
+                style={{ background: '#fff', borderRadius: 14, padding: '22px 24px', width: '100%', maxWidth: 480,
+                  fontFamily: FONT_BODY, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+                <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 400, fontFamily: FONT_HEADING, color: 'rgba(0,0,0,0.88)' }}>
+                  {isAr ? 'استيراد كتالوج جديد' : 'New catalog import'}
+                </h2>
+                <p style={{ margin: '0 0 16px', fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>
+                  {isAr ? 'اختر ملف PDF، وأضِف توجيهات اختيارية لهذا الكتالوج ثم يبدأ الاستخراج تلقائياً.'
+                        : 'Choose a PDF, optionally add guidance for this catalog, then extraction runs automatically.'}
+                </p>
+
+                {/* Notes first — "before upload" */}
+                <label style={{ display: 'block', fontSize: 12, color: 'rgba(0,0,0,0.55)', marginBottom: 5 }}>
+                  {isAr ? 'توجيهات لهذا الكتالوج (اختياري)' : 'Guidance for this catalog (optional)'}
+                </label>
+                <textarea
+                  value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} disabled={uploading}
+                  dir={isAr ? 'rtl' : 'ltr'}
+                  placeholder={isAr ? 'مثال: تجاهل أول ٣ صفحات · الأكواد المطبوعة هي OE numbers مو أسماء · كل صورة فيها أكثر من منتج لا تفصلها'
+                                    : 'e.g. ignore the first 3 pages · printed codes are OE numbers, not names · each photo shows several products, don’t split'}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1px solid rgba(0,0,0,0.15)',
+                    borderRadius: 8, fontSize: 13, fontFamily: FONT_BODY, resize: 'vertical', minHeight: 64, marginBottom: 16 }} />
+
+                {/* File picker */}
+                <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onFileChosen} style={{ display: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+                  <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                    style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 8, padding: '9px 16px',
+                      fontSize: 13, cursor: 'pointer', fontFamily: FONT_BODY }}>
+                    {isAr ? 'اختر ملف PDF' : 'Choose PDF'}
+                  </button>
+                  <span style={{ fontSize: 12.5, color: selFile ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)' }}>
+                    {selFile ? selFile.name : (isAr ? 'لم يُختَر ملف' : 'No file chosen')}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, justifyContent: isAr ? 'flex-start' : 'flex-end' }}>
+                  <button onClick={closeModal} disabled={uploading}
+                    style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8, padding: '9px 16px',
+                      fontSize: 13, cursor: uploading ? 'default' : 'pointer', fontFamily: FONT_BODY }}>
+                    {isAr ? 'إلغاء' : 'Cancel'}
+                  </button>
+                  <button onClick={doUpload} disabled={!selFile || uploading}
+                    style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px',
+                      fontSize: 13, fontWeight: 600, fontFamily: FONT_BODY,
+                      cursor: (!selFile || uploading) ? 'default' : 'pointer', opacity: (!selFile || uploading) ? 0.55 : 1 }}>
+                    {uploading ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : (isAr ? 'رفع + استخراج' : 'Upload + extract')}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
-
-          {error && <div className="a-error">{isAr ? 'تعذّر التحميل: ' : 'Failed to load: '}{error}</div>}
 
           {/* Desktop table */}
           <div className="a-table-wrap">

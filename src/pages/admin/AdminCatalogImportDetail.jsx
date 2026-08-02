@@ -347,6 +347,12 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
               <p className="a-page-sub">
                 {counts.total} {isAr ? 'منتج' : 'products'} · {batch.page_count ?? '—'} {isAr ? 'صفحة' : 'pages'} · {isAr ? 'الحالة' : 'status'}: {batch.status}
               </p>
+              {batch.import_notes && (
+                <p style={{ margin: '-12px 0 18px', fontSize: 12, color: 'rgba(0,0,0,0.5)', fontFamily: FB,
+                  background: 'rgba(201,134,63,0.07)', border: '1px solid rgba(201,134,63,0.2)', borderRadius: 8, padding: '8px 12px' }}>
+                  <strong style={{ fontWeight: 600 }}>{isAr ? 'توجيهاتك: ' : 'Your guidance: '}</strong>{batch.import_notes}
+                </p>
+              )}
 
               {/* Extraction state — queued / extracting / failed (before review) */}
               {!ready && (

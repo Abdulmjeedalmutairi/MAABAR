@@ -97,10 +97,10 @@ def extract():
     if not import_id:
         return jsonify({"error": "import_id required"}), 400
 
-    # Look up the queued import row for its uploaded source PDF.
+    # Look up the queued import row for its uploaded source PDF + admin notes.
     r = requests.get(
         f"{SUPABASE_URL}/rest/v1/factory_catalog_imports"
-        f"?id=eq.{import_id}&select=id,source_pdf_path,original_filename,status",
+        f"?id=eq.{import_id}&select=id,source_pdf_path,original_filename,status,import_notes",
         headers=SR_HEADERS, timeout=15)
     rows = r.json() if r.ok else []
     if not rows:
@@ -143,6 +143,7 @@ def extract():
             model=GEMINI_MODEL, chunk_pages=CHUNK_PAGES,
             log=lambda *a: print(*a, flush=True),
             progress=progress,
+            hint=row.get("import_notes"),  # optional per-catalog admin guidance
         )
         return jsonify({"ok": True, **summary}), 200
     except Exception as e:  # noqa: BLE001 — record any failure on the row

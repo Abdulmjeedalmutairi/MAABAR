@@ -25,7 +25,7 @@ const yr = (v) => {
 // ── Upload + trigger (admin dashboard import) ───────────────────────────────
 // Upload a catalog PDF to the private factory-catalogs bucket and create the
 // 'queued' import row. Returns the new import id.
-export async function createImport(file) {
+export async function createImport(file, notes = '') {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -38,6 +38,7 @@ export async function createImport(file) {
   const { error } = await sb.from('factory_catalog_imports').insert({
     id, source_pdf_path: path, original_filename: file.name, status: 'queued',
     uploaded_by: user?.id ?? null,
+    import_notes: (notes || '').trim() || null,
   });
   if (error) throw error;
   return id;

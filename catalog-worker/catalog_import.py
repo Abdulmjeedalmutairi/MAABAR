@@ -195,7 +195,7 @@ def web_safe(doc, im):
 
 
 # ── One Gemini request (with retry on transient/network errors) ─────────────
-def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3):
+def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3, prompt: str = PROMPT):
     """One Gemini request on a PDF file. Returns (status, data, tokens):
          'ok'        -> parsed JSON in `data`
          'truncated' -> hit MAX_TOKENS / unparseable output; `data` usually None
@@ -215,7 +215,7 @@ def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3):
                 raise RuntimeError("Gemini failed to process the file")
 
             resp = client.models.generate_content(
-                model=model, contents=[uploaded, PROMPT],
+                model=model, contents=[uploaded, prompt],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json", response_schema=SCHEMA,
                     temperature=0, max_output_tokens=65536),
@@ -249,7 +249,7 @@ def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3):
 
 
 # ── Extract one page range, splitting adaptively on truncation ──────────────
-def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str, min_pages: int, total: dict):
+def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str, min_pages: int, total: dict, prompt: str = PROMPT):
     """Extract ORIGINAL pages [a,b] (0-based inclusive). If the response truncates,
        halve the range and recurse (down to `min_pages`); if the call fails after
        retries, skip the slice. Returns (products, profile_images, factory) with
@@ -262,7 +262,7 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
         tmp = Path(os.environ.get("TEMP", ".")) / f"_ci_chunk_{uuid.uuid4().hex}.pdf"
         sub.save(str(tmp)); sub.close(); target, cleanup = tmp, tmp
     try:
-        status, data, tokens = gemini_call(client, types, target, model)
+        status, data, tokens = gemini_call(client, types, target, model, prompt=prompt)
     finally:
         if cleanup is not None:
             try: cleanup.unlink()
@@ -277,8 +277,8 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
     if status == "truncated" and npages > min_pages:
         mid = a + (npages // 2) - 1
         print(f"    pages {a+1}-{b+1} truncated -> splitting into {a+1}-{mid+1} + {mid+2}-{b+1}", file=sys.stderr)
-        p1, f1, fac1 = extract_range(client, types, pdf_path, doc, a, mid, model, min_pages, total)
-        p2, f2, fac2 = extract_range(client, types, pdf_path, doc, mid + 1, b, model, min_pages, total)
+        p1, f1, fac1 = extract_range(client, types, pdf_path, doc, a, mid, model, min_pages, total, prompt)
+        p2, f2, fac2 = extract_range(client, types, pdf_path, doc, mid + 1, b, model, min_pages, total, prompt)
         fac = fac1 if (fac1.get("name_original") not in (None, "not_found")) else fac2
         return p1 + p2, f1 + f2, fac
 
@@ -293,12 +293,19 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
     return prods, profs, (data.get("factory") or {})
 
 
-def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int):
+def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int, hint: str = None):
     """Top-level chunking (each chunk extracted via extract_range, which splits
-       further on truncation). Merges products/profile_images/factory."""
+       further on truncation). Merges products/profile_images/factory.
+       `hint` = optional admin guidance for THIS catalog, appended to the prompt."""
     from google import genai
     from google.genai import types
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+
+    prompt = PROMPT
+    if hint and hint.strip():
+        prompt = (PROMPT + "\n\nADMIN GUIDANCE FOR THIS SPECIFIC CATALOG (apply it, but the "
+                  "\"not_found\" rule still holds — never invent):\n" + hint.strip())
+        print(f"  admin guidance applied ({len(hint.strip())} chars)")
 
     n = len(doc)
     ranges = [(a, min(a + chunk_pages, n) - 1) for a in range(0, n, chunk_pages)]
@@ -312,7 +319,7 @@ def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int
     for ci, (a, b) in enumerate(ranges):
         if len(ranges) > 1:
             print(f"    chunk {ci+1}/{len(ranges)}: original pages {a+1}-{b+1}")
-        prods, profs, fac = extract_range(client, types, pdf_path, doc, a, b, model, min_pages, total)
+        prods, profs, fac = extract_range(client, types, pdf_path, doc, a, b, model, min_pages, total, prompt)
         merged["products"] += prods
         merged["profile_images"] += profs
         mf = merged["factory"]
@@ -498,7 +505,7 @@ class Supa:
 
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
-                   supa=None, import_id=None, original_filename=None, log=print, progress=None):
+                   supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -531,7 +538,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         _p("analyzing", 15, "reading the catalog")
         log("[2/4] Gemini extraction")
-        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages)
+        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint)
         products = gem.get("products") or []
         _before = len(products)
         products = merge_duplicate_products(products)
@@ -659,6 +666,7 @@ def main():
     ap.add_argument("--csv", default=DEFAULT_CSV, help="factories-reference.csv for contact prefill")
     ap.add_argument("--dry-run", action="store_true", help="extract + score + write import_preview.json; NO uploads/DB writes")
     ap.add_argument("--out", default="import_out", help="local output dir for --dry-run")
+    ap.add_argument("--notes", default=None, help="optional per-catalog guidance appended to the Gemini prompt")
     args = ap.parse_args()
 
     pdf_path = Path(args.pdf).expanduser()
@@ -676,7 +684,7 @@ def main():
 
     res = run_extraction(pdf_path, model=args.model, chunk_pages=args.chunk_pages,
                          min_pages=args.min_chunk_pages, min_dim=args.min_dim, csv_path=args.csv,
-                         dry_run=args.dry_run, out_dir=args.out, supa=supa)
+                         dry_run=args.dry_run, out_dir=args.out, supa=supa, hint=args.notes)
     if not args.dry_run:
         print(f"\nDone. import_id = {res['import_id']}  (status: extracted) — review it in the admin panel.")
 
