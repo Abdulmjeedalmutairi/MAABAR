@@ -174,7 +174,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
       profile_image: profileImage || null,
-      is_active: true,
+      is_active: false,   // DRAFT — hidden from buyers until the admin publishes
     };
     const { data, error } = await sb.from('factory_directory').insert(row).select('id').single();
     if (error) throw error;
@@ -282,9 +282,18 @@ export function bulkApproveHighConfidence(factoryId, products, meta = {}, thresh
   return approveProducts(factoryId, rows, meta);
 }
 
-export async function updateStagedProduct(id, extracted_json) {
-  const { error } = await sb.from('factory_catalog_import_products')
-    .update({ extracted_json, status: 'edited' }).eq('id', id);
+export async function updateStagedProduct(id, extracted_json, image_path) {
+  const patch = { extracted_json, status: 'edited' };
+  if (image_path !== undefined) patch.image_path = image_path;
+  const { error } = await sb.from('factory_catalog_import_products').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+// Save a draft: persist the admin's factory-field edits back onto the import row
+// (NOT the live factory), without publishing or re-extracting.
+export async function updateImportFields(importId, fields) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ factory_fields: fields, status: 'reviewing' }).eq('id', importId);
   if (error) throw error;
 }
 

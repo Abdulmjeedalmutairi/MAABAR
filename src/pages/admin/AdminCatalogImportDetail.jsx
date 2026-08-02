@@ -9,7 +9,7 @@ import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
-  cancelImport, deleteImport, assistField, assistAsk,
+  cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -199,12 +199,33 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       }
       const fid = await resolveFactory({ importId: id, mode, fields, existingId, profileImage: profileSel });
       setSavedFactoryId(fid);
-      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المصنع.' : 'Factory saved.' });
+      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المصنع كمسودة.' : 'Factory saved as draft.' });
       await load();
+      fetchFactories().then(setFactories).catch(() => {});   // so the draft/published state reflects the new row
     } catch (e) {
       setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') });
     }
     setSaving(false);
+  }
+
+  // Save draft — persist inline product edits + factory fields WITHOUT publishing
+  // or re-extracting (the extracted data already lives in staging → no re-run).
+  const [savingDraft, setSavingDraft] = useState(false);
+  async function saveDraft() {
+    setSavingDraft(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      const editedIds = new Set([...Object.keys(edits), ...Object.keys(imgEdits)]);
+      const toSave = products.filter((p) => editedIds.has(p.id));
+      await Promise.all(toSave.map((p) =>
+        updateStagedProduct(p.id, edits[p.id] ?? p.extracted_json ?? {}, imgEdits[p.id] ?? p.image_path)));
+      await updateImportFields(id, fields);
+      setProducts((ps) => ps.map((p) => (editedIds.has(p.id)
+        ? { ...p, extracted_json: edits[p.id] ?? p.extracted_json, image_path: imgEdits[p.id] ?? p.image_path,
+            status: p.status === 'pending' ? 'edited' : p.status }
+        : p)));
+      setSaveMsg({ ok: true, text: isAr ? 'تم حفظ المسودة — لن تُستخرج مرّة أخرى.' : 'Draft saved — no re-extraction needed.' });
+    } catch (e) { setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setSavingDraft(false);
   }
 
   // ── Factory removal (archive / permanent delete) ──
@@ -589,16 +610,40 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                 <ProfileImagePicker candidates={candidates} selected={profileSel} onSelect={setProfileSel} lang={lang} />
               </div>
 
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 22, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
                 <button className="ci-btn-primary" onClick={saveFactory} disabled={saving}>
                   {saving ? (isAr ? 'جارٍ الحفظ...' : 'Saving…')
                     : savedFactoryId ? (isAr ? 'تحديث المصنع' : 'Update factory')
                       : (isAr ? 'حفظ المصنع + الصورة' : 'Save factory + image')}
                 </button>
+                <button className="ci-btn-ghost" onClick={saveDraft} disabled={savingDraft}>
+                  {savingDraft ? (isAr ? 'جارٍ الحفظ…' : 'Saving…') : (isAr ? 'حفظ كمسودة' : 'Save draft')}
+                </button>
                 {saveMsg.text && (
                   <span style={{ fontSize: 13, color: saveMsg.ok ? '#3f9d5a' : '#c0392b', fontFamily: FB }}>{saveMsg.text}</span>
                 )}
               </div>
+
+              {/* Draft vs published — new factories start hidden until published */}
+              {savedFactoryId && (
+                <div style={{ marginBottom: 22, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {savedFactory && savedFactory.is_active ? (
+                    <span style={{ fontSize: 13, fontFamily: FB, color: '#3f9d5a', fontWeight: 600 }}>
+                      {isAr ? '● منشور — ظاهر للمشترين' : '● Published — visible to buyers'}
+                    </span>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: 13, fontFamily: FB, color: '#b8860b', fontWeight: 600 }}>
+                        {isAr ? '● مسودة — غير ظاهر للمشترين' : '● Draft — hidden from buyers'}
+                      </span>
+                      <button className="ci-btn-primary" style={{ padding: '8px 18px' }} disabled={removing}
+                        onClick={() => handleArchive(true)}>
+                        {isAr ? 'نشر المصنع' : 'Publish factory'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Factory management — archive / permanent delete (only once saved) */}
               {savedFactoryId && (
