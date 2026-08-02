@@ -8,6 +8,7 @@ import ProductReviewCard from '../../components/admin/catalog/ProductReviewCard'
 import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
+  archiveFactory, deleteFactory,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -96,6 +97,8 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       const next = { ...prev };
       if (empty(prev.founded_year) && f.founded_year != null) next.founded_year = String(f.founded_year);
       if (empty(prev.export_markets) && f.export_markets) next.export_markets = f.export_markets;
+      if (empty(prev.moq) && f.moq_note) next.moq = f.moq_note;
+      if (prev.private_label === undefined) next.private_label = !!f.private_label;
       if (empty(prev.description_ar) && f.description_ar) next.description_ar = f.description_ar;
       if (empty(prev.description_en) && f.description_en) next.description_en = f.description_en;
       if (empty(prev.name_original) && f.company_name) next.name_original = f.company_name;
@@ -136,6 +139,41 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     setSaving(false);
   }
 
+  // ── Factory removal (archive / permanent delete) ──
+  const [danger, setDanger] = useState(false);   // reveal the destructive zone
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const savedFactory = factories.find((x) => x.id === savedFactoryId) || null;
+
+  async function handleArchive(active) {
+    setRemoving(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      await archiveFactory(savedFactoryId, active);
+      setSaveMsg({ ok: true, text: active ? (isAr ? 'تم إظهار المصنع.' : 'Factory is live again.') : (isAr ? 'تم إخفاء المصنع من الموقع.' : 'Factory hidden from the site.') });
+      setFactories((fs) => fs.map((f) => (f.id === savedFactoryId ? { ...f, is_active: active } : f)));
+    } catch (e) { setSaveMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setRemoving(false);
+  }
+
+  async function handleDelete() {
+    setRemoving(true); setSaveMsg({ ok: false, text: '' });
+    try {
+      await deleteFactory(savedFactoryId);
+      // Row gone → detach from this import and reset the panel to "new".
+      setSavedFactoryId(null); setMode('new'); setExistingId('');
+      setFactories((fs) => fs.filter((f) => f.id !== savedFactoryId));
+      setDanger(false); setConfirmDel(false);
+      setSaveMsg({ ok: true, text: isAr ? 'تم حذف المصنع وكل منتجاته نهائياً.' : 'Factory and all its products permanently deleted.' });
+    } catch (e) {
+      const msg = e.code === 'HAS_REQUESTS'
+        ? (isAr ? 'لا يمكن الحذف النهائي — يوجد طلب تاجر مرتبط بهذا المصنع. استخدم "إخفاء" بدلاً من ذلك.'
+                : 'Cannot permanently delete — a buyer request is linked to this factory. Use “Hide” instead.')
+        : (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '');
+      setSaveMsg({ ok: false, text: msg });
+    }
+    setRemoving(false);
+  }
+
   const counts = {
     total: products.length,
     high: products.filter((p) => p.status === 'pending' && (p.confidence_score ?? 0) >= HIGH_CONF).length,
@@ -146,6 +184,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
 
   // ── Product review (bulk + keyboard deck) ──
   const [edits, setEdits] = useState({});
+  const [imgEdits, setImgEdits] = useState({});   // { [pid]: url } — admin-swapped product image
   const [deckIdx, setDeckIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState({ ok: false, text: '' });
@@ -186,7 +225,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
   const approveCurrent = async () => {
     if (!current || busy) return;
     setBusy(true); setActionMsg({ ok: false, text: '' });
-    try { await approveProduct(savedFactoryId, { ...current, extracted_json: jsonFor(current) }, buildMeta()); markStatus(current.id, 'approved'); }
+    try { await approveProduct(savedFactoryId, { ...current, extracted_json: jsonFor(current), image_path: imgEdits[current.id] ?? current.image_path }, buildMeta()); markStatus(current.id, 'approved'); }
     catch (e) { errMsg(e); }
     setBusy(false); refocusDeck();
   };
@@ -280,6 +319,66 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                 )}
               </div>
 
+              {/* Factory management — archive / permanent delete (only once saved) */}
+              {savedFactoryId && (
+                <div style={{ marginBottom: 22 }}>
+                  {!danger ? (
+                    <button
+                      type="button"
+                      onClick={() => setDanger(true)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: 0 }}
+                    >
+                      {isAr ? 'إدارة المصنع (إخفاء / حذف)…' : 'Manage factory (hide / delete)…'}
+                    </button>
+                  ) : (
+                    <div style={{ border: '1px solid rgba(192,57,43,0.25)', borderRadius: 10, padding: '14px 16px', background: 'rgba(192,57,43,0.03)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, fontFamily: FB, color: '#a23628', marginBottom: 4 }}>
+                        {isAr ? 'إدارة المصنع' : 'Manage factory'}
+                      </div>
+                      <p className="ci-hint" style={{ margin: '0 0 12px' }}>
+                        {savedFactory && savedFactory.is_active === false
+                          ? (isAr ? 'هذا المصنع مخفيّ حالياً من الموقع.' : 'This factory is currently hidden from the site.')
+                          : (isAr ? 'الإخفاء يزيل المصنع من الموقع مع الاحتفاظ ببياناته. الحذف النهائي يمسحه هو وكل منتجاته.'
+                                  : 'Hiding removes the factory from the site but keeps its data. Permanent delete removes it and all its products.')}
+                      </p>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {savedFactory && savedFactory.is_active === false ? (
+                          <button type="button" className="ci-btn-ghost" disabled={removing} onClick={() => handleArchive(true)}>
+                            {isAr ? 'إظهار المصنع' : 'Make live'}
+                          </button>
+                        ) : (
+                          <button type="button" className="ci-btn-ghost" disabled={removing} onClick={() => handleArchive(false)}>
+                            {isAr ? 'إخفاء من الموقع' : 'Hide from site'}
+                          </button>
+                        )}
+                        {!confirmDel ? (
+                          <button type="button" className="ci-skip" disabled={removing} onClick={() => setConfirmDel(true)}>
+                            {isAr ? 'حذف نهائي' : 'Delete permanently'}
+                          </button>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: 12.5, fontFamily: FB, color: '#a23628' }}>
+                              {isAr ? 'متأكد؟ لا يمكن التراجع.' : 'Sure? This cannot be undone.'}
+                            </span>
+                            <button type="button" className="ci-skip" disabled={removing} onClick={handleDelete}
+                              style={{ background: '#c0503f', color: '#fff' }}>
+                              {removing ? (isAr ? 'جارٍ الحذف…' : 'Deleting…') : (isAr ? 'نعم، احذف' : 'Yes, delete')}
+                            </button>
+                            <button type="button" className="ci-btn-ghost" disabled={removing} onClick={() => setConfirmDel(false)}>
+                              {isAr ? 'إلغاء' : 'Cancel'}
+                            </button>
+                          </>
+                        )}
+                        <button type="button" onClick={() => { setDanger(false); setConfirmDel(false); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 12, color: 'rgba(0,0,0,0.4)', marginInlineStart: 'auto' }}>
+                          {isAr ? 'إغلاق' : 'Close'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Step 3 — products (approval UI lands in commit 3) */}
               <div className="ci-card">
                 <h2 className="ci-h2">{isAr ? '٣) مراجعة المنتجات' : '3) Product review'}</h2>
@@ -318,7 +417,9 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                           <span className="ci-deck-keys">{isAr ? 'Enter اعتماد · Del/Esc تخطٍّ · ← → تنقّل' : 'Enter approve · Del/Esc skip · ← → navigate'}</span>
                         </div>
                         <ProductReviewCard key={current.id} value={jsonFor(current)}
-                          onChange={(j) => setEdits((e) => ({ ...e, [current.id]: j }))} product={current} lang={lang} />
+                          onChange={(j) => setEdits((e) => ({ ...e, [current.id]: j }))} product={current} lang={lang}
+                          candidates={candidates} image={imgEdits[current.id] ?? current.image_path}
+                          onImageChange={(url) => setImgEdits((m) => ({ ...m, [current.id]: url ?? current.image_path }))} />
                         <div className="ci-deck-nav">
                           <button className="ci-btn-ghost" onClick={() => moveDeck(-1)} disabled={deckIdx <= 0}>← {isAr ? 'السابق' : 'Prev'}</button>
                           <button className="ci-btn-ghost" onClick={() => moveDeck(1)} disabled={deckIdx >= reviewQueue.length - 1}>{isAr ? 'التالي' : 'Next'} →</button>

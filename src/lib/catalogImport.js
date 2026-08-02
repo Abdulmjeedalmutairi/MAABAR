@@ -9,6 +9,8 @@ export const HIGH_CONF = 0.7;
 
 const nf = (v) => (v && v !== 'not_found' ? v : null);
 const tri = (o, k) => (o && o[k] && o[k] !== 'not_found' ? o[k] : null);
+// private_label may arrive as a checkbox boolean (admin) or Gemini's "yes"/"no".
+const bool = (v) => v === true || v === 'yes' || v === 'true' || v === 1;
 // Founded year → a plausible 4-digit int, else null (drops "not_found"/garbage).
 const yr = (v) => {
   const n = parseInt(String(v ?? '').trim(), 10);
@@ -43,7 +45,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets, description_ar, description_en, is_verified, is_featured')
+    .select('id, company_name, company_name_latin, category, city, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, is_active')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -63,6 +65,8 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       country: fields.country || 'China',
       founded_year: yr(fields.founded_year),
       export_markets: nf(fields.export_markets),
+      moq_note: nf(fields.moq),
+      private_label: bool(fields.private_label),
       description_ar: nf(fields.description_ar),
       description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
@@ -79,6 +83,8 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
     const patch = {
       founded_year: yr(fields.founded_year),
       export_markets: nf(fields.export_markets),
+      moq_note: nf(fields.moq),
+      private_label: bool(fields.private_label),
       description_ar: nf(fields.description_ar),
       description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
@@ -91,6 +97,29 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
   }
   await sb.from('factory_catalog_imports').update({ factory_id: factoryId, status: 'reviewing' }).eq('id', importId);
   return factoryId;
+}
+
+// ── Factory removal ─────────────────────────────────────────────────────────
+// 'archive' → hide from the site (is_active=false); reversible, keeps products.
+// 'delete'  → permanent: factory_products cascade-delete with the row. Blocked by
+//   an ON DELETE RESTRICT FK if any buyer request/invite still references it —
+//   surfaced as a friendly error so the admin archives instead.
+export async function archiveFactory(factoryId, active = false) {
+  const { error } = await sb.from('factory_directory').update({ is_active: active }).eq('id', factoryId);
+  if (error) throw error;
+}
+
+export async function deleteFactory(factoryId) {
+  const { error } = await sb.from('factory_directory').delete().eq('id', factoryId);
+  if (error) {
+    // 23503 = FK violation (a request_factory_invite still points here).
+    if (error.code === '23503' || /foreign key/i.test(error.message || '')) {
+      const e = new Error('has_requests');
+      e.code = 'HAS_REQUESTS';
+      throw e;
+    }
+    throw error;
+  }
 }
 
 // ── Product approval (staged → factory_products) ────────────────────────────

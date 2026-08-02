@@ -84,6 +84,9 @@ function Icon({ name, size = 20 }) {
     case 'check': return <svg {...p}><path d="M20 6L9 17l-5-5" /></svg>;
     case 'send': return <svg {...p}><path d="M22 2L11 13" /><path d="M22 2l-7 20-4-9-9-4 20-7z" /></svg>;
     case 'star': return <svg {...p} fill="currentColor" stroke="none"><path d="M12 2l3 6.5 7 .7-5.2 4.7 1.5 6.9L12 17l-6.3 3.8 1.5-6.9L2 9.2l7-.7L12 2z" /></svg>;
+    case 'globe': return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 010 18a15 15 0 010-18z" /></svg>;
+    case 'box': return <svg {...p}><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" /><path d="M3 8l9 5 9-5M12 13v8" /></svg>;
+    case 'tag': return <svg {...p}><path d="M20 12l-8 8-9-9V3h8l9 9z" /><circle cx="7.5" cy="7.5" r="1.4" /></svg>;
     default: return null;
   }
 }
@@ -227,6 +230,19 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
               </p>
             )}
             <p className={`fp-desc${ar}`}>{desc}</p>
+
+            {(() => {
+              const facts = [];
+              if (factory.founded_year) facts.push({ icon: 'clock', text: isAr ? `تأسّست ${factory.founded_year}` : lang === 'zh' ? `成立于 ${factory.founded_year}` : `Est. ${factory.founded_year}` });
+              if (factory.export_markets) facts.push({ icon: 'globe', text: isAr ? `يصدّر إلى ${factory.export_markets}` : lang === 'zh' ? `出口 ${factory.export_markets}` : `Exports to ${factory.export_markets}` });
+              if (factory.moq_note) facts.push({ icon: 'box', text: isAr ? `الحد الأدنى للطلب: ${factory.moq_note}` : lang === 'zh' ? `起订量 ${factory.moq_note}` : `MOQ ${factory.moq_note}` });
+              if (factory.private_label) facts.push({ icon: 'tag', text: isAr ? 'يصنّع علامتك الخاصة (OEM/ODM)' : lang === 'zh' ? '贴牌代工 (OEM/ODM)' : 'Private label (OEM/ODM)' });
+              return facts.length ? (
+                <div className={`fp-facts${ar}`}>
+                  {facts.map((f, i) => <span className="fp-fact" key={i}><Icon name={f.icon} size={13} />{f.text}</span>)}
+                </div>
+              ) : null;
+            })()}
 
             <div className="fp-stats">
               {stats.map((s, i) => (

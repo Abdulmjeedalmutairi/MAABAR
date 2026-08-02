@@ -2,6 +2,8 @@ import React from 'react';
 import { UI_CATEGORIES } from '../../../lib/supplierDashboardConstants';
 
 const nf = (v) => (v && v !== 'not_found' ? v : '');
+// private_label arrives as a checkbox boolean (admin) or Gemini's "yes"/"no".
+const truthy = (v) => v === true || v === 'yes' || v === 'true' || v === 1;
 
 // Step 1 of the catalog-import review: confirm the factory's identity/contact.
 // Either create a NEW factory_directory row, or attach the products to an
@@ -50,7 +52,16 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
         { ltr: true, ph: '2012', hint: isAr ? 'اختياري — يظهر كـ "تأسّست 2012"' : 'Optional — shows as "Est. 2012"' })}
       {field(isAr ? 'أسواق التصدير' : 'Export markets', 'export_markets',
         { ltr: true, ph: '30+ countries', hint: isAr ? 'اختياري — يظهر كـ "يصدّر إلى ‎30+ دولة"' : 'Optional — shows as "Exports to 30+ countries"' })}
+      {field(isAr ? 'الحد الأدنى للطلب (MOQ)' : 'Minimum order (MOQ)', 'moq',
+        { ph: isAr ? 'من 100 قطعة' : 'from 100 pcs', hint: isAr ? 'اختياري — MOQ عام يظهر في صفحة المصنع' : 'Optional — a general MOQ shown on the profile' })}
       <div style={{ marginTop: 8 }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, cursor: 'pointer' }}>
+          <input type="checkbox" checked={truthy(value.private_label)} onChange={(e) => set('private_label', e.target.checked)} style={{ marginTop: 3 }} />
+          <span>
+            <span className="ci-label" style={{ display: 'inline', margin: 0 }}>{isAr ? 'يصنّع العلامة الخاصة (OEM/ODM)' : 'Private label (OEM/ODM)'}</span>
+            <p className="ci-hint" style={{ margin: '1px 0 0' }}>{isAr ? 'يعرض شارة "يصنّع علامتك الخاصة"' : 'Shows a "Private label" badge'}</p>
+          </span>
+        </label>
         {toggle(isAr ? 'مصنع موثّق' : 'Verified factory', 'is_verified',
           isAr ? 'يعرض شارة "موثّق" في صفحة المصنع' : 'Shows a "Verified" badge on the profile')}
         {toggle(isAr ? 'موصى به (مميّز)' : 'Recommended (featured)', 'is_featured',
