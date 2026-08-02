@@ -44,6 +44,30 @@ export async function createImport(file, notes = '') {
   return id;
 }
 
+// Cancel a running extraction — the worker checks this at its next milestone
+// and aborts cooperatively (best-effort; a single long Gemini call finishes first).
+export async function cancelImport(importId) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ status: 'cancelled', progress: null }).eq('id', importId);
+  if (error) throw error;
+}
+
+// Delete an import entirely: the row (staged products cascade) + its storage
+// objects (source PDF + extracted images). Storage cleanup is best-effort.
+export async function deleteImport(importId) {
+  try {
+    const [{ data: imgs }] = await Promise.all([
+      sb.storage.from('factory-images').list(importId, { limit: 1000 }),
+    ]);
+    if (imgs?.length) {
+      await sb.storage.from('factory-images').remove(imgs.map((f) => `${importId}/${f.name}`));
+    }
+    await sb.storage.from('factory-catalogs').remove([`${importId}/source.pdf`]);
+  } catch { /* best-effort storage cleanup */ }
+  const { error } = await sb.from('factory_catalog_imports').delete().eq('id', importId);
+  if (error) throw error;
+}
+
 // Update the per-catalog guidance (used to re-curate with new instructions).
 export async function updateImportNotes(importId, notes) {
   const { error } = await sb.from('factory_catalog_imports')

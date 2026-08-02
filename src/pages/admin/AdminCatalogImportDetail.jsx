@@ -9,6 +9,7 @@ import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
+  cancelImport, deleteImport,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -337,9 +338,27 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedFactoryId, reviewQueue.length, deckIdx, current?.id, busy, edits, isAr]);
 
+  // Stop a running extraction, or delete the whole import.
+  const [canceling, setCanceling] = useState(false);
+  const stopExtraction = useCallback(async () => {
+    setCanceling(true); setError('');
+    try {
+      await cancelImport(id);
+      setBatch((b) => (b ? { ...b, status: 'cancelled', progress: null } : b));   // optimistic
+    } catch (e) { setError((isAr ? 'خطأ: ' : 'Error: ') + (e.message || '')); }
+    setCanceling(false);
+  }, [id, isAr]);
+  const removeImport = useCallback(async () => {
+    if (!window.confirm(isAr ? 'حذف هذا الاستيراد نهائياً؟' : 'Delete this import permanently?')) return;
+    setCanceling(true); setError('');
+    try { await deleteImport(id); nav('/admin/catalog-import'); }
+    catch (e) { setError((isAr ? 'تعذّر الحذف: ' : 'Delete failed: ') + (e.message || '')); setCanceling(false); }
+  }, [id, isAr, nav]);
+
   // Extraction must finish before the review steps are meaningful.
   const ready = !!batch && ['extracted', 'reviewing', 'approved'].includes(batch.status);
   const extracting = !!batch && (batch.status === 'extracting' || batch.status === 'queued');
+  const cancelled = !!batch && batch.status === 'cancelled';
 
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
@@ -407,14 +426,37 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                           </div>
                         </div>
 
-                        {queued && (
+                        {queued ? (
                           <button className="ci-btn-primary" style={{ marginTop: 18 }} onClick={startExtraction} disabled={starting}>
                             {isAr ? 'بدء الاستخراج الآن' : 'Start extraction now'}
                           </button>
+                        ) : (
+                          <div style={{ marginTop: 18 }}>
+                            <button className="ci-skip" onClick={stopExtraction} disabled={canceling}>
+                              {canceling ? (isAr ? 'جارٍ الإيقاف…' : 'Stopping…') : (isAr ? 'إيقاف الاستخراج' : 'Stop extraction')}
+                            </button>
+                            <p className="ci-hint" style={{ margin: '8px auto 0', maxWidth: 420 }}>
+                              {isAr ? 'يتوقّف عند أقرب مرحلة (قد يكمل نداء التحليل الجاري أولاً).' : 'Stops at the next stage (a running analysis call may finish first).'}
+                            </p>
+                          </div>
                         )}
                       </>
                     );
-                  })() : (
+                  })() : cancelled ? (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: 'rgba(0,0,0,0.7)', marginBottom: 6 }}>
+                        {isAr ? 'أُلغي الاستخراج' : 'Extraction cancelled'}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 12, flexWrap: 'wrap' }}>
+                        <button className="ci-btn-primary" onClick={startExtraction} disabled={starting}>
+                          {isAr ? 'إعادة الاستخراج' : 'Restart extraction'}
+                        </button>
+                        <button className="ci-skip" onClick={removeImport} disabled={canceling}>
+                          {isAr ? 'حذف الاستيراد' : 'Delete import'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
                     <>
                       <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: '#c0392b', marginBottom: 6 }}>
                         {isAr ? 'فشل الاستخراج' : 'Extraction failed'}
@@ -422,9 +464,14 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                       {batch.error && (
                         <p className="ci-hint" style={{ margin: '0 auto 4px', maxWidth: 520, color: 'rgba(0,0,0,0.55)', wordBreak: 'break-word' }}>{batch.error}</p>
                       )}
-                      <button className="ci-btn-primary" style={{ marginTop: 14 }} onClick={startExtraction} disabled={starting}>
-                        {isAr ? 'إعادة المحاولة' : 'Retry extraction'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+                        <button className="ci-btn-primary" onClick={startExtraction} disabled={starting}>
+                          {isAr ? 'إعادة المحاولة' : 'Retry extraction'}
+                        </button>
+                        <button className="ci-skip" onClick={removeImport} disabled={canceling}>
+                          {isAr ? 'حذف الاستيراد' : 'Delete import'}
+                        </button>
+                      </div>
                     </>
                   )}
                   {!workerConfigured() && (

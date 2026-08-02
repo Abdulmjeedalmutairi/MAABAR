@@ -55,6 +55,10 @@ except Exception:  # noqa
 DEFAULT_SUPABASE_URL = "https://utzalmszfqfcofywfetv.supabase.co"
 DEFAULT_CSV = r"C:\Users\mje_0\OneDrive - Northumbria University - Production Azure AD\Catalog\factories-reference.csv"
 
+
+class CancelledError(Exception):
+    """Raised when the admin cancels a running extraction (cooperative abort)."""
+
 # ── Structured schema (bilingual ar/en) ─────────────────────────────────────
 _BI = {"type": "object",
        "properties": {"ar": {"type": "string"}, "en": {"type": "string"}},
@@ -302,10 +306,11 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
     return prods, profs, (data.get("factory") or {})
 
 
-def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int, hint: str = None):
+def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int, hint: str = None, should_cancel=None):
     """Top-level chunking (each chunk extracted via extract_range, which splits
        further on truncation). Merges products/profile_images/factory.
-       `hint` = optional admin guidance for THIS catalog, appended to the prompt."""
+       `hint` = optional admin guidance for THIS catalog, appended to the prompt.
+       `should_cancel` = optional callable; checked between chunks for a co-op abort."""
     from google import genai
     from google.genai import types
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
@@ -326,6 +331,8 @@ def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int
     merged = {"factory": {}, "profile_images": [], "products": []}
     total = {"tokens": 0}
     for ci, (a, b) in enumerate(ranges):
+        if should_cancel and should_cancel():
+            raise CancelledError()
         if len(ranges) > 1:
             print(f"    chunk {ci+1}/{len(ranges)}: original pages {a+1}-{b+1}")
         prods, profs, fac = extract_range(client, types, pdf_path, doc, a, b, model, min_pages, total, prompt)
@@ -514,7 +521,8 @@ class Supa:
 
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
-                   supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None):
+                   supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None,
+                   should_cancel=None):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -527,7 +535,12 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
     Returns a summary dict. Raises on failure (the worker records it as 'failed').
     """
+    def _ck():
+        if should_cancel and should_cancel():
+            raise CancelledError()
+
     def _p(stage, pct, note=None):
+        _ck()   # cancellation checkpoint (raises to abort; NOT swallowed like progress)
         if progress:
             try:
                 progress(stage, pct, note)
@@ -547,7 +560,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         _p("analyzing", 15, "reading the catalog")
         log("[2/4] Gemini extraction")
-        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint)
+        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel)
         products = gem.get("products") or []
         _before = len(products)
         products = merge_duplicate_products(products)
@@ -633,7 +646,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
                 image_url = put_image(im, f"p{im['page']}_{im['xref']}"); uploaded += 1
             rows.append(product_row(pr, i, image_url))
             if total and (i % 10 == 0 or i == total - 1):
-                _p("uploading", 65 + int(32 * (i + 1) / total), f"{i + 1}/{total}")
+                _p("uploading", 65 + int(32 * (i + 1) / total), f"{i + 1}/{total}")   # also a cancel checkpoint
 
         imp = {
             "status": "extracted", "factory_fields": factory_fields, "profile_image_path": profile_url,

@@ -127,6 +127,24 @@ def extract():
             except Exception:  # noqa: BLE001
                 pass
 
+    # Cancellation check — the admin sets status='cancelled'; the extractor polls
+    # this at each milestone (cached ~2s to avoid hammering the DB).
+    _cancel = {"t": 0.0, "v": False}
+
+    def should_cancel():
+        now = time.time()
+        if not _cancel["v"] and (now - _cancel["t"]) > 2.0:
+            _cancel["t"] = now
+            try:
+                q = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/factory_catalog_imports?id=eq.{import_id}&select=status",
+                    headers=SR_HEADERS, timeout=10)
+                rows = q.json() if q.ok else []
+                _cancel["v"] = bool(rows) and rows[0].get("status") == "cancelled"
+            except requests.RequestException:
+                pass
+        return _cancel["v"]
+
     tmp = None
     try:
         supa.update("factory_catalog_imports", import_id,
@@ -144,8 +162,17 @@ def extract():
             log=lambda *a: print(*a, flush=True),
             progress=progress,
             hint=row.get("import_notes"),  # optional per-catalog admin guidance
+            should_cancel=should_cancel,
         )
         return jsonify({"ok": True, **summary}), 200
+    except ci.CancelledError:
+        # Admin cancelled — leave the row 'cancelled' (already set by the UI).
+        try:
+            supa.update("factory_catalog_imports", import_id,
+                        {"status": "cancelled", "progress": None})
+        except Exception:  # noqa: BLE001
+            pass
+        return jsonify({"cancelled": True}), 200
     except Exception as e:  # noqa: BLE001 — record any failure on the row
         traceback.print_exc()
         try:
