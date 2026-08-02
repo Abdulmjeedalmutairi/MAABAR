@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
-import { fetchImports } from '../../lib/catalogImport';
+import { fetchImports, createImport, triggerExtraction, workerConfigured } from '../../lib/catalogImport';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY = "'Tajawal', sans-serif";
 
 const STATUS_META = {
+  queued:     { en: 'Queued', ar: 'بالانتظار', color: '#6B6560', bg: 'rgba(0,0,0,0.05)' },
   extracting: { en: 'Extracting', ar: 'جارٍ الاستخراج', color: '#6B6560', bg: 'rgba(0,0,0,0.05)' },
   extracted:  { en: 'Ready to review', ar: 'جاهز للمراجعة', color: '#b8860b', bg: 'rgba(201,134,63,0.12)' },
   reviewing:  { en: 'In review', ar: 'قيد المراجعة', color: '#2c6fb0', bg: 'rgba(44,111,176,0.12)' },
@@ -69,6 +70,8 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [tab, setTab] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,6 +80,25 @@ export default function AdminCatalogImport({ user, profile, lang }) {
     setLoading(false);
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const onPickFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = '';   // allow re-picking the same file
+    if (!file) return;
+    if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
+      setError(isAr ? 'الملف يجب أن يكون PDF.' : 'File must be a PDF.'); return;
+    }
+    setUploading(true); setError('');
+    try {
+      const importId = await createImport(file);
+      // Fire extraction (the worker runs it async); the detail page polls status.
+      if (workerConfigured()) triggerExtraction(importId).catch(() => {});
+      nav(`/admin/catalog-import/${importId}`);
+    } catch (err) {
+      setError((isAr ? 'تعذّر الرفع: ' : 'Upload failed: ') + (err.message || ''));
+      setUploading(false);
+    }
+  };
 
   const shown = tab === 'all' ? imports : imports.filter((r) => r.status === tab);
   const factoryName = (r) => r.factory_fields?.name_original || r.factory_fields?.name_en || '—';
@@ -90,10 +112,29 @@ export default function AdminCatalogImport({ user, profile, lang }) {
       <AdminShell user={user} profile={profile} lang={lang}>
         <style>{SHARED_CSS(isAr)}</style>
         <div className="a-page" dir={isAr ? 'rtl' : 'ltr'}>
-          <h1 className="a-page-title">{isAr ? 'استيراد الكتالوج' : 'Catalog Import'}</h1>
-          <p className="a-page-sub">
-            {loading ? '…' : `${shown.length} ${isAr ? 'دفعة' : 'import' + (shown.length !== 1 ? 's' : '')}`}
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <h1 className="a-page-title">{isAr ? 'استيراد الكتالوج' : 'Catalog Import'}</h1>
+              <p className="a-page-sub">
+                {loading ? '…' : `${shown.length} ${isAr ? 'دفعة' : 'import' + (shown.length !== 1 ? 's' : '')}`}
+              </p>
+            </div>
+            <div style={{ textAlign: isAr ? 'left' : 'right' }}>
+              <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickFile} style={{ display: 'none' }} />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px',
+                  fontSize: 13, fontWeight: 600, cursor: uploading ? 'default' : 'pointer', fontFamily: FONT_BODY, opacity: uploading ? 0.6 : 1 }}>
+                {uploading ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : (isAr ? '+ استيراد كتالوج جديد' : '+ New catalog import')}
+              </button>
+              {!workerConfigured() && (
+                <p style={{ margin: '6px 0 0', fontSize: 11, color: '#b8860b', fontFamily: FONT_BODY }}>
+                  {isAr ? 'خادم الاستخراج غير مُعدّ بعد — سيُرفع الملف ويبقى بانتظار الاستخراج.' : 'Extraction worker not configured — the file uploads and waits.'}
+                </p>
+              )}
+            </div>
+          </div>
 
           <div className="a-tabs">
             {TABS.map((t) => (

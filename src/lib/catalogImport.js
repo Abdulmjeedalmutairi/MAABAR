@@ -7,6 +7,11 @@ import { sb } from '../supabase';
 
 export const HIGH_CONF = 0.7;
 
+// Cloud Run worker that runs the Python extraction (PyMuPDF + Gemini). Set
+// REACT_APP_CATALOG_WORKER_URL to the deployed service URL. Empty until deployed.
+export const CATALOG_WORKER_URL = (process.env.REACT_APP_CATALOG_WORKER_URL || '').replace(/\/$/, '');
+export const workerConfigured = () => !!CATALOG_WORKER_URL;
+
 const nf = (v) => (v && v !== 'not_found' ? v : null);
 const tri = (o, k) => (o && o[k] && o[k] !== 'not_found' ? o[k] : null);
 // private_label may arrive as a checkbox boolean (admin) or Gemini's "yes"/"no".
@@ -16,6 +21,47 @@ const yr = (v) => {
   const n = parseInt(String(v ?? '').trim(), 10);
   return Number.isFinite(n) && n >= 1800 && n <= 2100 ? n : null;
 };
+
+// ── Upload + trigger (admin dashboard import) ───────────────────────────────
+// Upload a catalog PDF to the private factory-catalogs bucket and create the
+// 'queued' import row. Returns the new import id.
+export async function createImport(file) {
+  const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const path = `${id}/source.pdf`;
+  const up = await sb.storage.from('factory-catalogs').upload(path, file, {
+    contentType: file.type || 'application/pdf', upsert: true,
+  });
+  if (up.error) throw up.error;
+  const { data: { user } } = await sb.auth.getUser();
+  const { error } = await sb.from('factory_catalog_imports').insert({
+    id, source_pdf_path: path, original_filename: file.name, status: 'queued',
+    uploaded_by: user?.id ?? null,
+  });
+  if (error) throw error;
+  return id;
+}
+
+// Kick off extraction on the Cloud Run worker. The worker verifies the caller is
+// an admin via this access token, runs the (multi-minute) job, and updates the
+// import row itself — the UI should poll the row's status rather than block here.
+export async function triggerExtraction(importId) {
+  if (!CATALOG_WORKER_URL) throw new Error('worker_not_configured');
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('not_authenticated');
+  const res = await fetch(`${CATALOG_WORKER_URL}/extract`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ import_id: importId }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`extract ${res.status}: ${t.slice(0, 200)}`);
+  }
+  return res.json().catch(() => ({}));
+}
 
 // ── Reads ───────────────────────────────────────────────────────────────────
 export async function fetchImports() {

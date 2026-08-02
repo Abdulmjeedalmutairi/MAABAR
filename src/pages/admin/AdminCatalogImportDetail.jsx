@@ -8,7 +8,7 @@ import ProductReviewCard from '../../components/admin/catalog/ProductReviewCard'
 import {
   fetchImport, fetchFactories, resolveFactory, HIGH_CONF,
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
-  archiveFactory, deleteFactory,
+  archiveFactory, deleteFactory, triggerExtraction, workerConfigured,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -69,8 +69,8 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState({ ok: false, text: '' });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { batch: b, products: p } = await fetchImport(id);
       setBatch(b); setProducts(p);
@@ -78,12 +78,33 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       setSavedFactoryId(b?.factory_id || null);
       setProfileSel(b?.profile_image_path || null);
       if (b?.factory_id) { setMode('existing'); setExistingId(b.factory_id); }
-      setError('');
-    } catch (e) { setError(e.message || 'Failed to load'); }
-    setLoading(false);
+      if (!silent) setError('');
+    } catch (e) { if (!silent) setError(e.message || 'Failed to load'); }
+    if (!silent) setLoading(false);
   }, [id]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { fetchFactories().then(setFactories).catch(() => {}); }, []);
+
+  // While the worker is extracting (or the row is queued), poll the status.
+  const bStatus = batch?.status;
+  useEffect(() => {
+    if (bStatus !== 'queued' && bStatus !== 'extracting') return undefined;
+    const t = setInterval(() => { load(true); }, 3000);
+    return () => clearInterval(t);
+  }, [bStatus, load]);
+
+  // Start / retry extraction on the Cloud Run worker.
+  const [starting, setStarting] = useState(false);
+  const startExtraction = useCallback(async () => {
+    if (!workerConfigured()) {
+      setError(isAr ? 'خادم الاستخراج غير مُعدّ (REACT_APP_CATALOG_WORKER_URL).' : 'Extraction worker not configured (REACT_APP_CATALOG_WORKER_URL).');
+      return;
+    }
+    setStarting(true); setError('');
+    setBatch((b) => (b ? { ...b, status: 'extracting', error: null } : b));   // optimistic
+    triggerExtraction(id).catch(() => {});   // fire; polling reflects the real status
+    setStarting(false);
+  }, [id, isAr]);
 
   // When attaching to an existing factory, seed the trust fields (founded_year /
   // export_markets) from that factory so the admin sees + edits current values.
@@ -270,6 +291,10 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedFactoryId, reviewQueue.length, deckIdx, current?.id, busy, edits, isAr]);
 
+  // Extraction must finish before the review steps are meaningful.
+  const ready = !!batch && ['extracted', 'reviewing', 'approved'].includes(batch.status);
+  const extracting = !!batch && (batch.status === 'extracting' || batch.status === 'queued');
+
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
       <AdminShell user={user} profile={profile} lang={lang}>
@@ -289,9 +314,49 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
             <>
               <h1 className="a-page-title">{batch.original_filename}</h1>
               <p className="a-page-sub">
-                {counts.total} {isAr ? 'منتج' : 'products'} · {batch.page_count} {isAr ? 'صفحة' : 'pages'} · {isAr ? 'الحالة' : 'status'}: {batch.status}
+                {counts.total} {isAr ? 'منتج' : 'products'} · {batch.page_count ?? '—'} {isAr ? 'صفحة' : 'pages'} · {isAr ? 'الحالة' : 'status'}: {batch.status}
               </p>
 
+              {/* Extraction state — queued / extracting / failed (before review) */}
+              {!ready && (
+                <div className="ci-card" style={{ textAlign: 'center', padding: '30px 22px' }}>
+                  {extracting ? (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: 'rgba(0,0,0,0.8)', marginBottom: 6 }}>
+                        {batch.status === 'queued' ? (isAr ? 'بانتظار بدء الاستخراج' : 'Waiting to extract') : (isAr ? 'جارٍ استخراج الكتالوج…' : 'Extracting the catalog…')}
+                      </div>
+                      <p className="ci-hint" style={{ margin: '0 auto', maxWidth: 440 }}>
+                        {isAr ? 'يعمل خادم الاستخراج (PyMuPDF + Gemini). قد يستغرق عدة دقائق للكتالوجات الكبيرة — تُحدَّث الحالة تلقائياً.'
+                              : 'The worker is running (PyMuPDF + Gemini). Large catalogs can take a few minutes — this updates automatically.'}
+                      </p>
+                      {batch.status === 'queued' && (
+                        <button className="ci-btn-primary" style={{ marginTop: 16 }} onClick={startExtraction} disabled={starting}>
+                          {isAr ? 'بدء الاستخراج الآن' : 'Start extraction now'}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FB, color: '#c0392b', marginBottom: 6 }}>
+                        {isAr ? 'فشل الاستخراج' : 'Extraction failed'}
+                      </div>
+                      {batch.error && (
+                        <p className="ci-hint" style={{ margin: '0 auto 4px', maxWidth: 520, color: 'rgba(0,0,0,0.55)', wordBreak: 'break-word' }}>{batch.error}</p>
+                      )}
+                      <button className="ci-btn-primary" style={{ marginTop: 14 }} onClick={startExtraction} disabled={starting}>
+                        {isAr ? 'إعادة المحاولة' : 'Retry extraction'}
+                      </button>
+                    </>
+                  )}
+                  {!workerConfigured() && (
+                    <p style={{ margin: '12px 0 0', fontSize: 11.5, color: '#b8860b', fontFamily: FB }}>
+                      {isAr ? 'ملاحظة: خادم الاستخراج غير مُعدّ بعد (REACT_APP_CATALOG_WORKER_URL).' : 'Note: extraction worker not configured (REACT_APP_CATALOG_WORKER_URL).'}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {ready && (<>
               {/* Step 1 — factory */}
               <div className="ci-card">
                 <h2 className="ci-h2">{isAr ? '١) بيانات المصنع' : '1) Factory details'}</h2>
@@ -444,6 +509,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                   </>
                 )}
               </div>
+              </>)}
             </>
           )}
         </div>
