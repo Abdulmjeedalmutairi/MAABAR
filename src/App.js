@@ -39,6 +39,8 @@ import Contact from './pages/Contact';
 import Support from './pages/Support';
 import Requests from './pages/Requests';
 import Factories from './pages/Factories';
+import FactoryProducts from './pages/FactoryProducts';
+import RequestWizard from './pages/RequestWizard';
 import FactoryDetail from './pages/FactoryDetail';
 import FactoryProductDetail from './pages/FactoryProductDetail';
 import FactoryRequestView from './pages/FactoryRequestView';
@@ -325,7 +327,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
             Detail pages (/products/:id, /supplier/:id) stay — used by chat,
             managed shortlists, invites. These redirects guarantee no browse
             directory survives, regardless of any lingering links to them. */}
-        <Route path="/products"       element={<Navigate to="/factories" replace />} />
+        <Route path="/products"       element={<FactoryProducts {...sharedProps} />} />
         <Route path="/products/:id"   element={<ProductDetail   {...sharedProps} />} />
         <Route path="/login/:role"    element={<Login           {...sharedProps} />} />
         <Route path="/login"          element={<Login           {...sharedProps} />} />
@@ -334,6 +336,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/about"          element={<About           {...sharedProps} />} />
         <Route path="/contact"        element={<Contact         {...sharedProps} />} />
         <Route path="/support"        element={<Support         {...sharedProps} />} />
+        <Route path="/request"        element={<RequestWizard   {...sharedProps} />} />
         <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
         <Route path="/factories"          element={<Factories       {...sharedProps} />} />
         <Route path="/factories/:key"     element={<Factories       {...sharedProps} />} />

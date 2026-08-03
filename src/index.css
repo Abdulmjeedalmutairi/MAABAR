@@ -1374,6 +1374,10 @@ footer {
 .fx-fac-desc { font-family: var(--font-sans); font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 8px 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fx-fac-desc.ar { font-family: var(--font-ar); }
 
+.fx-fac-catrow { margin: 0 0 12px; }
+.fx-fac-cat { display: inline-block; padding: 5px 14px; border-radius: 20px; background: #8B7355; color: #fff; font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; }
+.fx-fac-catrow.ar .fx-fac-cat { font-family: var(--font-ar); }
+
 .fx-fac-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
 .fx-fac-stat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 8px 4px; background: var(--bg-hero); border: 1px solid var(--border); border-radius: var(--radius-control); }
 .fx-fac-stat-n { font-family: var(--font-sans); font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.1; font-variant-numeric: lining-nums; }
@@ -1716,6 +1720,11 @@ footer {
 .fp-pcard-btn { margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border: none; border-radius: var(--radius-control); background: var(--ink); color: #fff; font-family: var(--font-sans); font-size: 12.5px; cursor: pointer; transition: background 0.15s ease; }
 .fp-pcard-btn.ar { font-family: var(--font-ar); }
 .fp-pcard-btn:hover { background: var(--ink-soft); }
+.fp-pcard-fac { display: block; text-align: start; background: none; border: none; padding: 0; cursor: pointer; font-family: var(--font-sans); font-size: 11.5px; color: var(--text-muted); margin: 0; }
+.fp-pcard-fac.ar { font-family: var(--font-ar); }
+.fp-pcard-fac:hover { color: #8B7355; text-decoration: underline; }
+.fp-psearch { width: 100%; max-width: 360px; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-control); font-size: 13.5px; font-family: var(--font-sans); background: var(--surface-raised); color: var(--text-primary); outline: none; margin: 0 0 14px; box-sizing: border-box; }
+.fp-psearch:focus { border-color: #8B7355; }
 
 /* Information sources */
 .fp-sources { margin: 34px 0 0; padding: 24px; background: var(--bg-hero); border: 1px solid var(--border); border-radius: var(--radius-card); }
