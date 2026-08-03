@@ -1353,10 +1353,11 @@ footer {
 .fx-fac-cover { position: relative; background: var(--bg-hero); cursor: pointer; overflow: hidden; min-height: 210px; }
 .fx-fac-cover-img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; }
 .fx-fac-cover-initial { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 64px; color: #8B7355; }
+.fx-fac-cover-logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 26px; background: var(--surface-raised); }
 .fx-fac-collage { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 3px; }
 .fx-fac-collage span { overflow: hidden; background: var(--surface-raised); }
 .fx-fac-collage img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.fx-fac-logo { position: absolute; top: 10px; inset-inline-start: 10px; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.fx-fac-logo { position: absolute; top: 10px; inset-inline-start: 10px; width: 46px; height: 46px; border-radius: 10px; object-fit: contain; padding: 4px; background: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
 .fx-fac-badges { position: absolute; top: 10px; inset-inline-end: 10px; display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
 .fx-fac-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 20px; font-size: 11px; font-family: var(--font-sans); font-weight: 600; white-space: nowrap; }
 .fx-fac-badge.ar { font-family: var(--font-ar); }
@@ -1686,6 +1687,35 @@ footer {
 .fp-prod img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
 .fp-prod:hover img { transform: scale(1.05); }
 .fp-more { display: block; margin: 20px auto 0; }
+
+/* About the factory (real highlights) */
+.fp-about { background: var(--bg-hero); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 22px 24px; }
+.fp-about-desc { font-family: var(--font-sans); font-size: 14.5px; color: var(--text-secondary); line-height: 1.85; margin: 0; }
+.fp-about-desc.ar { font-family: var(--font-ar); }
+.fp-about-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
+.fp-about-card { display: flex; align-items: flex-start; gap: 11px; padding: 14px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.fp-about-card svg { color: #8B7355; flex-shrink: 0; margin-top: 2px; }
+.fp-about-t { font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); margin: 0 0 3px; letter-spacing: 0.3px; }
+.fp-about-t.ar { font-family: var(--font-ar); }
+.fp-about-v { font-family: var(--font-sans); font-size: 14px; color: var(--text-primary); font-weight: 600; margin: 0; }
+.fp-about-v.ar { font-family: var(--font-ar); }
+
+/* Product cards (grid) */
+.fp-pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.fp-pcard { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; background: var(--surface-raised); transition: box-shadow 0.2s ease, border-color 0.2s ease; }
+.fp-pcard:hover { box-shadow: var(--accent-shadow); border-color: var(--border-strong); }
+.fp-pcard-media { aspect-ratio: 1 / 1; border: none; padding: 0; background: var(--bg-hero); cursor: pointer; overflow: hidden; }
+.fp-pcard-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
+.fp-pcard:hover .fp-pcard-media img { transform: scale(1.05); }
+.fp-pcard-body { padding: 12px 13px 13px; display: flex; flex-direction: column; gap: 4px; }
+.fp-pcard-name { font-family: var(--font-sans); font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0; cursor: pointer; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8em; }
+.fp-pcard-name.ar { font-family: var(--font-ar); }
+.fp-pcard-name:hover { color: #6f5c43; }
+.fp-pcard-moq { font-family: var(--font-sans); font-size: 11.5px; color: var(--text-muted); margin: 0; }
+.fp-pcard-moq.ar { font-family: var(--font-ar); }
+.fp-pcard-btn { margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border: none; border-radius: var(--radius-control); background: var(--ink); color: #fff; font-family: var(--font-sans); font-size: 12.5px; cursor: pointer; transition: background 0.15s ease; }
+.fp-pcard-btn.ar { font-family: var(--font-ar); }
+.fp-pcard-btn:hover { background: var(--ink-soft); }
 
 /* Information sources */
 .fp-sources { margin: 34px 0 0; padding: 24px; background: var(--bg-hero); border: 1px solid var(--border); border-radius: var(--radius-card); }

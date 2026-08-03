@@ -4,7 +4,6 @@ import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
-import ImageLightbox from '../components/ImageLightbox';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
 
 const T = {
@@ -114,12 +113,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   useEffect(() => { if (searchParams.get('request') === '1') setReqOpen(true); }, [searchParams]);
   const [activeCatalog, setActiveCatalog] = useState(null); // import_id filter
   const [visible, setVisible] = useState(20);
-  const [galleryOpen, setGalleryOpen] = useState(false); // fullscreen photo viewer
-  const [galleryStart, setGalleryStart] = useState(0);
-  const openGallery = (i = 0) => { setGalleryStart(i); setGalleryOpen(true); };
-  const [prodViewOpen, setProdViewOpen] = useState(false);   // product-photos viewer
-  const [prodViewStart, setProdViewStart] = useState(0);
-  const [viewerReqProduct, setViewerReqProduct] = useState(null); // request from inside the viewer
+  const [viewerReqProduct, setViewerReqProduct] = useState(null); // request a quote for a specific product
 
   useEffect(() => {
     load();
@@ -169,7 +163,6 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const catalog = products.filter((p) => p.image);
   const productImages = catalog.map((p) => p.image).filter(Boolean);
   const heroImages = Array.from(new Set([factory.profile_image, ...productImages].filter(Boolean)));
-  const collage = heroImages.slice(0, 4);
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
   const catalogCover = (cat) => {
     const p = catalog.find((pp) => pp.import_id === cat.id && pp.image);
@@ -206,19 +199,10 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         {/* ── Hero ── */}
         <div className="fp-hero">
           <div className="fp-cover">
-            {collage.length >= 4 ? (
-              <div className="fp-collage">{collage.map((u, i) => (
-                <span key={i} onClick={() => openGallery(i)} style={{ cursor: 'zoom-in' }}><img src={u} alt="" /></span>
-              ))}</div>
-            ) : collage.length >= 1 ? (
-              <div className="fp-cover-single" onClick={() => openGallery(0)} style={{ cursor: 'zoom-in' }}><img src={collage[0]} alt={name} /></div>
+            {factory.profile_image ? (
+              <div className="fp-cover-single"><img src={factory.profile_image} alt={name} /></div>
             ) : (
               <div className="fp-cover-initial">{(name || '?')[0]}</div>
-            )}
-            {heroImages.length > 0 && (
-              <button className={`fp-viewall${ar}`} onClick={() => openGallery(0)}>
-                <Icon name="images" size={14} />{c.viewAll} ({heroImages.length})
-              </button>
             )}
           </div>
 
@@ -242,19 +226,6 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
             )}
             <p className={`fp-desc${ar}`}>{desc}</p>
 
-            {(() => {
-              const facts = [];
-              if (factory.founded_year) facts.push({ icon: 'clock', text: isAr ? `تأسّست ${factory.founded_year}` : lang === 'zh' ? `成立于 ${factory.founded_year}` : `Est. ${factory.founded_year}` });
-              if (factory.export_markets) facts.push({ icon: 'globe', text: isAr ? `يصدّر إلى ${factory.export_markets}` : lang === 'zh' ? `出口 ${factory.export_markets}` : `Exports to ${factory.export_markets}` });
-              if (factory.moq_note) facts.push({ icon: 'box', text: isAr ? `الحد الأدنى للطلب: ${factory.moq_note}` : lang === 'zh' ? `起订量 ${factory.moq_note}` : `MOQ ${factory.moq_note}` });
-              if (factory.private_label) facts.push({ icon: 'tag', text: isAr ? 'يصنّع علامتك الخاصة (OEM/ODM)' : lang === 'zh' ? '贴牌代工 (OEM/ODM)' : 'Private label (OEM/ODM)' });
-              return facts.length ? (
-                <div className={`fp-facts${ar}`}>
-                  {facts.map((f, i) => <span className="fp-fact" key={i}><Icon name={f.icon} size={13} />{f.text}</span>)}
-                </div>
-              ) : null;
-            })()}
-
             <div className="fp-stats">
               {stats.map((s, i) => (
                 <div className="fp-stat" key={i}>
@@ -271,6 +242,39 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
             </p>
           </div>
         </div>
+
+        {/* ── About the factory — real highlights (facts, not marketing filler) ── */}
+        {(() => {
+          const cards = [];
+          if (factory.founded_year) cards.push({ icon: 'clock', t: isAr ? 'سنة التأسيس' : lang === 'zh' ? '成立年份' : 'Established', v: `${factory.founded_year}` });
+          if (factory.export_markets) cards.push({ icon: 'globe', t: isAr ? 'أسواق التصدير' : lang === 'zh' ? '出口市场' : 'Export markets', v: factory.export_markets });
+          if (factory.private_label) cards.push({ icon: 'tag', t: isAr ? 'العلامة الخاصة' : lang === 'zh' ? '贴牌代工' : 'Private label', v: 'OEM / ODM' });
+          if (factory.moq_note) cards.push({ icon: 'box', t: isAr ? 'الحد الأدنى للطلب' : lang === 'zh' ? '起订量' : 'MOQ', v: factory.moq_note });
+          if (!cards.length && !desc) return null;
+          return (
+            <div className="fp-sec">
+              <div className="fp-sec-head">
+                <h2 className={`fp-sec-title${ar}`}>{isAr ? 'نبذة عن المصنع' : lang === 'zh' ? '工厂简介' : 'About the factory'}</h2>
+              </div>
+              <div className="fp-about">
+                {desc && <p className={`fp-about-desc${ar}`}>{desc}</p>}
+                {cards.length > 0 && (
+                  <div className="fp-about-grid">
+                    {cards.map((cd, i) => (
+                      <div className="fp-about-card" key={i}>
+                        <Icon name={cd.icon} size={20} />
+                        <div>
+                          <p className={`fp-about-t${ar}`}>{cd.t}</p>
+                          <p className={`fp-about-v${ar}`}>{cd.v}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Available catalogs (only when there's more than one) ── */}
         {showCatalogs && (
@@ -312,7 +316,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         {catalog.length > 0 && (
           <div className="fp-sec" id="fp-prods">
             <div className="fp-sec-head">
-              <h2 className={`fp-sec-title${ar}`}>{c.prodsTitle}</h2>
+              <h2 className={`fp-sec-title${ar}`}>{c.prodsTitle} ({filtered.length})</h2>
             </div>
             {activeCat && (
               <div className={`fp-filter${ar}`}>
@@ -320,16 +324,28 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                 <button onClick={() => setActiveCatalog(null)} aria-label={c.clearFilter}>×</button>
               </div>
             )}
-            <div className="fp-prods">
-              {shown.map((p, i) => (
-                <button key={p.id} type="button" className="fp-prod" onClick={() => { setProdViewStart(i); setProdViewOpen(true); }} title={productName(p)}>
-                  <img src={p.image} alt={productName(p)} loading="lazy" />
-                </button>
-              ))}
+            <div className="fp-pgrid">
+              {shown.map((p) => {
+                const pn = productName(p) || '—';
+                return (
+                  <div className="fp-pcard" key={p.id}>
+                    <button type="button" className="fp-pcard-media" onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)} title={pn}>
+                      <img src={p.image} alt={pn} loading="lazy" />
+                    </button>
+                    <div className="fp-pcard-body">
+                      <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
+                      {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
+                      <button className={`fp-pcard-btn${ar}`} onClick={() => setViewerReqProduct(p)}>
+                        <Icon name="send" size={14} />{isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             {filtered.length > visible && (
-              <button className={`fx-btn-ghost fp-more${ar}`} onClick={() => setVisible((v) => v + 20)}>
-                {c.prodsMore} ({filtered.length - visible})
+              <button className={`fx-btn-ghost fp-more${ar}`} onClick={() => setVisible(filtered.length)}>
+                {isAr ? `عرض جميع المنتجات (${filtered.length})` : lang === 'zh' ? `查看全部产品 (${filtered.length})` : `View all products (${filtered.length})`}
               </button>
             )}
           </div>
@@ -348,24 +364,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
         <p className={`fp-srcline${ar}`}>{c.srcline}</p>
       </div>
 
-      {/* ── Fullscreen photo gallery (navigate + zoom + thumbnails) ── */}
-      {galleryOpen && heroImages.length > 0 && (
-        <ImageLightbox images={heroImages} start={galleryStart} alt={name} onClose={() => setGalleryOpen(false)} />
-      )}
 
-      {/* ── Product-photos viewer: browse all products fullscreen + request/details ── */}
-      {prodViewOpen && filtered.length > 0 && (
-        <ImageLightbox
-          images={filtered.map((p) => p.image)}
-          captions={filtered.map((p) => productName(p) || '—')}
-          start={prodViewStart}
-          actions={[
-            { label: isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote', primary: true, onClick: (i) => { setProdViewOpen(false); setViewerReqProduct(filtered[i]); } },
-            { label: isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details', onClick: (i) => nav(`/factory/${factory.id}/product/${filtered[i].id}`) },
-          ]}
-          onClose={() => setProdViewOpen(false)}
-        />
-      )}
       {viewerReqProduct && (
         <RequestQuoteModal lang={lang} user={user} factory={factory} product={viewerReqProduct} displayCurrency={displayCurrency} onClose={() => setViewerReqProduct(null)} />
       )}
