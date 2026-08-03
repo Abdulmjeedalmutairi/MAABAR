@@ -61,6 +61,7 @@ import AdminOverview from './pages/admin/AdminOverview';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
 import AdminCatalogImport from './pages/admin/AdminCatalogImport';
 import AdminCatalogImportDetail from './pages/admin/AdminCatalogImportDetail';
+import AdminFactories from './pages/admin/AdminFactories';
 import AdminSupplierDetail from './pages/admin/AdminSupplierDetail';
 import AdminReferrals from './pages/admin/AdminReferrals';
 import SupplierShareView from './pages/SupplierShareView';
@@ -360,6 +361,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin/suppliers/:id"     element={<AdminSupplierDetail  {...sharedProps} />} />
         <Route path="/admin/catalog-import"    element={<AdminCatalogImport   {...sharedProps} />} />
         <Route path="/admin/catalog-import/:id" element={<AdminCatalogImportDetail {...sharedProps} />} />
+        <Route path="/admin/factories"         element={<AdminFactories       {...sharedProps} />} />
         <Route path="/admin/referrals"         element={<AdminReferrals       {...sharedProps} />} />
         <Route path="/s/supplier/:token"       element={<SupplierShareView    lang={lang} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
