@@ -36,6 +36,7 @@ import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
 import DashboardFactory from './pages/DashboardFactory';
 import FactoryClaim from './pages/FactoryClaim';
+import FactoryThread from './pages/FactoryThread';
 import AuthCallback from './pages/AuthCallback';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -316,7 +317,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     || location.pathname === '/preview'
     || location.pathname === '/login'
     || location.pathname.startsWith('/login/')
-    || location.pathname.startsWith('/claim/');
+    || location.pathname.startsWith('/claim/')
+    || location.pathname.startsWith('/messages/factory/');
   const isSupplierAccessPage = location.pathname === '/supplier-access';
   const isLTRPage = isAuthCallbackPage || isSupplierAccessPage;
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
@@ -366,6 +368,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
         <Route path="/f/:slug"            element={<FactoryRequestView />} />
         <Route path="/claim/:slug"        element={<FactoryClaim lang={lang} />} />
+        <Route path="/messages/factory/:threadId" element={<FactoryThread {...sharedProps} />} />
         <Route path="/supplier"       element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
