@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
 import { fetchFactories, archiveFactory, deleteFactory } from '../../lib/catalogImport';
@@ -39,6 +40,7 @@ const CSS = (isAr) => `
 `;
 
 export default function AdminFactories({ user, profile, lang }) {
+  const nav = useNavigate();
   const isAr = lang === 'ar';
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,10 @@ export default function AdminFactories({ user, profile, lang }) {
               {shown.map((f) => (
                 <div className="af-row" key={f.id}>
                   <div>
-                    <div className="af-name">{f.company_name}</div>
+                    <button className="af-name" onClick={() => nav(`/admin/factories/${f.id}`)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'start' }}>
+                      {f.company_name}
+                    </button>
                     {f.company_name_latin && f.company_name_latin !== f.company_name && (
                       <div className="af-sub2">{f.company_name_latin}</div>
                     )}
@@ -123,6 +128,7 @@ export default function AdminFactories({ user, profile, lang }) {
                     </span>
                   </div>
                   <div className="af-actions">
+                    <button className="af-btn" onClick={() => nav(`/admin/factories/${f.id}`)}>{isAr ? 'إدارة' : 'Manage'}</button>
                     <a className="af-btn" href={`/factory/${f.id}`} target="_blank" rel="noreferrer">{isAr ? 'عرض' : 'View'}</a>
                     <button className="af-btn" disabled={busyId === f.id} onClick={() => toggleActive(f)}>
                       {f.is_active ? (isAr ? 'إخفاء' : 'Hide') : (isAr ? 'إظهار' : 'Show')}
