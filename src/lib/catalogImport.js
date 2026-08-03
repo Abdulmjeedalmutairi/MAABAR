@@ -206,6 +206,56 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
   return factoryId;
 }
 
+// ── Single-factory management (admin) — edit fields/logo/products anytime ────
+export async function fetchFactory(factoryId) {
+  const { data, error } = await sb.from('factory_directory').select('*').eq('id', factoryId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchFactoryProducts(factoryId) {
+  const { data, error } = await sb.from('factory_products').select('*')
+    .eq('factory_id', factoryId).order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// Distinct image URLs for this factory (its products' images) — candidates for
+// the logo picker and for "add product". (Widened to the full catalog by #2.)
+export async function fetchFactoryImagePool(factoryId) {
+  const prods = await fetchFactoryProducts(factoryId);
+  const fac = await fetchFactory(factoryId);
+  const urls = [
+    ...(Array.isArray(fac?.factory_images) ? fac.factory_images : []),
+    fac?.profile_image,
+    ...prods.map((p) => p.image),
+  ].filter((u) => typeof u === 'string' && /^https?:\/\//i.test(u));
+  return Array.from(new Set(urls));
+}
+
+export async function updateFactory(factoryId, patch) {
+  const { error } = await sb.from('factory_directory').update(patch).eq('id', factoryId);
+  if (error) throw error;
+}
+
+export async function updateFactoryProduct(productId, patch) {
+  const { error } = await sb.from('factory_products').update(patch).eq('id', productId);
+  if (error) throw error;
+}
+
+export async function deleteFactoryProduct(productId) {
+  const { error } = await sb.from('factory_products').delete().eq('id', productId);
+  if (error) throw error;
+}
+
+export async function createFactoryProduct(factoryId, row) {
+  const { data, error } = await sb.from('factory_products')
+    .insert({ factory_id: factoryId, gallery_images: [], customization_options: [], sort_order: 0, ...row })
+    .select('*').single();
+  if (error) throw error;
+  return data;
+}
+
 // ── Factory removal ─────────────────────────────────────────────────────────
 // 'archive' → hide from the site (is_active=false); reversible, keeps products.
 // 'delete'  → permanent: factory_products cascade-delete with the row. Blocked by
