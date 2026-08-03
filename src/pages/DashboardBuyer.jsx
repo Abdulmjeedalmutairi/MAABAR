@@ -422,7 +422,7 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
         return (
           <button key={item.id}
             onClick={() => {
-              if (item.id === 'new')  { nav('/factories'); return; }
+              if (item.id === 'new')  { nav('/requests'); return; }
               if (item.id === 'more') { setMoreOpen(o => !o); return; }
               setActiveTab(item.id);
               setMoreOpen(false);
@@ -1584,8 +1584,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
                   <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary isAr={isAr} />
-                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/factories')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/factories')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/requests')} isAr={isAr} />
+                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/requests')} isAr={isAr} />
                   <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'} sub={isAr ? 'تابع الطلبات، العروض، والدفع' : 'Track requests, offers, and payment steps'} onClick={() => setActiveTab('requests')} isAr={isAr} />
                 </div>
               </div>
@@ -1616,7 +1616,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 }}>
                   {isAr ? 'طلباتي' : 'My Requests'}
                 </h2>
-                <button className="btn-dark-sm" onClick={() => nav('/factories')}
+                <button className="btn-dark-sm" onClick={() => nav('/requests')}
                   style={{ fontSize: 11, letterSpacing: 1, minHeight: 36 }}>
                   {isAr ? '+ طلب جديد' : '+ New Request'}
                 </button>
@@ -1695,7 +1695,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   <p style={{ fontSize: 14, color: 'var(--text-disabled)', marginBottom: 24, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
                     {isAr ? 'ما عندك طلبات بعد' : 'No requests yet'}
                   </p>
-                  <button className="btn-dark-sm" onClick={() => nav('/factories')} style={{ minHeight: 40 }}>
+                  <button className="btn-dark-sm" onClick={() => nav('/requests')} style={{ minHeight: 40 }}>
                     {isAr ? 'ارفع أول طلب' : 'Post First Request'}
                   </button>
                 </div>

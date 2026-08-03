@@ -172,9 +172,8 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
 
   // Request-first: buyers discover + request through the Factories flow, not this
   // page's legacy form. Suppliers keep this page (browse requests + offer).
-  useEffect(() => {
-    if (profile?.role === 'buyer') nav('/factories', { replace: true });
-  }, [profile, nav]);
+  // Buyers use this page directly as the standard request form ("ارفع طلبك",
+  // sourcing_mode='direct' by default; ?mode=managed switches to the managed flow).
 
   useEffect(() => { if (isSupplier) loadRequests(); }, [user, profile, showAllRequests]);
 

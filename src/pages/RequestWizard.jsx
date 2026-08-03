@@ -107,11 +107,15 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
   const prefillTitle = params.get('prefillTitle') || '';
   // Factory-level "custom request to this factory" binding (from a factory page).
   const factoryId = params.get('factory') || '';
+  // Optional preselected path from the home CTAs: ?type=product (import) / ?type=idea (manufacture).
+  const typeParam = params.get('type');
 
   // null → show the product-vs-idea choice; 'product' → form; 'idea' → IdeaToProduct.
   // Factory-bound requests skip the choice — you're requesting from a specific
   // factory, so go straight to the product form.
-  const [pathType, setPathType] = useState(factoryId ? 'product' : null);
+  const [pathType, setPathType] = useState(
+    factoryId ? 'product' : (typeParam === 'idea' || typeParam === 'product' ? typeParam : null),
+  );
   const [step, setStep] = useState(0); // product path: 0 Requirements, 1 Budget
   const [form, setForm] = useState(() => {
     let base = { ...EMPTY_FORM, budget_currency: viewerCurrency };
