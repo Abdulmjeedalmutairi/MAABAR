@@ -161,6 +161,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
       : [
           { label: isAr ? 'الرئيسية'  : lang === 'zh' ? '首页'  : 'Home',      path: homeRoute },
           { label: isAr ? 'المصانع'   : lang === 'zh' ? '工厂'  : 'Factories', path: '/factories' },
+          { label: isAr ? 'المنتجات'  : lang === 'zh' ? '产品'  : 'Products',  path: '/products' },
           { label: isAr ? 'عن مَعبر'  : lang === 'zh' ? '关于'  : 'About',     path: '/about' },
           { label: isAr ? 'تواصل'     : lang === 'zh' ? '联系'  : 'Contact',   path: '/contact' },
         ];
@@ -176,6 +177,7 @@ export default function Navbar({ user, profile, lang, setLang, setUser, setProfi
   const mobileQuickLinks = !isSupplier && !isSupplierRegistrationPage
     ? [
         { label: isAr ? 'المصانع' : lang === 'zh' ? '工厂' : 'Factories', path: '/factories' },
+        { label: isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products', path: '/products' },
       ]
     : [];
 

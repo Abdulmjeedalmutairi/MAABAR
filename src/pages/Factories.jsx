@@ -8,6 +8,7 @@ import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
   factoryTaglineForCode,
 } from '../lib/factoryCategories';
+import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
 
 const PAGE = 9;   // "load more" batch
 
@@ -15,17 +16,17 @@ const T = {
   ar: { title: 'المصانع', sub: 'تواصل مباشرة مع المصانع في الصين واستورد بأفضل الأسعار.',
         cats: 'كتالوجات', prods: 'منتج', moq: 'الحد الأدنى', oem: 'OEM/ODM', oemYes: 'متوفر',
         rec: 'موصى به', ver: 'موثّق', exports: 'يصدّر إلى', since: 'منذ',
-        view: 'عرض الكتالوج', quote: 'اطلب عرض سعر', more: 'تحميل المزيد',
+        view: 'عرض المصنع', quote: 'اطلب عرض سعر', more: 'تحميل المزيد',
         empty: 'لا توجد مصانع في هذه الفئة بعد.', loading: 'جارٍ التحميل…' },
   en: { title: 'Factories', sub: 'Deal directly with factories in China and import at the best prices.',
         cats: 'catalogs', prods: 'products', moq: 'MOQ', oem: 'OEM/ODM', oemYes: 'available',
         rec: 'Recommended', ver: 'Verified', exports: 'Exports to', since: 'Est.',
-        view: 'View catalog', quote: 'Request a quote', more: 'Load more',
+        view: 'View factory', quote: 'Request a quote', more: 'Load more',
         empty: 'No factories in this category yet.', loading: 'Loading…' },
   zh: { title: '工厂', sub: '直接对接中国工厂，以最优价格进口。',
         cats: '目录', prods: '产品', moq: '起订量', oem: 'OEM/ODM', oemYes: '可提供',
         rec: '推荐', ver: '已核实', exports: '出口至', since: '成立',
-        view: '查看目录', quote: '请求报价', more: '加载更多',
+        view: '查看工厂', quote: '请求报价', more: '加载更多',
         empty: '该类别暂无工厂。', loading: '加载中…' },
 };
 
@@ -41,6 +42,11 @@ export default function Factories({ lang = 'ar' }) {
   usePageTitle('suppliers', lang);
 
   const chips = useMemo(() => displayCategoriesForLang(lang), [lang]);
+  const catLabel = useMemo(() => {
+    const m = {};
+    (UI_CATEGORIES[lang] || UI_CATEGORIES.ar).forEach((cat) => { m[cat.val] = cat.label; });
+    return m;
+  }, [lang]);
   const [factories, setFactories] = useState([]);
   const [byFactory, setByFactory] = useState({});   // { id: { images, products, catalogs } }
   const [loading, setLoading] = useState(true);
@@ -147,6 +153,12 @@ export default function Factories({ lang = 'ar' }) {
                     </h3>
                     {loc && <p className={`fx-fac-loc${arc}`}>{loc}</p>}
                     <p className={`fx-fac-desc${arc}`}>{desc}</p>
+
+                    {catLabel[f.category] && (
+                      <div className={`fx-fac-catrow${arc}`}>
+                        <span className="fx-fac-cat">{catLabel[f.category]}</span>
+                      </div>
+                    )}
 
                     {stats.length > 0 && (
                       <div className="fx-fac-stats">
