@@ -111,8 +111,8 @@ export default function Factories({ lang = 'ar' }) {
           <div className="fx-faclist" ref={revealRef}>
             {shown.map((f, i) => {
               const meta = byFactory[f.id] || { images: [], products: 0, catalogs: 0 };
-              const cover = meta.images.length ? meta.images : (isUrl(f.profile_image) ? [f.profile_image] : []);
-              const shownImgs = cover.length >= 4 ? 4 : (cover.length >= 1 ? 1 : 0);
+              // The factory's profile picture IS the big display image (fallback: a product photo).
+              const cover = isUrl(f.profile_image) ? f.profile_image : (meta.images[0] || null);
               const name = resolveName(f);
               const desc = nf(f.description_ar && isAr ? f.description_ar : lang === 'zh' ? f.description_zh : f.description_en)
                 || nf(f.description_ar) || factoryTaglineForCode(f.category, lang);
@@ -130,25 +130,15 @@ export default function Factories({ lang = 'ar' }) {
               return (
                 <div key={f.id} className="fx-faccard reveal" style={{ '--i': i % PAGE }}>
                   <div className="fx-fac-cover" onClick={() => nav(`/factory/${f.id}`)}>
-                    {cover.length >= 4 ? (
-                      <div className="fx-fac-collage">
-                        {cover.slice(0, 4).map((u, j) => <span key={j}><img src={u} alt="" loading="lazy" /></span>)}
-                      </div>
-                    ) : cover.length >= 1 ? (
-                      <img className="fx-fac-cover-img" src={cover[0]} alt="" loading="lazy" />
+                    {cover ? (
+                      <img className="fx-fac-cover-img" src={cover} alt={name} loading="lazy" />
                     ) : (
                       <span className="fx-fac-cover-initial">{(name || '?')[0]}</span>
-                    )}
-                    {isUrl(f.profile_image) && cover[0] !== f.profile_image && (
-                      <img className="fx-fac-logo" src={f.profile_image} alt="" loading="lazy" />
                     )}
                     <div className="fx-fac-badges">
                       {f.is_featured && <span className={`fx-fac-badge rec${arc}`}>★ {c.rec}</span>}
                       {f.is_verified && <span className={`fx-fac-badge ver${arc}`}>✓ {c.ver}</span>}
                     </div>
-                    {shownImgs >= 1 && meta.products > shownImgs && (
-                      <span className="fx-fac-count">+{meta.products - shownImgs}</span>
-                    )}
                   </div>
 
                   <div className="fx-fac-body">
