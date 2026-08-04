@@ -101,7 +101,7 @@ def extract():
     # Look up the queued import row for its uploaded source PDF + admin notes.
     r = requests.get(
         f"{SUPABASE_URL}/rest/v1/factory_catalog_imports"
-        f"?id=eq.{import_id}&select=id,source_pdf_path,original_filename,status,import_notes",
+        f"?id=eq.{import_id}&select=id,source_pdf_path,original_filename,status,import_notes,extraction_mode",
         headers=SR_HEADERS, timeout=15)
     rows = r.json() if r.ok else []
     if not rows:
@@ -163,6 +163,7 @@ def extract():
             log=lambda *a: print(*a, flush=True),
             progress=progress,
             hint=row.get("import_notes"),  # optional per-catalog admin guidance
+            mode=(row.get("extraction_mode") or "curated"),  # 'curated' | 'full'
             should_cancel=should_cancel,
         )
         return jsonify({"ok": True, **summary}), 200

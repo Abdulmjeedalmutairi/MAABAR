@@ -25,7 +25,7 @@ const yr = (v) => {
 // ── Upload + trigger (admin dashboard import) ───────────────────────────────
 // Upload a catalog PDF to the private factory-catalogs bucket and create the
 // 'queued' import row. Returns the new import id.
-export async function createImport(file, notes = '') {
+export async function createImport(file, notes = '', mode = 'curated') {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -39,9 +39,17 @@ export async function createImport(file, notes = '') {
     id, source_pdf_path: path, original_filename: file.name, status: 'queued',
     uploaded_by: user?.id ?? null,
     import_notes: (notes || '').trim() || null,
+    extraction_mode: mode === 'full' ? 'full' : 'curated',
   });
   if (error) throw error;
   return id;
+}
+
+// Switch an existing import between 'curated' and 'full' (before re-running).
+export async function updateImportMode(importId, mode) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ extraction_mode: mode === 'full' ? 'full' : 'curated' }).eq('id', importId);
+  if (error) throw error;
 }
 
 // Cancel a running extraction — the worker checks this at its next milestone
@@ -139,7 +147,7 @@ export function assistAsk({ question, context }) {
 export async function fetchImports() {
   const { data, error } = await sb
     .from('factory_catalog_imports')
-    .select('id, original_filename, status, factory_id, factory_fields, page_count, created_at, factory_catalog_import_products(count)')
+    .select('id, original_filename, status, factory_id, factory_fields, page_count, extraction_mode, created_at, factory_catalog_import_products(count)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map((r) => ({

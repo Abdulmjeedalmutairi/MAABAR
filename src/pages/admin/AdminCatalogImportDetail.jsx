@@ -10,7 +10,7 @@ import {
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
   cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
-  uploadProfileImage,
+  uploadProfileImage, updateImportMode,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -140,20 +140,21 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     setStarting(false);
   }, [id, isAr]);
 
-  // Re-curate: change the guidance, then re-run extraction (replaces the products).
+  // Re-curate: change the guidance / mode, then re-run extraction (replaces the products).
   const [recurOpen, setRecurOpen] = useState(false);
   const [recurNotes, setRecurNotes] = useState('');
+  const [recurMode, setRecurMode] = useState('curated');
   // seed once per import (deliberately NOT on import_notes, to not clobber typing)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setRecurNotes(batch?.import_notes || ''); }, [batch?.id]);
+  useEffect(() => { setRecurNotes(batch?.import_notes || ''); setRecurMode(batch?.extraction_mode || 'curated'); }, [batch?.id]);
   const reCurate = useCallback(async () => {
     setError('');
-    try { await updateImportNotes(id, recurNotes); }
+    try { await updateImportNotes(id, recurNotes); await updateImportMode(id, recurMode); }
     catch (e) { setError((isAr ? 'خطأ: ' : 'Error: ') + (e.message || '')); return; }
-    setBatch((b) => (b ? { ...b, import_notes: recurNotes.trim() || null } : b));
+    setBatch((b) => (b ? { ...b, import_notes: recurNotes.trim() || null, extraction_mode: recurMode } : b));
     setRecurOpen(false);
-    startExtraction();   // re-runs with the new guidance
-  }, [id, recurNotes, isAr, startExtraction]);
+    startExtraction();   // re-runs with the new guidance + mode
+  }, [id, recurNotes, recurMode, isAr, startExtraction]);
 
   // When attaching to an existing factory, seed the trust fields (founded_year /
   // export_markets) from that factory so the admin sees + edits current values.
@@ -556,20 +557,44 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
               )}
 
               {ready && (<>
-              {/* Re-curate — change the guidance and let Gemini redo the profile */}
+              {/* Re-curate — change the guidance / scope and let Gemini redo the profile */}
               <div className="ci-card">
                 {!recurOpen ? (
-                  <button type="button" onClick={() => setRecurOpen(true)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 13, color: '#8B5e2b', padding: 0, fontWeight: 600 }}>
-                    {isAr ? '🔁 أعد التنسيق بتوجيه مختلف' : '🔁 Re-curate with different guidance'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => setRecurOpen(true)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 13, color: '#8B5e2b', padding: 0, fontWeight: 600 }}>
+                      {isAr ? '🔁 أعد الاستخراج (توجيه / نطاق مختلف)' : '🔁 Re-extract (different guidance / scope)'}
+                    </button>
+                    <span style={{ fontSize: 11, fontFamily: FB, color: 'rgba(0,0,0,0.45)', background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 99 }}>
+                      {(batch.extraction_mode || 'curated') === 'full'
+                        ? (isAr ? 'النطاق: كامل' : 'Scope: full')
+                        : (isAr ? 'النطاق: منتقى' : 'Scope: curated')}
+                    </span>
+                  </div>
                 ) : (
                   <>
-                    <h2 className="ci-h2">{isAr ? 'أعد التنسيق' : 'Re-curate'}</h2>
+                    <h2 className="ci-h2">{isAr ? 'أعد الاستخراج' : 'Re-extract'}</h2>
                     <p className="ci-hint" style={{ margin: '0 0 10px' }}>
-                      {isAr ? 'عدّل التوجيه واطلب من Gemini يعيد تنسيق هذا الكتالوج — يستبدل المنتجات الحالية.'
-                            : 'Adjust the guidance and let Gemini redo this catalog — replaces the current products.'}
+                      {isAr ? 'عدّل النطاق و/أو التوجيه واطلب من Gemini يعيد استخراج هذا الكتالوج — يستبدل المنتجات الحالية.'
+                            : 'Adjust the scope and/or guidance and let Gemini redo this catalog — replaces the current products.'}
                     </p>
+                    <label className="ci-label" style={{ marginBottom: 6 }}>{isAr ? 'نطاق الاستخراج' : 'Extraction scope'}</label>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'curated', ar: 'منتقى', en: 'Curated', arSub: 'أفضل المنتجات الممثِّلة', enSub: 'Best representative products' },
+                        { key: 'full', ar: 'كامل', en: 'Full', arSub: 'كل المنتجات في الكتالوج', enSub: 'Every product in the catalog' },
+                      ].map((m) => {
+                        const on = recurMode === m.key;
+                        return (
+                          <button key={m.key} type="button" onClick={() => setRecurMode(m.key)}
+                            style={{ flex: '1 1 160px', textAlign: isAr ? 'right' : 'left', padding: '9px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: FB,
+                              border: `1.5px solid ${on ? '#1a1814' : 'rgba(0,0,0,0.15)'}`, background: on ? 'rgba(26,24,20,0.04)' : 'transparent' }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: on ? '#1a1814' : 'rgba(0,0,0,0.7)' }}>{isAr ? m.ar : m.en}</div>
+                            <div style={{ fontSize: 10.5, color: 'rgba(0,0,0,0.45)', marginTop: 2 }}>{isAr ? m.arSub : m.enSub}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
                     <textarea className="ci-input" value={recurNotes} onChange={(e) => setRecurNotes(e.target.value)} rows={3}
                       dir={isAr ? 'rtl' : 'ltr'} style={{ resize: 'vertical', minHeight: 60, maxWidth: '100%' }}
                       placeholder={isAr ? 'مثال: اعرض ٢٥ منتج بس · ركّز على الأثاث الخارجي · اجمع كل المقاسات في منتج واحد'
@@ -578,7 +603,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                       <button className="ci-btn-primary" onClick={reCurate} disabled={starting}>
                         {isAr ? 'حفظ وأعد التنسيق' : 'Save & re-curate'}
                       </button>
-                      <button className="ci-btn-ghost" onClick={() => { setRecurOpen(false); setRecurNotes(batch.import_notes || ''); }}>
+                      <button className="ci-btn-ghost" onClick={() => { setRecurOpen(false); setRecurNotes(batch.import_notes || ''); setRecurMode(batch.extraction_mode || 'curated'); }}>
                         {isAr ? 'إلغاء' : 'Cancel'}
                       </button>
                     </div>
