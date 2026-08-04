@@ -180,6 +180,14 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const productImages = catalog.map((p) => p.image).filter(Boolean);
   const heroImages = Array.from(new Set([factory.profile_image, ...productImages].filter(Boolean)));
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
+  // Catalog price (verbatim + currency unless already shown). null → "On request".
+  const priceText = (p) => {
+    const v = (p.price || '').trim();
+    if (!v) return null;
+    const cur = (p.currency || '').trim();
+    return cur && !v.toLowerCase().includes(cur.toLowerCase()) ? `${v} ${cur}` : v;
+  };
+  const onRequestLabel = isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request';
   const catalogCover = (cat) => {
     const p = catalog.find((pp) => pp.import_id === cat.id && pp.image);
     return (p && p.image) || heroImages[0] || null;
@@ -357,6 +365,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                     </button>
                     <div className="fp-pcard-body">
                       <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
+                      <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || onRequestLabel}</p>
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
                       <button className={`fp-pcard-btn${ar}`} onClick={() => setViewerReqProduct(p)}>
                         <Icon name="send" size={14} />{isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote'}

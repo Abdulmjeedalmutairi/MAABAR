@@ -113,10 +113,27 @@ export default function ProductReviewCard({ value, onChange, product, lang, cand
         </div>
         {biField('المواصفات', 'Specifications', 'specifications', true)}
         {biField('الوصف', 'Description', 'description', true)}
-        <div style={{ marginBottom: 4 }}>
-          <label className="ci-label">{isAr ? 'الحد الأدنى للطلب' : 'MOQ'}</label>
-          <input className="ci-input" style={{ maxWidth: 180 }} value={nf(ej.moq)} onChange={(e) => setStr('moq', e.target.value)} />
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+          <div>
+            <label className="ci-label">{isAr ? 'الحد الأدنى للطلب' : 'MOQ'}</label>
+            <input className="ci-input" style={{ maxWidth: 180 }} value={nf(ej.moq)} onChange={(e) => setStr('moq', e.target.value)} />
+          </div>
+          <div>
+            <label className="ci-label">{isAr ? 'السعر' : 'Price'}</label>
+            <input className="ci-input" style={{ maxWidth: 180 }} dir={isAr ? 'rtl' : 'ltr'}
+              placeholder={isAr ? 'مثال: $12 أو ١٠-١٥' : 'e.g. $12 or 10–15'}
+              value={nf(ej.price)} onChange={(e) => setStr('price', e.target.value)} />
+          </div>
+          <div>
+            <label className="ci-label">{isAr ? 'العملة' : 'Currency'}</label>
+            <input className="ci-input" style={{ maxWidth: 110 }} dir="ltr"
+              placeholder="USD" value={nf(ej.currency)} onChange={(e) => setStr('currency', e.target.value)} />
+          </div>
         </div>
+        <p style={{ fontSize: 10.5, color: 'rgba(0,0,0,0.4)', fontFamily: FB, margin: '2px 0 0' }}>
+          {isAr ? 'اترك السعر فارغاً لعرض «عند الطلب». اترك العملة فارغة لو السعر فيه رمز أصلاً.'
+                : 'Leave price empty to show “On request”. Leave currency empty if the price already has a symbol.'}
+        </p>
         {custom.length > 0 && (
           <div style={{ marginTop: 10 }}>
             <label className="ci-label">{isAr ? 'خيارات التخصيص (للعرض فقط)' : 'Customization (display-only)'}</label>

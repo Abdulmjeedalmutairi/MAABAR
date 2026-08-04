@@ -106,12 +106,14 @@ SCHEMA = {
                     "description": _BI,
                     "specifications": _BI,
                     "moq": {"type": "string"},
+                    "price": {"type": "string"},       # verbatim price if printed; else "not_found"
+                    "currency": {"type": "string"},    # currency label if separable; else "not_found"
                     "customization_options": {"type": "array", "items": _BI},
                     "ref_code": {"type": "string"},
                     "page_number": {"type": "integer"},
                 },
                 "required": ["product_name", "description", "specifications", "moq",
-                             "customization_options", "ref_code", "page_number"],
+                             "price", "currency", "customization_options", "ref_code", "page_number"],
             },
         },
     },
@@ -154,11 +156,13 @@ FIELDS:
     description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
     specifications — {ar, en}. Key specs AND, when grouped, the variant range (sizes/colours/materials/capacities). Preserve material, dimensions, packaging. "not_found" if none.
     moq — as printed; NOT translated; "not_found" if absent.
+    price — the product's PRICE exactly as printed IF the catalog shows one: a fixed price ("$12", "12 USD", "3.50/pc") OR a range/tier ("$10-15", "0.8-1.2 USD", "100pcs: $9 / 500pcs: $7"). Copy VERBATIM, do NOT convert or invent. "not_found" if no price is printed for this product. When grouping variants, give the overall range if the catalog prints per-variant prices.
+    currency — the currency label ("USD", "RMB", "SAR", "EUR") IF it is clearly separable from the price; else "not_found". If the price text already carries a symbol (e.g. "$12"), you may still set "USD" here or leave "not_found".
     customization_options — array of {ar, en} (OEM/ODM, logo, colours, sizes…); [] if none.
     ref_code — a representative model/item number as printed; NOT translated; "not_found" if absent.
     page_number — 1-based page of the REPRESENTATIVE photo for this product.
 
-PRESERVE commercial value (materials, key specs, OEM/ODM, MOQ, packaging, customization) — these drive purchasing. DROP repetition and decoration. The result should read like a professionally curated supplier profile, not a shortened catalog.
+PRESERVE commercial value (materials, key specs, prices, OEM/ODM, MOQ, packaging, customization) — these drive purchasing. DROP repetition and decoration. The result should read like a professionally curated supplier profile, not a shortened catalog.
 """
 
 # ── FULL prompt — extract EVERY distinct product (admin opts in per catalog) ──
@@ -198,11 +202,13 @@ FIELDS:
     description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
     specifications — {ar, en}. Key specs (material, dimensions, capacity, packaging). "not_found" if none.
     moq — as printed; NOT translated; "not_found" if absent.
+    price — the product's PRICE exactly as printed IF the catalog shows one: a fixed price ("$12", "12 USD", "3.50/pc") OR a range/tier ("$10-15", "100pcs: $9 / 500pcs: $7"). Copy VERBATIM, do NOT convert or invent. "not_found" if no price is printed for this product.
+    currency — the currency label ("USD", "RMB", "SAR", "EUR") IF clearly separable from the price; else "not_found".
     customization_options — array of {ar, en} (OEM/ODM, logo, colours, sizes…); [] if none.
     ref_code — the model/item number as printed; NOT translated; "not_found" if absent.
     page_number — 1-based page of the REPRESENTATIVE photo for this product.
 
-PRESERVE commercial value (materials, key specs, OEM/ODM, MOQ, packaging, customization). The result should be the COMPLETE product list — every distinct item, nothing curated away.
+PRESERVE commercial value (materials, key specs, prices, OEM/ODM, MOQ, packaging, customization). The result should be the COMPLETE product list — every distinct item, nothing curated away.
 """
 
 
@@ -651,7 +657,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         def product_row(pr, sort_i, image_url):
             ej = {k: pr.get(k) for k in ("product_name", "description", "specifications",
-                                         "customization_options", "moq", "ref_code")}
+                                         "customization_options", "moq", "price", "currency", "ref_code")}
             return {"page_no": pr.get("page_number"), "image_path": image_url,
                     "extracted_json": ej, "confidence_score": pr.get("_confidence"),
                     "status": "pending", "sort_order": sort_i}

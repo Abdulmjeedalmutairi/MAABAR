@@ -147,6 +147,7 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
         description_ar: nf(editing.description_ar) || null, description_en: nf(editing.description_en) || null,
         specifications_ar: nf(editing.specifications_ar) || null, specifications_en: nf(editing.specifications_en) || null,
         moq: nf(editing.moq) || null, ref_code: nf(editing.ref_code) || null, image: editing.image || null,
+        price: nf(editing.price) || null, currency: nf(editing.currency) || null,
       };
       if (editing.id) {
         await updateFactoryProduct(editing.id, patch);
@@ -282,6 +283,10 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
                 {['moq', 'ref_code'].map((k) => (
                   <div key={k}><label className="fd-label">{k === 'moq' ? (isAr ? 'الحد الأدنى' : 'MOQ') : (isAr ? 'رمز المنتج' : 'Ref code')}</label><input className="fd-input" dir="ltr" value={nf(editing[k])} onChange={(e) => eSet(k, e.target.value)} /></div>
                 ))}
+              </div>
+              <div className="fd-grid2">
+                <div><label className="fd-label">{isAr ? 'السعر (فارغ = عند الطلب)' : 'Price (empty = on request)'}</label><input className="fd-input" dir={isAr ? 'rtl' : 'ltr'} placeholder={isAr ? 'مثال: $12 أو ١٠-١٥' : 'e.g. $12 or 10–15'} value={nf(editing.price)} onChange={(e) => eSet('price', e.target.value)} /></div>
+                <div><label className="fd-label">{isAr ? 'العملة' : 'Currency'}</label><input className="fd-input" dir="ltr" placeholder="USD" value={nf(editing.currency)} onChange={(e) => eSet('currency', e.target.value)} /></div>
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                 <button className="fd-btn" onClick={saveProduct} disabled={busyP}>{busyP ? (isAr ? 'جارٍ…' : '…') : (isAr ? 'حفظ' : 'Save')}</button>

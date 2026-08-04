@@ -12,13 +12,13 @@ const PAGE = 12;
 
 const T = {
   ar: { title: 'المنتجات', sub: 'تصفّح منتجات المصانع من كتالوجاتها الرسمية واطلب عرض سعر مباشرة.',
-        search: 'ابحث عن منتج أو مصنع…', moq: 'الحد الأدنى', quote: 'اطلب عرض سعر',
+        search: 'ابحث عن منتج أو مصنع…', moq: 'الحد الأدنى', quote: 'اطلب عرض سعر', onReq: 'عند الطلب',
         more: 'تحميل المزيد', empty: 'لا توجد منتجات في هذه الفئة بعد.', loading: 'جارٍ التحميل…' },
   en: { title: 'Products', sub: 'Browse products from factory catalogs and request a quote directly.',
-        search: 'Search a product or factory…', moq: 'MOQ', quote: 'Request a quote',
+        search: 'Search a product or factory…', moq: 'MOQ', quote: 'Request a quote', onReq: 'On request',
         more: 'Load more', empty: 'No products in this category yet.', loading: 'Loading…' },
   zh: { title: '产品', sub: '浏览工厂目录中的产品并直接请求报价。',
-        search: '搜索产品或工厂…', moq: '起订量', quote: '请求报价',
+        search: '搜索产品或工厂…', moq: '起订量', quote: '请求报价', onReq: '面议',
         more: '加载更多', empty: '该类别暂无产品。', loading: '加载中…' },
 };
 
@@ -46,7 +46,7 @@ export default function FactoryProducts({ lang = 'ar' }) {
       setLoading(true);
       const [{ data: facs }, { data: prods }] = await Promise.all([
         sb.from('factory_directory_public').select('id, company_name, company_name_latin, category'),
-        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, sort_order'),
+        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, sort_order'),
       ]);
       if (!alive) return;
       const facMap = {};
@@ -83,6 +83,13 @@ export default function FactoryProducts({ lang = 'ar' }) {
   const revealRef = useReveal([lang, activeKey, q, shown.length]);
   const pName = (p) => (isAr ? (nf(p.name_ar) || nf(p.name_en)) : lang === 'zh' ? (nf(p.name_zh) || nf(p.name_en)) : (nf(p.name_en) || nf(p.name_ar))) || '—';
   const fName = (p) => nf(p.factory.company_name_latin) || nf(p.factory.company_name) || '';
+  // Catalog price (verbatim + currency unless already shown). null → "On request".
+  const priceText = (p) => {
+    const v = (nf(p.price) || '').trim();
+    if (!v) return null;
+    const cur = (nf(p.currency) || '').trim();
+    return cur && !v.toLowerCase().includes(cur.toLowerCase()) ? `${v} ${cur}` : v;
+  };
 
   return (
     <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}>
@@ -117,6 +124,7 @@ export default function FactoryProducts({ lang = 'ar' }) {
                 <div className="fp-pcard-body">
                   <p className={`fp-pcard-name${arc}`} onClick={() => nav(`/factory/${p.factory_id}/product/${p.id}`)}>{pName(p)}</p>
                   <button type="button" className={`fp-pcard-fac${arc}`} onClick={() => nav(`/factory/${p.factory_id}`)}>{fName(p)}</button>
+                  <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || c.onReq}</p>
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
                   <button className={`fp-pcard-btn${arc}`} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
                 </div>
