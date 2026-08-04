@@ -148,6 +148,7 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
         specifications_ar: nf(editing.specifications_ar) || null, specifications_en: nf(editing.specifications_en) || null,
         moq: nf(editing.moq) || null, ref_code: nf(editing.ref_code) || null, image: editing.image || null,
         price: nf(editing.price) || null, currency: nf(editing.currency) || null,
+        section_ar: nf(editing.section_ar) || null, section_en: nf(editing.section_en) || null,
         gallery_images: Array.isArray(editing.gallery_images) ? editing.gallery_images.filter(Boolean) : [],
       };
       if (editing.id) {
@@ -305,6 +306,10 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
               <div className="fd-grid2" style={{ marginTop: 14 }}>
                 <div><label className="fd-label">{isAr ? 'الاسم (ع)' : 'Name (AR)'}</label><input className="fd-input" dir="rtl" value={nf(editing.name_ar)} onChange={(e) => eSet('name_ar', e.target.value)} /></div>
                 <div><label className="fd-label">{isAr ? 'الاسم (EN)' : 'Name (EN)'}</label><input className="fd-input" dir="ltr" value={nf(editing.name_en)} onChange={(e) => eSet('name_en', e.target.value)} /></div>
+              </div>
+              <div className="fd-grid2">
+                <div><label className="fd-label">{isAr ? 'القسم (ع)' : 'Section (AR)'}</label><input className="fd-input" dir="rtl" placeholder={isAr ? 'نسائي / رجالي…' : ''} value={nf(editing.section_ar)} onChange={(e) => eSet('section_ar', e.target.value)} /></div>
+                <div><label className="fd-label">{isAr ? 'القسم (EN)' : 'Section (EN)'}</label><input className="fd-input" dir="ltr" placeholder="Women / Men…" value={nf(editing.section_en)} onChange={(e) => eSet('section_en', e.target.value)} /></div>
               </div>
               <div className="fd-grid2">
                 <div><label className="fd-label">{isAr ? 'الوصف (ع)' : 'Description (AR)'}</label><textarea className="fd-input" rows={2} dir="rtl" style={{ resize: 'vertical', maxWidth: '100%' }} value={nf(editing.description_ar)} onChange={(e) => eSet('description_ar', e.target.value)} /></div>

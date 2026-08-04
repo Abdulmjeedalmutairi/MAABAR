@@ -22,6 +22,7 @@ const EXTRACT_STEPS = [
   { key: 'upload', ar: 'رفع الملف', en: 'Upload' },
   { key: 'downloading', ar: 'التحضير', en: 'Prepare' },
   { key: 'images', ar: 'استخراج الصور', en: 'Read images' },
+  { key: 'outline', ar: 'مخطّط الكتالوج', en: 'Catalog outline' },
   { key: 'analyzing', ar: 'تحليل الكتالوج', en: 'Analyze catalog' },
   { key: 'matching', ar: 'مطابقة الصور', en: 'Match images' },
   { key: 'uploading', ar: 'رفع الصور', en: 'Upload images' },

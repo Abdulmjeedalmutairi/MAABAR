@@ -120,6 +120,7 @@ export default function ProductReviewCard({ value, onChange, product, lang, cand
 
       <div style={{ flex: 1, minWidth: 300 }}>
         {biField('الاسم', 'Name', 'product_name')}
+        {biField('القسم', 'Section', 'section')}
         <div style={{ marginBottom: 8 }}>
           <label className="ci-label">{isAr ? 'رمز المنتج' : 'Ref code'}</label>
           <input className="ci-input" dir="ltr" style={{ maxWidth: 220, fontFamily: 'ui-monospace, Consolas, monospace' }}

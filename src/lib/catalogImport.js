@@ -341,6 +341,8 @@ function mapProduct(factoryId, staged, meta = {}) {
     moq: nf(ej.moq),
     price: nf(ej.price),
     currency: nf(ej.currency),
+    section_ar: tri(ej.section, 'ar'),
+    section_en: tri(ej.section, 'en'),
     ref_code: nf(ej.ref_code),
     image: staged.image_path || null,
     gallery_images: Array.isArray(staged.gallery_paths) ? staged.gallery_paths.filter(Boolean) : [],
