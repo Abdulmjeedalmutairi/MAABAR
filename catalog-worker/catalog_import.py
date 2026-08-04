@@ -106,12 +106,14 @@ SCHEMA = {
                     "description": _BI,
                     "specifications": _BI,
                     "moq": {"type": "string"},
+                    "price": {"type": "string"},       # verbatim price if printed; else "not_found"
+                    "currency": {"type": "string"},    # currency label if separable; else "not_found"
                     "customization_options": {"type": "array", "items": _BI},
                     "ref_code": {"type": "string"},
                     "page_number": {"type": "integer"},
                 },
                 "required": ["product_name", "description", "specifications", "moq",
-                             "customization_options", "ref_code", "page_number"],
+                             "price", "currency", "customization_options", "ref_code", "page_number"],
             },
         },
     },
@@ -154,11 +156,59 @@ FIELDS:
     description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
     specifications — {ar, en}. Key specs AND, when grouped, the variant range (sizes/colours/materials/capacities). Preserve material, dimensions, packaging. "not_found" if none.
     moq — as printed; NOT translated; "not_found" if absent.
+    price — the product's PRICE exactly as printed IF the catalog shows one: a fixed price ("$12", "12 USD", "3.50/pc") OR a range/tier ("$10-15", "0.8-1.2 USD", "100pcs: $9 / 500pcs: $7"). Copy VERBATIM, do NOT convert or invent. "not_found" if no price is printed for this product. When grouping variants, give the overall range if the catalog prints per-variant prices.
+    currency — the currency label ("USD", "RMB", "SAR", "EUR") IF it is clearly separable from the price; else "not_found". If the price text already carries a symbol (e.g. "$12"), you may still set "USD" here or leave "not_found".
     customization_options — array of {ar, en} (OEM/ODM, logo, colours, sizes…); [] if none.
     ref_code — a representative model/item number as printed; NOT translated; "not_found" if absent.
     page_number — 1-based page of the REPRESENTATIVE photo for this product.
 
-PRESERVE commercial value (materials, key specs, OEM/ODM, MOQ, packaging, customization) — these drive purchasing. DROP repetition and decoration. The result should read like a professionally curated supplier profile, not a shortened catalog.
+PRESERVE commercial value (materials, key specs, prices, OEM/ODM, MOQ, packaging, customization) — these drive purchasing. DROP repetition and decoration. The result should read like a professionally curated supplier profile, not a shortened catalog.
+"""
+
+# ── FULL prompt — extract EVERY distinct product (admin opts in per catalog) ──
+# Same schema + fields + translation + "not_found" rules as PROMPT; the ONLY
+# difference is the product-selection policy: keep everything, no curation.
+FULL_PROMPT = """You are an expert B2B product-catalog EXTRACTOR building a COMPLETE supplier catalog for Saudi importers. Fields are BILINGUAL: Arabic + English only (NO Chinese). Read the ENTIRE document page by page.
+
+Return ONE JSON object with keys: "factory", "profile_images", "products".
+
+YOUR GOAL — a COMPLETE catalog, NOT a curated highlight reel. Extract EVERY distinct product the catalog prints. Do NOT select, drop, or summarize away products. The buyer wants the full range.
+
+EXTRACTION RULES (products) — this is the most important part:
+  1. Extract EVERY distinct product / SKU / model shown in the catalog. Do NOT limit the count.
+  2. Do NOT group different variants into one when the catalog lists them as separate products: a different size, colour, capacity, or model number that the catalog presents as its own item = its own product entry. (You MAY note the variant in specifications too, but still emit the separate product.)
+  3. The ONLY things you MERGE into one product are: the SAME physical item shown from multiple angles, the same item repeated on another page, or a single photo/collage showing one item several times. Those are ONE product — never emit literal duplicates of the identical item.
+  4. SKIP only pure cover / marketing / decorative pages and certificate pages that carry no product. Everything that IS a product must appear.
+  5. Ask "is this a distinct product the buyer could order, or just another photo of one I already captured?" Emit it unless it is the same item again.
+
+THE "not_found" RULE (absolute): NEVER invent. If a field is not clearly present, use the literal string "not_found" (or [] for empty lists). Completeness means capturing every product that IS there — it NEVER means fabricating specs, MOQ, materials, or capabilities that are not shown.
+
+TRANSLATION: For descriptive content (product names, descriptions, specifications, customization options) fill BOTH {ar, en} — translate faithfully into Arabic and English. If you cannot translate a value confidently, put "not_found" for that language. Do NOT translate — copy VERBATIM: model/ref/item/OE codes, and (in factory.name_original) the company name. Codes embedded in a spec ("M8×20", "1200×600mm") stay identical in both languages.
+
+FIELDS:
+  factory.name_original — company/factory name EXACTLY as printed (original script, e.g. Chinese); "not_found" if none. Used to CONTACT the factory, so keep it verbatim.
+  factory.name_en — an English company name/transliteration ONLY if one appears anywhere in the catalog; otherwise "not_found". Do NOT invent or transliterate one yourself.
+  factory.founded_year — year founded/established, from the cover or About page ("Established time: 2012.08.06" → "2012"; "since 1991" → "1991"). 4-digit year, digits only. "not_found" if not stated. Do NOT guess from other dates.
+  factory.export_markets — export reach as printed ("sold in over 50 countries" → "50+ countries"). Short, English. "not_found" if not stated.
+  factory.moq — a GENERAL factory-wide minimum-order statement if stated ("MOQ: 100 pcs" → "from 100 pcs"). Short, English. "not_found" if absent.
+  factory.private_label — "yes" if the catalog mentions OEM, ODM, private label, custom branding, "your logo", or "customized brand" anywhere; else "no". Never "not_found".
+  factory.email — the factory's CONTACT EMAIL as printed (cover / contact / back page), verbatim (e.g. "sales@huahang.com"). "not_found" if none. ADMIN-ONLY — extract it whenever present.
+  factory.phone — the factory's phone / mobile / WhatsApp number as printed, verbatim with country code if shown (e.g. "+86 138 0000 0000"). "not_found" if none. ADMIN-ONLY.
+  factory.address — the factory's full ADDRESS as printed (street / district / city / province), verbatim; e.g. "No. 12 Xingye Rd, Shunde District, Foshan, Guangdong, China". "not_found" if none. Shown to buyers.
+  factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
+  profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
+  products[] — one per DISTINCT product (complete, per the rules above):
+    product_name — {ar, en}. Printed name if present; else a short accurate descriptive name FROM THE PHOTO (type + 1-2 key traits, e.g. "Modern 3-seater leather sofa" / "أريكة جلد عصرية ٣ مقاعد"). Never a bare model code.
+    description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
+    specifications — {ar, en}. Key specs (material, dimensions, capacity, packaging). "not_found" if none.
+    moq — as printed; NOT translated; "not_found" if absent.
+    price — the product's PRICE exactly as printed IF the catalog shows one: a fixed price ("$12", "12 USD", "3.50/pc") OR a range/tier ("$10-15", "100pcs: $9 / 500pcs: $7"). Copy VERBATIM, do NOT convert or invent. "not_found" if no price is printed for this product.
+    currency — the currency label ("USD", "RMB", "SAR", "EUR") IF clearly separable from the price; else "not_found".
+    customization_options — array of {ar, en} (OEM/ODM, logo, colours, sizes…); [] if none.
+    ref_code — the model/item number as printed; NOT translated; "not_found" if absent.
+    page_number — 1-based page of the REPRESENTATIVE photo for this product.
+
+PRESERVE commercial value (materials, key specs, prices, OEM/ODM, MOQ, packaging, customization). The result should be the COMPLETE product list — every distinct item, nothing curated away.
 """
 
 
@@ -314,18 +364,22 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
     return prods, profs, (data.get("factory") or {})
 
 
-def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int, hint: str = None, should_cancel=None):
+def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int, hint: str = None, should_cancel=None, mode: str = "curated"):
     """Top-level chunking (each chunk extracted via extract_range, which splits
        further on truncation). Merges products/profile_images/factory.
        `hint` = optional admin guidance for THIS catalog, appended to the prompt.
+       `mode` = 'curated' (default, representative highlight reel) or 'full'
+                (every distinct product — swaps the base prompt).
        `should_cancel` = optional callable; checked between chunks for a co-op abort."""
     from google import genai
     from google.genai import types
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
-    prompt = PROMPT
+    base = FULL_PROMPT if mode == "full" else PROMPT
+    print(f"  extraction mode: {mode}")
+    prompt = base
     if hint and hint.strip():
-        prompt = (PROMPT + "\n\nADMIN GUIDANCE FOR THIS SPECIFIC CATALOG (apply it, but the "
+        prompt = (base + "\n\nADMIN GUIDANCE FOR THIS SPECIFIC CATALOG (apply it, but the "
                   "\"not_found\" rule still holds — never invent):\n" + hint.strip())
         print(f"  admin guidance applied ({len(hint.strip())} chars)")
 
@@ -530,7 +584,7 @@ class Supa:
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
                    supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None,
-                   should_cancel=None):
+                   should_cancel=None, mode="curated"):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -568,7 +622,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         _p("analyzing", 15, "reading the catalog")
         log("[2/4] Gemini extraction")
-        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel)
+        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel, mode=mode)
         products = gem.get("products") or []
         _before = len(products)
         products = merge_duplicate_products(products)
@@ -603,7 +657,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         def product_row(pr, sort_i, image_url):
             ej = {k: pr.get(k) for k in ("product_name", "description", "specifications",
-                                         "customization_options", "moq", "ref_code")}
+                                         "customization_options", "moq", "price", "currency", "ref_code")}
             return {"page_no": pr.get("page_number"), "image_path": image_url,
                     "extracted_json": ej, "confidence_score": pr.get("_confidence"),
                     "status": "pending", "sort_order": sort_i}
@@ -701,6 +755,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="extract + score + write import_preview.json; NO uploads/DB writes")
     ap.add_argument("--out", default="import_out", help="local output dir for --dry-run")
     ap.add_argument("--notes", default=None, help="optional per-catalog guidance appended to the Gemini prompt")
+    ap.add_argument("--mode", default="curated", choices=["curated", "full"],
+                    help="'curated' (representative highlight reel) or 'full' (every distinct product)")
     args = ap.parse_args()
 
     pdf_path = Path(args.pdf).expanduser()
@@ -718,7 +774,7 @@ def main():
 
     res = run_extraction(pdf_path, model=args.model, chunk_pages=args.chunk_pages,
                          min_pages=args.min_chunk_pages, min_dim=args.min_dim, csv_path=args.csv,
-                         dry_run=args.dry_run, out_dir=args.out, supa=supa, hint=args.notes)
+                         dry_run=args.dry_run, out_dir=args.out, supa=supa, hint=args.notes, mode=args.mode)
     if not args.dry_run:
         print(f"\nDone. import_id = {res['import_id']}  (status: extracted) — review it in the admin panel.")
 

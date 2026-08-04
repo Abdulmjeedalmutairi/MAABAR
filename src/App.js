@@ -11,6 +11,7 @@ import {
   persistDisplayCurrencyPreference,
 } from './lib/displayCurrency';
 import { sendMaabarEmail } from './lib/maabarEmail';
+import { fetchMyFactory } from './lib/catalogImport';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
@@ -33,6 +34,11 @@ import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
+import DashboardFactory from './pages/DashboardFactory';
+import FactoryThreadEntry from './pages/FactoryThreadEntry';
+import FactoryThread from './pages/FactoryThread';
+import FactoryThreadView from './pages/FactoryThreadView';
+import MyMessages from './pages/MyMessages';
 import AuthCallback from './pages/AuthCallback';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -70,6 +76,8 @@ import AdminReferrals from './pages/admin/AdminReferrals';
 import SupplierShareView from './pages/SupplierShareView';
 import AdminConcierge from './pages/admin/AdminConcierge';
 import AdminConciergeDetail from './pages/admin/AdminConciergeDetail';
+import AdminConversations from './pages/admin/AdminConversations';
+import AdminConversationDetail from './pages/admin/AdminConversationDetail';
 import AdminComingSoon from './pages/admin/AdminComingSoon';
 import AdminDisputes from './pages/admin/AdminDisputes';
 import AdminDisputeDetail from './pages/admin/AdminDisputeDetail';
@@ -184,6 +192,74 @@ function SupplierVerificationLocked({ lang }) {
   );
 }
 
+// A supplier account may be a claimed factory (role='supplier' + linked_supplier_id
+// on a factory_directory row). Detect that on entry and route to the factory
+// dashboard; otherwise fall through to the normal supplier onboarding stages.
+function SupplierHome({ user, profile, isPreview, sharedProps }) {
+  const { lang } = sharedProps;
+  const [checking, setChecking] = useState(true);
+  const [factory, setFactory] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try { const f = await fetchMyFactory(); if (alive) setFactory(f || null); }
+      catch { /* not a linked factory — fall through */ }
+      if (alive) setChecking(false);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  if (checking) return <BrandedLoading lang={lang} tone="dashboard" fullscreen />;
+  if (factory) return <DashboardFactory factory={factory} {...sharedProps} />;
+
+  const supplierState = getSupplierOnboardingState(profile, user);
+  const centered = {
+    minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
+  };
+  const signOutBtn = (
+    <button onClick={() => sb.auth.signOut()} style={{
+      background: 'none', color: 'var(--text-disabled)',
+      border: '1px solid var(--border-default)', padding: '10px 24px',
+      borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
+    }}>
+      {lang === 'zh' ? '退出登录' : lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
+    </button>
+  );
+
+  if (!isPreview && supplierState.isRejectedStage)
+    return (
+      <div style={centered}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.8 }}>
+          {lang === 'zh' ? '很遗憾，您的账户申请未能通过。' : lang === 'en' ? 'Unfortunately, your supplier account was not approved.' : 'نأسف، لم يتم قبول حسابك.'}
+        </p>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+          {lang === 'zh' ? '如有疑问，请联系我们：' : lang === 'en' ? 'For inquiries, contact us at: ' : 'للاستفسار تواصل معنا على '}
+          <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
+        </p>
+        {signOutBtn}
+      </div>
+    );
+
+  if (!isPreview && supplierState.isInactiveStage)
+    return (
+      <div style={centered}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.8 }}>
+          {lang === 'zh' ? '供应商账户已被暂停。' : lang === 'en' ? 'Your supplier account has been temporarily suspended.' : 'حساب المورد متوقف مؤقتاً.'}
+        </p>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', maxWidth: 460, lineHeight: 1.9 }}>
+          {lang === 'zh' ? '如需说明或重新激活，请通过您注册时使用的邮箱联系我们：' : lang === 'en' ? 'For clarification or reactivation, contact us at: ' : 'إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على '}
+          <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
+        </p>
+        {signOutBtn}
+      </div>
+    );
+
+  return <DashboardSupplier {...sharedProps} />;
+}
+
 function DashboardRouter({ loading, user, profile, profileError, setProfileError, setLoading, loadProfile, sharedProps }) {
   const { lang } = sharedProps;
   if (loading || (user && !profile && !profileError)) {
@@ -226,59 +302,8 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
     if (new Date() < LAUNCH_DATE && !isPreview) return <BuyerWaiting {...sharedProps} />;
     return <DashboardBuyer {...sharedProps} />;
   }
-  if (profile.role === 'supplier') {
-    const supplierState = getSupplierOnboardingState(profile, user);
-
-    if (!isPreview && supplierState.isRejectedStage)
-      return (
-        <div style={{
-          minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
-        }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.8 }}>
-            {lang === 'zh' ? '很遗憾，您的账户申请未能通过。' : lang === 'en' ? 'Unfortunately, your supplier account was not approved.' : 'نأسف، لم يتم قبول حسابك.'}
-          </p>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-            {lang === 'zh' ? '如有疑问，请联系我们：' : lang === 'en' ? 'For inquiries, contact us at: ' : 'للاستفسار تواصل معنا على '}
-            <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
-          </p>
-          <button onClick={() => sb.auth.signOut()} style={{
-            background: 'none', color: 'var(--text-disabled)',
-            border: '1px solid var(--border-default)', padding: '10px 24px',
-            borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
-          }}>
-            {lang === 'zh' ? '退出登录' : lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
-          </button>
-        </div>
-      );
-
-    if (!isPreview && supplierState.isInactiveStage)
-      return (
-        <div style={{
-          minHeight: 'var(--app-dvh)', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          background: 'var(--bg-base)', gap: 16, padding: 24, textAlign: 'center',
-        }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 16, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.8 }}>
-            {lang === 'zh' ? '供应商账户已被暂停。' : lang === 'en' ? 'Your supplier account has been temporarily suspended.' : 'حساب المورد متوقف مؤقتاً.'}
-          </p>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 13, fontFamily: lang === 'ar' ? 'var(--font-ar)' : 'var(--font-sans)', maxWidth: 460, lineHeight: 1.9 }}>
-            {lang === 'zh' ? '如需说明或重新激活，请通过您注册时使用的邮箱联系我们：' : lang === 'en' ? 'For clarification or reactivation, contact us at: ' : 'إذا كنت تحتاج توضيحاً أو إعادة تفعيل، تواصل معنا على '}
-            <a href="mailto:hello@maabar.io" style={{ color: 'var(--text-secondary)' }}>hello@maabar.io</a>
-          </p>
-          <button onClick={() => sb.auth.signOut()} style={{
-            background: 'none', color: 'var(--text-disabled)',
-            border: '1px solid var(--border-default)', padding: '10px 24px',
-            borderRadius: 6, fontSize: 12, cursor: 'pointer', marginTop: 8,
-          }}>
-            {lang === 'zh' ? '退出登录' : lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
-          </button>
-        </div>
-      );
-
-    return <DashboardSupplier {...sharedProps} />;
-  }
+  if (profile.role === 'supplier')
+    return <SupplierHome user={user} profile={profile} isPreview={isPreview} sharedProps={sharedProps} />;
   return <DashboardBuyer {...sharedProps} />;
 }
 
@@ -295,7 +320,10 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     || location.pathname === '/buyer'
     || location.pathname === '/preview'
     || location.pathname === '/login'
-    || location.pathname.startsWith('/login/');
+    || location.pathname.startsWith('/login/')
+    || location.pathname.startsWith('/factory-chat/')
+    || location.pathname.startsWith('/messages/factory/')
+    || location.pathname.startsWith('/factory/thread/');
   const isSupplierAccessPage = location.pathname === '/supplier-access';
   const isLTRPage = isAuthCallbackPage || isSupplierAccessPage;
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
@@ -344,6 +372,10 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/factory/:id"        element={<FactoryDetail   {...sharedProps} />} />
         <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
         <Route path="/f/:slug"            element={<FactoryRequestView />} />
+        <Route path="/factory-chat/:slug" element={<FactoryThreadEntry {...sharedProps} />} />
+        <Route path="/messages"           element={<MyMessages      {...sharedProps} />} />
+        <Route path="/messages/factory/:threadId" element={<FactoryThread {...sharedProps} />} />
+        <Route path="/factory/thread/:threadId" element={<FactoryThreadView {...sharedProps} />} />
         <Route path="/supplier"       element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
@@ -371,6 +403,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/s/supplier/:token"       element={<SupplierShareView    lang={lang} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
         <Route path="/admin/concierge/:id"     element={<AdminConciergeDetail {...sharedProps} />} />
+        <Route path="/admin/conversations"     element={<AdminConversations   {...sharedProps} />} />
+        <Route path="/admin/conversations/:threadId" element={<AdminConversationDetail {...sharedProps} />} />
         <Route path="/admin/disputes"          element={<AdminDisputes        {...sharedProps} />} />
         <Route path="/admin/disputes/:id"      element={<AdminDisputeDetail   {...sharedProps} />} />
         <Route path="/admin/traders"           element={<AdminTraders         {...sharedProps} />} />

@@ -7,7 +7,7 @@ import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import {
   fetchFactory, fetchFactoryProducts, fetchFactoryImagePool, updateFactory,
   updateFactoryProduct, deleteFactoryProduct, createFactoryProduct,
-  archiveFactory, deleteFactory,
+  archiveFactory, deleteFactory, uploadProfileImage,
 } from '../../lib/catalogImport';
 
 const FH = "'Cormorant Garamond', Georgia, serif";
@@ -147,6 +147,7 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
         description_ar: nf(editing.description_ar) || null, description_en: nf(editing.description_en) || null,
         specifications_ar: nf(editing.specifications_ar) || null, specifications_en: nf(editing.specifications_en) || null,
         moq: nf(editing.moq) || null, ref_code: nf(editing.ref_code) || null, image: editing.image || null,
+        price: nf(editing.price) || null, currency: nf(editing.currency) || null,
       };
       if (editing.id) {
         await updateFactoryProduct(editing.id, patch);
@@ -165,6 +166,14 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
   }
 
   const eSet = (k, v) => setEditing((p) => ({ ...p, [k]: v }));
+
+  // Upload an image from the admin's device (logo or a product image) into this
+  // factory's folder, add it to the pool, and select it. Persisted on Save.
+  const uploadFor = (apply) => async (file) => {
+    const url = await uploadProfileImage(id, file);
+    setPool((prev) => (prev.includes(url) ? prev : [url, ...prev]));
+    apply(url);
+  };
 
   return (
     <AdminRouteGuard user={user} profile={profile} lang={lang}>
@@ -220,8 +229,8 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
                     {/* Logo */}
                     <div className="fd-card">
                       <h2 className="fd-h2">{isAr ? 'شعار / صورة المصنع' : 'Logo / profile image'}</h2>
-                      <ProfileImagePicker candidates={pool} selected={f.profile_image} onSelect={(u) => set('profile_image', u)} lang={lang} />
-                      <p className="fd-label" style={{ marginTop: 10 }}>{isAr ? 'اختر ثم اضغط «حفظ» بالأعلى.' : 'Pick one, then Save above.'}</p>
+                      <ProfileImagePicker candidates={pool} selected={f.profile_image} onSelect={(u) => set('profile_image', u)} lang={lang} onUploadFile={uploadFor((u) => set('profile_image', u))} />
+                      <p className="fd-label" style={{ marginTop: 10 }}>{isAr ? 'اختر من الصور أو ارفع لوقو من جهازك، ثم اضغط «حفظ» بالأعلى.' : 'Pick one or upload a logo from your device, then Save above.'}</p>
                     </div>
 
                     {/* Products */}
@@ -264,8 +273,8 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
           <div className="fd-modal-bg" onClick={() => !busyP && setEditing(null)}>
             <div className="fd-modal" onClick={(e) => e.stopPropagation()} dir={isAr ? 'rtl' : 'ltr'}>
               <h2 className="fd-h2">{editing.id ? (isAr ? 'تعديل المنتج' : 'Edit product') : (isAr ? 'منتج جديد' : 'New product')}</h2>
-              <label className="fd-label">{isAr ? 'الصورة (اختر من صور الكتالوج)' : 'Image (pick from catalog)'}</label>
-              <ProfileImagePicker candidates={pool} selected={editing.image} onSelect={(u) => eSet('image', u)} lang={lang} />
+              <label className="fd-label">{isAr ? 'الصورة (اختر من صور الكتالوج أو ارفع من جهازك)' : 'Image (pick from catalog or upload from device)'}</label>
+              <ProfileImagePicker candidates={pool} selected={editing.image} onSelect={(u) => eSet('image', u)} lang={lang} onUploadFile={uploadFor((u) => eSet('image', u))} />
               <div className="fd-grid2" style={{ marginTop: 14 }}>
                 <div><label className="fd-label">{isAr ? 'الاسم (ع)' : 'Name (AR)'}</label><input className="fd-input" dir="rtl" value={nf(editing.name_ar)} onChange={(e) => eSet('name_ar', e.target.value)} /></div>
                 <div><label className="fd-label">{isAr ? 'الاسم (EN)' : 'Name (EN)'}</label><input className="fd-input" dir="ltr" value={nf(editing.name_en)} onChange={(e) => eSet('name_en', e.target.value)} /></div>
@@ -282,6 +291,10 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
                 {['moq', 'ref_code'].map((k) => (
                   <div key={k}><label className="fd-label">{k === 'moq' ? (isAr ? 'الحد الأدنى' : 'MOQ') : (isAr ? 'رمز المنتج' : 'Ref code')}</label><input className="fd-input" dir="ltr" value={nf(editing[k])} onChange={(e) => eSet(k, e.target.value)} /></div>
                 ))}
+              </div>
+              <div className="fd-grid2">
+                <div><label className="fd-label">{isAr ? 'السعر (فارغ = عند الطلب)' : 'Price (empty = on request)'}</label><input className="fd-input" dir={isAr ? 'rtl' : 'ltr'} placeholder={isAr ? 'مثال: $12 أو ١٠-١٥' : 'e.g. $12 or 10–15'} value={nf(editing.price)} onChange={(e) => eSet('price', e.target.value)} /></div>
+                <div><label className="fd-label">{isAr ? 'العملة' : 'Currency'}</label><input className="fd-input" dir="ltr" placeholder="USD" value={nf(editing.currency)} onChange={(e) => eSet('currency', e.target.value)} /></div>
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                 <button className="fd-btn" onClick={saveProduct} disabled={busyP}>{busyP ? (isAr ? 'جارٍ…' : '…') : (isAr ? 'حفظ' : 'Save')}</button>

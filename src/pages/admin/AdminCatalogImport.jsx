@@ -73,6 +73,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [uploading, setUploading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [notes, setNotes] = useState('');
+  const [importMode, setImportMode] = useState('curated');   // 'curated' | 'full'
   const [selFile, setSelFile] = useState(null);
   const fileRef = useRef(null);
 
@@ -84,7 +85,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const openModal = () => { setNotes(''); setSelFile(null); setError(''); setModalOpen(true); };
+  const openModal = () => { setNotes(''); setImportMode('curated'); setSelFile(null); setError(''); setModalOpen(true); };
   const closeModal = () => { if (!uploading) { setModalOpen(false); setSelFile(null); setNotes(''); } };
 
   const onFileChosen = (e) => {
@@ -101,7 +102,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
     if (!selFile || uploading) return;
     setUploading(true); setError('');
     try {
-      const importId = await createImport(selFile, notes);
+      const importId = await createImport(selFile, notes, importMode);
       // Notes are saved on the row; extraction stays automatic.
       if (workerConfigured()) triggerExtraction(importId).catch(() => {});
       nav(`/admin/catalog-import/${importId}`);
@@ -170,7 +171,32 @@ export default function AdminCatalogImport({ user, profile, lang }) {
                         : 'Choose a PDF, optionally add guidance for this catalog, then extraction runs automatically.'}
                 </p>
 
-                {/* Notes first — "before upload" */}
+                {/* Extraction mode — curated highlight reel vs every product */}
+                <label style={{ display: 'block', fontSize: 12, color: 'rgba(0,0,0,0.55)', marginBottom: 6 }}>
+                  {isAr ? 'نطاق الاستخراج' : 'Extraction scope'}
+                </label>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'curated', ar: 'منتقى', en: 'Curated', arSub: 'أفضل المنتجات الممثِّلة', enSub: 'Best representative products' },
+                    { key: 'full', ar: 'كامل', en: 'Full', arSub: 'كل المنتجات في الكتالوج', enSub: 'Every product in the catalog' },
+                  ].map((m) => {
+                    const on = importMode === m.key;
+                    return (
+                      <button key={m.key} type="button" onClick={() => setImportMode(m.key)} disabled={uploading}
+                        style={{ flex: '1 1 160px', textAlign: isAr ? 'right' : 'left', padding: '10px 12px', borderRadius: 8,
+                          cursor: uploading ? 'default' : 'pointer', fontFamily: FONT_BODY,
+                          border: `1.5px solid ${on ? '#1a1814' : 'rgba(0,0,0,0.15)'}`,
+                          background: on ? 'rgba(26,24,20,0.04)' : 'transparent' }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: on ? '#1a1814' : 'rgba(0,0,0,0.7)' }}>
+                          {isAr ? m.ar : m.en}{m.key === 'curated' ? (isAr ? ' (موصى به)' : ' (recommended)') : ''}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)', marginTop: 2 }}>{isAr ? m.arSub : m.enSub}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Notes — "before upload" */}
                 <label style={{ display: 'block', fontSize: 12, color: 'rgba(0,0,0,0.55)', marginBottom: 5 }}>
                   {isAr ? 'توجيهات لهذا الكتالوج (اختياري)' : 'Guidance for this catalog (optional)'}
                 </label>

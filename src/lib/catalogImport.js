@@ -25,7 +25,7 @@ const yr = (v) => {
 // ── Upload + trigger (admin dashboard import) ───────────────────────────────
 // Upload a catalog PDF to the private factory-catalogs bucket and create the
 // 'queued' import row. Returns the new import id.
-export async function createImport(file, notes = '') {
+export async function createImport(file, notes = '', mode = 'curated') {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -39,9 +39,17 @@ export async function createImport(file, notes = '') {
     id, source_pdf_path: path, original_filename: file.name, status: 'queued',
     uploaded_by: user?.id ?? null,
     import_notes: (notes || '').trim() || null,
+    extraction_mode: mode === 'full' ? 'full' : 'curated',
   });
   if (error) throw error;
   return id;
+}
+
+// Switch an existing import between 'curated' and 'full' (before re-running).
+export async function updateImportMode(importId, mode) {
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ extraction_mode: mode === 'full' ? 'full' : 'curated' }).eq('id', importId);
+  if (error) throw error;
 }
 
 // Cancel a running extraction — the worker checks this at its next milestone
@@ -66,6 +74,22 @@ export async function deleteImport(importId) {
   } catch { /* best-effort storage cleanup */ }
   const { error } = await sb.from('factory_catalog_imports').delete().eq('id', importId);
   if (error) throw error;
+}
+
+// Upload a logo/profile image the admin picked from their own device into this
+// import's folder in the PUBLIC factory-images bucket. Returns its public URL —
+// the caller sets it as the factory profile image (persisted on Save). Used when
+// Gemini missed or misidentified the logo.
+export async function uploadProfileImage(importId, file) {
+  const ext = ((file?.name || '').split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const uid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const path = `${importId}/logo_${uid}.${ext}`;
+  const up = await sb.storage.from('factory-images').upload(path, file, {
+    contentType: file.type || 'image/jpeg', upsert: true,
+  });
+  if (up.error) throw up.error;
+  return sb.storage.from('factory-images').getPublicUrl(path).data.publicUrl;
 }
 
 // Update the per-catalog guidance (used to re-curate with new instructions).
@@ -123,7 +147,7 @@ export function assistAsk({ question, context }) {
 export async function fetchImports() {
   const { data, error } = await sb
     .from('factory_catalog_imports')
-    .select('id, original_filename, status, factory_id, factory_fields, page_count, created_at, factory_catalog_import_products(count)')
+    .select('id, original_filename, status, factory_id, factory_fields, page_count, extraction_mode, created_at, factory_catalog_import_products(count)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map((r) => ({
@@ -204,6 +228,17 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
   }
   await sb.from('factory_catalog_imports').update({ factory_id: factoryId, status: 'reviewing' }).eq('id', importId);
   return factoryId;
+}
+
+// ── Factory ownership ───────────────────────────────────────────────────────
+// The factory this user owns (via linked_supplier_id) — owner RLS. null if none.
+export async function fetchMyFactory() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await sb.from('factory_directory').select('*')
+    .eq('linked_supplier_id', user.id).maybeSingle();
+  if (error) throw error;
+  return data || null;
 }
 
 // ── Single-factory management (admin) — edit fields/logo/products anytime ────
@@ -304,6 +339,8 @@ function mapProduct(factoryId, staged, meta = {}) {
     specifications_en: tri(ej.specifications, 'en'),
     customization_options: Array.isArray(ej.customization_options) ? ej.customization_options : [],
     moq: nf(ej.moq),
+    price: nf(ej.price),
+    currency: nf(ej.currency),
     ref_code: nf(ej.ref_code),
     image: staged.image_path || null,
     gallery_images: [],

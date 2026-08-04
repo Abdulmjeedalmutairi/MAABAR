@@ -9,6 +9,7 @@ const PATHS = {
   suppliers: 'M3 21V9l6-4 6 4v12M9 21v-5h3v5M15 21V11l6 3v7M3 21h18',
   referrals: 'M16 6a3 3 0 1 0 0-.01M6 14a3 3 0 1 0 0-.01M16 20a3 3 0 1 0 0-.01M8.6 12.7l4.8-3.4M8.6 15.3l4.8 3.4',
   concierge: 'M12 3a7 7 0 0 0-7 7v5M19 15v-5a7 7 0 0 0-2.1-5M4 15h2v5H4zM18 15h2v5h-2zM12 21h4',
+  chat:      'M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z',
   import:    'M12 3v10M8 9l4 4 4-4M20 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2',
   factory:   'M3 21h18M5 21V9l5 3V9l5 3V6l4 2v13M8 21v-4h3v4',
   disputes:  'M12 3l9 16H3zM12 9v5M12 17v.5',
@@ -50,6 +51,7 @@ const NAV_GROUPS = [
       { path: '/admin/factories', icon: 'factory', en: 'Factories', ar: 'المصانع' },
       { path: '/admin/referrals', icon: 'referrals', en: 'Referrals',  ar: 'الإحالات' },
       { path: '/admin/concierge', icon: 'concierge', en: 'Concierge',  ar: 'الكونسيرج' },
+      { path: '/admin/conversations', icon: 'chat', en: 'Conversations', ar: 'المحادثات' },
     ],
   },
   {

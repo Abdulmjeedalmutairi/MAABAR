@@ -5,10 +5,12 @@ import Footer from '../components/Footer';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
+import { startFactoryThread } from '../lib/factoryThreads';
 
 const T = {
   ar: {
     home: 'الرئيسية', factories: 'المصانع',
+    msgFactory: 'راسل المصنع مباشرة', msgStarting: 'جارٍ الفتح…',
     verifiedT: 'تم التحقق من المصنع', verifiedB: 'بيانات المصنع تم التحقق منها',
     listedT: 'مصنع مُدرج', listedB: 'بياناته من كتالوجاته الرسمية',
     catalogsB: 'متاحة للعرض', photosT: 'صور حقيقية', photosB: 'من كتالوجات المصنع',
@@ -29,6 +31,7 @@ const T = {
   },
   en: {
     home: 'Home', factories: 'Factories',
+    msgFactory: 'Message the factory', msgStarting: 'Opening…',
     verifiedT: 'Verified factory', verifiedB: 'Factory data has been verified',
     listedT: 'Listed factory', listedB: 'Data from its official catalogs',
     catalogsB: 'available to view', photosT: 'Real photos', photosB: 'From the factory catalogs',
@@ -49,6 +52,7 @@ const T = {
   },
   zh: {
     home: '首页', factories: '工厂',
+    msgFactory: '直接联系工厂', msgStarting: '正在打开…',
     verifiedT: '已核实工厂', verifiedB: '工厂数据已核实',
     listedT: '已收录工厂', listedB: '数据来自其官方目录',
     catalogsB: '可查看', photosT: '真实图片', photosB: '来自工厂目录',
@@ -114,6 +118,18 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [activeCatalog, setActiveCatalog] = useState(null); // import_id filter
   const [visible, setVisible] = useState(20);
   const [viewerReqProduct, setViewerReqProduct] = useState(null); // request a quote for a specific product
+  const [msgBusy, setMsgBusy] = useState(false);
+
+  // Direct chat: open (or reuse) a conversation with this factory, then enter it.
+  async function handleMessageFactory() {
+    if (!user) { nav('/login'); return; }
+    if (msgBusy) return;
+    setMsgBusy(true);
+    try {
+      const threadId = await startFactoryThread(id);
+      nav(`/messages/factory/${threadId}`);
+    } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
+  }
 
   useEffect(() => {
     load();
@@ -164,6 +180,14 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const productImages = catalog.map((p) => p.image).filter(Boolean);
   const heroImages = Array.from(new Set([factory.profile_image, ...productImages].filter(Boolean)));
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
+  // Catalog price (verbatim + currency unless already shown). null → "On request".
+  const priceText = (p) => {
+    const v = (p.price || '').trim();
+    if (!v) return null;
+    const cur = (p.currency || '').trim();
+    return cur && !v.toLowerCase().includes(cur.toLowerCase()) ? `${v} ${cur}` : v;
+  };
+  const onRequestLabel = isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request';
   const catalogCover = (cat) => {
     const p = catalog.find((pp) => pp.import_id === cat.id && pp.image);
     return (p && p.image) || heroImages[0] || null;
@@ -237,6 +261,13 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
             </div>
 
             <button className={`fp-cta${ar}`} onClick={() => setReqOpen(true)}><Icon name="send" size={18} />{c.ctaHero}</button>
+            <button type="button" onClick={handleMessageFactory} disabled={msgBusy}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10,
+                width: '100%', maxWidth: 420, padding: '11px 18px', borderRadius: 10, cursor: msgBusy ? 'default' : 'pointer',
+                background: 'transparent', border: '1.5px solid #1a1814', color: '#1a1814', fontSize: 14.5, fontWeight: 600,
+                fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', opacity: msgBusy ? 0.6 : 1 }}>
+              <Icon name="headset" size={17} />{msgBusy ? c.msgStarting : c.msgFactory}
+            </button>
             <p className={`fp-trust${ar}`}>
               <Icon name="lock" size={13} />{c.trust1}<span className="dot">·</span>{c.trust2}<span className="dot">·</span>{c.trust3}
             </p>
@@ -334,6 +365,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                     </button>
                     <div className="fp-pcard-body">
                       <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
+                      <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || onRequestLabel}</p>
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
                       <button className={`fp-pcard-btn${ar}`} onClick={() => setViewerReqProduct(p)}>
                         <Icon name="send" size={14} />{isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote'}

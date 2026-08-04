@@ -97,6 +97,14 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const descr = (isAr ? product.description_ar : product.description_en) || product.description_en || product.description_ar || '';
   const custom = Array.isArray(product.customization_options) ? product.customization_options : [];
   const orContact = (v) => v || c.contactDetails;
+  // Catalog price (verbatim). Append the currency label unless the price text
+  // already carries it. null → the page falls back to "On request".
+  const priceText = (() => {
+    const p = (product.price || '').trim();
+    if (!p) return null;
+    const cur = (product.currency || '').trim();
+    return cur && !p.toLowerCase().includes(cur.toLowerCase()) ? `${p} ${cur}` : p;
+  })();
   const dLabel = { fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const dVal = { fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
 
@@ -173,9 +181,10 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
             </div>
 
             {/* Price + MOQ sit next to the request action (commercial terms).
-                Catalogs carry no fixed prices — pricing is quote-based. */}
+                Show the catalog price when the factory printed one; otherwise
+                pricing stays quote-based ("On request"). */}
             <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 6px', fontSize: 13 }}>
-              {isAr ? 'السعر' : lang === 'zh' ? '价格' : 'Price'}: <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request'}</span>
+              {isAr ? 'السعر' : lang === 'zh' ? '价格' : 'Price'}: <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{priceText || (isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request')}</span>
             </p>
             <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12.5 }}>
               {c.moqLabel}: <span style={{ color: 'var(--text-primary)' }}>{orContact(product.moq)}</span>
