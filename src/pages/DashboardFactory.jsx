@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import ProfileImagePicker from '../components/admin/catalog/ProfileImagePicker';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
@@ -6,6 +7,7 @@ import {
   fetchMyFactory, fetchFactoryProducts, fetchFactoryImagePool, updateFactory,
   updateFactoryProduct, deleteFactoryProduct, createFactoryProduct,
 } from '../lib/catalogImport';
+import { fetchMyFactoryThreads } from '../lib/factoryThreads';
 
 // Self-service dashboard for a factory that has CLAIMED its directory row
 // (role='supplier' + linked_supplier_id). It can edit its descriptive profile,
@@ -18,6 +20,8 @@ const nf = (v) => (v && v !== 'not_found' ? v : '');
 const T = {
   ar: {
     hi: 'لوحة المصنع', sub: 'حدّث ملفك ومنتجاتك — يظهر للتجّار في معبر.',
+    tabProfile: 'الملف والمنتجات', tabMessages: 'المحادثات', buyer: 'مشتري محتمل',
+    inboxEmpty: 'لا توجد محادثات بعد.', startChat: 'محادثة جديدة',
     signout: 'تسجيل الخروج', live: 'منشور', hidden: 'مخفي',
     publish: 'انشر مصنعك', hide: 'إخفاء من الموقع',
     details: 'بيانات المصنع', name: 'اسم المصنع', nameEn: 'الاسم بالإنجليزية',
@@ -33,6 +37,8 @@ const T = {
   },
   en: {
     hi: 'Factory dashboard', sub: 'Update your profile and products — shown to traders on Maabar.',
+    tabProfile: 'Profile & products', tabMessages: 'Messages', buyer: 'Potential buyer',
+    inboxEmpty: 'No conversations yet.', startChat: 'New conversation',
     signout: 'Sign out', live: 'Live', hidden: 'Hidden',
     publish: 'Publish factory', hide: 'Hide from site',
     details: 'Factory details', name: 'Factory name', nameEn: 'English name',
@@ -48,6 +54,8 @@ const T = {
   },
   zh: {
     hi: '工厂仪表板', sub: '更新您的资料和产品——将展示给 Maabar 上的采购商。',
+    tabProfile: '资料与产品', tabMessages: '消息', buyer: '潜在买家',
+    inboxEmpty: '暂无对话。', startChat: '新对话',
     signout: '退出登录', live: '已发布', hidden: '已隐藏',
     publish: '发布工厂', hide: '从网站隐藏',
     details: '工厂信息', name: '工厂名称', nameEn: '英文名称',
@@ -71,6 +79,21 @@ const CSS = `
   .dfx-pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-family: ${FB}; font-weight: 600; }
   .dfx-pill.on { background: #e7f4ec; color: #2f8a52; }
   .dfx-pill.off { background: #f3eee6; color: rgba(0,0,0,0.5); }
+  .dfx-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+  .dfx-tab { position: relative; padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); background: transparent; cursor: pointer; font-size: 13px; color: rgba(0,0,0,0.55); font-family: ${FB}; }
+  .dfx-tab.on { background: #1a1814; color: #fff; border-color: #1a1814; font-weight: 600; }
+  .dfx-tabbadge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-inline-start: 6px; border-radius: 999px; background: #c0503f; color: #fff; font-size: 10.5px; font-weight: 700; }
+  .dfx-inbox { display: flex; flex-direction: column; gap: 8px; }
+  .dfx-inbox-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; cursor: pointer; text-align: start; transition: border-color 0.12s; }
+  .dfx-inbox-item:hover { border-color: rgba(0,0,0,0.2); }
+  .dfx-inbox-ava { width: 42px; height: 42px; border-radius: 11px; background: #efe9df; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #8B7355; font-weight: 600; }
+  .dfx-inbox-main { flex: 1; min-width: 0; }
+  .dfx-inbox-name { font-size: 14.5px; font-weight: 600; color: rgba(0,0,0,0.85); margin: 0 0 2px; }
+  .dfx-inbox-prev { font-size: 13px; color: rgba(0,0,0,0.5); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dfx-inbox-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .dfx-inbox-time { font-size: 11px; color: rgba(0,0,0,0.35); }
+  .dfx-inbox-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #1a1814; color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .dfx-inbox-empty { text-align: center; padding: 40px 20px; color: rgba(0,0,0,0.35); font-size: 14px; }
   .dfx-card { background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
   .dfx-h2 { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.8); font-family: ${FB}; }
   .dfx-label { display: block; font-size: 11px; color: rgba(0,0,0,0.5); font-family: ${FB}; margin-bottom: 4px; }
@@ -96,11 +119,22 @@ const CSS = `
   @media (max-width: 760px) { .dfx-grid2 { grid-template-columns: 1fr; } }
 `;
 
+const fmtWhen = (d) => {
+  if (!d) return '';
+  const diff = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
 export default function DashboardFactory({ factory: initial, lang = 'en' }) {
+  const nav = useNavigate();
   const isAr = lang === 'ar';
   const t = T[lang] || T.en;
   const cats = (UI_CATEGORIES[lang] || UI_CATEGORIES.ar).filter((c) => c.val !== 'all');
 
+  const [tab, setTab] = useState('profile');
   const [factory, setFactory] = useState(initial || null);
   const [products, setProducts] = useState([]);
   const [pool, setPool] = useState([]);
@@ -109,6 +143,22 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
   const [msg, setMsg] = useState('');
   const [editing, setEditing] = useState(null);
   const [busyP, setBusyP] = useState(false);
+  const [threads, setThreads] = useState([]);
+  const [threadsLoading, setThreadsLoading] = useState(false);
+  const [inboxUnread, setInboxUnread] = useState(0);
+
+  const loadThreads = useCallback(async () => {
+    setThreadsLoading(true);
+    try {
+      const list = await fetchMyFactoryThreads();
+      setThreads(list);
+      setInboxUnread(list.reduce((n, r) => n + (r.unread || 0), 0));
+    } catch { /* keep empty */ }
+    setThreadsLoading(false);
+  }, []);
+  // Load once on mount for the tab badge, and whenever the Messages tab opens.
+  useEffect(() => { loadThreads(); }, [loadThreads]);
+  useEffect(() => { if (tab === 'messages') loadThreads(); }, [tab, loadThreads]);
 
   const hydrate = useCallback((fac) => {
     setFactory(fac);
@@ -227,6 +277,35 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
           </div>
         </div>
 
+        <div className="dfx-tabs">
+          <button className={`dfx-tab ${tab === 'profile' ? 'on' : ''}`} onClick={() => setTab('profile')}>{t.tabProfile}</button>
+          <button className={`dfx-tab ${tab === 'messages' ? 'on' : ''}`} onClick={() => setTab('messages')}>
+            {t.tabMessages}{inboxUnread > 0 && <span className="dfx-tabbadge">{inboxUnread}</span>}
+          </button>
+        </div>
+
+        {tab === 'messages' ? (
+          threadsLoading ? <p className="dfx-inbox-empty">…</p>
+            : threads.length === 0 ? <p className="dfx-inbox-empty">{t.inboxEmpty}</p>
+              : (
+                <div className="dfx-inbox">
+                  {threads.map((th) => (
+                    <button className="dfx-inbox-item" key={th.thread_id} onClick={() => nav(`/factory/thread/${th.thread_id}`)}>
+                      <div className="dfx-inbox-ava">{t.buyer[0]}</div>
+                      <div className="dfx-inbox-main">
+                        <p className="dfx-inbox-name">{t.buyer}</p>
+                        <p className="dfx-inbox-prev">{th.last_preview || t.startChat}</p>
+                      </div>
+                      <div className="dfx-inbox-side">
+                        <span className="dfx-inbox-time">{fmtWhen(th.last_message_at)}</span>
+                        {th.unread > 0 && <span className="dfx-inbox-badge">{th.unread}</span>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )
+        ) : (
+        <>
         {/* Profile */}
         <div className="dfx-card">
           <h2 className="dfx-h2">{t.details}</h2>
@@ -297,6 +376,8 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
             {factory.is_active ? t.hide : t.publish}
           </button>
         </div>
+        </>
+        )}
       </div>
 
       {/* Product edit / add modal */}

@@ -37,6 +37,8 @@ import DashboardSupplier from './pages/DashboardSupplier';
 import DashboardFactory from './pages/DashboardFactory';
 import FactoryThreadEntry from './pages/FactoryThreadEntry';
 import FactoryThread from './pages/FactoryThread';
+import FactoryThreadView from './pages/FactoryThreadView';
+import MyMessages from './pages/MyMessages';
 import AuthCallback from './pages/AuthCallback';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -74,6 +76,8 @@ import AdminReferrals from './pages/admin/AdminReferrals';
 import SupplierShareView from './pages/SupplierShareView';
 import AdminConcierge from './pages/admin/AdminConcierge';
 import AdminConciergeDetail from './pages/admin/AdminConciergeDetail';
+import AdminConversations from './pages/admin/AdminConversations';
+import AdminConversationDetail from './pages/admin/AdminConversationDetail';
 import AdminComingSoon from './pages/admin/AdminComingSoon';
 import AdminDisputes from './pages/admin/AdminDisputes';
 import AdminDisputeDetail from './pages/admin/AdminDisputeDetail';
@@ -318,7 +322,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     || location.pathname === '/login'
     || location.pathname.startsWith('/login/')
     || location.pathname.startsWith('/factory-chat/')
-    || location.pathname.startsWith('/messages/factory/');
+    || location.pathname.startsWith('/messages/factory/')
+    || location.pathname.startsWith('/factory/thread/');
   const isSupplierAccessPage = location.pathname === '/supplier-access';
   const isLTRPage = isAuthCallbackPage || isSupplierAccessPage;
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
@@ -368,7 +373,9 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
         <Route path="/f/:slug"            element={<FactoryRequestView />} />
         <Route path="/factory-chat/:slug" element={<FactoryThreadEntry {...sharedProps} />} />
+        <Route path="/messages"           element={<MyMessages      {...sharedProps} />} />
         <Route path="/messages/factory/:threadId" element={<FactoryThread {...sharedProps} />} />
+        <Route path="/factory/thread/:threadId" element={<FactoryThreadView {...sharedProps} />} />
         <Route path="/supplier"       element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
@@ -396,6 +403,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/s/supplier/:token"       element={<SupplierShareView    lang={lang} />} />
         <Route path="/admin/concierge"         element={<AdminConcierge       {...sharedProps} />} />
         <Route path="/admin/concierge/:id"     element={<AdminConciergeDetail {...sharedProps} />} />
+        <Route path="/admin/conversations"     element={<AdminConversations   {...sharedProps} />} />
+        <Route path="/admin/conversations/:threadId" element={<AdminConversationDetail {...sharedProps} />} />
         <Route path="/admin/disputes"          element={<AdminDisputes        {...sharedProps} />} />
         <Route path="/admin/disputes/:id"      element={<AdminDisputeDetail   {...sharedProps} />} />
         <Route path="/admin/traders"           element={<AdminTraders         {...sharedProps} />} />

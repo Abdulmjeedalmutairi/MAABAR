@@ -53,7 +53,8 @@ export async function sendTraderMessage(threadId, content) {
   return data;
 }
 
-// The trader's own factory conversations (for the inbox — wired in B3).
+// The trader's own factory conversations, newest first, with unread counts
+// (factory messages the trader hasn't read) and last-message preview.
 export async function fetchMyTraderThreads() {
   const { data: threads, error } = await sb.from('factory_threads')
     .select('id, factory_id, last_message_at, created_at')
@@ -61,11 +62,20 @@ export async function fetchMyTraderThreads() {
   if (error) throw error;
   const rows = threads || [];
   if (!rows.length) return [];
-  const ids = Array.from(new Set(rows.map((r) => r.factory_id)));
-  const { data: facs } = await sb.from('factory_directory_public')
-    .select('id, company_name, company_name_latin, profile_image').in('id', ids);
+  const ids = rows.map((r) => r.id);
+  const facIds = Array.from(new Set(rows.map((r) => r.factory_id)));
+  const [{ data: facs }, { data: msgs }] = await Promise.all([
+    sb.from('factory_directory_public').select('id, company_name, company_name_latin, profile_image').in('id', facIds),
+    sb.from('factory_thread_messages').select('thread_id, content, sender_role, created_at, read_by_trader')
+      .in('thread_id', ids).order('created_at', { ascending: true }),
+  ]);
   const byId = Object.fromEntries((facs || []).map((f) => [f.id, f]));
-  return rows.map((r) => ({ ...r, factory: byId[r.factory_id] || null }));
+  const preview = {}; const unread = {};
+  (msgs || []).forEach((m) => {
+    preview[m.thread_id] = m.content;   // last wins (ordered asc)
+    if (m.sender_role === 'factory' && !m.read_by_trader) unread[m.thread_id] = (unread[m.thread_id] || 0) + 1;
+  });
+  return rows.map((r) => ({ ...r, factory: byId[r.factory_id] || null, last_preview: preview[r.id] || '', unread: unread[r.id] || 0 }));
 }
 
 // ── Factory side (masked) — everything goes through SECURITY DEFINER RPCs so the
@@ -102,9 +112,41 @@ export async function sendFactoryThreadMessage(threadId, content) {
   return data;
 }
 
-// The factory's own conversations (masked list — for the dashboard inbox in B3).
+// The factory's own conversations (masked list — for the dashboard inbox).
 export async function fetchMyFactoryThreads() {
   const { data, error } = await sb.rpc('get_my_factory_threads');
+  if (error) throw error;
+  return data || [];
+}
+
+// ── Admin oversight (not masked — sees trader identity + share link) ─────────
+export async function adminListFactoryThreads() {
+  const { data, error } = await sb.rpc('admin_list_factory_threads');
+  if (error) throw error;
+  return data || [];
+}
+
+// One thread's header (factory + trader identity + share_slug) for the admin view.
+export async function adminFetchThread(threadId) {
+  const { data: t, error } = await sb.from('factory_threads')
+    .select('id, factory_id, trader_id, share_slug, created_at, last_message_at')
+    .eq('id', threadId).maybeSingle();
+  if (error) throw error;
+  if (!t) return null;
+  const [{ data: f }, { data: p }] = await Promise.all([
+    sb.from('factory_directory').select('id, company_name, company_name_latin, city, country, profile_image, linked_supplier_id').eq('id', t.factory_id).maybeSingle(),
+    t.trader_id
+      ? sb.from('profiles').select('id, full_name, company_name, email, phone').eq('id', t.trader_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  return { ...t, factory: f || null, trader: p || null };
+}
+
+// A thread's messages for the admin (read-only; admin RLS allows all threads).
+export async function adminFetchThreadMessages(threadId) {
+  const { data, error } = await sb.from('factory_thread_messages')
+    .select('id, sender_role, content, created_at')
+    .eq('thread_id', threadId).order('created_at', { ascending: true });
   if (error) throw error;
   return data || [];
 }
