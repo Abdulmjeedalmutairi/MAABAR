@@ -711,7 +711,7 @@ class Supa:
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
                    supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None,
-                   should_cancel=None, mode="curated", outline_model="gemini-2.5-pro"):
+                   should_cancel=None, mode="curated", outline_model="gemini-2.5-flash"):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -824,6 +824,14 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         # ── Real import: upload to Storage + write staging rows (service role) ──
         if supa is None:
             raise RuntimeError("supa (service-role client) is required for a real import")
+        # A real catalog that yields ZERO products means every model call failed
+        # (e.g. model unavailable / quota) — surface it as a failure instead of a
+        # silent "extracted with 0 products" that looks successful.
+        if not products:
+            raise RuntimeError(
+                f"Extraction produced 0 products with model '{model}' ({tokens} tokens). "
+                "The model likely returned nothing — check the model/quota (pro needs a "
+                "billing-enabled key) or the PDF. Nothing was written.")
         creating = import_id is None
         if creating:
             import_id = str(uuid.uuid4())
@@ -909,7 +917,7 @@ def main():
     ap.add_argument("--notes", default=None, help="optional per-catalog guidance appended to the Gemini prompt")
     ap.add_argument("--mode", default="curated", choices=["curated", "full"],
                     help="'curated' (representative highlight reel) or 'full' (every distinct product)")
-    ap.add_argument("--outline-model", default="gemini-2.5-pro",
+    ap.add_argument("--outline-model", default="gemini-2.5-flash",
                     help="model for the pass-1 structural outline (sections/logo/flags)")
     args = ap.parse_args()
 
