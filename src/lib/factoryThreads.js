@@ -67,3 +67,44 @@ export async function fetchMyTraderThreads() {
   const byId = Object.fromEntries((facs || []).map((f) => [f.id, f]));
   return rows.map((r) => ({ ...r, factory: byId[r.factory_id] || null }));
 }
+
+// ── Factory side (masked) — everything goes through SECURITY DEFINER RPCs so the
+// factory never touches the base tables and never sees the trader's identity. ──
+
+// Anonymous preview of a share link: factory identity + claim state. No trader data.
+export async function getFactoryThreadInvite(slug) {
+  const { data, error } = await sb.rpc('get_factory_thread_invite', { p_slug: slug });
+  if (error) throw error;
+  return (data && data[0]) || null;
+}
+
+// Bind the (now authenticated) user to the factory on first claim, else enter.
+// Returns the thread id; raises if the factory is claimed by another account.
+export async function claimAndEnterThread(slug) {
+  const { data, error } = await sb.rpc('claim_and_enter_thread', { p_slug: slug });
+  if (error) throw error;
+  return data;
+}
+
+// Factory reads a thread (marks trader messages read); trader identity omitted.
+export async function fetchFactoryThreadMessages(threadId) {
+  const { data, error } = await sb.rpc('get_factory_thread_messages', { p_thread_id: threadId });
+  if (error) throw error;
+  return data || [];
+}
+
+// Factory sends a reply.
+export async function sendFactoryThreadMessage(threadId, content) {
+  const body = (content || '').trim();
+  if (!body) throw new Error('empty');
+  const { data, error } = await sb.rpc('send_factory_thread_message', { p_thread_id: threadId, p_content: body });
+  if (error) throw error;
+  return data;
+}
+
+// The factory's own conversations (masked list — for the dashboard inbox in B3).
+export async function fetchMyFactoryThreads() {
+  const { data, error } = await sb.rpc('get_my_factory_threads');
+  if (error) throw error;
+  return data || [];
+}

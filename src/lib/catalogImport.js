@@ -206,29 +206,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
   return factoryId;
 }
 
-// ── Factory claim (self-onboarding) ─────────────────────────────────────────
-// Admin: create (or reuse) a claim link for a factory. Returns the slug.
-export async function createFactoryClaimInvite(factoryId) {
-  const { data: existing } = await sb.from('factory_claim_invites')
-    .select('slug').eq('factory_id', factoryId).neq('status', 'claimed').maybeSingle();
-  if (existing?.slug) return existing.slug;
-  const { data: { user } } = await sb.auth.getUser();
-  const { data, error } = await sb.from('factory_claim_invites')
-    .insert({ factory_id: factoryId, created_by: user?.id ?? null }).select('slug').single();
-  if (error) throw error;
-  return data.slug;
-}
-// Anonymous read of a claim link (factory name + state).
-export async function getFactoryClaim(slug) {
-  const { data, error } = await sb.rpc('get_factory_claim', { p_slug: slug });
-  if (error) throw error;
-  return (data && data[0]) || null;
-}
-// Bind the (now authenticated) user to the factory.
-export async function registerFactoryClaim(slug) {
-  const { error } = await sb.rpc('register_factory_claim', { p_slug: slug });
-  if (error) throw error;
-}
+// ── Factory ownership ───────────────────────────────────────────────────────
 // The factory this user owns (via linked_supplier_id) — owner RLS. null if none.
 export async function fetchMyFactory() {
   const { data: { user } } = await sb.auth.getUser();

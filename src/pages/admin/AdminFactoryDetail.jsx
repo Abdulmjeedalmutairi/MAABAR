@@ -7,7 +7,7 @@ import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import {
   fetchFactory, fetchFactoryProducts, fetchFactoryImagePool, updateFactory,
   updateFactoryProduct, deleteFactoryProduct, createFactoryProduct,
-  archiveFactory, deleteFactory, createFactoryClaimInvite,
+  archiveFactory, deleteFactory,
 } from '../../lib/catalogImport';
 
 const FH = "'Cormorant Garamond', Georgia, serif";
@@ -60,15 +60,6 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
   const [msg, setMsg] = useState('');
   const [editing, setEditing] = useState(null);   // product being edited (or {} for new)
   const [busyP, setBusyP] = useState(false);
-  const [claimUrl, setClaimUrl] = useState('');
-  const [claimCopied, setClaimCopied] = useState(false);
-
-  async function genClaimLink() {
-    try {
-      const slug = await createFactoryClaimInvite(id);
-      setClaimUrl(`${window.location.origin}/claim/${slug}`);
-    } catch (e) { setMsg((isAr ? 'خطأ: ' : 'Error: ') + (e.message || '')); }
-  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -254,30 +245,6 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
                             </div>
                           ))}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Claim link — let the factory sign up and own this profile */}
-                    <div className="fd-card">
-                      <h2 className="fd-h2">{isAr ? 'رابط مطالبة المصنع' : 'Factory claim link'}</h2>
-                      {factory.linked_supplier_id ? (
-                        <p className="fd-label" style={{ color: '#3f9d5a' }}>{isAr ? '● مُطالَب به — لهذا المصنع حساب مرتبط.' : '● Claimed — this factory has a linked account.'}</p>
-                      ) : (
-                        <>
-                          <p className="fd-label" style={{ marginBottom: 10 }}>
-                            {isAr ? 'أنشئ رابطاً يسجّل به المصنع (بالجوال) ويملك صفحته ومنتجاته.' : 'Generate a link the factory uses to sign up (phone) and own its profile + products.'}
-                          </p>
-                          {claimUrl ? (
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <input className="fd-input" readOnly value={claimUrl} onFocus={(e) => e.target.select()} dir="ltr" style={{ maxWidth: 360 }} />
-                              <button className="fd-ghost" onClick={() => { navigator.clipboard?.writeText(claimUrl); setClaimCopied(true); setTimeout(() => setClaimCopied(false), 1500); }}>
-                                {claimCopied ? (isAr ? 'تم النسخ ✓' : 'Copied ✓') : (isAr ? 'نسخ' : 'Copy')}
-                              </button>
-                            </div>
-                          ) : (
-                            <button className="fd-btn" onClick={genClaimLink}>{isAr ? 'توليد رابط المطالبة' : 'Generate claim link'}</button>
-                          )}
-                        </>
                       )}
                     </div>
 
