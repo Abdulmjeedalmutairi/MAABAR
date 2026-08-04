@@ -10,6 +10,7 @@ import {
   approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
   cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
+  uploadProfileImage,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -92,6 +93,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
   const [mode, setMode] = useState('new');
   const [existingId, setExistingId] = useState('');
   const [profileSel, setProfileSel] = useState(null);
+  const [extraImages, setExtraImages] = useState([]);   // logos uploaded from the admin's device
   const [savedFactoryId, setSavedFactoryId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState({ ok: false, text: '' });
@@ -181,13 +183,21 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     });
   }, [mode, existingId, factories]);
 
-  // The logo can be picked from ANY image: the flagged candidates first, then
-  // every product image from this import.
+  // The logo can be picked from ANY image: device-uploaded logos first, then the
+  // flagged candidates, then every product image from this import.
   const candidates = Array.from(new Set([
+    ...extraImages,
     ...(fields?.profile_candidates || []),
     ...(batch?.profile_image_path ? [batch.profile_image_path] : []),
     ...products.map((p) => p.image_path).filter(Boolean),
   ]));
+
+  // Upload a logo the admin picked from their device → add to the pool + select it.
+  const handleUploadLogo = useCallback(async (file) => {
+    const url = await uploadProfileImage(id, file);
+    setExtraImages((prev) => (prev.includes(url) ? prev : [url, ...prev]));
+    setProfileSel(url);
+  }, [id]);
 
   async function saveFactory() {
     setSaving(true); setSaveMsg({ ok: false, text: '' });
@@ -611,7 +621,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                 <p className="ci-hint" style={{ marginBottom: 12 }}>
                   {isAr ? 'اختر الصورة التي تُستخدم كشعار/واجهة للمصنع.' : 'Pick the image to use as the factory logo/avatar.'}
                 </p>
-                <ProfileImagePicker candidates={candidates} selected={profileSel} onSelect={setProfileSel} lang={lang} />
+                <ProfileImagePicker candidates={candidates} selected={profileSel} onSelect={setProfileSel} lang={lang} onUploadFile={handleUploadLogo} />
               </div>
 
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>

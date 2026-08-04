@@ -68,6 +68,22 @@ export async function deleteImport(importId) {
   if (error) throw error;
 }
 
+// Upload a logo/profile image the admin picked from their own device into this
+// import's folder in the PUBLIC factory-images bucket. Returns its public URL —
+// the caller sets it as the factory profile image (persisted on Save). Used when
+// Gemini missed or misidentified the logo.
+export async function uploadProfileImage(importId, file) {
+  const ext = ((file?.name || '').split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const uid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const path = `${importId}/logo_${uid}.${ext}`;
+  const up = await sb.storage.from('factory-images').upload(path, file, {
+    contentType: file.type || 'image/jpeg', upsert: true,
+  });
+  if (up.error) throw up.error;
+  return sb.storage.from('factory-images').getPublicUrl(path).data.publicUrl;
+}
+
 // Update the per-catalog guidance (used to re-curate with new instructions).
 export async function updateImportNotes(importId, notes) {
   const { error } = await sb.from('factory_catalog_imports')
