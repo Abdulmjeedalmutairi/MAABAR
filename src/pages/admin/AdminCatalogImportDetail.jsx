@@ -412,6 +412,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
 
   // Stop a running extraction, or delete the whole import.
   const [canceling, setCanceling] = useState(false);
+  const [impDanger, setImpDanger] = useState(false);   // reveal "delete import" once finished
   const stopExtraction = useCallback(async () => {
     setCanceling(true); setError('');
     try {
@@ -783,6 +784,41 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                       </div>
                     )}
                   </>
+                )}
+              </div>
+
+              {/* Danger — delete this whole import (staging row + raw images + PDF).
+                  Approved products already in the factory catalog are NOT touched. */}
+              <div style={{ marginTop: 4 }}>
+                {!impDanger ? (
+                  <button type="button" onClick={() => setImpDanger(true)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: FB, fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: 0 }}>
+                    {isAr ? 'حذف هذا الاستيراد…' : 'Delete this import…'}
+                  </button>
+                ) : (
+                  <div style={{ border: '1px solid rgba(192,57,43,0.25)', borderRadius: 10, padding: '14px 16px', background: 'rgba(192,57,43,0.03)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, fontFamily: FB, color: '#a23628', marginBottom: 4 }}>
+                      {isAr ? 'حذف الاستيراد' : 'Delete import'}
+                    </div>
+                    <p className="ci-hint" style={{ margin: '0 0 12px' }}>
+                      {isAr ? 'يحذف صف الاستيراد وصوره الخام والملف المصدر نهائياً. المنتجات المعتمَدة في كتالوج المصنع لا تتأثّر — لحذف المصنع نفسه استخدم «إدارة المصنع» بالأعلى.'
+                            : 'Permanently deletes the import row, its raw images, and the source PDF. Products already approved into the factory catalog are NOT affected — to remove the factory itself use “Manage factory” above.'}
+                    </p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button type="button" className="ci-skip" disabled={canceling}
+                        onClick={async () => {
+                          setCanceling(true); setError('');
+                          try { await deleteImport(id); nav('/admin/catalog-import'); }
+                          catch (e) { setError((isAr ? 'تعذّر الحذف: ' : 'Delete failed: ') + (e.message || '')); setCanceling(false); }
+                        }}
+                        style={{ background: '#c0503f', color: '#fff' }}>
+                        {canceling ? (isAr ? 'جارٍ الحذف…' : 'Deleting…') : (isAr ? 'نعم، احذف الاستيراد' : 'Yes, delete import')}
+                      </button>
+                      <button type="button" className="ci-btn-ghost" disabled={canceling} onClick={() => setImpDanger(false)}>
+                        {isAr ? 'إلغاء' : 'Cancel'}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
               </>)}
