@@ -54,6 +54,7 @@ except Exception:  # noqa
 
 DEFAULT_SUPABASE_URL = "https://utzalmszfqfcofywfetv.supabase.co"
 DEFAULT_CSV = r"C:\Users\mje_0\OneDrive - Northumbria University - Production Azure AD\Catalog\factories-reference.csv"
+GALLERY_MAX = 7   # extra angle images per product (public page shows primary + up to 7)
 
 
 class CancelledError(Exception):
@@ -152,8 +153,8 @@ FIELDS:
   factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per REPRESENTATIVE product / grouped family (curated, per the rules above):
-    product_name — {ar, en}. Printed name if present; else a short accurate descriptive name FROM THE PHOTO (type + 1-2 key traits, e.g. "Modern 3-seater leather sofa" / "أريكة جلد عصرية ٣ مقاعد"). Never a bare model code.
-    description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
+    product_name — {ar, en}. ALWAYS provide BOTH. en MUST be a clean, specific ENGLISH commercial title: [product type] + 1-3 defining traits (material / style / size / capacity / use) — e.g. "Stainless steel commercial dough mixer", "Modern 3-seater grey fabric sofa", "18V cordless impact drill". ar is a faithful Arabic translation of that title. When the catalog prints no name (or only a code), WRITE the title from the PHOTO + specs. NEVER a bare model/OE code, NEVER generic filler ("Product", "Item", "New model"); en is never "not_found".
+    description — {ar, en}. 1-2 CONCRETE sentences grounded in the photo + specs: what the item is, its material/build, and typical use. No marketing fluff, no repeating the title. "not_found" only if the item is truly indiscernible.
     specifications — {ar, en}. Key specs AND, when grouped, the variant range (sizes/colours/materials/capacities). Preserve material, dimensions, packaging. "not_found" if none.
     moq — as printed; NOT translated; "not_found" if absent.
     price — the product's PRICE exactly as printed IF the catalog shows one: a fixed price ("$12", "12 USD", "3.50/pc") OR a range/tier ("$10-15", "0.8-1.2 USD", "100pcs: $9 / 500pcs: $7"). Copy VERBATIM, do NOT convert or invent. "not_found" if no price is printed for this product. When grouping variants, give the overall range if the catalog prints per-variant prices.
@@ -198,8 +199,8 @@ FIELDS:
   factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per DISTINCT product (complete, per the rules above):
-    product_name — {ar, en}. Printed name if present; else a short accurate descriptive name FROM THE PHOTO (type + 1-2 key traits, e.g. "Modern 3-seater leather sofa" / "أريكة جلد عصرية ٣ مقاعد"). Never a bare model code.
-    description — {ar, en}. Brief 1-2 sentences (style, material, use); "not_found" only if truly indiscernible.
+    product_name — {ar, en}. ALWAYS provide BOTH. en MUST be a clean, specific ENGLISH commercial title: [product type] + 1-3 defining traits (material / style / size / capacity / use) — e.g. "Stainless steel commercial dough mixer", "Modern 3-seater grey fabric sofa", "18V cordless impact drill". ar is a faithful Arabic translation of that title. When the catalog prints no name (or only a code), WRITE the title from the PHOTO + specs. NEVER a bare model/OE code, NEVER generic filler ("Product", "Item", "New model"); en is never "not_found".
+    description — {ar, en}. 1-2 CONCRETE sentences grounded in the photo + specs: what the item is, its material/build, and typical use. No marketing fluff, no repeating the title. "not_found" only if the item is truly indiscernible.
     specifications — {ar, en}. Key specs (material, dimensions, capacity, packaging). "not_found" if none.
     moq — as printed; NOT translated; "not_found" if absent.
     price — the product's PRICE exactly as printed IF the catalog shows one: a fixed price ("$12", "12 USD", "3.50/pc") OR a range/tier ("$10-15", "100pcs: $9 / 500pcs: $7"). Copy VERBATIM, do NOT convert or invent. "not_found" if no price is printed for this product.
@@ -210,6 +211,124 @@ FIELDS:
 
 PRESERVE commercial value (materials, key specs, prices, OEM/ODM, MOQ, packaging, customization). The result should be the COMPLETE product list — every distinct item, nothing curated away.
 """
+
+
+# ── Pass 1: catalog OUTLINE (structure understanding, page-ranged sections) ──
+# One high-reasoning call over the WHOLE document. It maps the catalog's own
+# structure so the bulk extractor doesn't have to be told anything per-file:
+#   • sections  — the departments/collections with 1-based page ranges (used to
+#                 tag every product with its section → Amazon-style filtering)
+#   • logo      — where the factory logo/cover lives (better than a size heuristic)
+#   • flags     — has_prices / language / density (self-adapting hints)
+OUTLINE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "sections": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": _BI,                       # bilingual section label
+                    "page_start": {"type": "integer"}, # 1-based, inclusive
+                    "page_end": {"type": "integer"},   # 1-based, inclusive
+                },
+                "required": ["name", "page_start", "page_end"],
+            },
+        },
+        "logo": {
+            "type": "object",
+            "properties": {
+                "found": {"type": "boolean"},
+                "page_number": {"type": "integer"},    # 1-based page the logo is on
+                "description": {"type": "string"},
+            },
+            "required": ["found", "page_number", "description"],
+        },
+        "flags": {
+            "type": "object",
+            "properties": {
+                "has_prices": {"type": "boolean"},
+                "primary_language": {"type": "string"},
+                "product_density": {"type": "string"},   # low | medium | high
+                "is_price_list": {"type": "boolean"},
+            },
+            "required": ["has_prices", "primary_language", "product_density", "is_price_list"],
+        },
+    },
+    "required": ["sections", "logo", "flags"],
+}
+
+OUTLINE_PROMPT = """You are a senior B2B catalog analyst. Read the ENTIRE PDF and return a STRUCTURAL MAP of it — NOT the products themselves. One JSON object: "sections", "logo", "flags".
+
+SECTIONS — the catalog's own top-level departments / collections / product families, in reading order, each with the 1-based page range it spans:
+  • Use the catalog's OWN structure: section headers, dividers, tabs, chapters, a table of contents. Examples by trade: apparel → Women / Men / Sportswear / Kids; furniture → Sofas / Beds / Dining / Office; auto parts → Engine / Brakes / Suspension; sanitary → Faucets / Sinks / Showers.
+  • name is BILINGUAL {ar, en}: a short, clean, CONSISTENT department label (e.g. {"ar":"نسائي","en":"Women"}). Do NOT invent departments the catalog doesn't organise around.
+  • page_start/page_end are 1-based and INCLUSIVE, and together should cover the product pages with no gaps or overlaps. Merge tiny fragments; don't create a section per page.
+  • If the catalog is NOT organised into departments (a single product type throughout), return ONE section that spans all product pages, named after that product type.
+
+LOGO — locate the factory's LOGO or main cover/branding image (NOT a product photo): found (true/false), page_number (1-based, usually the cover or an About/contact page), and a short description. found=false if there truly is none.
+
+FLAGS — quick self-assessment: has_prices (does the catalog print product prices anywhere?), primary_language (e.g. "Chinese", "English"), product_density ("low" < 30 items, "medium", "high" > 150), is_price_list (true if it's mainly a price/SKU table rather than a photo catalog).
+
+Be accurate about page numbers — they drive how every product is later tagged. Do NOT list products here."""
+
+
+def run_outline(pdf_path: Path, model: str):
+    """Pass-1 structural map (sections/logo/flags). Non-fatal: on any error returns
+       {} so the bulk extraction still runs (just without sections/outline-logo)."""
+    from google import genai
+    from google.genai import types
+    try:
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        uploaded = client.files.upload(file=str(pdf_path))
+        waited = 0
+        while getattr(uploaded.state, "name", str(uploaded.state)) == "PROCESSING":
+            time.sleep(2); waited += 2
+            uploaded = client.files.get(name=uploaded.name)
+            if waited > 300:
+                raise RuntimeError("outline: file stuck in PROCESSING > 5 min")
+        resp = client.models.generate_content(
+            model=model, contents=[uploaded, OUTLINE_PROMPT],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json", response_schema=OUTLINE_SCHEMA,
+                temperature=0, max_output_tokens=8192),
+        )
+        data = json.loads(resp.text or "{}")
+        secs = data.get("sections") or []
+        print(f"  outline ({model}): {len(secs)} section(s), "
+              f"logo={'yes' if (data.get('logo') or {}).get('found') else 'no'}, "
+              f"prices={'yes' if (data.get('flags') or {}).get('has_prices') else 'no'}")
+        return data
+    except Exception as e:  # noqa: BLE001 — outline is best-effort
+        print(f"  outline failed ({type(e).__name__}: {str(e)[:140]}) — continuing without it", file=sys.stderr)
+        return {}
+
+
+def assign_sections(products, sections):
+    """Tag each product with the section whose 1-based page range contains its
+       page_number. Deterministic → section labels are perfectly consistent."""
+    if not sections:
+        return 0
+    ranges = []
+    for s in sections:
+        try:
+            a, b = int(s.get("page_start") or 0), int(s.get("page_end") or 0)
+        except (TypeError, ValueError):
+            continue
+        nm = s.get("name")
+        if a and b and isinstance(nm, dict) and _filled(nm):
+            ranges.append((a, b, nm))
+    if not ranges:
+        return 0
+    tagged = 0
+    for pr in products:
+        pg = int(pr.get("page_number") or 0)
+        for a, b, nm in ranges:
+            if a <= pg <= b:
+                pr["section"] = nm
+                tagged += 1
+                break
+    return tagged
 
 
 # ── PyMuPDF: extract embedded images with page + bbox + dims + bytes ─────────
@@ -503,6 +622,14 @@ def match_and_score(products, images, profile_flags):
             pr["_image"] = im
             pr["_has_image"] = im is not None
             pr["_ambiguous"] = ambiguous and len(cands) > 1
+            pr["_gallery"] = []
+        # Single-product page → the item is likely shown from several angles.
+        # Attach every OTHER image on the page as this product's gallery (extra
+        # angles). Multi-product pages stay 1:1 — mixing them would attach the
+        # wrong product's photos.
+        if len(prods) == 1 and prods[0].get("_image") is not None:
+            primary_xref = prods[0]["_image"]["xref"]
+            prods[0]["_gallery"] = [im for im in cands if im["xref"] != primary_xref][:GALLERY_MAX]
 
     for pr in products:
         s = 0.0
@@ -584,7 +711,7 @@ class Supa:
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
                    supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None,
-                   should_cancel=None, mode="curated"):
+                   should_cancel=None, mode="curated", outline_model="gemini-2.5-pro"):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -616,23 +743,38 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         log(f"PDF: {pdf_path.name}  ({page_count} pages)")
 
         _p("images", 8, "reading images")
-        log("[1/4] PyMuPDF image extraction")
+        log("[1/5] PyMuPDF image extraction")
         images = extract_images(doc, min_dim)
         log(f"  {len(images)} embedded images (>= {min_dim}px)")
 
-        _p("analyzing", 15, "reading the catalog")
-        log("[2/4] Gemini extraction")
+        _p("outline", 12, "mapping the catalog")
+        log("[2/5] Catalog outline (structure map)")
+        outline = run_outline(pdf_path, outline_model)
+
+        _p("analyzing", 18, "reading the catalog")
+        log("[3/5] Gemini extraction")
         gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel, mode=mode)
         products = gem.get("products") or []
         _before = len(products)
         products = merge_duplicate_products(products)
         if _before != len(products):
             log(f"  merged over-split: {_before} -> {len(products)} products")
+        # Tag each product with its section (deterministic, from the outline's ranges).
+        tagged = assign_sections(products, (outline.get("sections") or []))
+        if tagged:
+            log(f"  sections: tagged {tagged}/{len(products)} products across {len(outline.get('sections') or [])} section(s)")
         log(f"  {len(products)} products, {tokens} tokens")
 
         _p("matching", 60, "matching images")
-        log("[3/4] Image matching + confidence")
-        profile_imgs = match_and_score(products, images, gem.get("profile_images") or [])
+        log("[4/5] Image matching + confidence")
+        # Prefer the outline-detected logo page as the DEFAULT profile image
+        # (prepended → becomes profile_candidates[0]); Gemini's own flags follow.
+        prof_flags = list(gem.get("profile_images") or [])
+        _lg = outline.get("logo") or {}
+        if _lg.get("found") and _lg.get("page_number"):
+            prof_flags = [{"page_number": int(_lg["page_number"]), "kind": "logo",
+                           "position": "", "description": "outline-detected"}] + prof_flags
+        profile_imgs = match_and_score(products, images, prof_flags)
         csv_fields = csv_prefill(csv_path, pdf_path) if csv_path else {}
         gfac = gem.get("factory") or {}
         factory_fields = {
@@ -655,10 +797,12 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         log(f"  csv match: {'yes' if csv_fields else 'no'}   profile images flagged: {len(profile_imgs)}")
         log(f"  confidence: {hi} high (>=0.7) / {len(products)-hi} to review")
 
-        def product_row(pr, sort_i, image_url):
+        def product_row(pr, sort_i, image_url, gallery_urls=None):
             ej = {k: pr.get(k) for k in ("product_name", "description", "specifications",
-                                         "customization_options", "moq", "price", "currency", "ref_code")}
+                                         "customization_options", "moq", "price", "currency",
+                                         "section", "ref_code")}
             return {"page_no": pr.get("page_number"), "image_path": image_url,
+                    "gallery_paths": gallery_urls or [],
                     "extracted_json": ej, "confidence_score": pr.get("_confidence"),
                     "status": "pending", "sort_order": sort_i}
 
@@ -683,7 +827,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         creating = import_id is None
         if creating:
             import_id = str(uuid.uuid4())
-        log(f"[4/4] Uploading + writing (import {import_id})")
+        log(f"[5/5] Uploading + writing (import {import_id})")
 
         src_path = None
         if creating:
@@ -710,13 +854,21 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             im = pr.get("_image")
             if im is not None:
                 image_url = put_image(im, f"p{im['page']}_{im['xref']}"); uploaded += 1
-            rows.append(product_row(pr, i, image_url))
+            # Extra angle images (single-product pages) → the product's gallery.
+            gallery_urls = []
+            for gim in (pr.get("_gallery") or []):
+                try:
+                    gallery_urls.append(put_image(gim, f"g{gim['page']}_{gim['xref']}")); uploaded += 1
+                except Exception:  # noqa: BLE001 — one bad gallery image never fails the row
+                    pass
+            rows.append(product_row(pr, i, image_url, gallery_urls))
             if total and (i % 10 == 0 or i == total - 1):
                 _p("uploading", 65 + int(32 * (i + 1) / total), f"{i + 1}/{total}")   # also a cancel checkpoint
 
         imp = {
             "status": "extracted", "factory_fields": factory_fields, "profile_image_path": profile_url,
             "page_count": page_count, "model": model, "tokens_used": tokens, "error": None,
+            "outline": outline or None,
         }
         for r in rows:
             r["import_id"] = import_id
@@ -757,6 +909,8 @@ def main():
     ap.add_argument("--notes", default=None, help="optional per-catalog guidance appended to the Gemini prompt")
     ap.add_argument("--mode", default="curated", choices=["curated", "full"],
                     help="'curated' (representative highlight reel) or 'full' (every distinct product)")
+    ap.add_argument("--outline-model", default="gemini-2.5-pro",
+                    help="model for the pass-1 structural outline (sections/logo/flags)")
     args = ap.parse_args()
 
     pdf_path = Path(args.pdf).expanduser()
@@ -774,7 +928,8 @@ def main():
 
     res = run_extraction(pdf_path, model=args.model, chunk_pages=args.chunk_pages,
                          min_pages=args.min_chunk_pages, min_dim=args.min_dim, csv_path=args.csv,
-                         dry_run=args.dry_run, out_dir=args.out, supa=supa, hint=args.notes, mode=args.mode)
+                         dry_run=args.dry_run, out_dir=args.out, supa=supa, hint=args.notes, mode=args.mode,
+                         outline_model=args.outline_model)
     if not args.dry_run:
         print(f"\nDone. import_id = {res['import_id']}  (status: extracted) — review it in the admin panel.")
 

@@ -36,7 +36,10 @@ import catalog_import as ci  # shared extraction pipeline (copied into the image
 SUPABASE_URL = os.environ.get("SUPABASE_URL", ci.DEFAULT_SUPABASE_URL).rstrip("/")
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# Bulk extraction defaults to pro for the best titles/descriptions/English; the
+# one-per-catalog outline pass also uses pro. Both overridable via Cloud Run env.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-pro")
+GEMINI_OUTLINE_MODEL = os.environ.get("GEMINI_OUTLINE_MODEL", "gemini-2.5-pro")
 CHUNK_PAGES = int(os.environ.get("CHUNK_PAGES", "80"))
 
 SR_HEADERS = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}"}
@@ -159,7 +162,7 @@ def extract():
             tmp, supa=supa, import_id=import_id,
             original_filename=row.get("original_filename"),
             csv_path=None,                 # no local CSV in the cloud — admin fills contact in review
-            model=GEMINI_MODEL, chunk_pages=CHUNK_PAGES,
+            model=GEMINI_MODEL, outline_model=GEMINI_OUTLINE_MODEL, chunk_pages=CHUNK_PAGES,
             log=lambda *a: print(*a, flush=True),
             progress=progress,
             hint=row.get("import_notes"),  # optional per-catalog admin guidance

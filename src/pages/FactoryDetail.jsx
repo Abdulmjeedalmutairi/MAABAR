@@ -116,6 +116,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   // Opened from the "Request a quote" button on the factories list (/factory/:id?request=1).
   useEffect(() => { if (searchParams.get('request') === '1') setReqOpen(true); }, [searchParams]);
   const [activeCatalog, setActiveCatalog] = useState(null); // import_id filter
+  const [activeSection, setActiveSection] = useState(null); // section filter (Amazon-style)
   const [visible, setVisible] = useState(20);
   const [viewerReqProduct, setViewerReqProduct] = useState(null); // request a quote for a specific product
   const [msgBusy, setMsgBusy] = useState(false);
@@ -135,7 +136,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-  useEffect(() => { setVisible(20); }, [activeCatalog]);
+  useEffect(() => { setVisible(20); }, [activeCatalog, activeSection]);
 
   async function load() {
     setLoading(true);
@@ -197,7 +198,19 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const catalogCount = new Set(catalog.map((p) => p.import_id).filter(Boolean)).size || 1;
   const catWord = isAr ? (catalogCount === 1 ? 'كتالوج' : 'كتالوجات') : lang === 'zh' ? '目录' : (catalogCount === 1 ? 'catalog' : 'catalogs');
 
-  const filtered = activeCatalog ? catalog.filter((p) => p.import_id === activeCatalog) : catalog;
+  // Section = the product's department (women/men/sofas…), tagged at import.
+  const sectionOf = (p) => (isAr ? (p.section_ar || p.section_en) : (p.section_en || p.section_ar)) || null;
+  // Distinct sections in catalog order, for the Amazon/Alibaba-style filter chips.
+  const sections = (() => {
+    const seen = new Map();
+    catalog.forEach((p) => { const s = sectionOf(p); if (s && !seen.has(s)) seen.set(s, true); });
+    return Array.from(seen.keys());
+  })();
+  const showSections = sections.length >= 2;
+
+  const filtered = catalog.filter((p) =>
+    (!activeCatalog || p.import_id === activeCatalog) &&
+    (!activeSection || sectionOf(p) === activeSection));
   const shown = filtered.slice(0, visible);
   const activeCat = catalogs.find((x) => x.id === activeCatalog);
 
@@ -353,6 +366,20 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
               <div className={`fp-filter${ar}`}>
                 {c.filterOn}: {activeCat.title}
                 <button onClick={() => setActiveCatalog(null)} aria-label={c.clearFilter}>×</button>
+              </div>
+            )}
+            {showSections && (
+              <div className="fx-filterbar" style={{ marginBottom: 16 }}>
+                <button type="button" className={`fx-chip${!activeSection ? ' on' : ''}${ar}`}
+                  onClick={() => setActiveSection(null)}>
+                  {isAr ? 'الكل' : lang === 'zh' ? '全部' : 'All'}
+                </button>
+                {sections.map((s) => (
+                  <button key={s} type="button" className={`fx-chip${activeSection === s ? ' on' : ''}${ar}`}
+                    onClick={() => setActiveSection(activeSection === s ? null : s)}>
+                    {s}
+                  </button>
+                ))}
               </div>
             )}
             <div className="fp-pgrid">

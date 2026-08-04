@@ -102,10 +102,25 @@ export default function ProductReviewCard({ value, onChange, product, lang, cand
             })}
           </div>
         )}
+        {Array.isArray(product.gallery_paths) && product.gallery_paths.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 10.5, color: 'rgba(0,0,0,0.45)', fontFamily: FB, marginBottom: 4 }}>
+              {isAr ? `صور إضافية للمنتج (${product.gallery_paths.length})` : `Product gallery (${product.gallery_paths.length})`}
+            </div>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {product.gallery_paths.map((u) => (
+                <div key={u} style={{ width: 44, height: 44, borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.12)', background: '#fff' }}>
+                  <img src={u} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ flex: 1, minWidth: 300 }}>
         {biField('الاسم', 'Name', 'product_name')}
+        {biField('القسم', 'Section', 'section')}
         <div style={{ marginBottom: 8 }}>
           <label className="ci-label">{isAr ? 'رمز المنتج' : 'Ref code'}</label>
           <input className="ci-input" dir="ltr" style={{ maxWidth: 220, fontFamily: 'ui-monospace, Consolas, monospace' }}
