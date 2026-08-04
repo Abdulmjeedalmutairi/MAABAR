@@ -148,6 +148,7 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
         specifications_ar: nf(editing.specifications_ar) || null, specifications_en: nf(editing.specifications_en) || null,
         moq: nf(editing.moq) || null, ref_code: nf(editing.ref_code) || null, image: editing.image || null,
         price: nf(editing.price) || null, currency: nf(editing.currency) || null,
+        gallery_images: Array.isArray(editing.gallery_images) ? editing.gallery_images.filter(Boolean) : [],
       };
       if (editing.id) {
         await updateFactoryProduct(editing.id, patch);
@@ -273,8 +274,34 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
           <div className="fd-modal-bg" onClick={() => !busyP && setEditing(null)}>
             <div className="fd-modal" onClick={(e) => e.stopPropagation()} dir={isAr ? 'rtl' : 'ltr'}>
               <h2 className="fd-h2">{editing.id ? (isAr ? 'تعديل المنتج' : 'Edit product') : (isAr ? 'منتج جديد' : 'New product')}</h2>
-              <label className="fd-label">{isAr ? 'الصورة (اختر من صور الكتالوج أو ارفع من جهازك)' : 'Image (pick from catalog or upload from device)'}</label>
+              <label className="fd-label">{isAr ? 'الصورة الرئيسية (اختر من الكتالوج أو ارفع من جهازك)' : 'Main image (pick from catalog or upload from device)'}</label>
               <ProfileImagePicker candidates={pool} selected={editing.image} onSelect={(u) => eSet('image', u)} lang={lang} onUploadFile={uploadFor((u) => eSet('image', u))} />
+
+              {/* Gallery — extra angle images (Amazon-style). Primary + these show on the product page. */}
+              {(() => {
+                const gal = Array.isArray(editing.gallery_images) ? editing.gallery_images : [];
+                const addGal = (u) => { if (u && !gal.includes(u)) eSet('gallery_images', [...gal, u]); };
+                const rmGal = (u) => eSet('gallery_images', gal.filter((x) => x !== u));
+                const addable = pool.filter((u) => u !== editing.image && !gal.includes(u));
+                return (
+                  <div style={{ marginTop: 14 }}>
+                    <label className="fd-label">{isAr ? `صور إضافية / معرض (${gal.length})` : `Gallery — extra images (${gal.length})`}</label>
+                    {gal.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                        {gal.map((u) => (
+                          <div key={u} style={{ position: 'relative', width: 56, height: 56, borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.14)', background: '#fff' }}>
+                            <img src={u} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                            <button type="button" onClick={() => rmGal(u)} title={isAr ? 'إزالة' : 'Remove'}
+                              style={{ position: 'absolute', top: 0, insetInlineEnd: 0, background: 'rgba(192,80,63,0.92)', color: '#fff', border: 'none', width: 18, height: 18, lineHeight: '16px', cursor: 'pointer', fontSize: 12, padding: 0 }}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <ProfileImagePicker candidates={addable} selected={null} onSelect={addGal} lang={lang} onUploadFile={uploadFor(addGal)} />
+                    <p className="fd-label" style={{ marginTop: 4 }}>{isAr ? 'اضغط صورة لإضافتها للمعرض، أو ارفع من جهازك.' : 'Click an image to add it to the gallery, or upload from your device.'}</p>
+                  </div>
+                );
+              })()}
               <div className="fd-grid2" style={{ marginTop: 14 }}>
                 <div><label className="fd-label">{isAr ? 'الاسم (ع)' : 'Name (AR)'}</label><input className="fd-input" dir="rtl" value={nf(editing.name_ar)} onChange={(e) => eSet('name_ar', e.target.value)} /></div>
                 <div><label className="fd-label">{isAr ? 'الاسم (EN)' : 'Name (EN)'}</label><input className="fd-input" dir="ltr" value={nf(editing.name_en)} onChange={(e) => eSet('name_en', e.target.value)} /></div>

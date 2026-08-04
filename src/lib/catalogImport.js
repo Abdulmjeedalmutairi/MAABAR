@@ -343,7 +343,7 @@ function mapProduct(factoryId, staged, meta = {}) {
     currency: nf(ej.currency),
     ref_code: nf(ej.ref_code),
     image: staged.image_path || null,
-    gallery_images: [],
+    gallery_images: Array.isArray(staged.gallery_paths) ? staged.gallery_paths.filter(Boolean) : [],
     sort_order: staged.sort_order ?? 0,
   };
 }

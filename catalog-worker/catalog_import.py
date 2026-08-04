@@ -54,6 +54,7 @@ except Exception:  # noqa
 
 DEFAULT_SUPABASE_URL = "https://utzalmszfqfcofywfetv.supabase.co"
 DEFAULT_CSV = r"C:\Users\mje_0\OneDrive - Northumbria University - Production Azure AD\Catalog\factories-reference.csv"
+GALLERY_MAX = 7   # extra angle images per product (public page shows primary + up to 7)
 
 
 class CancelledError(Exception):
@@ -503,6 +504,14 @@ def match_and_score(products, images, profile_flags):
             pr["_image"] = im
             pr["_has_image"] = im is not None
             pr["_ambiguous"] = ambiguous and len(cands) > 1
+            pr["_gallery"] = []
+        # Single-product page → the item is likely shown from several angles.
+        # Attach every OTHER image on the page as this product's gallery (extra
+        # angles). Multi-product pages stay 1:1 — mixing them would attach the
+        # wrong product's photos.
+        if len(prods) == 1 and prods[0].get("_image") is not None:
+            primary_xref = prods[0]["_image"]["xref"]
+            prods[0]["_gallery"] = [im for im in cands if im["xref"] != primary_xref][:GALLERY_MAX]
 
     for pr in products:
         s = 0.0
@@ -655,10 +664,11 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         log(f"  csv match: {'yes' if csv_fields else 'no'}   profile images flagged: {len(profile_imgs)}")
         log(f"  confidence: {hi} high (>=0.7) / {len(products)-hi} to review")
 
-        def product_row(pr, sort_i, image_url):
+        def product_row(pr, sort_i, image_url, gallery_urls=None):
             ej = {k: pr.get(k) for k in ("product_name", "description", "specifications",
                                          "customization_options", "moq", "price", "currency", "ref_code")}
             return {"page_no": pr.get("page_number"), "image_path": image_url,
+                    "gallery_paths": gallery_urls or [],
                     "extracted_json": ej, "confidence_score": pr.get("_confidence"),
                     "status": "pending", "sort_order": sort_i}
 
@@ -710,7 +720,14 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             im = pr.get("_image")
             if im is not None:
                 image_url = put_image(im, f"p{im['page']}_{im['xref']}"); uploaded += 1
-            rows.append(product_row(pr, i, image_url))
+            # Extra angle images (single-product pages) → the product's gallery.
+            gallery_urls = []
+            for gim in (pr.get("_gallery") or []):
+                try:
+                    gallery_urls.append(put_image(gim, f"g{gim['page']}_{gim['xref']}")); uploaded += 1
+                except Exception:  # noqa: BLE001 — one bad gallery image never fails the row
+                    pass
+            rows.append(product_row(pr, i, image_url, gallery_urls))
             if total and (i % 10 == 0 or i == total - 1):
                 _p("uploading", 65 + int(32 * (i + 1) / total), f"{i + 1}/{total}")   # also a cancel checkpoint
 
