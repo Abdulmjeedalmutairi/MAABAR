@@ -14,7 +14,7 @@ const S = {
 
 const CSS = `
   .ftc-page { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; height: var(--app-dvh); }
-  .ftc-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 5; }
+  .ftc-head { display: flex; align-items: center; gap: 12px; padding: calc(14px + env(safe-area-inset-top)) 18px 14px; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 5; }
   .ftc-back { background: none; border: none; cursor: pointer; color: rgba(0,0,0,0.5); font-size: 13px; font-family: var(--font-sans); padding: 4px; flex-shrink: 0; }
   .ftc-ava { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: #efe9df; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #8B7355; font-family: var(--font-sans); }
   .ftc-name { font-size: 15px; font-weight: 600; color: rgba(0,0,0,0.86); margin: 0; line-height: 1.3; }
@@ -31,8 +31,8 @@ const CSS = `
   .ftc-row.them .ftc-bubble { background: #fff; color: rgba(0,0,0,0.85); border: 1px solid rgba(0,0,0,0.08); border-bottom-left-radius: 5px; }
   .ftc-row.sys .ftc-bubble { background: #f2ede3; color: #8a7a5f; font-size: 12.5px; border-radius: 10px; }
   .ftc-time { font-size: 10.5px; color: rgba(0,0,0,0.35); margin: 3px 4px 0; font-family: var(--font-sans); }
-  .ftc-composer { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid rgba(0,0,0,0.08); background: #fff; align-items: flex-end; }
-  .ftc-input { flex: 1; resize: none; border: 1px solid rgba(0,0,0,0.16); border-radius: 12px; padding: 10px 14px; font-size: 14px; font-family: inherit; max-height: 120px; outline: none; line-height: 1.5; }
+  .ftc-composer { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(0,0,0,0.08); background: #fff; align-items: flex-end; }
+  .ftc-input { flex: 1; resize: none; border: 1px solid rgba(0,0,0,0.16); border-radius: 12px; padding: 10px 14px; font-size: 16px; font-family: inherit; max-height: 120px; outline: none; line-height: 1.5; }
   .ftc-input:focus { border-color: rgba(0,0,0,0.4); }
   .ftc-send { background: #1a1814; color: #fff; border: none; border-radius: 12px; padding: 0 20px; height: 42px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); flex-shrink: 0; }
   .ftc-send:disabled { opacity: 0.5; cursor: default; }

@@ -23,6 +23,7 @@ const C = {
     notFound: 'رابط المحادثة غير موجود.',
     errPhone: 'أدخل رقم جوال صحيح بصيغة دولية (مثال: +8613800138000).', errPw: 'كلمة المرور ٦ أحرف على الأقل.',
     errExists: 'هذا الرقم مسجّل — بدّل إلى «تسجيل الدخول».', errCreds: 'رقم الجوال أو كلمة المرور غير صحيحة.', errAuth: 'تعذّر تسجيل الدخول، حاول مجدداً.',
+    alsoOn: 'معبر متوفّر أيضاً على آيفون', playSoon: 'قريباً على Google Play',
   },
   en: {
     tag: 'Factory conversation', title: 'Talk to the buyer',
@@ -35,6 +36,7 @@ const C = {
     notFound: 'Conversation link not found.',
     errPhone: 'Enter a valid international phone (e.g. +8613800138000).', errPw: 'Password must be at least 6 characters.',
     errExists: 'This number is already registered — switch to “Sign in”.', errCreds: 'Phone or password is incorrect.', errAuth: 'Could not sign you in, please try again.',
+    alsoOn: 'Maabar is also on iPhone', playSoon: 'Coming soon on Google Play',
   },
   zh: {
     tag: '工厂对话', title: '与买家沟通',
@@ -47,9 +49,25 @@ const C = {
     notFound: '未找到对话链接。',
     errPhone: '请输入有效的国际电话（如 +8613800138000）。', errPw: '密码至少 6 位。',
     errExists: '该号码已注册，请切换到“登录”。', errCreds: '电话或密码不正确。', errAuth: '无法登录，请重试。',
+    alsoOn: 'Maabar 也在 iPhone 上', playSoon: '即将登陆 Google Play',
   },
 };
 const isValidPhone = (v) => /^\+[1-9]\d{6,14}$/.test(String(v || '').trim());
+
+const APP_STORE_URL = 'https://apps.apple.com/sa/app/id6780046671';
+
+// Self-contained "Download on the App Store" badge (no external asset / hotlink).
+function AppStoreBadge() {
+  return (
+    <svg width="132" height="44" viewBox="0 0 120 40" role="img" aria-label="Download on the App Store" style={{ display: 'block' }}>
+      <rect x="0.5" y="0.5" width="119" height="39" rx="8" fill="#000" stroke="rgba(255,255,255,0.2)" />
+      <path fill="#fff" transform="translate(11 9) scale(0.92)"
+        d="M16.05 11.28c-.02-1.9 1.55-2.81 1.62-2.86-.88-1.29-2.26-1.47-2.75-1.49-1.17-.12-2.28.69-2.87.69-.59 0-1.5-.67-2.47-.65-1.27.02-2.44.74-3.09 1.87-1.32 2.29-.34 5.67.94 7.53.63.91 1.38 1.93 2.35 1.89.94-.04 1.3-.61 2.44-.61 1.14 0 1.46.61 2.46.59 1.02-.02 1.66-.93 2.28-1.84.72-1.05 1.02-2.07 1.03-2.12-.02-.01-1.97-.76-1.99-3-.02-1.87 1.53-2.77 1.6-2.82zM14.13 5.03c.52-.63.87-1.51.77-2.38-.75.03-1.65.5-2.19 1.13-.48.55-.9 1.44-.79 2.29.84.06 1.69-.42 2.21-1.04z" />
+      <text x="35" y="16" fill="#fff" fontFamily="-apple-system, Helvetica, Arial, sans-serif" fontSize="6.5" letterSpacing="0.2">Download on the</text>
+      <text x="35" y="30" fill="#fff" fontFamily="-apple-system, Helvetica, Arial, sans-serif" fontSize="15" fontWeight="600">App Store</text>
+    </svg>
+  );
+}
 
 export default function FactoryThreadEntry({ user, lang = 'en' }) {
   const { slug } = useParams();
@@ -123,9 +141,9 @@ export default function FactoryThreadEntry({ user, lang = 'en' }) {
     } catch { setBusy(false); setError(t.errAuth); }
   }
 
-  const wrap = { minHeight: 'var(--app-dvh,100vh)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'var(--bg-page,#FAF9F7)' };
+  const wrap = { minHeight: 'var(--app-dvh,100vh)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '20px 20px calc(20px + env(safe-area-inset-bottom))', background: 'var(--bg-page,#FAF9F7)' };
   const card = { width: '100%', maxWidth: 420, background: '#fff', border: '1px solid #E8E3DA', borderRadius: 16, padding: '28px 26px', boxShadow: '0 10px 40px rgba(26,24,20,0.08)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
-  const inp = { width: '100%', boxSizing: 'border-box', padding: '11px 13px', border: '1px solid #DAD3C7', borderRadius: 9, fontSize: 14, marginBottom: 10, fontFamily: 'inherit' };
+  const inp = { width: '100%', boxSizing: 'border-box', padding: '11px 13px', border: '1px solid #DAD3C7', borderRadius: 9, fontSize: 16, marginBottom: 10, fontFamily: 'inherit' };
   const primary = { width: '100%', padding: '12px', border: 'none', borderRadius: 9, background: '#1A1814', color: '#fff', fontSize: 14, fontWeight: 600, cursor: busy ? 'default' : 'pointer', fontFamily: 'inherit', opacity: busy ? 0.6 : 1 };
 
   if (phase === 'chat' && threadId) {
@@ -185,6 +203,19 @@ export default function FactoryThreadEntry({ user, lang = 'en' }) {
             </button>
           </>
         )}
+      </div>
+
+      {/* App availability — awareness only (no factory-side flow in the app yet) */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, width: '100%', maxWidth: 420 }}>
+        <p style={{ fontSize: 12, color: '#8a7f70', margin: 0, textAlign: 'center', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{t.alsoOn}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', borderRadius: 8 }}>
+            <AppStoreBadge />
+          </a>
+          <span style={{ display: 'inline-flex', alignItems: 'center', height: 44, boxSizing: 'border-box', padding: '0 14px', border: '1px solid #DAD3C7', borderRadius: 8, fontSize: 11.5, color: '#8a7f70', background: '#fff', textAlign: 'center', lineHeight: 1.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+            {t.playSoon}
+          </span>
+        </div>
       </div>
     </div>
   );
