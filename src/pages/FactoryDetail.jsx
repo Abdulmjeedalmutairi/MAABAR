@@ -215,6 +215,10 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     (!activeCatalog || p.import_id === activeCatalog) &&
     (!activeSection || sectionOf(p) === activeSection));
   const shown = filtered.slice(0, visible);
+  // Open a product, passing this factory's current filtered order so the detail
+  // page's prev/next arrows match the grid the buyer is looking at.
+  const openProduct = (p) => nav(`/factory/${factory.id}/product/${p.id}`,
+    { state: { siblings: filtered.map((x) => ({ id: x.id, fid: factory.id })) } });
   const activeCat = catalogs.find((x) => x.id === activeCatalog);
 
   // Data-driven trust stats (real numbers, not generic filler).
@@ -392,11 +396,11 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                 const pn = productName(p) || '—';
                 return (
                   <div className="fp-pcard" key={p.id}>
-                    <button type="button" className="fp-pcard-media" onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)} title={pn}>
+                    <button type="button" className="fp-pcard-media" onClick={() => openProduct(p)} title={pn}>
                       <img src={p.image} alt={pn} loading="lazy" />
                     </button>
                     <div className="fp-pcard-body">
-                      <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
+                      <p className={`fp-pcard-name${ar}`} onClick={() => openProduct(p)}>{pn}</p>
                       <ProductChips product={p} factory={factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
                       <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || onRequestLabel}</p>
                       {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}

@@ -93,6 +93,10 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   }, [items, activeCat, activeKey, q]);
 
   const shown = filtered.slice(0, visible);
+  // Open a product's detail, passing the FULL filtered list so its prev/next
+  // arrows walk exactly what the user was browsing (cross-factory here).
+  const openProduct = (p) => nav(`/factory/${p.factory_id}/product/${p.id}`,
+    { state: { siblings: filtered.map((x) => ({ id: x.id, fid: x.factory_id })) } });
   const revealRef = useReveal([lang, activeKey, q, shown.length]);
   const pName = (p) => (isAr ? (nf(p.name_ar) || nf(p.name_en)) : lang === 'zh' ? (nf(p.name_zh) || nf(p.name_en)) : (nf(p.name_en) || nf(p.name_ar))) || '—';
   const fName = (p) => nf(p.factory.company_name_latin) || nf(p.factory.company_name) || '';
@@ -131,11 +135,11 @@ export default function FactoryProducts({ lang = 'ar', user }) {
           <div className="fp-pgrid" ref={revealRef}>
             {shown.map((p) => (
               <div className="fp-pcard reveal" key={p.id}>
-                <button type="button" className="fp-pcard-media" onClick={() => nav(`/factory/${p.factory_id}/product/${p.id}`)} title={pName(p)}>
+                <button type="button" className="fp-pcard-media" onClick={() => openProduct(p)} title={pName(p)}>
                   <img src={p.image} alt={pName(p)} loading="lazy" />
                 </button>
                 <div className="fp-pcard-body">
-                  <p className={`fp-pcard-name${arc}`} onClick={() => nav(`/factory/${p.factory_id}/product/${p.id}`)}>{pName(p)}</p>
+                  <p className={`fp-pcard-name${arc}`} onClick={() => openProduct(p)}>{pName(p)}</p>
                   <ProductChips product={p} factory={p.factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
                   <button type="button" className={`fp-pcard-fac${arc}`} onClick={() => nav(`/factory/${p.factory_id}`)}>{fName(p)}</button>
                   <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || c.onReq}</p>

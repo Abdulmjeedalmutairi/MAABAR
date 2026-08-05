@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import { sb } from '../supabase';
@@ -12,21 +12,21 @@ import { getFactoryProductImages } from '../lib/productMedia';
 
 const T = {
   ar: {
-    back: 'رجوع إلى المصنع', byFactory: 'المصنع', ref: 'رمز المنتج', zoom: 'اضغط للتكبير',
+    back: 'رجوع إلى المصنع', byFactory: 'المصنع', ref: 'رمز المنتج', zoom: 'اضغط للتكبير', prev: 'السابق', next: 'التالي',
     requestCta: 'اطلب عرض سعر', msgFactory: 'راسل المصنع', msgStarting: 'جارٍ الفتح…',
     notFound: 'المنتج غير موجود', loading: '…',
     specsLabel: 'المواصفات', descLabel: 'الوصف', customLabel: 'خيارات التخصيص', moqLabel: 'الحد الأدنى للطلب',
     contactDetails: 'تواصل مع المورد للتفاصيل', note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.',
   },
   en: {
-    back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom',
+    back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom', prev: 'Previous', next: 'Next',
     requestCta: 'Request a quote', msgFactory: 'Message the factory', msgStarting: 'Opening…',
     notFound: 'Product not found', loading: '…',
     specsLabel: 'Specifications', descLabel: 'Description', customLabel: 'Customization options', moqLabel: 'MOQ',
     contactDetails: 'Contact supplier for details', note: 'The factory responds with pricing — no budget needed.',
   },
   zh: {
-    back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大',
+    back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大', prev: '上一个', next: '下一个',
     requestCta: '请求报价', msgFactory: '联系工厂', msgStarting: '正在打开…',
     notFound: '未找到产品', loading: '…',
     specsLabel: '规格', descLabel: '描述', customLabel: '定制选项', moqLabel: '起订量',
@@ -66,6 +66,45 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
       nav(`/messages/factory/${threadId}`);
     } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
   }
+
+  // ── Walk the catalog product-to-product from the detail view ──
+  // Hybrid context: the grid passes the exact ordered/filtered list it showed
+  // (route state); on a deep link (no state) fall back to the factory's full
+  // catalog order so the arrows always work.
+  const loc = useLocation();
+  const [siblings, setSiblings] = useState(() => (Array.isArray(loc.state?.siblings) ? loc.state.siblings : null));
+  useEffect(() => {
+    if (siblings) return undefined;
+    let cancelled = false;
+    (async () => {
+      const { data } = await sb.from('factory_products')
+        .select('id, factory_id, sort_order, created_at')
+        .eq('factory_id', factoryId)
+        .order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+      if (!cancelled) setSiblings((data || []).map((r) => ({ id: r.id, fid: r.factory_id })));
+    })();
+    return () => { cancelled = true; };
+  }, [siblings, factoryId]);
+
+  const navIdx = siblings ? siblings.findIndex((sx) => String(sx.id) === String(productId)) : -1;
+  const prevSib = navIdx > 0 ? siblings[navIdx - 1] : null;
+  const nextSib = siblings && navIdx >= 0 && navIdx < siblings.length - 1 ? siblings[navIdx + 1] : null;
+  const goToSibling = (sx) => { if (sx) nav(`/factory/${sx.fid}/product/${sx.id}`, { state: { siblings } }); };
+
+  // Keyboard arrows move between PRODUCTS — but not while the image lightbox or a
+  // modal owns the arrows, or while typing. RTL mirrors direction.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (lightbox || reqOpen) return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goToSibling(isAr ? nextSib : prevSib); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); goToSibling(isAr ? prevSib : nextSib); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightbox, reqOpen, prevSib, nextSib, isAr, siblings]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,11 +161,28 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   })();
   const dLabel = { fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
   const dVal = { fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' };
+  const navBtn = (disabled) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px',
+    borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
+    color: disabled ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: 12.5, cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.5 : 1, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' });
 
   return (
     <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="fx-wrap">
-        <button className={`fx-back${arc}`} onClick={() => nav(`/factory/${factoryId}`)}>{isAr ? '→ ' : '← '}{c.back}</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <button className={`fx-back${arc}`} onClick={() => nav(`/factory/${factoryId}`)}>{isAr ? '→ ' : '← '}{c.back}</button>
+          {siblings && siblings.length > 1 && navIdx >= 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button type="button" onClick={() => goToSibling(prevSib)} disabled={!prevSib} style={navBtn(!prevSib)}>
+                {isAr ? `${c.prev} →` : `← ${c.prev}`}
+              </button>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{navIdx + 1} / {siblings.length}</span>
+              <button type="button" onClick={() => goToSibling(nextSib)} disabled={!nextSib} style={navBtn(!nextSib)}>
+                {isAr ? `← ${c.next}` : `${c.next} →`}
+              </button>
+            </div>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'flex-start', marginTop: 8 }}>
           {/* ── Gallery ── */}
