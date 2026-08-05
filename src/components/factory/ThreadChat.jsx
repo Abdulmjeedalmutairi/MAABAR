@@ -36,7 +36,41 @@ const CSS = `
   .ftc-input:focus { border-color: rgba(0,0,0,0.4); }
   .ftc-send { background: #1a1814; color: #fff; border: none; border-radius: 12px; padding: 0 20px; height: 42px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); flex-shrink: 0; }
   .ftc-send:disabled { opacity: 0.5; cursor: default; }
+  .ftc-pref { display: flex; gap: 10px; align-items: center; text-decoration: none; background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 8px; max-width: 300px; margin-bottom: 4px; }
+  .ftc-row.me .ftc-pref { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+  .ftc-pref-img { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: #efe9df; flex-shrink: 0; }
+  .ftc-pref-name { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.85); font-family: var(--font-sans); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ftc-row.me .ftc-pref-name { color: #fff; }
+  .ftc-pref-sub { font-size: 11.5px; color: rgba(0,0,0,0.5); font-family: var(--font-sans); margin-top: 2px; }
+  .ftc-row.me .ftc-pref-sub { color: rgba(255,255,255,0.85); }
+  .ftc-pending { display: flex; align-items: center; gap: 8px; padding: 8px 16px 0; }
+  .ftc-pending .ftc-pref { margin: 0; flex: 1; }
+  .ftc-pending-x { background: rgba(0,0,0,0.07); border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; color: rgba(0,0,0,0.5); flex-shrink: 0; }
 `;
+
+// A compact product card shown for product-referencing messages + the pending
+// attachment above the composer. Self-contained from the stored product_ref.
+function ProductRefCard({ pr, lang, link = true }) {
+  const isAr = lang === 'ar';
+  const name = (isAr ? pr.name_ar : pr.name_en) || pr.name_en || pr.name_ar || (isAr ? 'منتج' : 'Product');
+  const price = (pr.price || '').toString().trim();
+  const priceTxt = price
+    ? (pr.currency && !price.toLowerCase().includes(String(pr.currency).toLowerCase()) ? `${price} ${pr.currency}` : price)
+    : (isAr ? 'السعر عند الطلب' : lang === 'zh' ? '价格面议' : 'On request');
+  const inner = (
+    <>
+      {pr.image ? <img className="ftc-pref-img" src={pr.image} alt="" /> : <div className="ftc-pref-img" />}
+      <div style={{ minWidth: 0 }}>
+        <div className="ftc-pref-name">{name}</div>
+        <div className="ftc-pref-sub">{pr.ref_code ? `${isAr ? 'رمز' : 'Ref'}: ${pr.ref_code} · ` : ''}{priceTxt}</div>
+      </div>
+    </>
+  );
+  if (link && pr.factory_id && pr.id) {
+    return <a className="ftc-pref" href={`/factory/${pr.factory_id}/product/${pr.id}`} target="_blank" rel="noreferrer">{inner}</a>;
+  }
+  return <div className="ftc-pref">{inner}</div>;
+}
 
 function fmtTime(iso, lang) {
   try {
@@ -48,7 +82,7 @@ function fmtTime(iso, lang) {
 
 export default function ThreadChat({
   lang = 'ar', selfRole, header = {}, emptyText = '', onBack, headerExtra = null,
-  loadMessages, sendMessage, pollMs = 5000,
+  loadMessages, sendMessage, pollMs = 5000, pendingProduct = null,
 }) {
   const isAr = lang === 'ar';
   const s = S[lang] || S.ar;
@@ -56,6 +90,7 @@ export default function ThreadChat({
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState(pendingProduct || null);   // product attached to the next message
   const bottomRef = useRef(null);
 
   const refresh = useCallback(async () => {
@@ -80,10 +115,11 @@ export default function ThreadChat({
     const body = text.trim();
     if (!body || sending) return;
     setSending(true);
-    const optimistic = { id: `tmp-${Date.now()}`, sender_role: selfRole, content: body, created_at: new Date().toISOString() };
+    const ref = pending;   // attach the pending product to this (first) message
+    const optimistic = { id: `tmp-${Date.now()}`, sender_role: selfRole, content: body, product_ref: ref || null, created_at: new Date().toISOString() };
     setMessages((m) => [...m, optimistic]);
     setText('');
-    try { await sendMessage(body); await refresh(); }
+    try { await sendMessage(body, ref || null); if (ref) setPending(null); await refresh(); }
     catch { setMessages((m) => m.filter((x) => x.id !== optimistic.id)); setText(body); }
     setSending(false);
   }
@@ -115,7 +151,8 @@ export default function ThreadChat({
                 const role = m.sender_role === selfRole ? 'me' : m.sender_role === 'admin' ? 'sys' : 'them';
                 return (
                   <div className={`ftc-row ${role}`} key={m.id}>
-                    <div className="ftc-bubble">{m.content}</div>
+                    {m.product_ref && <ProductRefCard pr={m.product_ref} lang={lang} />}
+                    {m.content ? <div className="ftc-bubble">{m.content}</div> : null}
                     <span className="ftc-time">{fmtTime(m.created_at, lang)}</span>
                   </div>
                 );
@@ -123,6 +160,12 @@ export default function ThreadChat({
           <div ref={bottomRef} />
         </div>
 
+        {pending && (
+          <div className="ftc-pending">
+            <ProductRefCard pr={pending} lang={lang} link={false} />
+            <button type="button" className="ftc-pending-x" onClick={() => setPending(null)} aria-label={isAr ? 'إزالة' : 'Remove'}>×</button>
+          </div>
+        )}
         <div className="ftc-composer">
           <textarea className="ftc-input" rows={1} value={text} placeholder={s.ph}
             onChange={(e) => setText(e.target.value)} onKeyDown={onKey} dir={isAr ? 'rtl' : 'ltr'} />

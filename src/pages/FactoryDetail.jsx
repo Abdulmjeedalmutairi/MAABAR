@@ -3,10 +3,12 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import CertPills from '../components/CertPills';
+import ProductChips from '../components/ProductChips';
+import NegotiablePill from '../components/NegotiablePill';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
-import { startFactoryThread } from '../lib/factoryThreads';
+import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 
 const T = {
   ar: {
@@ -123,13 +125,13 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [msgBusy, setMsgBusy] = useState(false);
 
   // Direct chat: open (or reuse) a conversation with this factory, then enter it.
-  async function handleMessageFactory() {
+  async function handleMessageFactory(product) {
     if (!user) { nav('/login'); return; }
     if (msgBusy) return;
     setMsgBusy(true);
     try {
       const threadId = await startFactoryThread(id);
-      nav(`/messages/factory/${threadId}`);
+      nav(`/messages/factory/${threadId}`, product ? { state: { product: buildProductRef(product) } } : undefined);
     } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
   }
 
@@ -213,6 +215,10 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     (!activeCatalog || p.import_id === activeCatalog) &&
     (!activeSection || sectionOf(p) === activeSection));
   const shown = filtered.slice(0, visible);
+  // Open a product, passing this factory's current filtered order so the detail
+  // page's prev/next arrows match the grid the buyer is looking at.
+  const openProduct = (p) => nav(`/factory/${factory.id}/product/${p.id}`,
+    { state: { siblings: filtered.map((x) => ({ id: x.id, fid: factory.id })) } });
   const activeCat = catalogs.find((x) => x.id === activeCatalog);
 
   // Data-driven trust stats (real numbers, not generic filler).
@@ -277,7 +283,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
             </div>
 
             <button className={`fp-cta${ar}`} onClick={() => setReqOpen(true)}><Icon name="send" size={18} />{c.ctaHero}</button>
-            <button type="button" onClick={handleMessageFactory} disabled={msgBusy}
+            <button type="button" onClick={() => handleMessageFactory()} disabled={msgBusy}
               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10,
                 width: '100%', maxWidth: 420, padding: '11px 18px', borderRadius: 10, cursor: msgBusy ? 'default' : 'pointer',
                 background: 'transparent', border: '1.5px solid #1a1814', color: '#1a1814', fontSize: 14.5, fontWeight: 600,
@@ -390,16 +396,26 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                 const pn = productName(p) || '—';
                 return (
                   <div className="fp-pcard" key={p.id}>
-                    <button type="button" className="fp-pcard-media" onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)} title={pn}>
+                    <button type="button" className="fp-pcard-media" onClick={() => openProduct(p)} title={pn}>
                       <img src={p.image} alt={pn} loading="lazy" />
                     </button>
                     <div className="fp-pcard-body">
-                      <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
-                      <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || onRequestLabel}</p>
+                      <p className={`fp-pcard-name${ar}`} onClick={() => openProduct(p)}>{pn}</p>
+                      <ProductChips product={p} factory={factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
+                      <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || onRequestLabel}</p>
+                      {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
-                      <button className={`fp-pcard-btn${ar}`} onClick={() => setViewerReqProduct(p)}>
-                        <Icon name="send" size={14} />{isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <button className={`fp-pcard-btn${ar}`} style={{ flex: 1, marginTop: 0 }} onClick={() => setViewerReqProduct(p)}>
+                          {isAr ? 'عرض سعر' : lang === 'zh' ? '报价' : 'Quote'}
+                        </button>
+                        <button type="button" onClick={() => handleMessageFactory(p)} disabled={msgBusy}
+                          style={{ flex: 1, marginTop: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                            padding: '9px', borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
+                            color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontSize: 12.5, cursor: msgBusy ? 'default' : 'pointer' }}>
+                          <Icon name="headset" size={14} />{isAr ? 'راسل' : lang === 'zh' ? '联系' : 'Chat'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

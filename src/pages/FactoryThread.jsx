@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ThreadChat from '../components/factory/ThreadChat';
 import {
   fetchTraderThread, fetchTraderMessages, markTraderRead, sendTraderMessage,
@@ -22,6 +22,8 @@ const centered = { display: 'flex', alignItems: 'center', justifyContent: 'cente
 export default function FactoryThread({ user, lang = 'ar' }) {
   const { threadId } = useParams();
   const nav = useNavigate();
+  const loc = useLocation();
+  const pendingProduct = loc.state?.product || null;   // attached when the chat was opened from a product
   const isAr = lang === 'ar';
   const t = T[lang] || T.ar;
 
@@ -69,7 +71,8 @@ export default function FactoryThread({ user, lang = 'ar' }) {
       emptyText={t.empty}
       onBack={() => nav(-1)}
       loadMessages={async () => { const m = await fetchTraderMessages(threadId); markTraderRead(threadId); return m; }}
-      sendMessage={(body) => sendTraderMessage(threadId, body)}
+      sendMessage={(body, productRef) => sendTraderMessage(threadId, body, productRef)}
+      pendingProduct={pendingProduct}
     />
   );
 }
