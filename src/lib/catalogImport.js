@@ -25,11 +25,31 @@ const yr = (v) => {
 // ── Upload + trigger (admin dashboard import) ───────────────────────────────
 // Upload a catalog PDF to the private factory-catalogs bucket and create the
 // 'queued' import row. Returns the new import id.
-export async function createImport(file, notes = '', mode = 'curated') {
+// SHA-256 hex of a File — a stable CONTENT fingerprint for duplicate detection
+// (catches the same catalog even if it was renamed). Runs in the browser.
+export async function hashFile(file) {
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Find a PRIOR import of the same file (by content hash) — the most recent match,
+// or null. Used to warn before re-importing the same catalog.
+export async function findImportByHash(hash) {
+  if (!hash) return null;
+  const { data, error } = await sb.from('factory_catalog_imports')
+    .select('id, original_filename, status, created_at, factory_id, factory_fields')
+    .eq('file_hash', hash).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) return null;
+  return data || null;
+}
+
+export async function createImport(file, notes = '', mode = 'curated', fileHash = null) {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const path = `${id}/source.pdf`;
+  const hash = fileHash || await hashFile(file).catch(() => null);
   const up = await sb.storage.from('factory-catalogs').upload(path, file, {
     contentType: file.type || 'application/pdf', upsert: true,
   });
@@ -40,6 +60,7 @@ export async function createImport(file, notes = '', mode = 'curated') {
     uploaded_by: user?.id ?? null,
     import_notes: (notes || '').trim() || null,
     extraction_mode: mode === 'full' ? 'full' : 'curated',
+    file_hash: hash,
   });
   if (error) throw error;
   return id;
