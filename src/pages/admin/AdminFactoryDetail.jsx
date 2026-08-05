@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
 import ProfileImagePicker from '../../components/admin/catalog/ProfileImagePicker';
+import CertsEditor from '../../components/admin/CertsEditor';
+import { normalizeCerts } from '../../lib/certifications';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import {
   fetchFactory, fetchFactoryProducts, fetchFactoryImagePool, updateFactory,
@@ -76,6 +78,7 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
         moq_note: nf(fac?.moq_note), email: nf(fac?.email), phone: nf(fac?.phone),
         profile_image: fac?.profile_image || null,
         private_label: !!fac?.private_label, is_verified: !!fac?.is_verified, is_featured: !!fac?.is_featured,
+        certifications: Array.isArray(fac?.certifications) ? fac.certifications : [],
       });
       setError('');
     } catch (e) { setError(e.message || 'Failed to load'); }
@@ -118,6 +121,7 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
         ...(nf(f.email) ? { email: nf(f.email) } : {}), phone: nf(f.phone) || null,
         profile_image: f.profile_image || null,
         private_label: !!f.private_label, is_verified: !!f.is_verified, is_featured: !!f.is_featured,
+        certifications: normalizeCerts(f.certifications),
       });
       setMsg(isAr ? '✓ تم الحفظ.' : '✓ Saved.');
       load();
@@ -221,6 +225,10 @@ export default function AdminFactoryDetail({ user, profile, lang }) {
                         {toggle(isAr ? 'يصنّع العلامة الخاصة (OEM/ODM)' : 'Private label (OEM/ODM)', 'private_label')}
                         {toggle(isAr ? 'مصنع موثّق' : 'Verified', 'is_verified')}
                         {toggle(isAr ? 'موصى به' : 'Recommended', 'is_featured')}
+                      </div>
+                      <div style={{ marginTop: 6, marginBottom: 14 }}>
+                        <label className="fd-label" style={{ marginBottom: 6 }}>{isAr ? 'الشهادات' : 'Certifications'}</label>
+                        <CertsEditor value={f.certifications || []} onChange={(v) => set('certifications', v)} lang={lang} inputClass="fd-input" />
                       </div>
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                         <button className="fd-btn" onClick={saveFactory} disabled={saving}>{saving ? (isAr ? 'جارٍ…' : '…') : (isAr ? 'حفظ' : 'Save')}</button>

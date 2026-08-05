@@ -81,9 +81,21 @@ SCHEMA = {
                 "phone": {"type": "string"},           # phone / mobile / WhatsApp; "not_found" if absent
                 "address": {"type": "string"},         # full factory address as printed; "not_found" if absent
                 "city": {"type": "string"},            # city; "not_found" if absent
+                "certifications": {                     # detected certifications; [] if none
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {"type": "string"},     # abbreviation, e.g. "ISO 9001", "CE", "FSC"
+                            "name_ar": {"type": "string"},  # short meaning (Arabic)
+                            "name_en": {"type": "string"},  # short meaning (English)
+                        },
+                        "required": ["code", "name_ar", "name_en"],
+                    },
+                },
             },
             "required": ["name_original", "name_en", "founded_year", "export_markets",
-                         "moq", "private_label", "email", "phone", "address", "city"],
+                         "moq", "private_label", "email", "phone", "address", "city", "certifications"],
         },
         "profile_images": {
             "type": "array",
@@ -151,6 +163,7 @@ FIELDS:
   factory.phone — the factory's phone / mobile / WhatsApp number as printed, verbatim with country code if shown (e.g. "+86 138 0000 0000"). "not_found" if none. ADMIN-ONLY.
   factory.address — the factory's full ADDRESS as printed (street / district / city / province), verbatim; e.g. "No. 12 Xingye Rd, Shunde District, Foshan, Guangdong, China". "not_found" if none. Shown to buyers.
   factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
+  factory.certifications — the quality/compliance CERTIFICATIONS the catalog shows (as logos, badges, or text on cover / About / back pages), as an array of {code, name_ar, name_en}. code = the standard abbreviation, normalised (e.g. "ISO 9001", "ISO 14001", "CE", "RoHS", "REACH", "FDA", "FSC", "SGS", "BSCI", "OEKO-TEX", "GOTS", "CCC", "UL", "CARB", "HACCP"). name_ar/name_en = a SHORT meaning (e.g. "Quality management" / "إدارة الجودة"). For a certification you do NOT recognise, put its printed name/number in code and your best short description in name_ar/name_en. [] if the catalog shows no certifications. Do NOT invent certifications — only ones actually shown.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per REPRESENTATIVE product / grouped family (curated, per the rules above):
     product_name — {ar, en}. ALWAYS provide BOTH. en MUST be a clean, specific ENGLISH commercial title: [product type] + 1-3 defining traits (material / style / size / capacity / use) — e.g. "Stainless steel commercial dough mixer", "Modern 3-seater grey fabric sofa", "18V cordless impact drill". ar is a faithful Arabic translation of that title. When the catalog prints no name (or only a code), WRITE the title from the PHOTO + specs. NEVER a bare model/OE code, NEVER generic filler ("Product", "Item", "New model"); en is never "not_found".
@@ -197,6 +210,7 @@ FIELDS:
   factory.phone — the factory's phone / mobile / WhatsApp number as printed, verbatim with country code if shown (e.g. "+86 138 0000 0000"). "not_found" if none. ADMIN-ONLY.
   factory.address — the factory's full ADDRESS as printed (street / district / city / province), verbatim; e.g. "No. 12 Xingye Rd, Shunde District, Foshan, Guangdong, China". "not_found" if none. Shown to buyers.
   factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
+  factory.certifications — the quality/compliance CERTIFICATIONS the catalog shows (as logos, badges, or text on cover / About / back pages), as an array of {code, name_ar, name_en}. code = the standard abbreviation, normalised (e.g. "ISO 9001", "ISO 14001", "CE", "RoHS", "REACH", "FDA", "FSC", "SGS", "BSCI", "OEKO-TEX", "GOTS", "CCC", "UL", "CARB", "HACCP"). name_ar/name_en = a SHORT meaning (e.g. "Quality management" / "إدارة الجودة"). For a certification you do NOT recognise, put its printed name/number in code and your best short description in name_ar/name_en. [] if the catalog shows no certifications. Do NOT invent certifications — only ones actually shown.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per DISTINCT product (complete, per the rules above):
     product_name — {ar, en}. ALWAYS provide BOTH. en MUST be a clean, specific ENGLISH commercial title: [product type] + 1-3 defining traits (material / style / size / capacity / use) — e.g. "Stainless steel commercial dough mixer", "Modern 3-seater grey fabric sofa", "18V cordless impact drill". ar is a faithful Arabic translation of that title. When the catalog prints no name (or only a code), WRITE the title from the PHOTO + specs. NEVER a bare model/OE code, NEVER generic filler ("Product", "Item", "New model"); en is never "not_found".
@@ -796,6 +810,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             # Address is buyer-visible; city feeds the location line.
             "address": gfac.get("address") if _filled(gfac.get("address")) else "not_found",
             "city": gfac.get("city") if _filled(gfac.get("city")) else csv_fields.get("city", "not_found"),
+            "certifications": gfac.get("certifications") if isinstance(gfac.get("certifications"), list) else [],
             "category_hint": csv_fields.get("category_hint", ""),
         }
         hi = sum(1 for p in products if p.get("_confidence", 0) >= 0.7)

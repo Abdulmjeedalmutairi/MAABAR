@@ -1,4 +1,5 @@
 import { sb } from '../supabase';
+import { normalizeCerts } from './certifications';
 
 // Data layer for the admin Catalog Import tool. Reads the staging tables
 // (factory_catalog_imports + factory_catalog_import_products, admin-RLS) and, on
@@ -192,7 +193,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city, address, email, phone, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, is_active')
+    .select('id, company_name, company_name_latin, category, city, address, email, phone, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, certifications, is_active')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -219,6 +220,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
+      certifications: normalizeCerts(fields.certifications),
       profile_image: profileImage || null,
       is_active: false,   // DRAFT — hidden from buyers until the admin publishes
     };
@@ -237,6 +239,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
+      certifications: normalizeCerts(fields.certifications),
     };
     if (profileImage) patch.profile_image = profileImage;
     if (nf(fields.name_original)) patch.company_name = nf(fields.name_original);   // guarded — never blank the name
