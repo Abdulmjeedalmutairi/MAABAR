@@ -1,5 +1,6 @@
 import React from 'react';
 import { UI_CATEGORIES } from '../../../lib/supplierDashboardConstants';
+import CertsEditor from '../CertsEditor';
 
 const nf = (v) => (v && v !== 'not_found' ? v : '');
 // private_label arrives as a checkbox boolean (admin) or Gemini's "yes"/"no".
@@ -68,6 +69,10 @@ export default function FactoryFieldsPanel({ value, onChange, mode, onModeChange
           isAr ? 'يعرض شارة "موثّق" في صفحة المصنع' : 'Shows a "Verified" badge on the profile')}
         {toggle(isAr ? 'موصى به (مميّز)' : 'Recommended (featured)', 'is_featured',
           isAr ? 'يعرض شارة "موصى به"' : 'Shows a "Recommended" badge')}
+      </div>
+      <div style={{ marginTop: 6 }}>
+        <label className="ci-label">{isAr ? 'الشهادات (بيلات خضراء في صفحة المصنع)' : 'Certifications (green pills on the profile)'}</label>
+        <CertsEditor value={value.certifications || []} onChange={(v) => set('certifications', v)} lang={lang} inputClass="ci-input" />
       </div>
     </>
   );

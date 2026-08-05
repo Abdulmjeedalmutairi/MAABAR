@@ -1,4 +1,5 @@
 import { sb } from '../supabase';
+import { normalizeCerts } from './certifications';
 
 // Data layer for the admin Catalog Import tool. Reads the staging tables
 // (factory_catalog_imports + factory_catalog_import_products, admin-RLS) and, on
@@ -25,11 +26,31 @@ const yr = (v) => {
 // ── Upload + trigger (admin dashboard import) ───────────────────────────────
 // Upload a catalog PDF to the private factory-catalogs bucket and create the
 // 'queued' import row. Returns the new import id.
-export async function createImport(file, notes = '', mode = 'curated') {
+// SHA-256 hex of a File — a stable CONTENT fingerprint for duplicate detection
+// (catches the same catalog even if it was renamed). Runs in the browser.
+export async function hashFile(file) {
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Find a PRIOR import of the same file (by content hash) — the most recent match,
+// or null. Used to warn before re-importing the same catalog.
+export async function findImportByHash(hash) {
+  if (!hash) return null;
+  const { data, error } = await sb.from('factory_catalog_imports')
+    .select('id, original_filename, status, created_at, factory_id, factory_fields')
+    .eq('file_hash', hash).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) return null;
+  return data || null;
+}
+
+export async function createImport(file, notes = '', mode = 'curated', fileHash = null) {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const path = `${id}/source.pdf`;
+  const hash = fileHash || await hashFile(file).catch(() => null);
   const up = await sb.storage.from('factory-catalogs').upload(path, file, {
     contentType: file.type || 'application/pdf', upsert: true,
   });
@@ -40,6 +61,7 @@ export async function createImport(file, notes = '', mode = 'curated') {
     uploaded_by: user?.id ?? null,
     import_notes: (notes || '').trim() || null,
     extraction_mode: mode === 'full' ? 'full' : 'curated',
+    file_hash: hash,
   });
   if (error) throw error;
   return id;
@@ -171,7 +193,7 @@ export async function fetchImport(id) {
 export async function fetchFactories() {
   const { data, error } = await sb
     .from('factory_directory')
-    .select('id, company_name, company_name_latin, category, city, address, email, phone, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, is_active')
+    .select('id, company_name, company_name_latin, category, city, address, email, phone, founded_year, export_markets, moq_note, private_label, description_ar, description_en, is_verified, is_featured, certifications, is_active')
     .order('company_name', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -198,6 +220,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
+      certifications: normalizeCerts(fields.certifications),
       profile_image: profileImage || null,
       is_active: false,   // DRAFT — hidden from buyers until the admin publishes
     };
@@ -216,6 +239,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       description_en: nf(fields.description_en),
       is_verified: !!fields.is_verified,
       is_featured: !!fields.is_featured,
+      certifications: normalizeCerts(fields.certifications),
     };
     if (profileImage) patch.profile_image = profileImage;
     if (nf(fields.name_original)) patch.company_name = nf(fields.name_original);   // guarded — never blank the name

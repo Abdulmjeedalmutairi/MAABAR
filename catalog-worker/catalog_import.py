@@ -81,9 +81,21 @@ SCHEMA = {
                 "phone": {"type": "string"},           # phone / mobile / WhatsApp; "not_found" if absent
                 "address": {"type": "string"},         # full factory address as printed; "not_found" if absent
                 "city": {"type": "string"},            # city; "not_found" if absent
+                "certifications": {                     # detected certifications; [] if none
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {"type": "string"},     # abbreviation, e.g. "ISO 9001", "CE", "FSC"
+                            "name_ar": {"type": "string"},  # short meaning (Arabic)
+                            "name_en": {"type": "string"},  # short meaning (English)
+                        },
+                        "required": ["code", "name_ar", "name_en"],
+                    },
+                },
             },
             "required": ["name_original", "name_en", "founded_year", "export_markets",
-                         "moq", "private_label", "email", "phone", "address", "city"],
+                         "moq", "private_label", "email", "phone", "address", "city", "certifications"],
         },
         "profile_images": {
             "type": "array",
@@ -151,6 +163,7 @@ FIELDS:
   factory.phone — the factory's phone / mobile / WhatsApp number as printed, verbatim with country code if shown (e.g. "+86 138 0000 0000"). "not_found" if none. ADMIN-ONLY.
   factory.address — the factory's full ADDRESS as printed (street / district / city / province), verbatim; e.g. "No. 12 Xingye Rd, Shunde District, Foshan, Guangdong, China". "not_found" if none. Shown to buyers.
   factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
+  factory.certifications — the quality/compliance CERTIFICATIONS the catalog shows (as logos, badges, or text on cover / About / back pages), as an array of {code, name_ar, name_en}. code = the standard abbreviation, normalised (e.g. "ISO 9001", "ISO 14001", "CE", "RoHS", "REACH", "FDA", "FSC", "SGS", "BSCI", "OEKO-TEX", "GOTS", "CCC", "UL", "CARB", "HACCP"). name_ar/name_en = a SHORT meaning (e.g. "Quality management" / "إدارة الجودة"). For a certification you do NOT recognise, put its printed name/number in code and your best short description in name_ar/name_en. [] if the catalog shows no certifications. Do NOT invent certifications — only ones actually shown.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per REPRESENTATIVE product / grouped family (curated, per the rules above):
     product_name — {ar, en}. ALWAYS provide BOTH. en MUST be a clean, specific ENGLISH commercial title: [product type] + 1-3 defining traits (material / style / size / capacity / use) — e.g. "Stainless steel commercial dough mixer", "Modern 3-seater grey fabric sofa", "18V cordless impact drill". ar is a faithful Arabic translation of that title. When the catalog prints no name (or only a code), WRITE the title from the PHOTO + specs. NEVER a bare model/OE code, NEVER generic filler ("Product", "Item", "New model"); en is never "not_found".
@@ -197,6 +210,7 @@ FIELDS:
   factory.phone — the factory's phone / mobile / WhatsApp number as printed, verbatim with country code if shown (e.g. "+86 138 0000 0000"). "not_found" if none. ADMIN-ONLY.
   factory.address — the factory's full ADDRESS as printed (street / district / city / province), verbatim; e.g. "No. 12 Xingye Rd, Shunde District, Foshan, Guangdong, China". "not_found" if none. Shown to buyers.
   factory.city — the factory's city only (e.g. "Foshan"). "not_found" if not stated.
+  factory.certifications — the quality/compliance CERTIFICATIONS the catalog shows (as logos, badges, or text on cover / About / back pages), as an array of {code, name_ar, name_en}. code = the standard abbreviation, normalised (e.g. "ISO 9001", "ISO 14001", "CE", "RoHS", "REACH", "FDA", "FSC", "SGS", "BSCI", "OEKO-TEX", "GOTS", "CCC", "UL", "CARB", "HACCP"). name_ar/name_en = a SHORT meaning (e.g. "Quality management" / "إدارة الجودة"). For a certification you do NOT recognise, put its printed name/number in code and your best short description in name_ar/name_en. [] if the catalog shows no certifications. Do NOT invent certifications — only ones actually shown.
   profile_images[] — flag which images are the factory LOGO / COVER / company-profile image (NOT product photos): page_number (1-based), position, kind ("logo"|"cover"|"company_profile"), description. [] if none.
   products[] — one per DISTINCT product (complete, per the rules above):
     product_name — {ar, en}. ALWAYS provide BOTH. en MUST be a clean, specific ENGLISH commercial title: [product type] + 1-3 defining traits (material / style / size / capacity / use) — e.g. "Stainless steel commercial dough mixer", "Modern 3-seater grey fabric sofa", "18V cordless impact drill". ar is a faithful Arabic translation of that title. When the catalog prints no name (or only a code), WRITE the title from the PHOTO + specs. NEVER a bare model/OE code, NEVER generic filler ("Product", "Item", "New model"); en is never "not_found".
@@ -298,10 +312,11 @@ def run_outline(pdf_path: Path, model: str):
         print(f"  outline ({model}): {len(secs)} section(s), "
               f"logo={'yes' if (data.get('logo') or {}).get('found') else 'no'}, "
               f"prices={'yes' if (data.get('flags') or {}).get('has_prices') else 'no'}")
-        return data
+        return data, None
     except Exception as e:  # noqa: BLE001 — outline is best-effort
-        print(f"  outline failed ({type(e).__name__}: {str(e)[:140]}) — continuing without it", file=sys.stderr)
-        return {}
+        err = f"{type(e).__name__}: {str(e)[:200]}"
+        print(f"  outline failed ({err}) — continuing without it", file=sys.stderr)
+        return {}, err
 
 
 def assign_sections(products, sections):
@@ -386,12 +401,14 @@ def web_safe(doc, im):
 
 # ── One Gemini request (with retry on transient/network errors) ─────────────
 def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3, prompt: str = PROMPT):
-    """One Gemini request on a PDF file. Returns (status, data, tokens):
+    """One Gemini request on a PDF file. Returns (status, data, tokens, err):
          'ok'        -> parsed JSON in `data`
          'truncated' -> hit MAX_TOKENS / unparseable output; `data` usually None
-         'failed'    -> transient/network error after all retries; `data` None
+         'failed'    -> transient/network error after all retries; `data` None,
+                        `err` = the last exception string (surfaced to the admin)
        A network hiccup on one call therefore never crashes the run — the caller
        retries (here), splits (on 'truncated'), or skips the slice (on 'failed')."""
+    last_err = None
     for attempt in range(1, retries + 1):
         try:
             uploaded = client.files.upload(file=str(pdf_path))
@@ -422,20 +439,21 @@ def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3, pro
             except Exception:  # noqa
                 raw = ""
             if "MAX_TOKENS" in finish:
-                try: return "truncated", json.loads(raw), tokens
-                except Exception: return "truncated", None, tokens  # noqa
+                try: return "truncated", json.loads(raw), tokens, None
+                except Exception: return "truncated", None, tokens, None  # noqa
             try:
-                return "ok", json.loads(raw), tokens
+                return "ok", json.loads(raw), tokens, None
             except json.JSONDecodeError:
-                return "truncated", None, tokens
+                return "truncated", None, tokens, None
         except Exception as e:  # noqa — transient: httpx.ReadError, ConnectError, timeouts, 5xx, ...
+            last_err = f"{type(e).__name__}: {str(e)[:220]}"
             if attempt < retries:
                 wait = 4 * attempt
-                print(f"      transient error (attempt {attempt}/{retries}): {type(e).__name__}: {str(e)[:120]} — retry in {wait}s", file=sys.stderr)
+                print(f"      transient error (attempt {attempt}/{retries}): {last_err[:120]} — retry in {wait}s", file=sys.stderr)
                 time.sleep(wait)
             else:
-                print(f"      FAILED after {retries} attempts: {type(e).__name__}: {str(e)[:160]}", file=sys.stderr)
-    return "failed", None, 0
+                print(f"      FAILED after {retries} attempts: {last_err}", file=sys.stderr)
+    return "failed", None, 0, last_err
 
 
 # ── Extract one page range, splitting adaptively on truncation ──────────────
@@ -452,7 +470,7 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
         tmp = Path(os.environ.get("TEMP", ".")) / f"_ci_chunk_{uuid.uuid4().hex}.pdf"
         sub.save(str(tmp)); sub.close(); target, cleanup = tmp, tmp
     try:
-        status, data, tokens = gemini_call(client, types, target, model, prompt=prompt)
+        status, data, tokens, err = gemini_call(client, types, target, model, prompt=prompt)
     finally:
         if cleanup is not None:
             try: cleanup.unlink()
@@ -461,6 +479,8 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
     npages = b - a + 1
 
     if status == "failed":
+        if err:
+            total["last_error"] = err   # surfaced by run_extraction if 0 products result
         print(f"    ! pages {a+1}-{b+1}: skipped after retries (0 products from this slice)", file=sys.stderr)
         return [], [], {}
 
@@ -529,7 +549,7 @@ def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int
             if (not mf.get(k) or mf.get(k) == "not_found") \
                and fac.get(k) and fac.get(k) != "not_found":
                 mf[k] = fac[k]
-    return merged, total["tokens"]
+    return merged, total["tokens"], total.get("last_error")
 
 
 # ── Match images to products + resolve profile images ───────────────────────
@@ -711,7 +731,7 @@ class Supa:
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
                    supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None,
-                   should_cancel=None, mode="curated", outline_model="gemini-2.5-pro"):
+                   should_cancel=None, mode="curated", outline_model="gemini-2.5-flash"):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -749,11 +769,11 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         _p("outline", 12, "mapping the catalog")
         log("[2/5] Catalog outline (structure map)")
-        outline = run_outline(pdf_path, outline_model)
+        outline, outline_err = run_outline(pdf_path, outline_model)
 
         _p("analyzing", 18, "reading the catalog")
         log("[3/5] Gemini extraction")
-        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel, mode=mode)
+        gem, tokens, gerr = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel, mode=mode)
         products = gem.get("products") or []
         _before = len(products)
         products = merge_duplicate_products(products)
@@ -790,6 +810,7 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             # Address is buyer-visible; city feeds the location line.
             "address": gfac.get("address") if _filled(gfac.get("address")) else "not_found",
             "city": gfac.get("city") if _filled(gfac.get("city")) else csv_fields.get("city", "not_found"),
+            "certifications": gfac.get("certifications") if isinstance(gfac.get("certifications"), list) else [],
             "category_hint": csv_fields.get("category_hint", ""),
         }
         hi = sum(1 for p in products if p.get("_confidence", 0) >= 0.7)
@@ -824,6 +845,15 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         # ── Real import: upload to Storage + write staging rows (service role) ──
         if supa is None:
             raise RuntimeError("supa (service-role client) is required for a real import")
+        # A real catalog that yields ZERO products means every model call failed
+        # (e.g. model unavailable / quota) — surface it as a failure instead of a
+        # silent "extracted with 0 products" that looks successful.
+        if not products:
+            why = gerr or outline_err or "the model returned no products"
+            raise RuntimeError(
+                f"0 products extracted (model '{model}', {tokens} tokens). Cause: {why}. "
+                "If this is a quota/rate error, wait or use a billing-enabled key; if the "
+                "file is very large, split it. Nothing was written.")
         creating = import_id is None
         if creating:
             import_id = str(uuid.uuid4())
@@ -909,7 +939,7 @@ def main():
     ap.add_argument("--notes", default=None, help="optional per-catalog guidance appended to the Gemini prompt")
     ap.add_argument("--mode", default="curated", choices=["curated", "full"],
                     help="'curated' (representative highlight reel) or 'full' (every distinct product)")
-    ap.add_argument("--outline-model", default="gemini-2.5-pro",
+    ap.add_argument("--outline-model", default="gemini-2.5-flash",
                     help="model for the pass-1 structural outline (sections/logo/flags)")
     args = ap.parse_args()
 

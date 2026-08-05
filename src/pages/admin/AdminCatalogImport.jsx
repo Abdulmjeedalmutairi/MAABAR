@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
-import { fetchImports, createImport, triggerExtraction, workerConfigured } from '../../lib/catalogImport';
+import { fetchImports, createImport, triggerExtraction, workerConfigured, hashFile, findImportByHash } from '../../lib/catalogImport';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY = "'Tajawal', sans-serif";
@@ -75,6 +75,9 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [notes, setNotes] = useState('');
   const [importMode, setImportMode] = useState('curated');   // 'curated' | 'full'
   const [selFile, setSelFile] = useState(null);
+  const [fileHash, setFileHash] = useState(null);
+  const [dupChecking, setDupChecking] = useState(false);
+  const [dup, setDup] = useState(null);   // prior import of the same file, or null
   const fileRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -85,24 +88,32 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const openModal = () => { setNotes(''); setImportMode('curated'); setSelFile(null); setError(''); setModalOpen(true); };
-  const closeModal = () => { if (!uploading) { setModalOpen(false); setSelFile(null); setNotes(''); } };
+  const openModal = () => { setNotes(''); setImportMode('curated'); setSelFile(null); setFileHash(null); setDup(null); setError(''); setModalOpen(true); };
+  const closeModal = () => { if (!uploading) { setModalOpen(false); setSelFile(null); setFileHash(null); setDup(null); setNotes(''); } };
 
-  const onFileChosen = (e) => {
+  const onFileChosen = async (e) => {
     const file = e.target.files?.[0];
     if (fileRef.current) fileRef.current.value = '';   // allow re-picking the same file
     if (!file) return;
     if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
       setError(isAr ? 'الملف يجب أن يكون PDF.' : 'File must be a PDF.'); return;
     }
-    setError(''); setSelFile(file);
+    setError(''); setSelFile(file); setDup(null); setFileHash(null);
+    // Fingerprint the file + check for a prior import of the SAME content.
+    setDupChecking(true);
+    try {
+      const h = await hashFile(file);
+      setFileHash(h);
+      setDup(await findImportByHash(h));
+    } catch { /* dedupe is best-effort — never blocks the upload */ }
+    setDupChecking(false);
   };
 
   const doUpload = async () => {
     if (!selFile || uploading) return;
     setUploading(true); setError('');
     try {
-      const importId = await createImport(selFile, notes, importMode);
+      const importId = await createImport(selFile, notes, importMode, fileHash);
       // Notes are saved on the row; extraction stays automatic.
       if (workerConfigured()) triggerExtraction(importId).catch(() => {});
       nav(`/admin/catalog-import/${importId}`);
@@ -219,7 +230,35 @@ export default function AdminCatalogImport({ user, profile, lang }) {
                   <span style={{ fontSize: 12.5, color: selFile ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)' }}>
                     {selFile ? selFile.name : (isAr ? 'لم يُختَر ملف' : 'No file chosen')}
                   </span>
+                  {dupChecking && (
+                    <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)' }}>{isAr ? '· جارٍ التحقق…' : '· checking…'}</span>
+                  )}
                 </div>
+
+                {/* Duplicate warning — the same file content was imported before */}
+                {dup && (
+                  <div style={{ marginBottom: 16, padding: '11px 14px', borderRadius: 8, background: 'rgba(184,134,11,0.08)',
+                    border: '1px solid rgba(184,134,11,0.28)' }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: '#8a6d0b', marginBottom: 3 }}>
+                      {isAr ? '⚠ نفس الملف مستورد من قبل' : '⚠ This exact file was already imported'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)' }}>
+                      {(dup.factory_fields?.name_original || dup.factory_fields?.name_en || dup.original_filename || '—')}
+                      {' · '}{fmtDate(dup.created_at)}
+                      {' · '}{(STATUS_META[dup.status] ? (isAr ? STATUS_META[dup.status].ar : STATUS_META[dup.status].en) : dup.status)}
+                    </div>
+                    <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => nav(`/admin/catalog-import/${dup.id}`)}
+                        style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+                          fontSize: 12.5, fontWeight: 600, color: '#8a6d0b', fontFamily: FONT_BODY }}>
+                        {isAr ? 'افتح الاستيراد الموجود ←' : 'Open the existing import →'}
+                      </button>
+                      <span style={{ fontSize: 11.5, color: 'rgba(0,0,0,0.45)' }}>
+                        {isAr ? 'أو تابع الرفع لو هذي نسخة محدّثة.' : 'Or continue if this is an updated version.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: 10, justifyContent: isAr ? 'flex-start' : 'flex-end' }}>
                   <button onClick={closeModal} disabled={uploading}

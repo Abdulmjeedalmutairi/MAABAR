@@ -36,10 +36,11 @@ import catalog_import as ci  # shared extraction pipeline (copied into the image
 SUPABASE_URL = os.environ.get("SUPABASE_URL", ci.DEFAULT_SUPABASE_URL).rstrip("/")
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
-# Bulk extraction defaults to pro for the best titles/descriptions/English; the
-# one-per-catalog outline pass also uses pro. Both overridable via Cloud Run env.
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-pro")
-GEMINI_OUTLINE_MODEL = os.environ.get("GEMINI_OUTLINE_MODEL", "gemini-2.5-pro")
+# Defaults to flash (reliable + generous free tier). Set GEMINI_MODEL /
+# GEMINI_OUTLINE_MODEL = gemini-2.5-pro in Cloud Run to opt into pro (needs a
+# billing-enabled key — pro fails on the free tier).
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_OUTLINE_MODEL = os.environ.get("GEMINI_OUTLINE_MODEL", "gemini-2.5-flash")
 CHUNK_PAGES = int(os.environ.get("CHUNK_PAGES", "80"))
 
 SR_HEADERS = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}"}

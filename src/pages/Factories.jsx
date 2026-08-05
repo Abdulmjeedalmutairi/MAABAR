@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
+import CertPills from '../components/CertPills';
 import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -171,6 +172,7 @@ export default function Factories({ lang = 'ar' }) {
                       </div>
                     )}
 
+                    <CertPills certs={f.certifications} lang={lang} max={4} style={{ marginTop: 8 }} />
                     {facts.length > 0 && (
                       <div className={`fx-fac-chips${arc}`}>
                         {facts.map((t, j) => <span className="fx-fac-chip" key={j}>{t}</span>)}

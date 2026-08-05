@@ -192,6 +192,8 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       if (empty(prev.name_en) && f.company_name_latin) next.name_en = f.company_name_latin;
       if (prev.is_verified === undefined) next.is_verified = !!f.is_verified;
       if (prev.is_featured === undefined) next.is_featured = !!f.is_featured;
+      if ((!Array.isArray(prev.certifications) || prev.certifications.length === 0)
+          && Array.isArray(f.certifications) && f.certifications.length) next.certifications = f.certifications;
       return Object.keys(next).some((k) => next[k] !== prev[k]) ? next : prev;
     });
   }, [mode, existingId, factories]);

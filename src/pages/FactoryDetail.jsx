@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
+import CertPills from '../components/CertPills';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
@@ -262,6 +263,8 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
               </p>
             )}
             <p className={`fp-desc${ar}`}>{desc}</p>
+
+            <CertPills certs={factory.certifications} lang={lang} size="lg" style={{ margin: '2px 0 4px' }} />
 
             <div className="fp-stats">
               {stats.map((s, i) => (
