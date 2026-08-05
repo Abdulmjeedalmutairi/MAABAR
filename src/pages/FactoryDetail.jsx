@@ -8,7 +8,7 @@ import NegotiablePill from '../components/NegotiablePill';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
-import { startFactoryThread } from '../lib/factoryThreads';
+import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 
 const T = {
   ar: {
@@ -125,13 +125,13 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [msgBusy, setMsgBusy] = useState(false);
 
   // Direct chat: open (or reuse) a conversation with this factory, then enter it.
-  async function handleMessageFactory() {
+  async function handleMessageFactory(product) {
     if (!user) { nav('/login'); return; }
     if (msgBusy) return;
     setMsgBusy(true);
     try {
       const threadId = await startFactoryThread(id);
-      nav(`/messages/factory/${threadId}`);
+      nav(`/messages/factory/${threadId}`, product ? { state: { product: buildProductRef(product) } } : undefined);
     } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
   }
 
@@ -283,7 +283,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
             </div>
 
             <button className={`fp-cta${ar}`} onClick={() => setReqOpen(true)}><Icon name="send" size={18} />{c.ctaHero}</button>
-            <button type="button" onClick={handleMessageFactory} disabled={msgBusy}
+            <button type="button" onClick={() => handleMessageFactory()} disabled={msgBusy}
               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10,
                 width: '100%', maxWidth: 420, padding: '11px 18px', borderRadius: 10, cursor: msgBusy ? 'default' : 'pointer',
                 background: 'transparent', border: '1.5px solid #1a1814', color: '#1a1814', fontSize: 14.5, fontWeight: 600,
@@ -409,7 +409,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                         <button className={`fp-pcard-btn${ar}`} style={{ flex: 1, marginTop: 0 }} onClick={() => setViewerReqProduct(p)}>
                           {isAr ? 'عرض سعر' : lang === 'zh' ? '报价' : 'Quote'}
                         </button>
-                        <button type="button" onClick={handleMessageFactory} disabled={msgBusy}
+                        <button type="button" onClick={() => handleMessageFactory(p)} disabled={msgBusy}
                           style={{ flex: 1, marginTop: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                             padding: '9px', borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
                             color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontSize: 12.5, cursor: msgBusy ? 'default' : 'pointer' }}>

@@ -7,7 +7,7 @@ import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import ImageLightbox from '../components/ImageLightbox';
 import ProductChips from '../components/ProductChips';
 import NegotiablePill from '../components/NegotiablePill';
-import { startFactoryThread } from '../lib/factoryThreads';
+import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { getFactoryProductImages } from '../lib/productMedia';
 
 const T = {
@@ -63,7 +63,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
     setMsgBusy(true);
     try {
       const threadId = await startFactoryThread(factoryId);
-      nav(`/messages/factory/${threadId}`);
+      nav(`/messages/factory/${threadId}`, { state: { product: buildProductRef(product) } });
     } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
   }
 

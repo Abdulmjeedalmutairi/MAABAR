@@ -5,6 +5,18 @@ import { sb } from '../supabase';
 // SECURITY DEFINER RPCs (built in B2). Factory identity is read from the public
 // view (base factory_directory isn't buyer-readable).
 
+// Compact, self-contained product reference stored on a message so both sides can
+// render a product card without a join. null for a non-product chat.
+export function buildProductRef(p) {
+  if (!p || !p.id) return null;
+  return {
+    id: p.id, factory_id: p.factory_id || null,
+    name_ar: p.name_ar || null, name_en: p.name_en || null,
+    image: p.image || null, ref_code: p.ref_code || null,
+    price: p.price || null, currency: p.currency || null,
+  };
+}
+
 // Open — or reuse — a conversation with a factory. Returns the thread id.
 export async function startFactoryThread(factoryId) {
   const { data, error } = await sb.rpc('start_factory_thread', { p_factory_id: factoryId });
@@ -28,7 +40,7 @@ export async function fetchTraderThread(threadId) {
 // Messages in a thread, chronological.
 export async function fetchTraderMessages(threadId) {
   const { data, error } = await sb.from('factory_thread_messages')
-    .select('id, sender_role, content, created_at')
+    .select('id, sender_role, content, product_ref, created_at')
     .eq('thread_id', threadId).order('created_at', { ascending: true });
   if (error) throw error;
   return data || [];
@@ -41,14 +53,16 @@ export async function markTraderRead(threadId) {
     .eq('thread_id', threadId).eq('sender_role', 'factory').eq('read_by_trader', false);
 }
 
-// Trader sends a message.
-export async function sendTraderMessage(threadId, content) {
+// Trader sends a message, optionally carrying a product reference (first message
+// of a product-initiated chat).
+export async function sendTraderMessage(threadId, content, productRef = null) {
   const body = (content || '').trim();
   if (!body) throw new Error('empty');
   const { data: { user } } = await sb.auth.getUser();
   const { data, error } = await sb.from('factory_thread_messages')
-    .insert({ thread_id: threadId, sender_role: 'trader', sender_id: user?.id ?? null, content: body, read_by_trader: true })
-    .select('id, sender_role, content, created_at').single();
+    .insert({ thread_id: threadId, sender_role: 'trader', sender_id: user?.id ?? null, content: body,
+      product_ref: productRef || null, read_by_trader: true })
+    .select('id, sender_role, content, product_ref, created_at').single();
   if (error) throw error;
   return data;
 }
@@ -145,7 +159,7 @@ export async function adminFetchThread(threadId) {
 // A thread's messages for the admin (read-only; admin RLS allows all threads).
 export async function adminFetchThreadMessages(threadId) {
   const { data, error } = await sb.from('factory_thread_messages')
-    .select('id, sender_role, content, created_at')
+    .select('id, sender_role, content, product_ref, created_at')
     .eq('thread_id', threadId).order('created_at', { ascending: true });
   if (error) throw error;
   return data || [];

@@ -5,7 +5,7 @@ import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
 import ProductChips from '../components/ProductChips';
 import NegotiablePill from '../components/NegotiablePill';
-import { startFactoryThread } from '../lib/factoryThreads';
+import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -33,13 +33,15 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [msgBusy, setMsgBusy] = useState(false);
 
-  // Direct chat with a factory (quick questions before a formal request).
-  async function handleMessage(factoryId) {
+  // Direct chat with a factory about a product (carries the product reference).
+  async function handleMessage(product) {
     if (!user) { nav('/login'); return; }
     if (msgBusy) return;
     setMsgBusy(true);
-    try { const threadId = await startFactoryThread(factoryId); nav(`/messages/factory/${threadId}`); }
-    catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
+    try {
+      const threadId = await startFactoryThread(product.factory_id);
+      nav(`/messages/factory/${threadId}`, { state: { product: buildProductRef(product) } });
+    } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
   }
   const activeKey = searchParams.get('cat') || 'all';
   const isAr = lang === 'ar';
@@ -147,7 +149,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
                   <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                     <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
-                    <button type="button" onClick={() => handleMessage(p.factory_id)} disabled={msgBusy}
+                    <button type="button" onClick={() => handleMessage(p)} disabled={msgBusy}
                       style={{ flex: 1, marginTop: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                         padding: '9px', borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
                         color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontSize: 12.5, cursor: msgBusy ? 'default' : 'pointer' }}>
