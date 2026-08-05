@@ -13,7 +13,7 @@ const DRAFT_KEY = 'maabar_wizard_draft';
 const EMPTY_FORM = {
   title_ar: '', title_en: '', description: '', quantity: '',
   category: 'other', budget_per_unit: '', budget_currency: 'SAR',
-  payment_plan: '30', sample_requirement: 'preferred',
+  payment_plan: '30', sample_requirement: 'preferred', phone: '',
 };
 
 const T = {
@@ -27,10 +27,15 @@ const T = {
     catLabel: 'الفئة', titleArLabel: 'اسم المنتج بالعربي *', titleEnLabel: 'اسم المنتج بالإنجليزي',
     qtyLabel: 'الكمية المطلوبة *', descLabel: 'المواصفات المطلوبة',
     budgetLabel: 'الميزانية لكل وحدة (اختياري)', paymentLabel: 'خطة الدفع *', sampleLabel: 'متطلبات العينة *',
+    phoneLabel: 'رقم الجوال (واتساب) *',
     submit: 'إرسال الطلب المُدار', submitting: 'جارٍ الإرسال...',
     signinNote: 'سيُطلب منك تسجيل الدخول عند إرسال الطلب.',
     errTitle: 'يرجى إدخال اسم المنتج.', errQty: 'يرجى إدخال الكمية المطلوبة.',
+    errPhone: 'يرجى إدخال رقم الجوال للتواصل.',
     errGeneric: 'حدث خطأ أثناء رفع الطلب، حاول مرة أخرى.',
+    successTitle: 'تم رفع طلبك',
+    successBody: 'استلمنا طلبك — سيتواصل معك فريقنا على الواتساب قريباً.',
+    successBtn: 'متابعة الطلب',
     samples: [
       { val: 'none', label: 'لا حاجة لعينة' },
       { val: 'preferred', label: 'عينة مفضلة إن توفرت' },
@@ -51,10 +56,15 @@ const T = {
     catLabel: 'Category', titleArLabel: 'Product name (Arabic) *', titleEnLabel: 'Product name (English)',
     qtyLabel: 'Required quantity *', descLabel: 'Required specifications',
     budgetLabel: 'Budget per unit (optional)', paymentLabel: 'Payment plan *', sampleLabel: 'Sample requirement *',
+    phoneLabel: 'Mobile number (WhatsApp) *',
     submit: 'Submit managed request', submitting: 'Submitting...',
     signinNote: "You'll be asked to sign in when submitting.",
     errTitle: 'Please enter a product name.', errQty: 'Please enter the required quantity.',
+    errPhone: 'Please enter your contact mobile number.',
     errGeneric: 'Something went wrong while posting the request, please try again.',
+    successTitle: 'Request submitted',
+    successBody: 'We got your request — our team will contact you on WhatsApp soon.',
+    successBtn: 'View request',
     samples: [
       { val: 'none', label: 'No sample needed' },
       { val: 'preferred', label: 'Sample preferred if available' },
@@ -75,10 +85,15 @@ const T = {
     catLabel: '类别', titleArLabel: '产品名称（阿拉伯语）*', titleEnLabel: '产品名称（英语）',
     qtyLabel: '所需数量 *', descLabel: '所需规格',
     budgetLabel: '每单位预算（可选）', paymentLabel: '付款方式 *', sampleLabel: '样品要求 *',
+    phoneLabel: '手机号码（WhatsApp）*',
     submit: '提交托管需求', submitting: '提交中...',
     signinNote: '提交时会要求您登录。',
     errTitle: '请输入产品名称。', errQty: '请输入所需数量。',
+    errPhone: '请输入您的联系手机号码。',
     errGeneric: '提交需求时出错，请重试。',
+    successTitle: '需求已提交',
+    successBody: '已收到您的需求 — 我们的团队将很快通过 WhatsApp 与您联系。',
+    successBtn: '查看需求',
     samples: [
       { val: 'none', label: '无需样品' },
       { val: 'preferred', label: '如方便可提供样品' },
@@ -129,6 +144,7 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(null);   // request id after success → WhatsApp confirmation
   const revealRef = useReveal([pathType]);
 
   // Persist the draft so it survives the sign-in redirect (decision A: simple
@@ -152,6 +168,7 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
   async function handleSubmit() {
     if (!String(form.title_ar).trim() && !String(form.title_en).trim()) { setError(t.errTitle); setStep(0); return; }
     if (!String(form.quantity).trim()) { setError(t.errQty); setStep(0); return; }
+    if (!String(form.phone).trim()) { setError(t.errPhone); setStep(1); return; }
 
     if (!user) { nav('/login/buyer'); return; } // draft already in sessionStorage
 
@@ -168,7 +185,8 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
     }
 
     try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
-    nav('/dashboard?tab=requests&request=' + request.id);
+    // Show the WhatsApp follow-up confirmation instead of navigating straight off.
+    setSubmitted(request.id);
   }
 
   const dir = isAr ? 'rtl' : 'ltr';
@@ -180,6 +198,15 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
         <h1 className={`fx-h1${arc}`}>{t.pageTitle}</h1>
         <p className={`fx-sub${arc}`}>{t.intro}</p>
 
+        {submitted ? (
+          <div className="fx-panel" style={{ textAlign: 'center', padding: '34px 24px' }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }} aria-hidden>🤝</div>
+            <h2 className={`fx-h1${arc}`} style={{ fontSize: 24, margin: '0 0 8px' }}>{t.successTitle}</h2>
+            <p className={`fx-sub${arc}`} style={{ margin: '0 auto 22px', maxWidth: 420 }}>{t.successBody}</p>
+            <button type="button" className={`fx-btn-primary${arc}`}
+              onClick={() => nav('/dashboard?tab=requests&request=' + submitted)}>{t.successBtn}</button>
+          </div>
+        ) : (<>
         {/* ── Step 0: type choice ── */}
         {pathType === null && (
           <div ref={revealRef}>
@@ -273,7 +300,7 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
                       </select>
                     </div>
                   </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div className="form-group">
                     <label className={`form-label${arc}`}>{t.paymentLabel}</label>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {t.payments.map(p => (
@@ -281,6 +308,11 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
                           className={`fx-chip${arc}${form.payment_plan === p.val ? ' on' : ''}`}>{p.label}</button>
                       ))}
                     </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className={`form-label${arc}`}>{t.phoneLabel}</label>
+                    <input className="form-input" value={form.phone} onChange={e => setField('phone', e.target.value)}
+                      type="tel" inputMode="tel" dir="ltr" placeholder="+9665…" />
                   </div>
                 </>
               )}
@@ -303,6 +335,7 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
             </div>
           </div>
         )}
+        </>)}
       </div>
 
       <Footer lang={lang} />

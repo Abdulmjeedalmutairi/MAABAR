@@ -57,6 +57,7 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
     budget_currency: form.budget_per_unit ? normalizeDisplayCurrency(form.budget_currency || viewerCurrency) : null,
     payment_plan: form.payment_plan ? parseInt(form.payment_plan, 10) : null,
     sample_requirement: form.sample_requirement || null,
+    contact_phone: String(form.phone || '').trim() || null,
     reference_image: form.reference_image || form.image_url || null,
     sourcing_mode: 'managed',
     request_kind: form.request_kind || 'managed',
@@ -70,7 +71,7 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
   const { data: request, error } = await runWithOptionalColumns({
     table: 'requests',
     payload,
-    optionalKeys: ['description_ar', 'description_en', 'description_zh', 'request_kind', 'unit'],
+    optionalKeys: ['description_ar', 'description_en', 'description_zh', 'request_kind', 'unit', 'contact_phone'],
     execute: (nextPayload) => sb.from('requests').insert(nextPayload).select('*').single(),
   });
 
