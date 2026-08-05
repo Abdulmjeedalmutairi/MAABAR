@@ -4,6 +4,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import CertPills from '../components/CertPills';
 import ProductChips from '../components/ProductChips';
+import NegotiablePill from '../components/NegotiablePill';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
@@ -397,7 +398,8 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                     <div className="fp-pcard-body">
                       <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
                       <ProductChips product={p} factory={factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
-                      <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || onRequestLabel}</p>
+                      <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || onRequestLabel}</p>
+                      {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
                       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                         <button className={`fp-pcard-btn${ar}`} style={{ flex: 1, marginTop: 0 }} onClick={() => setViewerReqProduct(p)}>

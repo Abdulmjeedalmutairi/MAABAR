@@ -4,6 +4,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
 import ProductChips from '../components/ProductChips';
+import NegotiablePill from '../components/NegotiablePill';
 import { startFactoryThread } from '../lib/factoryThreads';
 import { sb } from '../supabase';
 import {
@@ -137,7 +138,8 @@ export default function FactoryProducts({ lang = 'ar', user }) {
                   <p className={`fp-pcard-name${arc}`} onClick={() => nav(`/factory/${p.factory_id}/product/${p.id}`)}>{pName(p)}</p>
                   <ProductChips product={p} factory={p.factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
                   <button type="button" className={`fp-pcard-fac${arc}`} onClick={() => nav(`/factory/${p.factory_id}`)}>{fName(p)}</button>
-                  <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || c.onReq}</p>
+                  <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || c.onReq}</p>
+                  {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
                   <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                     <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>

@@ -6,6 +6,7 @@ import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import ImageLightbox from '../components/ImageLightbox';
 import ProductChips from '../components/ProductChips';
+import NegotiablePill from '../components/NegotiablePill';
 import { startFactoryThread } from '../lib/factoryThreads';
 import { getFactoryProductImages } from '../lib/productMedia';
 
@@ -198,9 +199,10 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
             {/* Price + MOQ sit next to the request action (commercial terms).
                 Show the catalog price when the factory printed one; otherwise
                 pricing stays quote-based ("On request"). */}
-            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 6px', fontSize: 13 }}>
+            <p className={`fx-card-meta${arc}`} style={{ margin: priceText ? '0 0 4px' : '0 0 6px', fontSize: 13 }}>
               {isAr ? 'السعر' : lang === 'zh' ? '价格' : 'Price'}: <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{priceText || (isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request')}</span>
             </p>
+            {priceText && <div style={{ margin: '0 0 10px' }}><NegotiablePill lang={lang} long /></div>}
             <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12.5 }}>
               {c.moqLabel}: <span style={{ color: 'var(--text-primary)' }}>{orContact(product.moq)}</span>
             </p>
