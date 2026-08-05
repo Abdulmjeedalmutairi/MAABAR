@@ -298,10 +298,11 @@ def run_outline(pdf_path: Path, model: str):
         print(f"  outline ({model}): {len(secs)} section(s), "
               f"logo={'yes' if (data.get('logo') or {}).get('found') else 'no'}, "
               f"prices={'yes' if (data.get('flags') or {}).get('has_prices') else 'no'}")
-        return data
+        return data, None
     except Exception as e:  # noqa: BLE001 — outline is best-effort
-        print(f"  outline failed ({type(e).__name__}: {str(e)[:140]}) — continuing without it", file=sys.stderr)
-        return {}
+        err = f"{type(e).__name__}: {str(e)[:200]}"
+        print(f"  outline failed ({err}) — continuing without it", file=sys.stderr)
+        return {}, err
 
 
 def assign_sections(products, sections):
@@ -386,12 +387,14 @@ def web_safe(doc, im):
 
 # ── One Gemini request (with retry on transient/network errors) ─────────────
 def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3, prompt: str = PROMPT):
-    """One Gemini request on a PDF file. Returns (status, data, tokens):
+    """One Gemini request on a PDF file. Returns (status, data, tokens, err):
          'ok'        -> parsed JSON in `data`
          'truncated' -> hit MAX_TOKENS / unparseable output; `data` usually None
-         'failed'    -> transient/network error after all retries; `data` None
+         'failed'    -> transient/network error after all retries; `data` None,
+                        `err` = the last exception string (surfaced to the admin)
        A network hiccup on one call therefore never crashes the run — the caller
        retries (here), splits (on 'truncated'), or skips the slice (on 'failed')."""
+    last_err = None
     for attempt in range(1, retries + 1):
         try:
             uploaded = client.files.upload(file=str(pdf_path))
@@ -422,20 +425,21 @@ def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3, pro
             except Exception:  # noqa
                 raw = ""
             if "MAX_TOKENS" in finish:
-                try: return "truncated", json.loads(raw), tokens
-                except Exception: return "truncated", None, tokens  # noqa
+                try: return "truncated", json.loads(raw), tokens, None
+                except Exception: return "truncated", None, tokens, None  # noqa
             try:
-                return "ok", json.loads(raw), tokens
+                return "ok", json.loads(raw), tokens, None
             except json.JSONDecodeError:
-                return "truncated", None, tokens
+                return "truncated", None, tokens, None
         except Exception as e:  # noqa — transient: httpx.ReadError, ConnectError, timeouts, 5xx, ...
+            last_err = f"{type(e).__name__}: {str(e)[:220]}"
             if attempt < retries:
                 wait = 4 * attempt
-                print(f"      transient error (attempt {attempt}/{retries}): {type(e).__name__}: {str(e)[:120]} — retry in {wait}s", file=sys.stderr)
+                print(f"      transient error (attempt {attempt}/{retries}): {last_err[:120]} — retry in {wait}s", file=sys.stderr)
                 time.sleep(wait)
             else:
-                print(f"      FAILED after {retries} attempts: {type(e).__name__}: {str(e)[:160]}", file=sys.stderr)
-    return "failed", None, 0
+                print(f"      FAILED after {retries} attempts: {last_err}", file=sys.stderr)
+    return "failed", None, 0, last_err
 
 
 # ── Extract one page range, splitting adaptively on truncation ──────────────
@@ -452,7 +456,7 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
         tmp = Path(os.environ.get("TEMP", ".")) / f"_ci_chunk_{uuid.uuid4().hex}.pdf"
         sub.save(str(tmp)); sub.close(); target, cleanup = tmp, tmp
     try:
-        status, data, tokens = gemini_call(client, types, target, model, prompt=prompt)
+        status, data, tokens, err = gemini_call(client, types, target, model, prompt=prompt)
     finally:
         if cleanup is not None:
             try: cleanup.unlink()
@@ -461,6 +465,8 @@ def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str
     npages = b - a + 1
 
     if status == "failed":
+        if err:
+            total["last_error"] = err   # surfaced by run_extraction if 0 products result
         print(f"    ! pages {a+1}-{b+1}: skipped after retries (0 products from this slice)", file=sys.stderr)
         return [], [], {}
 
@@ -529,7 +535,7 @@ def run_gemini(pdf_path: Path, doc, model: str, chunk_pages: int, min_pages: int
             if (not mf.get(k) or mf.get(k) == "not_found") \
                and fac.get(k) and fac.get(k) != "not_found":
                 mf[k] = fac[k]
-    return merged, total["tokens"]
+    return merged, total["tokens"], total.get("last_error")
 
 
 # ── Match images to products + resolve profile images ───────────────────────
@@ -749,11 +755,11 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
 
         _p("outline", 12, "mapping the catalog")
         log("[2/5] Catalog outline (structure map)")
-        outline = run_outline(pdf_path, outline_model)
+        outline, outline_err = run_outline(pdf_path, outline_model)
 
         _p("analyzing", 18, "reading the catalog")
         log("[3/5] Gemini extraction")
-        gem, tokens = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel, mode=mode)
+        gem, tokens, gerr = run_gemini(pdf_path, doc, model, chunk_pages, min_pages, hint=hint, should_cancel=should_cancel, mode=mode)
         products = gem.get("products") or []
         _before = len(products)
         products = merge_duplicate_products(products)
@@ -828,10 +834,11 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
         # (e.g. model unavailable / quota) — surface it as a failure instead of a
         # silent "extracted with 0 products" that looks successful.
         if not products:
+            why = gerr or outline_err or "the model returned no products"
             raise RuntimeError(
-                f"Extraction produced 0 products with model '{model}' ({tokens} tokens). "
-                "The model likely returned nothing — check the model/quota (pro needs a "
-                "billing-enabled key) or the PDF. Nothing was written.")
+                f"0 products extracted (model '{model}', {tokens} tokens). Cause: {why}. "
+                "If this is a quota/rate error, wait or use a billing-enabled key; if the "
+                "file is very large, split it. Nothing was written.")
         creating = import_id is None
         if creating:
             import_id = str(uuid.uuid4())
