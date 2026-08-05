@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import ImageLightbox from '../components/ImageLightbox';
+import ProductChips from '../components/ProductChips';
 import { getFactoryProductImages } from '../lib/productMedia';
 
 const T = {
@@ -152,8 +153,9 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
               {c.byFactory}: <Link to={`/factory/${factoryId}`} style={{ color: 'var(--text-primary)', textDecoration: 'underline', textUnderlineOffset: 3 }}>{factoryName}</Link>
             </p>
             {product.ref_code && (
-              <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12 }}>{c.ref}: {product.ref_code}</p>
+              <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 10px', fontSize: 12 }}>{c.ref}: {product.ref_code}</p>
             )}
+            <ProductChips product={product} factory={factory} lang={lang} style={{ margin: '0 0 16px' }} />
 
             {/* Details: specifications → description → customization */}
             <div style={{ marginBottom: 16 }}>

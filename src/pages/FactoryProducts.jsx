@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
+import ProductChips from '../components/ProductChips';
 import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -45,8 +46,8 @@ export default function FactoryProducts({ lang = 'ar' }) {
     (async () => {
       setLoading(true);
       const [{ data: facs }, { data: prods }] = await Promise.all([
-        sb.from('factory_directory_public').select('id, company_name, company_name_latin, category'),
-        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, sort_order'),
+        sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
+        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, sort_order'),
       ]);
       if (!alive) return;
       const facMap = {};
@@ -123,6 +124,7 @@ export default function FactoryProducts({ lang = 'ar' }) {
                 </button>
                 <div className="fp-pcard-body">
                   <p className={`fp-pcard-name${arc}`} onClick={() => nav(`/factory/${p.factory_id}/product/${p.id}`)}>{pName(p)}</p>
+                  <ProductChips product={p} factory={p.factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
                   <button type="button" className={`fp-pcard-fac${arc}`} onClick={() => nav(`/factory/${p.factory_id}`)}>{fName(p)}</button>
                   <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || c.onReq}</p>
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import CertPills from '../components/CertPills';
+import ProductChips from '../components/ProductChips';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
@@ -395,6 +396,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                     </button>
                     <div className="fp-pcard-body">
                       <p className={`fp-pcard-name${ar}`} onClick={() => nav(`/factory/${factory.id}/product/${p.id}`)}>{pn}</p>
+                      <ProductChips product={p} factory={factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
                       <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || onRequestLabel}</p>
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
                       <button className={`fp-pcard-btn${ar}`} onClick={() => setViewerReqProduct(p)}>
