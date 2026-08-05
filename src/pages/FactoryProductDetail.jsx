@@ -6,26 +6,27 @@ import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import ImageLightbox from '../components/ImageLightbox';
 import ProductChips from '../components/ProductChips';
+import { startFactoryThread } from '../lib/factoryThreads';
 import { getFactoryProductImages } from '../lib/productMedia';
 
 const T = {
   ar: {
     back: 'رجوع إلى المصنع', byFactory: 'المصنع', ref: 'رمز المنتج', zoom: 'اضغط للتكبير',
-    requestCta: 'اطلب عرض سعر أو تعديلاً', inquireCta: 'استفسر عن المنتج',
+    requestCta: 'اطلب عرض سعر', msgFactory: 'راسل المصنع', msgStarting: 'جارٍ الفتح…',
     notFound: 'المنتج غير موجود', loading: '…',
     specsLabel: 'المواصفات', descLabel: 'الوصف', customLabel: 'خيارات التخصيص', moqLabel: 'الحد الأدنى للطلب',
     contactDetails: 'تواصل مع المورد للتفاصيل', note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.',
   },
   en: {
     back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom',
-    requestCta: 'Request a quote or customization', inquireCta: 'Inquire about product',
+    requestCta: 'Request a quote', msgFactory: 'Message the factory', msgStarting: 'Opening…',
     notFound: 'Product not found', loading: '…',
     specsLabel: 'Specifications', descLabel: 'Description', customLabel: 'Customization options', moqLabel: 'MOQ',
     contactDetails: 'Contact supplier for details', note: 'The factory responds with pricing — no budget needed.',
   },
   zh: {
     back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大',
-    requestCta: '请求报价或定制', inquireCta: '咨询此产品',
+    requestCta: '请求报价', msgFactory: '联系工厂', msgStarting: '正在打开…',
     notFound: '未找到产品', loading: '…',
     specsLabel: '规格', descLabel: '描述', customLabel: '定制选项', moqLabel: '起订量',
     contactDetails: '详情请联系供应商', note: '工厂会回复价格——无需填写预算。',
@@ -52,6 +53,18 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const [lightbox, setLightbox] = useState(false);
   const [reqOpen, setReqOpen] = useState(false);
   const [reqMode, setReqMode] = useState('quote'); // 'quote' | 'inquiry'
+  const [msgBusy, setMsgBusy] = useState(false);
+
+  // Direct chat with the factory (quick questions before a formal request).
+  async function handleMessageFactory() {
+    if (!user) { nav('/login'); return; }
+    if (msgBusy) return;
+    setMsgBusy(true);
+    try {
+      const threadId = await startFactoryThread(factoryId);
+      nav(`/messages/factory/${threadId}`);
+    } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -194,7 +207,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className={`fx-btn-primary${arc}`} onClick={() => { setReqMode('quote'); setReqOpen(true); }}>{c.requestCta}</button>
-              <button className={`fx-btn-ghost${arc}`} onClick={() => { setReqMode('inquiry'); setReqOpen(true); }}>{c.inquireCta}</button>
+              <button className={`fx-btn-ghost${arc}`} onClick={handleMessageFactory} disabled={msgBusy}>{msgBusy ? c.msgStarting : c.msgFactory}</button>
             </div>
             <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '10px 0 0', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.note}</p>
           </div>

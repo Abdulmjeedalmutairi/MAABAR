@@ -4,6 +4,7 @@ import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
 import ProductChips from '../components/ProductChips';
+import { startFactoryThread } from '../lib/factoryThreads';
 import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -13,22 +14,32 @@ const PAGE = 12;
 
 const T = {
   ar: { title: 'المنتجات', sub: 'تصفّح منتجات المصانع من كتالوجاتها الرسمية واطلب عرض سعر مباشرة.',
-        search: 'ابحث عن منتج أو مصنع…', moq: 'الحد الأدنى', quote: 'اطلب عرض سعر', onReq: 'عند الطلب',
+        search: 'ابحث عن منتج أو مصنع…', moq: 'الحد الأدنى', quote: 'عرض سعر', chat: 'راسل', onReq: 'عند الطلب',
         more: 'تحميل المزيد', empty: 'لا توجد منتجات في هذه الفئة بعد.', loading: 'جارٍ التحميل…' },
   en: { title: 'Products', sub: 'Browse products from factory catalogs and request a quote directly.',
-        search: 'Search a product or factory…', moq: 'MOQ', quote: 'Request a quote', onReq: 'On request',
+        search: 'Search a product or factory…', moq: 'MOQ', quote: 'Quote', chat: 'Chat', onReq: 'On request',
         more: 'Load more', empty: 'No products in this category yet.', loading: 'Loading…' },
   zh: { title: '产品', sub: '浏览工厂目录中的产品并直接请求报价。',
-        search: '搜索产品或工厂…', moq: '起订量', quote: '请求报价', onReq: '面议',
+        search: '搜索产品或工厂…', moq: '起订量', quote: '报价', chat: '联系', onReq: '面议',
         more: '加载更多', empty: '该类别暂无产品。', loading: '加载中…' },
 };
 
 const isUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 const nf = (v) => (v && v !== 'not_found' ? v : '');
 
-export default function FactoryProducts({ lang = 'ar' }) {
+export default function FactoryProducts({ lang = 'ar', user }) {
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [msgBusy, setMsgBusy] = useState(false);
+
+  // Direct chat with a factory (quick questions before a formal request).
+  async function handleMessage(factoryId) {
+    if (!user) { nav('/login'); return; }
+    if (msgBusy) return;
+    setMsgBusy(true);
+    try { const threadId = await startFactoryThread(factoryId); nav(`/messages/factory/${threadId}`); }
+    catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
+  }
   const activeKey = searchParams.get('cat') || 'all';
   const isAr = lang === 'ar';
   const arc = isAr ? ' ar' : '';
@@ -128,7 +139,15 @@ export default function FactoryProducts({ lang = 'ar' }) {
                   <button type="button" className={`fp-pcard-fac${arc}`} onClick={() => nav(`/factory/${p.factory_id}`)}>{fName(p)}</button>
                   <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || c.onReq}</p>
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
-                  <button className={`fp-pcard-btn${arc}`} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                    <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
+                    <button type="button" onClick={() => handleMessage(p.factory_id)} disabled={msgBusy}
+                      style={{ flex: 1, marginTop: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                        padding: '9px', borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
+                        color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontSize: 12.5, cursor: msgBusy ? 'default' : 'pointer' }}>
+                      {c.chat}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

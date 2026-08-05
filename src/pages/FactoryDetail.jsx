@@ -399,9 +399,17 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                       <ProductChips product={p} factory={factory} lang={lang} max={3} style={{ margin: '1px 0 2px' }} />
                       <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{priceText(p) || onRequestLabel}</p>
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
-                      <button className={`fp-pcard-btn${ar}`} onClick={() => setViewerReqProduct(p)}>
-                        <Icon name="send" size={14} />{isAr ? 'اطلب عرض سعر' : lang === 'zh' ? '请求报价' : 'Request a quote'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <button className={`fp-pcard-btn${ar}`} style={{ flex: 1, marginTop: 0 }} onClick={() => setViewerReqProduct(p)}>
+                          {isAr ? 'عرض سعر' : lang === 'zh' ? '报价' : 'Quote'}
+                        </button>
+                        <button type="button" onClick={handleMessageFactory} disabled={msgBusy}
+                          style={{ flex: 1, marginTop: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                            padding: '9px', borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
+                            color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontSize: 12.5, cursor: msgBusy ? 'default' : 'pointer' }}>
+                          <Icon name="headset" size={14} />{isAr ? 'راسل' : lang === 'zh' ? '联系' : 'Chat'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
