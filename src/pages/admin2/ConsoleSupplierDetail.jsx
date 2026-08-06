@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import ConsoleShell, { Icon as ShellIcon } from '../../components/admin2/ConsoleShell';
 import CertsEditor from '../../components/admin/CertsEditor';
 import SupplierProductsTab from './SupplierProductsTab';
+import { CatalogsTab, RequestsTab, MessagesTab } from './SupplierMoreTabs';
 import { fetchFactory, fetchFactoryProducts, updateFactory, deleteFactory } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import { sb } from '../../supabase';
@@ -127,9 +128,9 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
         {tab === 'profile' && <ProfileTab fac={fac} isAr={isAr} lang={lang} onSaved={(f) => { setFac(f); flash(isAr ? 'حُفظ' : 'Saved'); }} />}
         {tab === 'settings' && <SettingsTab fac={fac} isAr={isAr} onChanged={(f) => { setFac(f); flash(isAr ? 'تم' : 'Updated'); }} onDeleted={() => nav('/admin2/suppliers')} flash={flash} />}
         {tab === 'products' && <SupplierProductsTab factoryId={id} lang={lang} isAr={isAr} flash={flash} />}
-        {['catalogs', 'requests', 'messages'].includes(tab) && (
-          <StubTab tab={tab} id={id} isAr={isAr} />
-        )}
+        {tab === 'catalogs' && <CatalogsTab factoryId={id} isAr={isAr} flash={flash} />}
+        {tab === 'requests' && <RequestsTab factoryId={id} isAr={isAr} lang={lang} />}
+        {tab === 'messages' && <MessagesTab factoryId={id} isAr={isAr} flash={flash} />}
       </div>
       {toast && <div className="ac-toast" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{toast}</div>}
     </ConsoleShell>
@@ -317,22 +318,3 @@ function SettingsTab({ fac, isAr, onChanged, onDeleted, flash }) {
   );
 }
 
-// ── Stub tabs (built in later phases) ────────────────────────────────────────
-function StubTab({ tab, id, isAr }) {
-  const nav = useNavigate();
-  const map = {
-    products: { ar: 'المنتجات', route: `/admin/factories/${id}`, cta: isAr ? 'إدارة المنتجات (النسخة الحالية)' : 'Manage products (current)' },
-    catalogs: { ar: 'الكتالوجات', route: '/admin/catalog-import', cta: isAr ? 'استيراد الكتالوج (النسخة الحالية)' : 'Catalog import (current)' },
-    requests: { ar: 'الطلبات', route: '/admin/concierge', cta: isAr ? 'الطلبات (النسخة الحالية)' : 'Requests (current)' },
-    messages: { ar: 'الرسائل', route: '/admin/conversations', cta: isAr ? 'المحادثات (النسخة الحالية)' : 'Conversations (current)' },
-  };
-  const m = map[tab];
-  return (
-    <div className="ac-card">
-      <div className="ac-placeholder">
-        <p style={{ margin: '0 0 14px' }}>{isAr ? `تبويب "${m.ar}" يُبنى في مرحلة قادمة.` : 'This tab is coming in a later phase.'}</p>
-        <button className="ac-btn" onClick={() => nav(m.route)}>{m.cta} ↗</button>
-      </div>
-    </div>
-  );
-}

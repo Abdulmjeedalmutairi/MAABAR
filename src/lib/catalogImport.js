@@ -82,7 +82,10 @@ async function uploadResumable(bucket, path, file, onProgress) {
   });
 }
 
-export async function createImport(file, notes = '', mode = 'curated', fileHash = null, onProgress = null) {
+// factoryId (optional) pre-binds the import to an existing supplier — used when
+// uploading a catalog from that supplier's page, so it's grouped under them and
+// approval lands on their factory.
+export async function createImport(file, notes = '', mode = 'curated', fileHash = null, onProgress = null, factoryId = null) {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -96,9 +99,26 @@ export async function createImport(file, notes = '', mode = 'curated', fileHash 
     import_notes: (notes || '').trim() || null,
     extraction_mode: mode === 'full' ? 'full' : 'curated',
     file_hash: hash,
+    ...(factoryId ? { factory_id: factoryId } : {}),
   });
   if (error) throw error;
   return id;
+}
+
+// Catalog imports belonging to one supplier (for the supplier-page Catalogs tab).
+export async function fetchFactoryImports(factoryId) {
+  const { data, error } = await sb.from('factory_catalog_imports')
+    .select('id, original_filename, catalog_title, status, page_count, extraction_mode, cover_image_path, source_pdf_path, created_at, factory_catalog_import_products(count)')
+    .eq('factory_id', factoryId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((r) => ({ ...r, product_count: r.factory_catalog_import_products?.[0]?.count ?? 0 }));
+}
+
+// Short-lived signed URL to download/open a catalog's source PDF.
+export async function catalogSourceUrl(sourcePath) {
+  if (!sourcePath) return null;
+  const { data } = await sb.storage.from('factory-catalogs').createSignedUrl(sourcePath, 300);
+  return data?.signedUrl || null;
 }
 
 // Switch an existing import between 'curated' and 'full' (before re-running).
