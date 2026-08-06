@@ -91,6 +91,7 @@ import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceL
 import { BUCKET_PRODUCT_MEDIA, BUCKET_PRODUCT_CERTS, removeStorageObjectByUrl } from '../lib/productMediaCleanup';
 import { loadProductCertifications, saveProductCertifications, emptyCertRow, CERT_TYPES, CERT_MAX_COUNT } from '../lib/productCertifications';
 import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
+import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -369,7 +370,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       .then(() => {}, (e) => console.error('[nudge] dismiss failed:', e?.message));
   };
   const isVerificationLocked = supplierState.isUnderReviewStage || supplierState.isApprovedStage;
-  const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
   const verificationDraftSavedLabel = draftSavedAt ? formatDraftSavedAt(draftSavedAt, lang) : '';
   const verificationStepLabels = [
     isAr ? 'بيانات الشركة' : lang === 'zh' ? '公司资料' : 'Company profile',
@@ -2739,34 +2739,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
           {isRestrictedSupplierTab && (
             <div style={{ ...section, maxWidth: 760 }}>
-              <div style={{
-                padding: '28px 28px 24px',
-                borderRadius: 'var(--radius-xl)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-subtle)',
-              }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
-                  {isAr ? 'صلاحيات المورد' : lang === 'zh' ? '供应商权限' : 'MAABAR SUPPLIER ACCESS'}
-                </p>
-                <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
-                  {verificationLockMessage}
-                </h2>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.9, marginBottom: 18, ...arFont }}>
-                  {isAr
-                    ? 'هذه الصفحة تبقى مقفلة إلى أن تكتمل عملية التحقق ويتم اعتماد الحساب. حالياً يمكنك استخدام لوحة المورد، إعدادات الملف، ومسار التحقق فقط.'
-                    : lang === 'zh'
-                      ? '该页面会保持锁定，直到认证完成并且账户通过审核。目前您只能使用供应商控制台、资料设置和认证流程。'
-                      : 'This page stays locked until verification is completed and the supplier account is approved. For now, you can use only the supplier dashboard, profile settings, and verification flow.'}
-                </p>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <SupplierPayoutLockBanner
+                lang={lang}
+                actions={<>
                   <button onClick={openVerificationFlow} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
                     {supplierState.isUnderReviewStage ? (isAr ? 'عرض حالة التحقق' : lang === 'zh' ? '查看认证状态' : 'View verification status') : t.verificationCtaAction}
                   </button>
                   <button onClick={() => setActiveTab('overview')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>
                     {isAr ? 'العودة للوحة المورد' : lang === 'zh' ? '返回控制台' : 'Back to dashboard'}
                   </button>
-                </div>
-              </div>
+                </>}
+              />
             </div>
           )}
 
