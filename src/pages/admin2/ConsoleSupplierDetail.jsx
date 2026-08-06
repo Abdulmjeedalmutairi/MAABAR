@@ -4,6 +4,7 @@ import ConsoleShell, { Icon as ShellIcon } from '../../components/admin2/Console
 import CertsEditor from '../../components/admin/CertsEditor';
 import SupplierProductsTab from './SupplierProductsTab';
 import { CatalogsTab, RequestsTab, MessagesTab } from './SupplierMoreTabs';
+import InviteModal from './InviteModal';
 import { fetchFactory, fetchFactoryProducts, updateFactory, deleteFactory } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import { sb } from '../../supabase';
@@ -40,6 +41,7 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
   const [err, setErr] = useState('');
   const [tab, setTab] = useState('overview');
   const [toast, setToast] = useState('');
+  const [invite, setInvite] = useState(false);
 
   const load = async () => {
     setErr('');
@@ -108,7 +110,7 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
                 onClick={() => digits(fac.phone) && window.open(`https://wa.me/${digits(fac.phone)}`, '_blank')}>WhatsApp</button>
               <button className="ac-btn ac-btn-sm" disabled={!nf(fac.email)} style={{ opacity: nf(fac.email) ? 1 : 0.5 }}
                 onClick={() => nf(fac.email) && window.open(`mailto:${fac.email}`)}>{isAr ? 'إيميل' : 'Email'}</button>
-              <button className="ac-btn ac-btn-sm ac-btn-primary" onClick={() => flash(isAr ? 'قريباً — نظام الدعوات (مرحلة 6)' : 'Coming soon — invitations (phase 6)')}>
+              <button className="ac-btn ac-btn-sm ac-btn-primary" onClick={() => setInvite(true)}>
                 {isAr ? 'إرسال دعوة' : 'Send invitation'}
               </button>
             </div>
@@ -133,6 +135,7 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
         {tab === 'requests' && <RequestsTab factoryId={id} isAr={isAr} lang={lang} />}
         {tab === 'messages' && <MessagesTab factoryId={id} isAr={isAr} flash={flash} />}
       </div>
+      {invite && <InviteModal factoryId={id} isAr={isAr} onClose={() => setInvite(false)} flash={flash} />}
       {toast && <div className="ac-toast" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{toast}</div>}
     </ConsoleShell>
   );

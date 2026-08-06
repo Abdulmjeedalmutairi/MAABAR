@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConsoleShell from '../../components/admin2/ConsoleShell';
 import { fetchQuotations } from '../../lib/consoleQuotations';
+import InviteModal from './InviteModal';
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
 const digits = (v) => (v || '').replace(/[^\d]/g, '');
@@ -22,6 +23,7 @@ export default function ConsoleQuotations({ user, profile, lang }) {
   const [q, setQ] = useState('');
   const [st, setSt] = useState('all');     // all | waiting | replied | closed
   const [kind, setKind] = useState('all'); // all | factory | managed
+  const [invite, setInvite] = useState(null); // { factoryId, request }
 
   useEffect(() => { fetchQuotations().then(setRows).catch((e) => { setErr(e.message || 'load failed'); setRows([]); }); }, []);
 
@@ -116,13 +118,14 @@ export default function ConsoleQuotations({ user, profile, lang }) {
                   <button className="ac-btn ac-btn-sm" onClick={() => nav(`/admin/concierge/${r.id}`)}>{isAr ? 'فتح' : 'Open'}</button>
                   <button className="ac-btn ac-btn-sm" onClick={() => copyShare(r)} disabled={!r.invite_slug} style={{ opacity: r.invite_slug ? 1 : 0.5 }}>{isAr ? 'رابط المشاركة' : 'Share link'}</button>
                   {r.factory && <button className="ac-btn ac-btn-sm" onClick={() => waSupplier(r)} disabled={!digits(r.factory.phone)} style={{ opacity: digits(r.factory.phone) ? 1 : 0.5 }}>WhatsApp</button>}
-                  <button className="ac-btn ac-btn-sm" onClick={() => flash(isAr ? 'قريباً — الدعوات (مرحلة 6)' : 'Coming — invitations (phase 6)')}>{isAr ? 'إرسال دعوة' : 'Send invitation'}</button>
+                  {r.factory && <button className="ac-btn ac-btn-sm" onClick={() => setInvite({ factoryId: r.factory.id, request: r })}>{isAr ? 'إرسال دعوة' : 'Send invitation'}</button>}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+      {invite && <InviteModal factoryId={invite.factoryId} request={invite.request} isAr={isAr} onClose={() => setInvite(null)} flash={flash} />}
       {toast && <div className="ac-toast" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{toast}</div>}
     </ConsoleShell>
   );
