@@ -4,6 +4,14 @@ import ConsoleShell, { Icon as ShellIcon } from '../../components/admin2/Console
 import { fetchConsoleSuppliers, deriveFacets } from '../../lib/consoleSuppliers';
 import { deleteFactory } from '../../lib/catalogImport';
 import { displayCategoryForCode } from '../../lib/factoryCategories';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
+
+// Origin tag (organic signup vs factory-claim vs unclaimed directory) → chip.
+const ORIGIN = {
+  organic:       { ar: 'تسجيل مباشر', en: 'Organic',      cls: 'info' },
+  factory_claim: { ar: 'مطالبة مصنع', en: 'Factory claim', cls: 'ok' },
+  directory:     { ar: 'دليل',        en: 'Directory',     cls: 'neutral' },
+};
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
 const PAGE = 24;
@@ -50,6 +58,7 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
   const [q, setQ] = useState('');
   const [country, setCountry] = useState('');
   const [category, setCategory] = useState('');
+  const [originF, setOriginF] = useState('');     // '' | organic | factory_claim | directory
   const [reg, setReg] = useState('all');          // all | yes | no
   const [fVerified, setFVerified] = useState(false);
   const [fCatalog, setFCatalog] = useState(false);
@@ -69,6 +78,7 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
     if (!rows) return [];
     const s = q.trim().toLowerCase();
     return rows.filter((r) => {
+      if (originF && r.origin !== originF) return false;
       if (country && r.country !== country) return false;
       if (category && r.category !== category) return false;
       if (reg === 'yes' && !r.is_registered) return false;
@@ -78,14 +88,14 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
       if (fProducts && !r.has_products) return false;
       if (fProfile && !r.has_profile) return false;
       if (s) {
-        const hay = [r.company_name, r.company_name_latin, r.email, r.phone, r.city].filter(Boolean).join(' ').toLowerCase();
+        const hay = [r.company_name, r.company_name_latin, r.email, r.phone, r.city, r.maabar_supplier_id].filter(Boolean).join(' ').toLowerCase();
         if (!hay.includes(s)) return false;
       }
       return true;
     }).sort((a, b) => (b.last_activity || '').localeCompare(a.last_activity || ''));
-  }, [rows, q, country, category, reg, fVerified, fCatalog, fProducts, fProfile]);
+  }, [rows, q, country, category, originF, reg, fVerified, fCatalog, fProducts, fProfile]);
 
-  useEffect(() => { setVisible(PAGE); }, [q, country, category, reg, fVerified, fCatalog, fProducts, fProfile]);
+  useEffect(() => { setVisible(PAGE); }, [q, country, category, originF, reg, fVerified, fCatalog, fProducts, fProfile]);
 
   // infinite scroll sentinel
   const sentinel = useRef(null);
@@ -98,9 +108,13 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
 
   const flash = (m) => { setToast(m); setTimeout(() => setToast(''), 1900); };
   const copy = (text, msg) => { try { navigator.clipboard.writeText(text); flash(msg); } catch { /* noop */ } };
-  const shareUrl = (id) => `${window.location.origin}/factory/${id}`;
+  // Registered suppliers link to their public profile; directory factories to /factory.
+  const shareUrl = (r) => `${window.location.origin}${r.kind === 'profile' ? `/supplier/${r.id}` : `/factory/${r.id}`}`;
 
+  // Delete is only for unclaimed directory factories — deleting a real supplier
+  // account is a different, dangerous op handled elsewhere.
   const onDelete = async (r) => {
+    if (r.kind !== 'factory') return;
     if (!window.confirm(isAr ? `حذف "${r.company_name}"؟ لا يمكن التراجع.` : `Delete "${r.company_name}"? This cannot be undone.`)) return;
     try {
       await deleteFactory(r.id);
@@ -116,7 +130,7 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
     const c = displayCategoryForCode(code);
     return c ? (c.label[lang] || c.label.en) : nf(code);
   };
-  const open = (id) => nav(`/admin2/suppliers/${id}`);
+  const open = (r) => nav(r.openPath || `/admin2/suppliers/${r.id}`);
 
   const shown = filtered.slice(0, visible);
   const total = rows ? rows.length : 0;
@@ -151,6 +165,12 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
               <option value="">{isAr ? 'كل الفئات' : 'All categories'}</option>
               {facets.categories.map((c) => <option key={c} value={c}>{catLabel(c)}</option>)}
             </select>
+            <select className="ac-input" style={{ width: 'auto', minWidth: 140 }} value={originF} onChange={(e) => setOriginF(e.target.value)}>
+              <option value="">{isAr ? 'كل المصادر' : 'All origins'}</option>
+              <option value="organic">{isAr ? ORIGIN.organic.ar : ORIGIN.organic.en}</option>
+              <option value="factory_claim">{isAr ? ORIGIN.factory_claim.ar : ORIGIN.factory_claim.en}</option>
+              <option value="directory">{isAr ? ORIGIN.directory.ar : ORIGIN.directory.en}</option>
+            </select>
           </div>
           <div className="ac-chiprow" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
             <TFlag on={reg === 'yes'} onClick={() => setReg(reg === 'yes' ? 'all' : 'yes')}>{isAr ? 'مسجّل' : 'Registered'}</TFlag>
@@ -177,7 +197,7 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
                 const loc = [nf(r.city), nf(r.country)].filter(Boolean).join('، ');
                 return (
                   <div className="ac-scard" key={r.id}>
-                    <div className="ac-scard-top" onClick={() => open(r.id)}>
+                    <div className="ac-scard-top" onClick={() => open(r)}>
                       {r.profile_image
                         ? <img className="ac-logo" src={r.profile_image} alt="" loading="lazy" />
                         : <div className="ac-logo-fallback">{name.charAt(0)}</div>}
@@ -191,12 +211,19 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
                     </div>
 
                     <div className="ac-sbadges">
-                      {r.is_registered
-                        ? <span className="ac-badge ok"><span className="dot" />{isAr ? 'مسجّل' : 'Registered'}</span>
-                        : <span className="ac-badge neutral"><span className="dot" />{isAr ? 'غير مسجّل' : 'Not registered'}</span>}
-                      {r.is_verified && <span className="ac-badge info"><span className="dot" />{isAr ? 'موثّق' : 'Verified'}</span>}
-                      {!r.is_active && <span className="ac-badge warn"><span className="dot" />{isAr ? 'مسودّة' : 'Draft'}</span>}
-                      {r.is_featured && <span className="ac-badge ok">{isAr ? 'مميّز' : 'Featured'}</span>}
+                      <span className={`ac-badge ${ORIGIN[r.origin]?.cls || 'neutral'}`}><span className="dot" />{isAr ? ORIGIN[r.origin]?.ar : ORIGIN[r.origin]?.en}</span>
+                      {r.kind === 'profile' ? (
+                        <>
+                          <AdminStatusBadge status={r.status} lang={lang} />
+                          {r.is_featured && <span className="ac-badge ok">{isAr ? 'مميّز' : 'Featured'}</span>}
+                        </>
+                      ) : (
+                        <>
+                          {r.is_verified && <span className="ac-badge info"><span className="dot" />{isAr ? 'موثّق' : 'Verified'}</span>}
+                          {!r.is_active && <span className="ac-badge warn"><span className="dot" />{isAr ? 'مسودّة' : 'Draft'}</span>}
+                          {r.is_featured && <span className="ac-badge ok">{isAr ? 'مميّز' : 'Featured'}</span>}
+                        </>
+                      )}
                     </div>
 
                     <div className="ac-smeta">
@@ -206,15 +233,17 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
                     </div>
 
                     <div className="ac-sactions">
-                      <button className="ac-btn ac-btn-sm" style={{ flex: 1 }} onClick={() => open(r.id)}><Ico d={AP.open} />{isAr ? 'فتح' : 'Open'}</button>
-                      <button className="ac-iconbtn" title={isAr ? 'مشاركة الرابط' : 'Copy link'} onClick={() => copy(shareUrl(r.id), isAr ? 'نُسخ رابط الصفحة' : 'Link copied')}><Ico d={AP.share} /></button>
+                      <button className="ac-btn ac-btn-sm" style={{ flex: 1 }} onClick={() => open(r)}><Ico d={AP.open} />{isAr ? 'فتح' : 'Open'}</button>
+                      <button className="ac-iconbtn" title={isAr ? 'مشاركة الرابط' : 'Copy link'} onClick={() => copy(shareUrl(r), isAr ? 'نُسخ رابط الصفحة' : 'Link copied')}><Ico d={AP.share} /></button>
                       <button className="ac-iconbtn" title="WhatsApp" disabled={!digits(r.phone)}
                         onClick={() => digits(r.phone) && window.open(`https://wa.me/${digits(r.phone)}`, '_blank')}
                         style={{ opacity: digits(r.phone) ? 1 : 0.4 }}><Ico d={AP.wa} /></button>
                       <button className="ac-iconbtn" title={isAr ? 'إيميل' : 'Email'} disabled={!nf(r.email)}
                         onClick={() => nf(r.email) && window.open(`mailto:${r.email}`)}
                         style={{ opacity: nf(r.email) ? 1 : 0.4 }}><Ico d={AP.mail} /></button>
-                      <button className="ac-iconbtn danger" title={isAr ? 'حذف' : 'Delete'} onClick={() => onDelete(r)}><Ico d={AP.trash} /></button>
+                      {r.kind === 'factory' && (
+                        <button className="ac-iconbtn danger" title={isAr ? 'حذف' : 'Delete'} onClick={() => onDelete(r)}><Ico d={AP.trash} /></button>
+                      )}
                     </div>
                   </div>
                 );
