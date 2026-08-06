@@ -17,12 +17,13 @@ const T = {
     noActivity: 'Start receiving quote requests from Saudi buyers.',
     ctaTitle: 'Sign in to reply to buyers and manage your page',
     ctaSub: 'Your page is already prepared for you — just verify it’s you. Under a minute.',
-    google: 'Continue with Google', email: 'Continue with Email',
-    claim: 'Confirm ownership & start', enter: 'Enter your dashboard',
+    google: 'Continue with Google', email: 'Continue with Email', phone: 'Continue with Phone',
+    claim: 'Confirm ownership & start', enter: 'Enter your dashboard', back: '← Back',
     haveAccount: 'Already have an account? Sign in', skip: 'Skip — view public page',
     claimedOther: 'This factory has already been claimed by another account. Contact support if this is you.',
-    emailPh: 'Email', passPh: 'Password (min 6 chars)', create: 'Create account & claim',
+    emailPh: 'Email', phonePh: 'Phone (e.g. +8613800138000)', passPh: 'Password (min 6 chars)', create: 'Create account & claim',
     checkEmail: 'Check your email to confirm, then reopen this link.', working: 'Working…', loading: 'Loading…',
+    errPhone: 'Enter a valid international phone number.', errCreds: 'Wrong phone/email or password.',
     notfound: 'This claim link is not valid.',
   },
   zh: {
@@ -36,12 +37,13 @@ const T = {
     noActivity: '开始接收来自沙特买家的报价请求。',
     ctaTitle: '登录即可回复买家并管理您的主页',
     ctaSub: '您的主页已为您准备好 — 只需验证身份，不到一分钟。',
-    google: '使用 Google 继续', email: '使用邮箱继续',
-    claim: '确认所有权并开始', enter: '进入您的后台',
+    google: '使用 Google 继续', email: '使用邮箱继续', phone: '使用手机号继续',
+    claim: '确认所有权并开始', enter: '进入您的后台', back: '← 返回',
     haveAccount: '已有账户？登录', skip: '跳过 — 查看公开页面',
     claimedOther: '该工厂已被其他账户认领。如果这是您，请联系客服。',
-    emailPh: '邮箱', passPh: '密码（至少 6 位）', create: '创建账户并认领',
+    emailPh: '邮箱', phonePh: '手机号（如 +8613800138000）', passPh: '密码（至少 6 位）', create: '创建账户并认领',
     checkEmail: '请查收邮件确认，然后重新打开此链接。', working: '处理中…', loading: '加载中…',
+    errPhone: '请输入有效的国际手机号。', errCreds: '手机号/邮箱或密码错误。',
     notfound: '此认领链接无效。',
   },
 };
@@ -54,8 +56,9 @@ export default function ClaimFactory() {
   const [user, setUser] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const [emailMode, setEmailMode] = useState(false);
+  const [authMode, setAuthMode] = useState('none');   // none | phone | email
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [pass, setPass] = useState('');
   const [msg, setMsg] = useState('');
   const t = T[lang];
@@ -80,6 +83,23 @@ export default function ClaimFactory() {
       else setMsg(t.checkEmail);
     } catch (e) { setErr(e.message || 'sign up failed'); }
     setBusy(false);
+  };
+  const doPhone = async () => {
+    setErr(''); setMsg('');
+    const ph = phone.trim().replace(/\s/g, '');
+    if (!/^\+?[1-9]\d{7,14}$/.test(ph)) { setErr(t.errPhone); return; }
+    if (pass.length < 6) { setErr(t.passPh); return; }
+    setBusy(true);
+    try {
+      const company = nf(pre?.company_name_latin) || nf(pre?.company_name) || '';
+      let { data, error } = await sb.auth.signUp({ phone: ph, password: pass, options: { data: { role: 'supplier', status: 'registered', company_name: company, phone: ph } } });
+      if (error && /already|registered|exists/i.test(error.message || '')) {
+        ({ data, error } = await sb.auth.signInWithPassword({ phone: ph, password: pass }));
+        if (error) { setErr(t.errCreds); setBusy(false); return; }
+      } else if (error) { setErr(error.message); setBusy(false); return; }
+      if (data?.user || data?.session) { setUser(data.user || data.session?.user); await doClaim(); }
+      else { setBusy(false); setErr(t.errCreds); }
+    } catch (e) { setBusy(false); setErr(e.message || 'sign in failed'); }
   };
   const doClaim = async () => {
     setErr(''); setBusy(true);
@@ -169,17 +189,28 @@ export default function ClaimFactory() {
           <>
             <div className="cf-lock">{t.ctaTitle}</div>
             <p className="cf-cta-sub">{t.ctaSub}</p>
-            {!emailMode ? (
+            {authMode === 'none' && (
               <>
                 <button className="cf-btn" onClick={doGoogle}><span className="cf-g">G</span>{t.google}</button>
-                <button className="cf-btn" onClick={() => setEmailMode(true)}>✉ {t.email}</button>
+                <button className="cf-btn" onClick={() => { setErr(''); setAuthMode('phone'); }}>📱 {t.phone}</button>
+                <button className="cf-btn" onClick={() => { setErr(''); setAuthMode('email'); }}>✉ {t.email}</button>
               </>
-            ) : (
+            )}
+            {authMode === 'phone' && (
+              <div className="cf-form">
+                <input className="cf-input" type="tel" inputMode="tel" dir="ltr" placeholder={t.phonePh} value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <input className="cf-input" type="password" placeholder={t.passPh} value={pass} onChange={(e) => setPass(e.target.value)} />
+                <button className="cf-btn cf-primary" onClick={doPhone} disabled={busy}>{busy ? t.working : t.claim}</button>
+                <button className="cf-ghost" onClick={() => setAuthMode('none')}>{t.back}</button>
+              </div>
+            )}
+            {authMode === 'email' && (
               <div className="cf-form">
                 <input className="cf-input" type="email" placeholder={t.emailPh} value={email} onChange={(e) => setEmail(e.target.value)} />
                 <input className="cf-input" type="password" placeholder={t.passPh} value={pass} onChange={(e) => setPass(e.target.value)} />
                 <button className="cf-btn cf-primary" onClick={doEmail} disabled={busy}>{busy ? t.working : t.create}</button>
                 {msg && <p className="cf-msg">{msg}</p>}
+                <button className="cf-ghost" onClick={() => setAuthMode('none')}>{t.back}</button>
               </div>
             )}
           </>
