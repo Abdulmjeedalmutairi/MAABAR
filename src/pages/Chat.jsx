@@ -8,6 +8,7 @@ import {
 import { translateChatMessage } from '../lib/maabarAi/client';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
 import BrandedLoading from '../components/BrandedLoading';
+import SupplierVerifyBadge from '../components/SupplierVerifyBadge';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
@@ -428,6 +429,9 @@ export default function Chat({ lang, user, profile }) {
             )}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 6 }}>
+            {partner?.role === 'supplier' && (
+              <SupplierVerifyBadge status={partner?.status} lang={lang} />
+            )}
             {chinaTime && (
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: 0.7 }}>
                 {chinaTime} {t.chinaTime}

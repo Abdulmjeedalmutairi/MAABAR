@@ -20,7 +20,6 @@ import {
 import {
   buildSupplierTrustSignals,
   getSupplierMaabarId,
-  isSupplierPubliclyVisible,
 } from '../lib/supplierOnboarding';
 import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceLookup';
 import { T } from '../lib/supplierDashboardConstants';
@@ -39,6 +38,7 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
+import SupplierVerifyBadge from '../components/SupplierVerifyBadge';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
@@ -1879,10 +1879,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
                         {acceptedOffer.profiles?.company_name || '—'}
                       </span>
-                      {isSupplierPubliclyVisible(acceptedOffer.profiles?.status) && (
-                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)' }}>
-                          ✓ {isAr ? 'موثّق' : 'Verified'}
-                        </span>
+                      {acceptedOffer.profiles && (
+                        <SupplierVerifyBadge status={acceptedOffer.profiles?.status} lang={lang} />
                       )}
                       {getSupplierMaabarId(acceptedOffer.profiles || {}) && (
                         <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
@@ -1985,7 +1983,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                             )}
                             {(() => {
                               const supplierTrustSignals = buildSupplierTrustSignals(o.profiles || {});
-                              const isReviewedSupplier = isSupplierPubliclyVisible(o.profiles?.status);
                               const supplierMaabarId = getSupplierMaabarId(o.profiles || {});
 
                               return (
@@ -1995,10 +1992,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                       <p style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 0, fontWeight: 500 }}>
                                         {o.profiles?.company_name || '—'}
                                       </p>
-                                      {isReviewedSupplier && (
-                                        <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)' }}>
-                                          ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
-                                        </span>
+                                      {o.profiles && (
+                                        <SupplierVerifyBadge status={o.profiles?.status} lang={lang} />
                                       )}
                                     </div>
                                     {o.profiles?.rating > 0 && (
@@ -2541,7 +2536,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 const productName = s.products?.name_ar || s.products?.name_en || s.products?.name_zh || 'Product';
                 const supplierTrustSignals = buildSupplierTrustSignals(s.profiles || {});
                 const sampleSupplierMaabarId = getSupplierMaabarId(s.profiles || {});
-                const isReviewedSupplier = isSupplierPubliclyVisible(s.profiles?.status);
                 return (
                   <div key={s.id} style={{ borderTop: '1px solid var(--border-subtle)', padding: '18px 0', animation: `fadeIn 0.35s ease ${idx * 0.04}s both` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -2549,10 +2543,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 5, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'المورد:' : lang === 'zh' ? '供应商：' : 'Supplier:'} {supplierName}</p>
-                          {isReviewedSupplier && (
-                            <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 'var(--radius-chip)', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)' }}>
-                              ✓ {isAr ? 'موثّق' : lang === 'zh' ? '已认证' : 'Verified'}
-                            </span>
+                          {s.profiles && (
+                            <SupplierVerifyBadge status={s.profiles?.status} lang={lang} />
                           )}
                         </div>
                         {(sampleSupplierMaabarId || s.profiles?.city || s.profiles?.country || s.profiles?.years_experience) && (
