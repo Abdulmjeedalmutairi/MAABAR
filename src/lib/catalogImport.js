@@ -402,6 +402,7 @@ function mapProduct(factoryId, staged, meta = {}) {
     section_ar: tri(ej.section, 'ar'),
     section_en: tri(ej.section, 'en'),
     ref_code: nf(ej.ref_code),
+    also_count: Number.isFinite(+ej.also_count) ? Math.max(0, parseInt(ej.also_count, 10) || 0) : 0,
     image: staged.image_path || null,
     gallery_images: Array.isArray(staged.gallery_paths) ? staged.gallery_paths.filter(Boolean) : [],
     sort_order: staged.sort_order ?? 0,

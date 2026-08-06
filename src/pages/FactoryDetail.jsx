@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import CertPills from '../components/CertPills';
 import ProductChips from '../components/ProductChips';
 import NegotiablePill from '../components/NegotiablePill';
+import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
@@ -405,6 +406,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
                       <p className={`fp-pcard-moq${ar}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || onRequestLabel}</p>
                       {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}
                       {p.moq && <p className={`fp-pcard-moq${ar}`}>{isAr ? `الحد الأدنى: ${p.moq}` : lang === 'zh' ? `起订量 ${p.moq}` : `MOQ ${p.moq}`}</p>}
+                      {p.also_count > 0 && <MoreOptionsBadge count={p.also_count} lang={lang} style={{ marginTop: 4 }} />}
                       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                         <button className={`fp-pcard-btn${ar}`} style={{ flex: 1, marginTop: 0 }} onClick={() => setViewerReqProduct(p)}>
                           {isAr ? 'عرض سعر' : lang === 'zh' ? '报价' : 'Quote'}

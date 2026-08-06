@@ -754,11 +754,32 @@ RULES:
 Return JSON {"keep": [indices]} using the exact 0-based indices from the candidate list."""
 
 
+def _sec_key(pr):
+    sec = pr.get("section") or {}
+    return (sec.get("en") or sec.get("ar") or "").strip().lower()
+
+
+def _tag_also_counts(products, kept):
+    """On each KEPT product, record how many OTHER products in its section were
+    curated away — surfaced to buyers as a "+N more options" badge so they know
+    the factory's range in that category is deeper than what's shown."""
+    total, keptc = {}, {}
+    for pr in products:
+        total[_sec_key(pr)] = total.get(_sec_key(pr), 0) + 1
+    for pr in kept:
+        keptc[_sec_key(pr)] = keptc.get(_sec_key(pr), 0) + 1
+    for pr in kept:
+        k = _sec_key(pr)
+        pr["_also_count"] = max(0, total.get(k, 0) - keptc.get(k, 0))
+
+
 def curate_products(products, model, target_max=CURATED_MAX, factory_name=""):
     """Reduce `products` to a representative subset (<= target_max). Returns
-    (kept_list, dropped_count). Falls back to a deterministic trim (prefer imaged +
-    high-confidence, keep order) if the model call fails — so it NEVER silently
-    returns everything. No-op when already at/under the cap."""
+    (kept_list, dropped_count). Each kept product gets `_also_count` = how many
+    same-section products were dropped (for the "+N more options" badge). Falls
+    back to a deterministic trim (prefer imaged + high-confidence, keep order) if
+    the model call fails — so it NEVER silently returns everything. No-op when
+    already at/under the cap."""
     if len(products) <= target_max:
         return products, 0
     lines = []
@@ -773,6 +794,7 @@ def curate_products(products, model, target_max=CURATED_MAX, factory_name=""):
     prompt = (CURATE_PROMPT.replace("{TARGET}", str(target_max)).replace("{FACTORY}", factory_name or "this factory")
               + "\n\nCANDIDATES (index<TAB>name<TAB>section<TAB>ref<TAB>has_image<TAB>confidence):\n"
               + "\n".join(lines))
+    kept = None
     try:
         from google import genai
         from google.genai import types
@@ -785,16 +807,18 @@ def curate_products(products, model, target_max=CURATED_MAX, factory_name=""):
                        if str(x).strip().lstrip("-").isdigit() and 0 <= int(x) < len(products)})
         if idxs:
             kept = [products[i] for i in idxs][:target_max]
-            return kept, len(products) - len(kept)
-        print("  ! curation returned no valid indices; using deterministic trim", file=sys.stderr)
+        else:
+            print("  ! curation returned no valid indices; using deterministic trim", file=sys.stderr)
     except Exception as e:  # noqa: BLE001
         print(f"  ! curation pass failed ({e}); using deterministic trim", file=sys.stderr)
-    # Deterministic fallback: top target_max by (has_image, confidence), original order.
-    ranked = sorted(range(len(products)),
-                    key=lambda i: (products[i].get("_has_image", False), products[i].get("_confidence", 0)),
-                    reverse=True)
-    keep_set = set(ranked[:target_max])
-    kept = [pr for i, pr in enumerate(products) if i in keep_set]
+    if kept is None:
+        # Deterministic fallback: top target_max by (has_image, confidence), original order.
+        ranked = sorted(range(len(products)),
+                        key=lambda i: (products[i].get("_has_image", False), products[i].get("_confidence", 0)),
+                        reverse=True)
+        keep_set = set(ranked[:target_max])
+        kept = [pr for i, pr in enumerate(products) if i in keep_set]
+    _tag_also_counts(products, kept)
     return kept, len(products) - len(kept)
 
 
@@ -908,6 +932,8 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             ej = {k: pr.get(k) for k in ("product_name", "description", "specifications",
                                          "customization_options", "moq", "price", "currency",
                                          "section", "ref_code")}
+            # Curated: how many same-category products were curated away (badge).
+            ej["also_count"] = int(pr.get("_also_count") or 0)
             return {"page_no": pr.get("page_number"), "image_path": image_url,
                     "gallery_paths": gallery_urls or [],
                     "extracted_json": ej, "confidence_score": pr.get("_confidence"),

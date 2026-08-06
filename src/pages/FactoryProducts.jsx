@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
 import ProductChips from '../components/ProductChips';
 import NegotiablePill from '../components/NegotiablePill';
+import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { sb } from '../supabase';
 import {
@@ -61,7 +62,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       setLoading(true);
       const [{ data: facs }, { data: prods }] = await Promise.all([
         sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
-        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, sort_order'),
+        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order'),
       ]);
       if (!alive) return;
       const facMap = {};
@@ -147,6 +148,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
                   <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || c.onReq}</p>
                   {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
+                  {p.also_count > 0 && <MoreOptionsBadge count={p.also_count} lang={lang} style={{ marginTop: 4 }} />}
                   <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                     <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
                     <button type="button" onClick={() => handleMessage(p)} disabled={msgBusy}
