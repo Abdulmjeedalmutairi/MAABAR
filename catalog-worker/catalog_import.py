@@ -293,9 +293,19 @@ def run_outline(pdf_path: Path, model: str):
        {} so the bulk extraction still runs (just without sections/outline-logo)."""
     from google import genai
     from google.genai import types
+    _light = None
     try:
         client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-        uploaded = client.files.upload(file=str(pdf_path))
+        up_path = str(pdf_path)
+        try:
+            if os.path.getsize(pdf_path) > MAX_GEMINI_PDF_BYTES:
+                _d = fitz.open(str(pdf_path))
+                _light = Path(os.environ.get("TEMP", ".")) / f"_ci_outline_{uuid.uuid4().hex}.pdf"
+                build_light_pdf(_d, 0, len(_d) - 1, _light); _d.close()
+                up_path = str(_light)
+        except Exception:  # noqa — downsample is best-effort; fall back to raw
+            up_path = str(pdf_path)
+        uploaded = client.files.upload(file=up_path)
         waited = 0
         while getattr(uploaded.state, "name", str(uploaded.state)) == "PROCESSING":
             time.sleep(2); waited += 2
@@ -318,6 +328,10 @@ def run_outline(pdf_path: Path, model: str):
         err = f"{type(e).__name__}: {str(e)[:200]}"
         print(f"  outline failed ({err}) — continuing without it", file=sys.stderr)
         return {}, err
+    finally:
+        if _light is not None:
+            try: _light.unlink()
+            except Exception: pass  # noqa
 
 
 def assign_sections(products, sections):
@@ -457,41 +471,82 @@ def gemini_call(client, types, pdf_path: Path, model: str, retries: int = 3, pro
     return "failed", None, 0, last_err
 
 
+# Above this byte size, an image-heavy PDF (e.g. 2MB+/page catalogs) makes a single
+# Gemini request 400 INVALID_ARGUMENT — so we render its pages to a capped-resolution
+# copy first. Gemini rasterises PDF pages anyway, so text/codes stay readable.
+MAX_GEMINI_PDF_BYTES = 25 * 1024 * 1024
+
+
+def build_light_pdf(doc, a: int, b: int, out_path: Path, dpi: int = 170, max_side: int = 2200, jpg_quality: int = 78):
+    """Render ORIGINAL pages [a,b] to JPEGs at a capped resolution and assemble a
+       lightweight PDF — shrinks an ultra-high-res catalog ~10x so Gemini accepts it."""
+    out = fitz.open()
+    try:
+        for pno in range(a, b + 1):
+            page = doc[pno]
+            rect = page.rect
+            zoom = dpi / 72.0
+            longest = max(rect.width, rect.height) * zoom
+            if longest > max_side and longest > 0:
+                zoom *= max_side / longest
+            pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
+            img = pix.tobytes("jpeg", jpg_quality=jpg_quality)
+            newpage = out.new_page(width=rect.width, height=rect.height)
+            newpage.insert_image(newpage.rect, stream=img)
+        out.save(str(out_path), deflate=True, garbage=3)
+    finally:
+        out.close()
+
+
 # ── Extract one page range, splitting adaptively on truncation ──────────────
 def extract_range(client, types, pdf_path: Path, doc, a: int, b: int, model: str, min_pages: int, total: dict, prompt: str = PROMPT):
-    """Extract ORIGINAL pages [a,b] (0-based inclusive). If the response truncates,
-       halve the range and recurse (down to `min_pages`); if the call fails after
-       retries, skip the slice. Returns (products, profile_images, factory) with
-       page numbers already remapped to the ORIGINAL PDF."""
+    """Extract ORIGINAL pages [a,b] (0-based inclusive). Heavy slices are downsampled
+       for Gemini; if the response truncates OR the call fails (e.g. still too big),
+       halve the range and recurse (down to `min_pages`). Returns (products,
+       profile_images, factory) with page numbers remapped to the ORIGINAL PDF."""
     n = len(doc)
+    tmps = []
     if a == 0 and b == n - 1:
-        target, cleanup = pdf_path, None            # whole doc — no re-save
+        raw_target = pdf_path                        # whole doc — no re-save
     else:
         sub = fitz.open(); sub.insert_pdf(doc, from_page=a, to_page=b)
-        tmp = Path(os.environ.get("TEMP", ".")) / f"_ci_chunk_{uuid.uuid4().hex}.pdf"
-        sub.save(str(tmp)); sub.close(); target, cleanup = tmp, tmp
+        raw = Path(os.environ.get("TEMP", ".")) / f"_ci_chunk_{uuid.uuid4().hex}.pdf"
+        sub.save(str(raw)); sub.close(); raw_target = raw; tmps.append(raw)
+
+    # If this slice is too heavy for a single Gemini request, send a downsampled copy.
+    target = raw_target
+    try:
+        if os.path.getsize(raw_target) > MAX_GEMINI_PDF_BYTES:
+            light = Path(os.environ.get("TEMP", ".")) / f"_ci_light_{uuid.uuid4().hex}.pdf"
+            print(f"    pages {a+1}-{b+1}: {os.path.getsize(raw_target)/1e6:.0f}MB — downsampling for Gemini", file=sys.stderr)
+            build_light_pdf(doc, a, b, light)
+            target = light; tmps.append(light)
+    except Exception as e:  # noqa — if downsampling fails, fall back to the raw file
+        print(f"    downsample failed ({e}); using raw", file=sys.stderr)
+
     try:
         status, data, tokens, err = gemini_call(client, types, target, model, prompt=prompt)
     finally:
-        if cleanup is not None:
-            try: cleanup.unlink()
+        for t in tmps:
+            try: t.unlink()
             except Exception: pass  # noqa
     total["tokens"] += tokens
     npages = b - a + 1
+
+    # Split on truncation OR a failed call (still too big / transient) — to min_pages.
+    if status in ("truncated", "failed") and npages > min_pages:
+        mid = a + (npages // 2) - 1
+        print(f"    pages {a+1}-{b+1} {status} -> splitting into {a+1}-{mid+1} + {mid+2}-{b+1}", file=sys.stderr)
+        p1, f1, fac1 = extract_range(client, types, pdf_path, doc, a, mid, model, min_pages, total, prompt)
+        p2, f2, fac2 = extract_range(client, types, pdf_path, doc, mid + 1, b, model, min_pages, total, prompt)
+        fac = fac1 if (fac1.get("name_original") not in (None, "not_found")) else fac2
+        return p1 + p2, f1 + f2, fac
 
     if status == "failed":
         if err:
             total["last_error"] = err   # surfaced by run_extraction if 0 products result
         print(f"    ! pages {a+1}-{b+1}: skipped after retries (0 products from this slice)", file=sys.stderr)
         return [], [], {}
-
-    if status == "truncated" and npages > min_pages:
-        mid = a + (npages // 2) - 1
-        print(f"    pages {a+1}-{b+1} truncated -> splitting into {a+1}-{mid+1} + {mid+2}-{b+1}", file=sys.stderr)
-        p1, f1, fac1 = extract_range(client, types, pdf_path, doc, a, mid, model, min_pages, total, prompt)
-        p2, f2, fac2 = extract_range(client, types, pdf_path, doc, mid + 1, b, model, min_pages, total, prompt)
-        fac = fac1 if (fac1.get("name_original") not in (None, "not_found")) else fac2
-        return p1 + p2, f1 + f2, fac
 
     if data is None:  # truncated at the floor, or unparseable
         print(f"    ! pages {a+1}-{b+1}: still truncated at min chunk size ({npages}p) — 0 products from this slice", file=sys.stderr)
