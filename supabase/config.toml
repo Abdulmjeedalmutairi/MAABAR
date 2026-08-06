@@ -420,6 +420,12 @@ verify_jwt = false
 [functions.admin-send-email]
 verify_jwt = true
 
+# admin-factory-email sends a branded email to a factory from the console. Admin
+# JWT required (on top of the in-code admin check); the factory address is resolved
+# server-side and the mail goes out over the internal secret via send-email.
+[functions.admin-factory-email]
+verify_jwt = true
+
 # supplier-share is opened by a partner who has no Maabar account — the share token
 # IS the credential, validated in code against supplier_share_links (expiry,
 # revocation, 64-hex format) with a per-IP ceiling. A JWT gate would make the
