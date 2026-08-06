@@ -1,0 +1,171 @@
+/* ===========================================================================
+   MAABAR Admin Console (v2) — design system
+   Premium · minimal · Apple-inspired. Soft cream page, white cards, black
+   primary buttons, status-only color. Everything is scoped under `.ac` so it
+   never collides with the legacy /admin shell. RTL-first, mobile-first.
+   =========================================================================== */
+.ac {
+  /* surfaces */
+  --ac-bg: #FAF8F5;          /* cream page */
+  --ac-panel: #FFFFFF;       /* cards + sidebar */
+  --ac-hover: #F4F1EC;       /* subtle hover */
+  --ac-sunk: #F7F4EF;        /* inset fields */
+  /* ink + text */
+  --ac-ink: #1A1814;         /* near-black — text + primary button */
+  --ac-text: #221F1A;
+  --ac-muted: #6E6A62;
+  --ac-faint: #9C978D;
+  /* lines */
+  --ac-line: #ECE7DF;
+  --ac-line-2: #DED8CE;
+  /* status (the ONLY colors on the page) */
+  --ac-ok: #2D6A4F;     --ac-ok-bg: rgba(45,106,79,0.10);   --ac-ok-bd: rgba(45,106,79,0.22);
+  --ac-warn: #B0740F;   --ac-warn-bg: rgba(176,116,15,0.11); --ac-warn-bd: rgba(176,116,15,0.24);
+  --ac-danger: #A04747; --ac-danger-bg: rgba(160,71,71,0.10); --ac-danger-bd: rgba(160,71,71,0.22);
+  --ac-info: #3A6EA5;   --ac-info-bg: rgba(58,110,165,0.10); --ac-info-bd: rgba(58,110,165,0.22);
+  --ac-neutral: #837E73; --ac-neutral-bg: rgba(131,126,115,0.10); --ac-neutral-bd: rgba(131,126,115,0.20);
+  /* geometry */
+  --ac-r-card: 16px;
+  --ac-r-ctrl: 10px;
+  --ac-r-pill: 999px;
+  --ac-shadow: 0 1px 2px rgba(26,24,20,0.04), 0 8px 28px rgba(26,24,20,0.05);
+  --ac-shadow-sm: 0 1px 2px rgba(26,24,20,0.05);
+  --ac-sidebar-w: 252px;
+
+  min-height: 100dvh;
+  background: var(--ac-bg);
+  color: var(--ac-text);
+  -webkit-font-smoothing: antialiased;
+}
+.ac *, .ac *::before, .ac *::after { box-sizing: border-box; }
+
+/* ── Layout shell ────────────────────────────────────────────────────────── */
+.ac-shell { display: flex; min-height: 100dvh; }
+
+.ac-sidebar {
+  width: var(--ac-sidebar-w); position: fixed; top: 0; bottom: 0; z-index: 100;
+  background: var(--ac-panel); display: flex; flex-direction: column;
+  border-inline-end: 1px solid var(--ac-line);
+}
+.ac-brand { padding: 20px 20px 14px; }
+.ac-nav { flex: 1; overflow-y: auto; padding: 6px 12px 16px; }
+.ac-nav-group-label {
+  margin: 14px 10px 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ac-faint);
+}
+.ac-nav-item {
+  position: relative; display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 0 12px; min-height: 40px; margin-bottom: 2px;
+  border: none; background: transparent; cursor: pointer;
+  border-radius: var(--ac-r-ctrl); color: var(--ac-muted);
+  font-size: 13.5px; font-weight: 500; transition: background .12s, color .12s;
+}
+.ac-nav-item:hover { background: var(--ac-hover); color: var(--ac-ink); }
+.ac-nav-item.on { background: var(--ac-ink); color: #fff; font-weight: 600; }
+.ac-nav-item.on .ac-nav-ico { opacity: 1; }
+.ac-nav-ico { opacity: .72; flex-shrink: 0; }
+.ac-nav-arrow { margin-inline-start: auto; opacity: .4; font-size: 11px; }
+.ac-nav-item.on .ac-nav-arrow { opacity: .7; }
+
+/* main column */
+.ac-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ac-main.ltr { margin-inline-start: var(--ac-sidebar-w); }
+.ac-main.rtl { margin-inline-start: var(--ac-sidebar-w); }
+
+.ac-topbar {
+  position: sticky; top: 0; z-index: 90; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; height: 62px; padding: 0 26px;
+  background: rgba(250,248,245,0.86); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--ac-line);
+}
+.ac-crumb { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.ac-crumb-root { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ac-faint); white-space: nowrap; }
+.ac-crumb-sep { color: var(--ac-line-2); }
+.ac-crumb-page { font-size: 15.5px; font-weight: 650; color: var(--ac-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ac-page { padding: 26px; max-width: 1320px; }
+.ac-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.ac-h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--ac-ink); }
+.ac-sub { margin: 5px 0 0; font-size: 13.5px; color: var(--ac-muted); }
+
+/* ── Account chip ────────────────────────────────────────────────────────── */
+.ac-account { display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 6px; background: transparent; border: 1px solid transparent; border-radius: var(--ac-r-pill); cursor: pointer; min-height: 40px; transition: background .12s, border-color .12s; }
+.ac-account:hover { background: var(--ac-hover); border-color: var(--ac-line); }
+.ac-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; background: var(--ac-ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.ac-account-name { font-size: 13px; color: var(--ac-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-menu { position: absolute; top: calc(100% + 8px); min-width: 210px; z-index: 400; background: var(--ac-panel); border: 1px solid var(--ac-line); border-radius: 13px; box-shadow: var(--ac-shadow); overflow: hidden; }
+.ac-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; min-height: 44px; background: transparent; border: none; cursor: pointer; font-size: 13px; color: var(--ac-muted); transition: background .12s, color .12s; }
+.ac-menu-item:hover { background: var(--ac-hover); color: var(--ac-ink); }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.ac-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 16px; border-radius: var(--ac-r-ctrl); border: 1px solid var(--ac-line-2); background: var(--ac-panel); color: var(--ac-ink); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s, opacity .12s; font-family: inherit; }
+.ac-btn:hover { background: var(--ac-hover); }
+.ac-btn-primary { background: var(--ac-ink); color: #fff; border-color: var(--ac-ink); }
+.ac-btn-primary:hover { opacity: .88; background: var(--ac-ink); }
+.ac-btn-sm { height: 32px; padding: 0 11px; font-size: 12px; }
+.ac-btn:disabled { opacity: .5; cursor: default; }
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.ac-input { height: 40px; width: 100%; padding: 0 14px; border-radius: var(--ac-r-ctrl); border: 1px solid var(--ac-line-2); background: var(--ac-panel); color: var(--ac-text); font-size: 13.5px; font-family: inherit; outline: none; transition: border-color .12s, box-shadow .12s; }
+.ac-input:focus { border-color: var(--ac-ink); box-shadow: 0 0 0 3px rgba(26,24,20,0.06); }
+.ac-input::placeholder { color: var(--ac-faint); }
+
+/* filter chips */
+.ac-chiprow { display: flex; gap: 7px; flex-wrap: wrap; }
+.ac-chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 13px; border-radius: var(--ac-r-pill); border: 1px solid var(--ac-line-2); background: var(--ac-panel); color: var(--ac-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .12s; font-family: inherit; }
+.ac-chip:hover { background: var(--ac-hover); color: var(--ac-ink); }
+.ac-chip.on { background: var(--ac-ink); color: #fff; border-color: var(--ac-ink); }
+
+/* ── Status badge ────────────────────────────────────────────────────────── */
+.ac-badge { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: var(--ac-r-pill); font-size: 11px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.ac-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ac-badge.ok { color: var(--ac-ok); background: var(--ac-ok-bg); border-color: var(--ac-ok-bd); }
+.ac-badge.warn { color: var(--ac-warn); background: var(--ac-warn-bg); border-color: var(--ac-warn-bd); }
+.ac-badge.danger { color: var(--ac-danger); background: var(--ac-danger-bg); border-color: var(--ac-danger-bd); }
+.ac-badge.info { color: var(--ac-info); background: var(--ac-info-bg); border-color: var(--ac-info-bd); }
+.ac-badge.neutral { color: var(--ac-neutral); background: var(--ac-neutral-bg); border-color: var(--ac-neutral-bd); }
+
+/* ── Supplier grid + card ────────────────────────────────────────────────── */
+.ac-sgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.ac-scard { background: var(--ac-panel); border: 1px solid var(--ac-line); border-radius: var(--ac-r-card); box-shadow: var(--ac-shadow-sm); overflow: hidden; display: flex; flex-direction: column; transition: box-shadow .15s, border-color .15s, transform .15s; }
+.ac-scard:hover { box-shadow: var(--ac-shadow); border-color: var(--ac-line-2); transform: translateY(-1px); }
+.ac-scard-top { display: flex; gap: 13px; padding: 16px 16px 12px; cursor: pointer; align-items: flex-start; }
+.ac-logo { width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0; object-fit: cover; background: var(--ac-sunk); border: 1px solid var(--ac-line); }
+.ac-logo-fallback { width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0; background: var(--ac-ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 700; }
+.ac-sname { margin: 0; font-size: 15px; font-weight: 700; color: var(--ac-ink); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-sname-latin { margin: 2px 0 0; font-size: 12px; color: var(--ac-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-sloc { margin: 5px 0 0; font-size: 12px; color: var(--ac-muted); }
+.ac-sbadges { display: flex; gap: 5px; flex-wrap: wrap; padding: 0 16px 12px; }
+.ac-smeta { display: flex; gap: 16px; padding: 12px 16px; border-top: 1px solid var(--ac-line); background: var(--ac-sunk); }
+.ac-smeta-item { display: flex; flex-direction: column; gap: 1px; }
+.ac-smeta-num { font-size: 15px; font-weight: 700; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+.ac-smeta-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ac-faint); }
+.ac-sactions { display: flex; gap: 6px; padding: 11px 16px; flex-wrap: wrap; }
+.ac-iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--ac-line-2); background: var(--ac-panel); color: var(--ac-muted); cursor: pointer; transition: all .12s; }
+.ac-iconbtn:hover { background: var(--ac-hover); color: var(--ac-ink); }
+.ac-iconbtn.danger:hover { color: var(--ac-danger); border-color: var(--ac-danger-bd); background: var(--ac-danger-bg); }
+
+/* toast */
+.ac-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 900; background: var(--ac-ink); color: #fff; padding: 11px 20px; border-radius: var(--ac-r-pill); font-size: 13px; font-weight: 600; box-shadow: var(--ac-shadow); }
+
+/* states */
+.ac-empty { text-align: center; padding: 60px 20px; color: var(--ac-muted); }
+.ac-skel { background: linear-gradient(90deg, var(--ac-sunk) 25%, var(--ac-hover) 37%, var(--ac-sunk) 63%); background-size: 400% 100%; animation: ac-shimmer 1.3s ease infinite; border-radius: var(--ac-r-card); height: 168px; }
+@keyframes ac-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+.ac-hamburger { display: none; }
+.ac-drawer-ov { display: none; }
+@media (max-width: 900px) {
+  .ac-sidebar { transform: translateX(var(--ac-off, -110%)); transition: transform .24s cubic-bezier(.4,0,.2,1); box-shadow: var(--ac-shadow); }
+  .ac-sidebar.rtl { --ac-off: 110%; }
+  .ac-sidebar.open { --ac-off: 0; }
+  .ac-main.ltr, .ac-main.rtl { margin-inline-start: 0; }
+  .ac-topbar { padding: 0 14px; height: 56px; }
+  .ac-crumb-root, .ac-crumb-sep { display: none; }
+  .ac-account-name { display: none; }
+  .ac-page { padding: 16px; }
+  .ac-hamburger { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; background: transparent; border-radius: var(--ac-r-ctrl); color: var(--ac-ink); cursor: pointer; }
+  .ac-drawer-ov { display: block; position: fixed; inset: 0; z-index: 99; background: rgba(26,24,20,0.4); backdrop-filter: blur(2px); }
+  .ac-sgrid { grid-template-columns: 1fr; }
+}
