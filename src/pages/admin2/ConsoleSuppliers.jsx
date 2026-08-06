@@ -116,7 +116,7 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
     const c = displayCategoryForCode(code);
     return c ? (c.label[lang] || c.label.en) : nf(code);
   };
-  const open = (id) => nav(`/admin/factories/${id}`);   // 1B swaps this to /admin2/suppliers/:id
+  const open = (id) => nav(`/admin2/suppliers/${id}`);
 
   const shown = filtered.slice(0, visible);
   const total = rows ? rows.length : 0;
