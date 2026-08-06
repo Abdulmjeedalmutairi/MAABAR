@@ -132,11 +132,8 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ac-btn" onClick={() => nav('/admin/catalog-import')} style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              <ShellIcon name="import" size={16} />{isAr ? 'استيراد كتالوج' : 'Import catalog'}
-            </button>
-            <button className="ac-btn ac-btn-primary" onClick={() => nav('/admin/factories')} style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-              {isAr ? '+ مورّد' : '+ Supplier'}
+            <button className="ac-btn ac-btn-primary" onClick={() => nav('/admin2/import')} style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              <ShellIcon name="import" size={16} />{isAr ? '+ استيراد / إنشاء مورّد' : '+ Import / create supplier'}
             </button>
           </div>
         </div>
