@@ -36,6 +36,7 @@ import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
 import DashboardFactory from './pages/DashboardFactory';
 import FactoryThreadEntry from './pages/FactoryThreadEntry';
+import ClaimFactory from './pages/ClaimFactory';
 import FactoryThread from './pages/FactoryThread';
 import FactoryThreadView from './pages/FactoryThreadView';
 import MyMessages from './pages/MyMessages';
@@ -66,6 +67,13 @@ import PaymentSuccess from './pages/PaymentSuccess';
 
 // Admin dashboard (Phase 1)
 import AdminOverview from './pages/admin/AdminOverview';
+import ConsoleDashboard from './pages/admin2/ConsoleDashboard';
+import ConsoleQuotations from './pages/admin2/ConsoleQuotations';
+import ConsoleImport from './pages/admin2/ConsoleImport';
+import ConsoleTemplates from './pages/admin2/ConsoleTemplates';
+import ConsoleNotifications from './pages/admin2/ConsoleNotifications';
+import ConsoleSuppliers from './pages/admin2/ConsoleSuppliers';
+import ConsoleSupplierDetail from './pages/admin2/ConsoleSupplierDetail';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
 import AdminCatalogImport from './pages/admin/AdminCatalogImport';
 import AdminCatalogImportDetail from './pages/admin/AdminCatalogImportDetail';
@@ -322,6 +330,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     || location.pathname === '/login'
     || location.pathname.startsWith('/login/')
     || location.pathname.startsWith('/factory-chat/')
+    || location.pathname.startsWith('/claim/')
     || location.pathname.startsWith('/messages/factory/')
     || location.pathname.startsWith('/factory/thread/');
   const isSupplierAccessPage = location.pathname === '/supplier-access';
@@ -373,6 +382,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
         <Route path="/f/:slug"            element={<FactoryRequestView />} />
         <Route path="/factory-chat/:slug" element={<FactoryThreadEntry {...sharedProps} />} />
+        <Route path="/claim/:slug"        element={<ClaimFactory />} />
         <Route path="/messages"           element={<MyMessages      {...sharedProps} />} />
         <Route path="/messages/factory/:threadId" element={<FactoryThread {...sharedProps} />} />
         <Route path="/factory/thread/:threadId" element={<FactoryThreadView {...sharedProps} />} />
@@ -389,6 +399,16 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/faq/suppliers"  element={<FAQSuppliers    {...sharedProps} />} />
         <Route path="/admin-seed"     element={<AdminSeed       {...sharedProps} />} />
         <Route path="/agent"          element={<AgentPanel />} />
+
+        {/* Admin Console v2 (parallel build — factory_directory-centric) */}
+        <Route path="/admin2"                  element={<Navigate to="/admin2/dashboard" replace />} />
+        <Route path="/admin2/dashboard"        element={<ConsoleDashboard     {...sharedProps} />} />
+        <Route path="/admin2/suppliers"        element={<ConsoleSuppliers     {...sharedProps} />} />
+        <Route path="/admin2/suppliers/:id"    element={<ConsoleSupplierDetail {...sharedProps} />} />
+        <Route path="/admin2/quotations"       element={<ConsoleQuotations    {...sharedProps} />} />
+        <Route path="/admin2/import"           element={<ConsoleImport        {...sharedProps} />} />
+        <Route path="/admin2/templates"        element={<ConsoleTemplates     {...sharedProps} />} />
+        <Route path="/admin2/notifications"    element={<ConsoleNotifications {...sharedProps} />} />
 
         {/* Admin dashboard */}
         <Route path="/admin"                   element={<Navigate to="/admin/overview" replace />} />

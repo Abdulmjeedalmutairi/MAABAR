@@ -42,6 +42,8 @@ ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_OUTLINE_MODEL = os.environ.get("GEMINI_OUTLINE_MODEL", "gemini-2.5-flash")
 CHUNK_PAGES = int(os.environ.get("CHUNK_PAGES", "80"))
+# Curated mode: global cap on the representative highlight-reel (see curate_products).
+CURATED_MAX = int(os.environ.get("CURATED_MAX", str(ci.CURATED_MAX)))
 
 SR_HEADERS = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}"}
 
@@ -168,6 +170,7 @@ def extract():
             progress=progress,
             hint=row.get("import_notes"),  # optional per-catalog admin guidance
             mode=(row.get("extraction_mode") or "curated"),  # 'curated' | 'full'
+            curated_max=CURATED_MAX,
             should_cancel=should_cancel,
         )
         return jsonify({"ok": True, **summary}), 200

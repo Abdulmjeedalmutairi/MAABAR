@@ -71,6 +71,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [importMode, setImportMode] = useState('curated');   // 'curated' | 'full'
@@ -111,9 +112,10 @@ export default function AdminCatalogImport({ user, profile, lang }) {
 
   const doUpload = async () => {
     if (!selFile || uploading) return;
-    setUploading(true); setError('');
+    setUploading(true); setError(''); setUploadPct(0);
     try {
-      const importId = await createImport(selFile, notes, importMode, fileHash);
+      const importId = await createImport(selFile, notes, importMode, fileHash,
+        (f) => setUploadPct(Math.round(f * 100)));
       // Notes are saved on the row; extraction stays automatic.
       if (workerConfigured()) triggerExtraction(importId).catch(() => {});
       nav(`/admin/catalog-import/${importId}`);
@@ -270,7 +272,7 @@ export default function AdminCatalogImport({ user, profile, lang }) {
                     style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px',
                       fontSize: 13, fontWeight: 600, fontFamily: FONT_BODY,
                       cursor: (!selFile || uploading) ? 'default' : 'pointer', opacity: (!selFile || uploading) ? 0.55 : 1 }}>
-                    {uploading ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : (isAr ? 'رفع + استخراج' : 'Upload + extract')}
+                    {uploading ? (isAr ? `جارٍ الرفع… ${uploadPct}%` : `Uploading… ${uploadPct}%`) : (isAr ? 'رفع + استخراج' : 'Upload + extract')}
                   </button>
                 </div>
               </div>

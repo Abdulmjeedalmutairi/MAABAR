@@ -7,6 +7,7 @@ import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import ImageLightbox from '../components/ImageLightbox';
 import ProductChips from '../components/ProductChips';
 import NegotiablePill from '../components/NegotiablePill';
+import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { getFactoryProductImages } from '../lib/productMedia';
 
@@ -259,9 +260,10 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
               {isAr ? 'السعر' : lang === 'zh' ? '价格' : 'Price'}: <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{priceText || (isAr ? 'عند الطلب' : lang === 'zh' ? '面议' : 'On request')}</span>
             </p>
             {priceText && <div style={{ margin: '0 0 10px' }}><NegotiablePill lang={lang} long /></div>}
-            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 16px', fontSize: 12.5 }}>
+            <p className={`fx-card-meta${arc}`} style={{ margin: product.also_count > 0 ? '0 0 8px' : '0 0 16px', fontSize: 12.5 }}>
               {c.moqLabel}: <span style={{ color: 'var(--text-primary)' }}>{orContact(product.moq)}</span>
             </p>
+            {product.also_count > 0 && <div style={{ margin: '0 0 16px' }}><MoreOptionsBadge count={product.also_count} lang={lang} /></div>}
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className={`fx-btn-primary${arc}`} onClick={() => { setReqMode('quote'); setReqOpen(true); }}>{c.requestCta}</button>

@@ -1,4 +1,5 @@
-import { sb } from '../supabase';
+import * as tus from 'tus-js-client';
+import { sb, SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase';
 import { normalizeCerts } from './certifications';
 
 // Data layer for the admin Catalog Import tool. Reads the staging tables
@@ -45,16 +46,52 @@ export async function findImportByHash(hash) {
   return data || null;
 }
 
-export async function createImport(file, notes = '', mode = 'curated', fileHash = null) {
+// Resumable (TUS) upload — REQUIRED for large catalog PDFs. The standard
+// sb.storage.upload() sends the whole file in a single POST, which the storage
+// API gateway rejects/times-out for big bodies (~50MB+) regardless of the
+// bucket/global size limit. TUS streams the file in 6MB chunks and resumes if
+// the connection drops, so any size up to the project's global limit goes
+// through. onProgress(fraction 0..1) is optional. Resolves on success, rejects
+// with the tus error otherwise.
+async function uploadResumable(bucket, path, file, onProgress) {
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('not_authenticated');
+  await new Promise((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: { authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'x-upsert': 'true' },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: bucket,
+        objectName: path,
+        contentType: file.type || 'application/pdf',
+        cacheControl: '3600',
+      },
+      chunkSize: 6 * 1024 * 1024,   // Supabase requires exactly 6MB chunks (except the last)
+      onError: reject,
+      onProgress: (sent, total) => { if (onProgress && total) onProgress(sent / total); },
+      onSuccess: resolve,
+    });
+    // Resume a prior interrupted upload of the same file if one exists.
+    upload.findPreviousUploads()
+      .then((prev) => { if (prev.length) upload.resumeFromPreviousUpload(prev[0]); upload.start(); })
+      .catch(() => upload.start());
+  });
+}
+
+// factoryId (optional) pre-binds the import to an existing supplier — used when
+// uploading a catalog from that supplier's page, so it's grouped under them and
+// approval lands on their factory.
+export async function createImport(file, notes = '', mode = 'curated', fileHash = null, onProgress = null, factoryId = null) {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const path = `${id}/source.pdf`;
   const hash = fileHash || await hashFile(file).catch(() => null);
-  const up = await sb.storage.from('factory-catalogs').upload(path, file, {
-    contentType: file.type || 'application/pdf', upsert: true,
-  });
-  if (up.error) throw up.error;
+  await uploadResumable('factory-catalogs', path, file, onProgress);
   const { data: { user } } = await sb.auth.getUser();
   const { error } = await sb.from('factory_catalog_imports').insert({
     id, source_pdf_path: path, original_filename: file.name, status: 'queued',
@@ -62,9 +99,26 @@ export async function createImport(file, notes = '', mode = 'curated', fileHash 
     import_notes: (notes || '').trim() || null,
     extraction_mode: mode === 'full' ? 'full' : 'curated',
     file_hash: hash,
+    ...(factoryId ? { factory_id: factoryId } : {}),
   });
   if (error) throw error;
   return id;
+}
+
+// Catalog imports belonging to one supplier (for the supplier-page Catalogs tab).
+export async function fetchFactoryImports(factoryId) {
+  const { data, error } = await sb.from('factory_catalog_imports')
+    .select('id, original_filename, catalog_title, status, page_count, extraction_mode, cover_image_path, source_pdf_path, created_at, factory_catalog_import_products(count)')
+    .eq('factory_id', factoryId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((r) => ({ ...r, product_count: r.factory_catalog_import_products?.[0]?.count ?? 0 }));
+}
+
+// Short-lived signed URL to download/open a catalog's source PDF.
+export async function catalogSourceUrl(sourcePath) {
+  if (!sourcePath) return null;
+  const { data } = await sb.storage.from('factory-catalogs').createSignedUrl(sourcePath, 300);
+  return data?.signedUrl || null;
 }
 
 // Switch an existing import between 'curated' and 'full' (before re-running).
@@ -368,6 +422,7 @@ function mapProduct(factoryId, staged, meta = {}) {
     section_ar: tri(ej.section, 'ar'),
     section_en: tri(ej.section, 'en'),
     ref_code: nf(ej.ref_code),
+    also_count: Number.isFinite(+ej.also_count) ? Math.max(0, parseInt(ej.also_count, 10) || 0) : 0,
     image: staged.image_path || null,
     gallery_images: Array.isArray(staged.gallery_paths) ? staged.gallery_paths.filter(Boolean) : [],
     sort_order: staged.sort_order ?? 0,

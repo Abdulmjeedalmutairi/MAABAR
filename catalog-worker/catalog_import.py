@@ -55,6 +55,7 @@ except Exception:  # noqa
 DEFAULT_SUPABASE_URL = "https://utzalmszfqfcofywfetv.supabase.co"
 DEFAULT_CSV = r"C:\Users\mje_0\OneDrive - Northumbria University - Production Azure AD\Catalog\factories-reference.csv"
 GALLERY_MAX = 7   # extra angle images per product (public page shows primary + up to 7)
+CURATED_MAX = 40  # curated mode: global cap on the representative highlight-reel (see curate_products)
 
 
 class CancelledError(Exception):
@@ -728,10 +729,104 @@ class Supa:
             raise RuntimeError(f"delete {table} failed: {r.status_code} {r.text[:300]}")
 
 
+# ── Global curation reduce-pass (curated mode) ──────────────────────────────
+# The per-chunk PROMPT caps EACH chunk at ~15-40 representative products, so a
+# large multi-chunk catalog blows past that cap (N chunks × ~30 ≈ hundreds).
+# This pass runs ONCE over the full merged list and lets the model pick the single
+# most representative subset — the highlight reel curated mode was supposed to be.
+# Text-only (names/section/ref/signal), so it's cheap regardless of page count.
+CURATE_SCHEMA = {
+    "type": "object",
+    "properties": {"keep": {"type": "array", "items": {"type": "integer"}}},
+    "required": ["keep"],
+}
+
+CURATE_PROMPT = """You are a senior B2B catalog curator building a CONCISE supplier profile for {FACTORY}, for Saudi importers.
+You are given the FULL list of products already extracted from a catalog (often hundreds — it was processed in chunks). SELECT the single most representative subset: a highlight reel that conveys the factory's full range and manufacturing capability WITHOUT near-duplicates.
+
+RULES:
+- Keep AT MOST {TARGET} products. Fewer is better when the range is narrow.
+- Cover EVERY meaningful category/section, but only ONE (or a few) representative item per category — never every variant.
+- Prefer items that have an image (img:1) and higher confidence (conf).
+- Drop near-duplicates (same item in a different size/colour/angle) — keep one.
+- Preserve breadth: the selection should span the catalog's sections, not cluster in one.
+
+Return JSON {"keep": [indices]} using the exact 0-based indices from the candidate list."""
+
+
+def _sec_key(pr):
+    sec = pr.get("section") or {}
+    return (sec.get("en") or sec.get("ar") or "").strip().lower()
+
+
+def _tag_also_counts(products, kept):
+    """On each KEPT product, record how many OTHER products in its section were
+    curated away — surfaced to buyers as a "+N more options" badge so they know
+    the factory's range in that category is deeper than what's shown."""
+    total, keptc = {}, {}
+    for pr in products:
+        total[_sec_key(pr)] = total.get(_sec_key(pr), 0) + 1
+    for pr in kept:
+        keptc[_sec_key(pr)] = keptc.get(_sec_key(pr), 0) + 1
+    for pr in kept:
+        k = _sec_key(pr)
+        pr["_also_count"] = max(0, total.get(k, 0) - keptc.get(k, 0))
+
+
+def curate_products(products, model, target_max=CURATED_MAX, factory_name=""):
+    """Reduce `products` to a representative subset (<= target_max). Returns
+    (kept_list, dropped_count). Each kept product gets `_also_count` = how many
+    same-section products were dropped (for the "+N more options" badge). Falls
+    back to a deterministic trim (prefer imaged + high-confidence, keep order) if
+    the model call fails — so it NEVER silently returns everything. No-op when
+    already at/under the cap."""
+    if len(products) <= target_max:
+        return products, 0
+    lines = []
+    for i, pr in enumerate(products):
+        nm = pr.get("product_name") or {}
+        name = (nm.get("en") or nm.get("ar") or "").strip()
+        sec = pr.get("section") or {}
+        section = (sec.get("en") or sec.get("ar") or "").strip()
+        ref = str(pr.get("ref_code")) if _filled(pr.get("ref_code")) else ""
+        lines.append(f'{i}\t{name[:80]}\tsec:{section[:40]}\tref:{ref[:30]}'
+                     f'\timg:{1 if pr.get("_has_image") else 0}\tconf:{pr.get("_confidence", 0)}')
+    prompt = (CURATE_PROMPT.replace("{TARGET}", str(target_max)).replace("{FACTORY}", factory_name or "this factory")
+              + "\n\nCANDIDATES (index<TAB>name<TAB>section<TAB>ref<TAB>has_image<TAB>confidence):\n"
+              + "\n".join(lines))
+    kept = None
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        cfg = types.GenerateContentConfig(temperature=0.2, max_output_tokens=8192,
+                                          response_mime_type="application/json", response_schema=CURATE_SCHEMA)
+        resp = client.models.generate_content(model=model, contents=[prompt], config=cfg)
+        data = json.loads(resp.text or "{}")
+        idxs = sorted({int(x) for x in (data.get("keep") or [])
+                       if str(x).strip().lstrip("-").isdigit() and 0 <= int(x) < len(products)})
+        if idxs:
+            kept = [products[i] for i in idxs][:target_max]
+        else:
+            print("  ! curation returned no valid indices; using deterministic trim", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! curation pass failed ({e}); using deterministic trim", file=sys.stderr)
+    if kept is None:
+        # Deterministic fallback: top target_max by (has_image, confidence), original order.
+        ranked = sorted(range(len(products)),
+                        key=lambda i: (products[i].get("_has_image", False), products[i].get("_confidence", 0)),
+                        reverse=True)
+        keep_set = set(ranked[:target_max])
+        kept = [pr for i, pr in enumerate(products) if i in keep_set]
+    _tag_also_counts(products, kept)
+    return kept, len(products) - len(kept)
+
+
 def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pages=15,
                    min_dim=40, csv_path=DEFAULT_CSV, dry_run=False, out_dir="import_out",
                    supa=None, import_id=None, original_filename=None, log=print, progress=None, hint=None,
-                   should_cancel=None, mode="curated", outline_model="gemini-2.5-flash"):
+                   should_cancel=None, mode="curated", outline_model="gemini-2.5-flash",
+                   curated_max=CURATED_MAX):
     """Extract a catalog PDF into the staging tables. Shared by the CLI and the
     Cloud Run worker.
 
@@ -815,6 +910,19 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             "certifications": outline.get("certifications") if isinstance(outline.get("certifications"), list) else [],
             "category_hint": csv_fields.get("category_hint", ""),
         }
+
+        # Global curation reduce-pass — makes curated mode actually curate a LARGE
+        # (multi-chunk) catalog, where the per-chunk cap alone can't. 'full' keeps
+        # every product. Runs after image matching so it can prefer imaged items.
+        if mode != "full":
+            _p("curating", 66, "curating the highlight reel")
+            kept, dropped = curate_products(products, model, curated_max,
+                                            factory_fields.get("name_original") or "")
+            if dropped > 0:
+                products = kept
+                log(f"  curated (global): {len(products)} kept, {dropped} dropped "
+                    f"(representative highlight reel, max {curated_max})")
+
         hi = sum(1 for p in products if p.get("_confidence", 0) >= 0.7)
         log(f"  factory: {factory_fields['name_original']}  (en: {factory_fields['name_en']})")
         log(f"  csv match: {'yes' if csv_fields else 'no'}   profile images flagged: {len(profile_imgs)}")
@@ -824,6 +932,8 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             ej = {k: pr.get(k) for k in ("product_name", "description", "specifications",
                                          "customization_options", "moq", "price", "currency",
                                          "section", "ref_code")}
+            # Curated: how many same-category products were curated away (badge).
+            ej["also_count"] = int(pr.get("_also_count") or 0)
             return {"page_no": pr.get("page_number"), "image_path": image_url,
                     "gallery_paths": gallery_urls or [],
                     "extracted_json": ej, "confidence_score": pr.get("_confidence"),
@@ -943,6 +1053,8 @@ def main():
                     help="'curated' (representative highlight reel) or 'full' (every distinct product)")
     ap.add_argument("--outline-model", default="gemini-2.5-flash",
                     help="model for the pass-1 structural outline (sections/logo/flags)")
+    ap.add_argument("--curated-max", type=int, default=CURATED_MAX,
+                    help="curated mode: global cap on the representative highlight-reel")
     args = ap.parse_args()
 
     pdf_path = Path(args.pdf).expanduser()
@@ -961,7 +1073,7 @@ def main():
     res = run_extraction(pdf_path, model=args.model, chunk_pages=args.chunk_pages,
                          min_pages=args.min_chunk_pages, min_dim=args.min_dim, csv_path=args.csv,
                          dry_run=args.dry_run, out_dir=args.out, supa=supa, hint=args.notes, mode=args.mode,
-                         outline_model=args.outline_model)
+                         outline_model=args.outline_model, curated_max=args.curated_max)
     if not args.dry_run:
         print(f"\nDone. import_id = {res['import_id']}  (status: extracted) — review it in the admin panel.")
 
