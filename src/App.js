@@ -219,7 +219,11 @@ function SupplierHome({ user, profile, isPreview, sharedProps }) {
   }, []);
 
   if (checking) return <BrandedLoading lang={lang} tone="dashboard" fullscreen />;
-  if (factory) return <DashboardFactory factory={factory} {...sharedProps} />;
+  // A claimed factory is seeded into the legacy supplier system (profile +
+  // products) and deactivated (is_active=false) by the claim RPC, so its owner
+  // manages everything from the standard supplier dashboard. Only a still-active
+  // linked factory (i.e. not yet migrated) keeps the dedicated factory view.
+  if (factory && factory.is_active) return <DashboardFactory factory={factory} {...sharedProps} />;
 
   const supplierState = getSupplierOnboardingState(profile, user);
   const centered = {
