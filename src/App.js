@@ -36,6 +36,7 @@ import DashboardBuyer from './pages/DashboardBuyer';
 import DashboardSupplier from './pages/DashboardSupplier';
 import DashboardFactory from './pages/DashboardFactory';
 import FactoryThreadEntry from './pages/FactoryThreadEntry';
+import ClaimFactory from './pages/ClaimFactory';
 import FactoryThread from './pages/FactoryThread';
 import FactoryThreadView from './pages/FactoryThreadView';
 import MyMessages from './pages/MyMessages';
@@ -327,6 +328,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     || location.pathname === '/login'
     || location.pathname.startsWith('/login/')
     || location.pathname.startsWith('/factory-chat/')
+    || location.pathname.startsWith('/claim/')
     || location.pathname.startsWith('/messages/factory/')
     || location.pathname.startsWith('/factory/thread/');
   const isSupplierAccessPage = location.pathname === '/supplier-access';
@@ -378,6 +380,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/factory/:factoryId/product/:productId" element={<FactoryProductDetail {...sharedProps} />} />
         <Route path="/f/:slug"            element={<FactoryRequestView />} />
         <Route path="/factory-chat/:slug" element={<FactoryThreadEntry {...sharedProps} />} />
+        <Route path="/claim/:slug"        element={<ClaimFactory />} />
         <Route path="/messages"           element={<MyMessages      {...sharedProps} />} />
         <Route path="/messages/factory/:threadId" element={<FactoryThread {...sharedProps} />} />
         <Route path="/factory/thread/:threadId" element={<FactoryThreadView {...sharedProps} />} />
