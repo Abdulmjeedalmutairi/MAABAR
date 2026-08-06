@@ -28,6 +28,40 @@ const T = {
 
 const isUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 const nf = (v) => (v && v !== 'not_found' ? v : '');
+const isPriced = (p) => !!(p.price && String(p.price).trim() && p.price !== 'not_found');
+
+// Global /products ordering: interleave products so no two CONSECUTIVE items
+// share a factory or (best-effort) a category, while surfacing priced items
+// earlier. Priced tend to cluster in one factory, so we can't put them all first
+// without clumping that factory — instead each factory lists its priced first,
+// and a round-robin merge pulls priced forward whenever that factory's turn comes.
+function mixProducts(list) {
+  const byFac = new Map();
+  for (const p of list) {
+    if (!byFac.has(p.factory_id)) byFac.set(p.factory_id, []);
+    byFac.get(p.factory_id).push(p);
+  }
+  for (const q of byFac.values()) {
+    q.sort((a, b) => (isPriced(b) - isPriced(a)) || ((a.sort_order ?? 0) - (b.sort_order ?? 0)));
+  }
+  const queues = [...byFac.values()];
+  const out = [];
+  let lastFac = null, lastCat = null;
+  while (queues.some((q) => q.length)) {
+    const heads = queues.map((q) => q[0]).filter(Boolean);
+    let cands = heads.filter((p) => p.factory_id !== lastFac);   // avoid same factory back-to-back
+    if (!cands.length) cands = heads;
+    const catCands = cands.filter((p) => (p.factory && p.factory.category) !== lastCat);  // then avoid same category
+    if (catCands.length) cands = catCands;
+    cands.sort((a, b) => (isPriced(b) - isPriced(a)) || (byFac.get(b.factory_id).length - byFac.get(a.factory_id).length));
+    const pick = cands[0];
+    byFac.get(pick.factory_id).shift();
+    out.push(pick);
+    lastFac = pick.factory_id;
+    lastCat = pick.factory && pick.factory.category;
+  }
+  return out;
+}
 
 export default function FactoryProducts({ lang = 'ar', user }) {
   const nav = useNavigate();
@@ -67,10 +101,9 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       if (!alive) return;
       const facMap = {};
       (facs || []).forEach((f) => { facMap[f.id] = f; });   // only ACTIVE factories (public view) → respects the draft gate
-      const joined = (prods || [])
+      const joined = mixProducts((prods || [])
         .map((p) => ({ ...p, factory: facMap[p.factory_id] }))
-        .filter((p) => p.factory && isUrl(p.image))
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        .filter((p) => p.factory && isUrl(p.image)));
       setItems(joined);
       setLoading(false);
     })();
