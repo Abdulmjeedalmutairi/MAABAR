@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ConsoleShell, { Icon as ShellIcon } from '../../components/admin2/ConsoleShell';
 import CertsEditor from '../../components/admin/CertsEditor';
+import SupplierProductsTab from './SupplierProductsTab';
 import { fetchFactory, fetchFactoryProducts, updateFactory, deleteFactory } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import { sb } from '../../supabase';
@@ -125,7 +126,8 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
         {tab === 'overview' && <OverviewTab fac={fac} account={account} pCount={pCount} isAr={isAr} lang={lang} publicUrl={publicUrl} />}
         {tab === 'profile' && <ProfileTab fac={fac} isAr={isAr} lang={lang} onSaved={(f) => { setFac(f); flash(isAr ? 'حُفظ' : 'Saved'); }} />}
         {tab === 'settings' && <SettingsTab fac={fac} isAr={isAr} onChanged={(f) => { setFac(f); flash(isAr ? 'تم' : 'Updated'); }} onDeleted={() => nav('/admin2/suppliers')} flash={flash} />}
-        {['products', 'catalogs', 'requests', 'messages'].includes(tab) && (
+        {tab === 'products' && <SupplierProductsTab factoryId={id} lang={lang} isAr={isAr} flash={flash} />}
+        {['catalogs', 'requests', 'messages'].includes(tab) && (
           <StubTab tab={tab} id={id} isAr={isAr} />
         )}
       </div>
