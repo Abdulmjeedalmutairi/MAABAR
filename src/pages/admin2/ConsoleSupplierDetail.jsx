@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ConsoleShell, { Icon as ShellIcon } from '../../components/admin2/ConsoleShell';
 import CertsEditor from '../../components/admin/CertsEditor';
 import SupplierProductsTab from './SupplierProductsTab';
@@ -35,11 +35,13 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
   const isAr = lang === 'ar';
   const { id } = useParams();
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const TAB_KEYS = ['overview', 'products', 'catalogs', 'requests', 'messages', 'profile', 'settings'];
   const [fac, setFac] = useState(null);
   const [account, setAccount] = useState(null);
   const [pCount, setPCount] = useState(0);
   const [err, setErr] = useState('');
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState(TAB_KEYS.includes(params.get('tab')) ? params.get('tab') : 'overview');
   const [toast, setToast] = useState('');
   const [invite, setInvite] = useState(false);
 
@@ -133,7 +135,7 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
         {tab === 'products' && <SupplierProductsTab factoryId={id} lang={lang} isAr={isAr} flash={flash} />}
         {tab === 'catalogs' && <CatalogsTab factoryId={id} isAr={isAr} flash={flash} />}
         {tab === 'requests' && <RequestsTab factoryId={id} isAr={isAr} lang={lang} />}
-        {tab === 'messages' && <MessagesTab factoryId={id} isAr={isAr} flash={flash} />}
+        {tab === 'messages' && <MessagesTab factoryId={id} isAr={isAr} flash={flash} onEmail={() => setInvite(true)} />}
       </div>
       {invite && <InviteModal factoryId={id} isAr={isAr} onClose={() => setInvite(false)} flash={flash} />}
       {toast && <div className="ac-toast" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{toast}</div>}

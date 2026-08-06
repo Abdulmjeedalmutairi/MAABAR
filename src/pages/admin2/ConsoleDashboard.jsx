@@ -38,7 +38,7 @@ export default function ConsoleDashboard({ user, profile, lang }) {
   const na = nextAction();
 
   const CARDS = [
-    { k: 'unreadMessages', ico: KI.msg, ar: 'رسائل غير مقروءة', en: 'Unread messages', hintAr: 'محادثات بانتظار المصنع', hintEn: 'awaiting a supplier reply', go: '/admin/conversations', tone: 'attn' },
+    { k: 'unreadMessages', ico: KI.msg, ar: 'رسائل غير مقروءة', en: 'Unread messages', hintAr: 'محادثات بانتظار المصنع', hintEn: 'awaiting a supplier reply', go: '/admin2/notifications', tone: 'attn' },
     { k: 'pendingQuotations', ico: KI.quote, ar: 'طلبات تسعير معلّقة', en: 'Pending quotations', hintAr: 'لم يُقدَّم لها عرض بعد', hintEn: 'no offer yet', go: '/admin/concierge', tone: 'attn' },
     { k: 'waitingInvitation', ico: KI.invite, ar: 'موردون بلا تسجيل', en: 'Suppliers to invite', hintAr: 'جاهزون لإرسال دعوة', hintEn: 'ready for an invitation', go: '/admin2/suppliers', tone: 'plain' },
     { k: 'catalogsToReview', ico: KI.catalog, ar: 'كتالوجات للمراجعة', en: 'Catalogs to review', hintAr: 'انتهى استخراجها', hintEn: 'extraction finished', go: '/admin/catalog-import', tone: 'hot' },
