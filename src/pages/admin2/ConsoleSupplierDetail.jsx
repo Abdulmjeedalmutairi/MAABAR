@@ -5,7 +5,7 @@ import CertsEditor from '../../components/admin/CertsEditor';
 import SupplierProductsTab from './SupplierProductsTab';
 import { CatalogsTab, RequestsTab, MessagesTab } from './SupplierMoreTabs';
 import InviteModal from './InviteModal';
-import { fetchFactory, fetchFactoryProducts, updateFactory, deleteFactory } from '../../lib/catalogImport';
+import { fetchFactory, fetchFactoryProducts, updateFactory, deleteFactory, assistField } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 import { sb } from '../../supabase';
 
@@ -200,6 +200,27 @@ function OverviewTab({ fac, account, pCount, isAr, lang, publicUrl }) {
 }
 
 // ── Profile (edit) ───────────────────────────────────────────────────────────
+// Stable, module-level field + AI-suggest button (never redefined per render).
+function TField({ label, value, onChange, ltr, ph, right }) {
+  return (
+    <div className="ac-field">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 18 }}>
+        <label className="ac-flabel">{label}</label>
+        {right || null}
+      </div>
+      <input className="ac-input" value={value} onChange={(e) => onChange(e.target.value)} dir={ltr ? 'ltr' : undefined} placeholder={ph} />
+    </div>
+  );
+}
+function AiBtn({ busy, onClick, isAr }) {
+  return (
+    <button type="button" onClick={onClick} disabled={busy} title={isAr ? 'اقتراح بالذكاء الاصطناعي' : 'Suggest with AI'}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: '1px solid var(--ac-line-2)', borderRadius: 7, padding: '2px 8px', fontSize: 10.5, fontWeight: 700, color: busy ? 'var(--ac-faint)' : 'var(--ac-info)', cursor: busy ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+      {busy ? '…' : (isAr ? '✨ اقتراح' : '✨ AI')}
+    </button>
+  );
+}
+
 function ProfileTab({ fac, isAr, lang, onSaved }) {
   const cats = UI_CATEGORIES[lang] || UI_CATEGORIES.ar;
   const [f, setF] = useState({
@@ -213,13 +234,30 @@ function ProfileTab({ fac, isAr, lang, onSaved }) {
     certifications: Array.isArray(fac.certifications) ? fac.certifications : [],
   });
   const [saving, setSaving] = useState(false);
+  const [aiField, setAiField] = useState('');
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const F = ({ k, label, ltr, ph }) => (
-    <div className="ac-field">
-      <label className="ac-flabel">{label}</label>
-      <input className="ac-input" value={f[k]} onChange={(e) => set(k, e.target.value)} dir={ltr ? 'ltr' : undefined} placeholder={ph} />
-    </div>
-  );
+  // Stable module-level TField below (not an inline component) — avoids the input
+  // losing focus on every keystroke.
+  const F = (props) => <TField {...props} value={f[props.k]} onChange={(v) => set(props.k, v)} />;
+
+  // Per-field AI suggestion: fills the field from a professional, context-aware
+  // Gemini suggestion (description fills both languages; single fields fill one).
+  const assist = async (field, stateKey) => {
+    setAiField(field);
+    try {
+      const ctx = { company_name: f.company_name, company_name_latin: f.company_name_latin, category: f.category, city: f.city, country: f.country, address: f.address, export_markets: f.export_markets, private_label: f.private_label };
+      const sug = await assistField({ field, context: ctx, imageUrl: fac.profile_image || null });
+      if (field === 'description_en') {
+        if (sug.ar) set('description_ar', sug.ar);
+        if (sug.en) set('description_en', sug.en);
+      } else {
+        const val = (isAr ? sug.ar : sug.en) || sug.en || sug.ar || '';
+        if (val) set(stateKey, val);
+      }
+    } catch (e) { alert(e.message === 'worker_not_configured' ? (isAr ? 'خدمة الاقتراح غير مُعدّة' : 'Assist service not configured') : (e.message || 'AI failed')); }
+    setAiField('');
+  };
+  const ai = (field, stateKey) => <AiBtn busy={aiField === field} onClick={() => assist(field, stateKey)} isAr={isAr} />;
 
   const save = async () => {
     setSaving(true);
@@ -243,29 +281,35 @@ function ProfileTab({ fac, isAr, lang, onSaved }) {
   return (
     <div className="ac-card">
       <div className="ac-form-grid">
-        <F k="company_name" label={isAr ? 'اسم الشركة (الأصلي)' : 'Company name (original)'} />
-        <F k="company_name_latin" label={isAr ? 'الاسم اللاتيني' : 'Latin name'} ltr />
+        {F({ k: 'company_name', label: isAr ? 'اسم الشركة (الأصلي)' : 'Company name (original)' })}
+        {F({ k: 'company_name_latin', label: isAr ? 'الاسم اللاتيني' : 'Latin name', ltr: true })}
         <div className="ac-field">
           <label className="ac-flabel">{isAr ? 'الفئة' : 'Category'}</label>
           <select className="ac-input" value={f.category} onChange={(e) => set('category', e.target.value)}>
             {cats.map((c) => <option key={c.val} value={c.val}>{c.label}</option>)}
           </select>
         </div>
-        <F k="city" label={isAr ? 'المدينة' : 'City'} />
-        <F k="country" label={isAr ? 'الدولة' : 'Country'} />
-        <F k="founded_year" label={isAr ? 'سنة التأسيس' : 'Founded year'} ltr ph="2012" />
-        <div className="ac-field wide"><label className="ac-flabel">{isAr ? 'العنوان' : 'Address'}</label>
+        {F({ k: 'city', label: isAr ? 'المدينة' : 'City' })}
+        {F({ k: 'country', label: isAr ? 'الدولة' : 'Country' })}
+        {F({ k: 'founded_year', label: isAr ? 'سنة التأسيس' : 'Founded year', ltr: true, ph: '2012' })}
+        <div className="ac-field wide">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 18 }}>
+            <label className="ac-flabel">{isAr ? 'العنوان' : 'Address'}</label>{ai('address', 'address')}
+          </div>
           <input className="ac-input" value={f.address} onChange={(e) => set('address', e.target.value)} /></div>
-        <F k="email" label={isAr ? 'الإيميل' : 'Email'} ltr />
-        <F k="phone" label={isAr ? 'الهاتف / واتساب' : 'Phone / WhatsApp'} ltr ph="+8613800138000" />
-        <F k="wechat" label="WeChat" ltr />
-        <F k="website" label={isAr ? 'الموقع الإلكتروني' : 'Website'} ltr />
-        <F k="export_markets" label={isAr ? 'أسواق التصدير' : 'Export markets'} ph={isAr ? '+30 دولة' : '30+ countries'} />
-        <F k="moq_note" label={isAr ? 'الحد الأدنى للطلب' : 'MOQ note'} />
-        <div className="ac-field wide"><label className="ac-flabel">{isAr ? 'الوصف (عربي)' : 'Description (Arabic)'}</label>
-          <textarea className="ac-textarea" value={f.description_ar} onChange={(e) => set('description_ar', e.target.value)} dir="rtl" /></div>
-        <div className="ac-field wide"><label className="ac-flabel">{isAr ? 'الوصف (إنجليزي)' : 'Description (English)'}</label>
-          <textarea className="ac-textarea" value={f.description_en} onChange={(e) => set('description_en', e.target.value)} dir="ltr" /></div>
+        {F({ k: 'email', label: isAr ? 'الإيميل' : 'Email', ltr: true })}
+        {F({ k: 'phone', label: isAr ? 'الهاتف / واتساب' : 'Phone / WhatsApp', ltr: true, ph: '+8613800138000' })}
+        {F({ k: 'wechat', label: 'WeChat', ltr: true })}
+        {F({ k: 'website', label: isAr ? 'الموقع الإلكتروني' : 'Website', ltr: true })}
+        {F({ k: 'export_markets', label: isAr ? 'أسواق التصدير' : 'Export markets', ph: isAr ? '+30 دولة' : '30+ countries', right: ai('export_markets', 'export_markets') })}
+        {F({ k: 'moq_note', label: isAr ? 'الحد الأدنى للطلب' : 'MOQ note', right: ai('moq', 'moq_note') })}
+        <div className="ac-field wide">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 18 }}>
+            <label className="ac-flabel">{isAr ? 'الوصف (عربي/إنجليزي)' : 'Description (Arabic / English)'}</label>{ai('description_en')}
+          </div>
+          <textarea className="ac-textarea" value={f.description_ar} onChange={(e) => set('description_ar', e.target.value)} dir="rtl" placeholder={isAr ? 'عربي' : 'Arabic'} /></div>
+        <div className="ac-field wide">
+          <textarea className="ac-textarea" value={f.description_en} onChange={(e) => set('description_en', e.target.value)} dir="ltr" placeholder="English" /></div>
         <div className="ac-toggle-row wide" style={{ gridColumn: '1 / -1' }}>
           <div><div style={{ fontWeight: 600, fontSize: 13.5 }}>{isAr ? 'تصنيع بعلامة خاصة (OEM/ODM)' : 'Private label (OEM/ODM)'}</div></div>
           <input type="checkbox" checked={f.private_label} onChange={(e) => set('private_label', e.target.checked)} style={{ width: 18, height: 18, accentColor: '#1a1814' }} />
