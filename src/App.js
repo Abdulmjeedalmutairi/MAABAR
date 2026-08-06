@@ -304,7 +304,7 @@ function DashboardRouter({ loading, user, profile, profileError, setProfileError
   );
   if (!profile) return <DashboardBuyer {...sharedProps} />;
   const isPreview = localStorage.getItem('maabar_preview') === '1';
-  if (profile.role === 'admin' || profile.role === 'super_admin') return <Navigate to="/admin/overview" replace />;
+  if (profile.role === 'admin' || profile.role === 'super_admin') return <Navigate to="/admin2/dashboard" replace />;
   if (profile.role === 'buyer') {
     const LAUNCH_DATE = new Date('2026-05-01T00:00:00+03:00');
     if (new Date() < LAUNCH_DATE && !isPreview) return <BuyerWaiting {...sharedProps} />;
@@ -411,7 +411,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin2/notifications"    element={<ConsoleNotifications {...sharedProps} />} />
 
         {/* Admin dashboard */}
-        <Route path="/admin"                   element={<Navigate to="/admin/overview" replace />} />
+        <Route path="/admin"                   element={<Navigate to="/admin2/dashboard" replace />} />
         <Route path="/admin/overview"          element={<AdminOverview        {...sharedProps} />} />
         <Route path="/admin/suppliers"         element={<AdminSuppliers       {...sharedProps} />} />
         <Route path="/admin/suppliers/:id"     element={<AdminSupplierDetail  {...sharedProps} />} />
