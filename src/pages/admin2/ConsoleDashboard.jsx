@@ -50,7 +50,7 @@ export default function ConsoleDashboard({ user, profile, lang }) {
     { ico: 'import', ar: 'استيراد كتالوج', en: 'Import catalog', subAr: 'ارفع PDF واستخرج', subEn: 'Upload a PDF & extract', go: '/admin/catalog-import' },
     { ico: 'suppliers', ar: 'إنشاء / إدارة مورّد', en: 'Create / manage supplier', subAr: 'مركز الموردين', subEn: 'Supplier hub', go: '/admin2/suppliers' },
     { ico: 'quotations', ar: 'طلبات التسعير', en: 'Quotation requests', subAr: 'راجع الطلبات', subEn: 'Review requests', go: '/admin/concierge' },
-    { ico: 'bell', ar: 'إرسال دعوة', en: 'Send invitation', subAr: 'قريباً — مرحلة 6', subEn: 'Coming — phase 6', go: null },
+    { ico: 'quotations', ar: 'قوالب الرسائل', en: 'Message templates', subAr: 'شوف ما تُرسله للمصانع', subEn: 'See what you send factories', go: '/admin2/templates' },
   ];
 
   const toneClass = (c) => (v(c.k) > 0 ? (c.tone === 'hot' ? ' hot' : c.tone === 'attn' ? ' attn' : '') : '');
