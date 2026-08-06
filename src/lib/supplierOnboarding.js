@@ -265,13 +265,16 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
   const emailConfirmed = sessionUser ? hasConfirmedEmail(sessionUser) : null;
   const stage = getSupplierStageFromStatus(status);
   const canAccessOperationalFeatures = status === 'verified';
-  // Products are unlocked for any active (non-rejected/non-inactive) supplier —
-  // registration should let them start listing immediately. Buyers still only see
-  // those products post-verification, because the product save keeps them
-  // is_active=false until auto_publish_products_on_supplier_verified flips them on
-  // approval. This is deliberately NARROWER than a full unlock: Offers, Requests,
-  // Messages and Payout stay gated on canAccessOperationalFeatures.
-  const canAccessProducts = stage !== 'rejected' && stage !== 'inactive';
+  // A supplier can USE the platform the moment they register — verification no
+  // longer gates Offers, Messaging, Requests or Products; it now gates only
+  // PAYOUT (getting paid). So those features are unlocked for any active
+  // (non-rejected/non-inactive) supplier. Buyers still only see a supplier's
+  // products post-verification, because product save keeps them is_active=false
+  // until auto_publish_products_on_supplier_verified flips them on approval.
+  // canAccessOperationalFeatures now means specifically "verified / payout-capable"
+  // and gates only Payout + Wallet.
+  const canOperate = stage !== 'rejected' && stage !== 'inactive';
+  const canAccessProducts = canOperate;
   const routeGuardRedirect = '/dashboard';
 
   return {
@@ -300,15 +303,18 @@ export function getSupplierOnboardingState(profile = {}, sessionUser = null) {
     isRejectedStage: stage === 'rejected',
     isInactiveStage: stage === 'inactive',
     canAccessOperationalFeatures,
-    canAccessMessaging: canAccessOperationalFeatures,
-    canAccessRequests: canAccessOperationalFeatures,
+    canAccessMessaging: canOperate,
+    canAccessRequests: canOperate,
     canAccessProducts,
-    canAccessOffers: canAccessOperationalFeatures,
+    canAccessOffers: canOperate,
     canAccessPayoutSetup: canAccessOperationalFeatures,
     routeGuardRedirect,
-    // my-products / add-product join the limited-access set so a not-yet-verified
-    // supplier can reach them; everything else stays locked until verified.
-    limitedTabs: ['overview', 'verification', 'settings', ...(canAccessProducts ? ['my-products', 'add-product'] : [])],
+    // Before verification a supplier can reach everything EXCEPT Payout + Wallet
+    // (those involve getting paid, which stays gated). Anything not listed here is
+    // shown locked in the dashboard until the supplier is verified.
+    limitedTabs: canOperate
+      ? ['overview', 'verification', 'settings', 'managed-matches', 'requests', 'direct-orders', 'my-products', 'add-product', 'offers', 'samples', 'product-inquiries', 'reviews', 'messages']
+      : ['overview', 'verification', 'settings'],
     fullTabs: ['overview', 'verification', 'payout', 'requests', 'my-products', 'offers', 'add-product', 'samples', 'product-inquiries', 'reviews', 'messages', 'settings'],
   };
 }

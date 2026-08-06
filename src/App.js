@@ -343,8 +343,12 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
     return <Navigate to={buildAuthCallbackPath(location.search, location.hash)} replace />;
   }
 
-  const withSupplierVerifiedAccess = (element) => {
-    if (supplierState && !supplierState.canAccessOperationalFeatures) {
+  // Verification no longer gates operational routes — a registered supplier can
+  // browse requests, message, and use their inbox immediately. Each route gates on
+  // the specific capability (all true pre-verification for an active supplier);
+  // only Payout/Wallet remain verified-only, and those live inside the dashboard.
+  const withSupplierCapability = (capable, element) => {
+    if (supplierState && !capable) {
       return <SupplierVerificationLocked lang={lang} />;
     }
     return element;
@@ -375,7 +379,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/contact"        element={<Contact         {...sharedProps} />} />
         <Route path="/support"        element={<Support         {...sharedProps} />} />
         <Route path="/request"        element={<RequestWizard   {...sharedProps} />} />
-        <Route path="/requests"       element={withSupplierVerifiedAccess(<Requests        {...sharedProps} />)} />
+        <Route path="/requests"       element={withSupplierCapability(supplierState?.canAccessRequests, <Requests        {...sharedProps} />)} />
         <Route path="/factories"          element={<Factories       {...sharedProps} />} />
         <Route path="/factories/:key"     element={<Factories       {...sharedProps} />} />
         <Route path="/factory/:id"        element={<FactoryDetail   {...sharedProps} />} />
@@ -390,8 +394,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
         <Route path="/suppliers"      element={<Navigate to="/factories" replace />} />
-        <Route path="/chat/:partnerId"element={withSupplierVerifiedAccess(<Chat            {...sharedProps} />)} />
-        <Route path="/inbox"          element={withSupplierVerifiedAccess(<Inbox           {...sharedProps} />)} />
+        <Route path="/chat/:partnerId"element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat            {...sharedProps} />)} />
+        <Route path="/inbox"          element={withSupplierCapability(supplierState?.canAccessMessaging, <Inbox           {...sharedProps} />)} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
         <Route path="/privacy"        element={<Privacy         {...sharedProps} />} />
         <Route path="/faq"            element={<FAQ             {...sharedProps} />} />

@@ -2878,9 +2878,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </div>
 
                   <div style={{ padding: '22px 24px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', marginBottom: 24 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>{t.onboardingLockedTitle}</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.8, marginBottom: 14, ...arFont }}>{t.onboardingLockedBody}</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
+                      {isAr ? 'يمكنك البدء الآن — التحقق ليس شرطاً' : lang === 'zh' ? '您现在就可以开始 — 无需先认证' : 'You can start now — verification isn’t required'}
+                    </p>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 14, ...arFont }}>
+                      {isAr ? 'قدّم عروضك، راسل المشترين، وأضِف منتجاتك من الآن. التحقق مطلوب فقط لاستلام المدفوعات.' : lang === 'zh' ? '现在即可报价、与买家沟通并添加产品。仅在收款时才需要完成认证。' : 'Send offers, message buyers and add products right away. Verification is only needed to receive payouts.'}
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                       {[
                         isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests',
                         isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products',
@@ -2888,11 +2892,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         isAr ? 'الرسائل' : lang === 'zh' ? '消息' : 'Messages',
                         isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples',
                       ].map((item) => (
-                        <span key={item} style={{ padding: '6px 10px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.3 }}>
-                          {item} · {isAr ? 'مقفل' : lang === 'zh' ? '锁定' : 'Locked'}
+                        <span key={item} style={{ padding: '6px 10px', borderRadius: 'var(--radius-chip)', border: '1px solid rgba(45,122,79,0.2)', background: 'rgba(45,122,79,0.06)', color: 'var(--green)', fontSize: 11, letterSpacing: 0.3 }}>
+                          {item} · {isAr ? 'متاح' : lang === 'zh' ? '已开放' : 'Available'}
                         </span>
                       ))}
                     </div>
+                    <button onClick={() => setActiveTab('requests')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
+                      {isAr ? 'ابدأ العمل الآن — تصفّح الطلبات' : lang === 'zh' ? '立即开始 — 浏览需求' : 'Start working now — browse requests'}
+                    </button>
                   </div>
 
                   <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--text-disabled)', fontSize: 11, cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase', padding: 0, transition: 'color 0.2s' }}
