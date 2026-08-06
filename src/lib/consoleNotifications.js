@@ -25,8 +25,21 @@ export async function fetchNotifications() {
       .in('status', ['bounced', 'failed', 'complained']).order('created_at', { ascending: false }).limit(20)),
   ]);
 
+  // Resolve each message's thread → factory, so a message notification opens the
+  // supplier's console page (where "Send invitation / email" lives) rather than the
+  // legacy conversation view.
+  const threadIds = [...new Set((msgs.data || []).map((m) => m.thread_id).filter(Boolean))];
+  const facByThread = {};
+  if (threadIds.length) {
+    const { data: threads } = await safe(sb.from('factory_threads').select('id, factory_id').in('id', threadIds));
+    (threads || []).forEach((t) => { facByThread[t.id] = t.factory_id; });
+  }
+
   const items = [];
-  (msgs.data || []).forEach((m) => items.push({ group: 'message', type: 'message', at: m.created_at, title_ar: 'رسالة جديدة من تاجر', title_en: 'New message from a trader', sub: nf(m.content).slice(0, 80), link: `/admin/conversations/${m.thread_id}`, tone: 'info' }));
+  (msgs.data || []).forEach((m) => {
+    const fid = facByThread[m.thread_id];
+    items.push({ group: 'message', type: 'message', at: m.created_at, title_ar: 'رسالة جديدة من تاجر', title_en: 'New message from a trader', sub: nf(m.content).slice(0, 80), link: fid ? `/admin2/suppliers/${fid}?tab=messages` : `/admin/conversations/${m.thread_id}`, tone: 'info' });
+  });
   (invites.data || []).forEach((i) => items.push({ group: 'quotation', type: 'quotation', at: i.created_at, title_ar: 'طلب تسعير جديد', title_en: 'New quote request', sub: '', link: `/admin/concierge/${i.request_id}`, tone: 'warn' }));
   (regs.data || []).forEach((r) => items.push({ group: 'registered', type: 'registered', at: r.created_at, title_ar: 'مورّد سجّل', title_en: 'Supplier registered', sub: nf(r.full_name) || nf(r.email), link: '/admin2/suppliers', tone: 'ok' }));
   (imps.data || []).forEach((im) => {

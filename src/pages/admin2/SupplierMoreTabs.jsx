@@ -137,7 +137,7 @@ export function RequestsTab({ factoryId, isAr, lang }) {
 }
 
 // ── Messages ─────────────────────────────────────────────────────────────────
-export function MessagesTab({ factoryId, isAr, flash }) {
+export function MessagesTab({ factoryId, isAr, flash, onEmail }) {
   const nav = useNavigate();
   const [rows, setRows] = useState(null);
   useEffect(() => {
@@ -148,11 +148,17 @@ export function MessagesTab({ factoryId, isAr, flash }) {
 
   const copyShare = (slug) => { try { navigator.clipboard.writeText(`${window.location.origin}/factory-chat/${slug}`); flash(isAr ? 'نُسخ رابط المحادثة' : 'Chat link copied'); } catch { /* noop */ } };
 
-  if (rows == null) return <div className="ac-skel" style={{ height: 80 }} />;
-  if (rows.length === 0) return <div className="ac-placeholder" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'لا محادثات مع هذا المورّد.' : 'No conversations with this supplier.'}</div>;
   return (
     <div style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-      {rows.map((t) => (
+      {onEmail && (
+        <div className="ac-toolbar" style={{ marginBottom: 12 }}>
+          <button className="ac-btn ac-btn-primary ac-btn-sm" onClick={onEmail}>{isAr ? '✉ إرسال إيميل/دعوة للمورّد' : '✉ Email / invite the supplier'}</button>
+          <span style={{ fontSize: 12, color: 'var(--ac-faint)' }}>{isAr ? 'نبّه المورّد ليرد على التاجر' : 'Nudge the supplier to reply'}</span>
+        </div>
+      )}
+      {rows == null ? <div className="ac-skel" style={{ height: 80 }} />
+        : rows.length === 0 ? <div className="ac-placeholder">{isAr ? 'لا محادثات مع هذا المورّد بعد.' : 'No conversations with this supplier yet.'}</div>
+        : rows.map((t) => (
         <div className="ac-card" key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, marginBottom: 10, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: 'var(--ac-ink)' }}>{isAr ? 'محادثة مع تاجر' : 'Trader conversation'}</p>
