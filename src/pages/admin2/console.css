@@ -200,6 +200,28 @@
 .ac-savebar { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; padding: 14px 0 2px; background: linear-gradient(to top, var(--ac-bg) 60%, transparent); }
 .ac-placeholder { text-align: center; padding: 48px 20px; color: var(--ac-faint); font-size: 13.5px; }
 
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+.ac-hello { font-size: 15px; color: var(--ac-muted); margin: 0 0 20px; }
+.ac-hello b { color: var(--ac-ink); font-weight: 700; }
+.ac-kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.ac-kpi { text-align: start; background: var(--ac-panel); border: 1px solid var(--ac-line); border-radius: var(--ac-r-card); box-shadow: var(--ac-shadow-sm); padding: 18px; cursor: pointer; transition: box-shadow .15s, border-color .15s, transform .15s; font-family: inherit; }
+.ac-kpi:hover { box-shadow: var(--ac-shadow); border-color: var(--ac-line-2); transform: translateY(-1px); }
+.ac-kpi-top { display: flex; align-items: center; justify-content: space-between; }
+.ac-kpi-num { font-size: 30px; font-weight: 700; color: var(--ac-ink); line-height: 1; font-variant-numeric: tabular-nums; }
+.ac-kpi-num.attn { color: var(--ac-warn); }
+.ac-kpi-num.hot { color: var(--ac-danger); }
+.ac-kpi-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--ac-sunk); display: flex; align-items: center; justify-content: center; color: var(--ac-muted); }
+.ac-kpi-lbl { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--ac-text); }
+.ac-kpi-hint { margin: 3px 0 0; font-size: 11.5px; color: var(--ac-faint); }
+
+.ac-quickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 12px; }
+.ac-quick-card { display: flex; align-items: center; gap: 12px; padding: 15px 16px; background: var(--ac-panel); border: 1px solid var(--ac-line); border-radius: var(--ac-r-card); box-shadow: var(--ac-shadow-sm); cursor: pointer; transition: box-shadow .15s, transform .15s; font-family: inherit; text-align: start; }
+.ac-quick-card:hover { box-shadow: var(--ac-shadow); transform: translateY(-1px); }
+.ac-quick-ico { width: 40px; height: 40px; border-radius: 11px; background: var(--ac-ink); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ac-quick-t { font-size: 13.5px; font-weight: 650; color: var(--ac-ink); }
+.ac-quick-s { font-size: 11.5px; color: var(--ac-faint); margin-top: 1px; }
+.ac-section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ac-faint); margin: 26px 0 12px; }
+
 /* ── Products tab ────────────────────────────────────────────────────────── */
 .ac-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
 .ac-bulkbar { position: sticky; top: 62px; z-index: 30; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; background: var(--ac-ink); color: #fff; border-radius: var(--ac-r-ctrl); box-shadow: var(--ac-shadow); }

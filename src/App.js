@@ -66,6 +66,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 
 // Admin dashboard (Phase 1)
 import AdminOverview from './pages/admin/AdminOverview';
+import ConsoleDashboard from './pages/admin2/ConsoleDashboard';
 import ConsoleSuppliers from './pages/admin2/ConsoleSuppliers';
 import ConsoleSupplierDetail from './pages/admin2/ConsoleSupplierDetail';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
@@ -393,7 +394,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/agent"          element={<AgentPanel />} />
 
         {/* Admin Console v2 (parallel build — factory_directory-centric) */}
-        <Route path="/admin2"                  element={<Navigate to="/admin2/suppliers" replace />} />
+        <Route path="/admin2"                  element={<Navigate to="/admin2/dashboard" replace />} />
+        <Route path="/admin2/dashboard"        element={<ConsoleDashboard     {...sharedProps} />} />
         <Route path="/admin2/suppliers"        element={<ConsoleSuppliers     {...sharedProps} />} />
         <Route path="/admin2/suppliers/:id"    element={<ConsoleSupplierDetail {...sharedProps} />} />
 
