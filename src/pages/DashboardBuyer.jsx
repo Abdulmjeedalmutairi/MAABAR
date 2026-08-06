@@ -38,7 +38,6 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
-import SupplierVerifyBadge from '../components/SupplierVerifyBadge';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
@@ -1879,9 +1878,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                       <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
                         {acceptedOffer.profiles?.company_name || '—'}
                       </span>
-                      {acceptedOffer.profiles && (
-                        <SupplierVerifyBadge status={acceptedOffer.profiles?.status} lang={lang} />
-                      )}
                       {getSupplierMaabarId(acceptedOffer.profiles || {}) && (
                         <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
                           · {getSupplierMaabarId(acceptedOffer.profiles)}
@@ -1992,9 +1988,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                       <p style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 0, fontWeight: 500 }}>
                                         {o.profiles?.company_name || '—'}
                                       </p>
-                                      {o.profiles && (
-                                        <SupplierVerifyBadge status={o.profiles?.status} lang={lang} />
-                                      )}
                                     </div>
                                     {o.profiles?.rating > 0 && (
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -2543,9 +2536,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 5, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{productName}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? 'المورد:' : lang === 'zh' ? '供应商：' : 'Supplier:'} {supplierName}</p>
-                          {s.profiles && (
-                            <SupplierVerifyBadge status={s.profiles?.status} lang={lang} />
-                          )}
                         </div>
                         {(sampleSupplierMaabarId || s.profiles?.city || s.profiles?.country || s.profiles?.years_experience) && (
                           <p style={{ fontSize: 10, color: 'var(--text-disabled)', marginTop: 6, lineHeight: 1.6, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
