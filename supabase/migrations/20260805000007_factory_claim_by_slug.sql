@@ -27,7 +27,7 @@ returns table (
   is_verified boolean, export_markets text, moq_note text,
   product_count bigint, catalog_count bigint, section_count bigint,
   unread_message_count bigint, pending_request_count bigint,
-  latest_request_name text, latest_request_qty integer,
+  latest_request_name text, latest_request_qty text,
   already_claimed boolean, is_owner boolean
 ) language sql stable security definer set search_path = public as $$
   select
@@ -49,7 +49,7 @@ returns table (
     (select coalesce(nullif(trim(r.title_en), ''), r.title_ar)
        from public.request_factory_invites fi join public.requests r on r.id = fi.request_id
       where fi.factory_id = d.id order by fi.created_at desc limit 1),
-    (select r.quantity
+    (select r.quantity::text
        from public.request_factory_invites fi join public.requests r on r.id = fi.request_id
       where fi.factory_id = d.id order by fi.created_at desc limit 1),
     (d.linked_supplier_id is not null),
