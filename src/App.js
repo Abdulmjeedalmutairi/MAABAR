@@ -67,6 +67,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 // Admin dashboard (Phase 1)
 import AdminOverview from './pages/admin/AdminOverview';
 import ConsoleDashboard from './pages/admin2/ConsoleDashboard';
+import ConsoleQuotations from './pages/admin2/ConsoleQuotations';
 import ConsoleSuppliers from './pages/admin2/ConsoleSuppliers';
 import ConsoleSupplierDetail from './pages/admin2/ConsoleSupplierDetail';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
@@ -398,6 +399,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin2/dashboard"        element={<ConsoleDashboard     {...sharedProps} />} />
         <Route path="/admin2/suppliers"        element={<ConsoleSuppliers     {...sharedProps} />} />
         <Route path="/admin2/suppliers/:id"    element={<ConsoleSupplierDetail {...sharedProps} />} />
+        <Route path="/admin2/quotations"       element={<ConsoleQuotations    {...sharedProps} />} />
 
         {/* Admin dashboard */}
         <Route path="/admin"                   element={<Navigate to="/admin/overview" replace />} />
