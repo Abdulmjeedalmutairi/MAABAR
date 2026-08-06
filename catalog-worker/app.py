@@ -209,6 +209,10 @@ FIELD_WANT = {
     "name_en":       "an English company/brand name or transliteration",
     "description_ar": "a concise 2-3 sentence FACTORY description (what it makes + capabilities)",
     "description_en": "a concise 2-3 sentence FACTORY description (what it makes + capabilities)",
+    # Factory-profile fields for the console's per-field AI-assist:
+    "address": "a clean, presentable business ADDRESS line for a company profile — district / city / province / country, e.g. 'Houjie Town, Dongguan, Guangdong, China'. Compose it from the city/country in the context; if only the country is known, give a professional province/city-level line. Do NOT invent a specific street number or building.",
+    "export_markets": "a short EXPORT MARKETS line for a supplier profile — e.g. '30+ countries' or 'Middle East, Europe, Southeast Asia'. Base it on the context; keep it concise and professional.",
+    "moq": "a short MOQ (minimum order) statement for a supplier profile — e.g. 'MOQ negotiable' or a typical minimum for this product category. Keep it one short line.",
 }
 
 
@@ -251,9 +255,11 @@ def assist():
                     img = None
             prompt = (
                 "You help curate a B2B factory supplier profile for Saudi buyers. "
-                f"Suggest {want}, in BOTH Arabic and English. Base it ONLY on the product image (if given) and this "
-                "context — never invent facts not supported by them. Keep it concise and professional. If you truly "
-                "cannot tell, return empty strings.\n\nCONTEXT:\n" + json.dumps(context, ensure_ascii=False)[:4000])
+                f"Suggest {want}, in BOTH Arabic and English. You MAY phrase and compose the value professionally "
+                "from the context (e.g. a clean address line from a known city/country, or a polished description) "
+                "so it reads well on a public profile — just do NOT fabricate hard facts (an exact street number, "
+                "certifications, or numbers not implied by the context). Keep it concise and professional. Only if "
+                "the context is truly empty, return empty strings.\n\nCONTEXT:\n" + json.dumps(context, ensure_ascii=False)[:4000])
             raw = _gemini(prompt, image_bytes=img, json_schema=_BILINGUAL, max_tokens=512)
             data = json.loads(raw) if raw else {}
             return jsonify({"ar": data.get("ar", ""), "en": data.get("en", "")}), 200
