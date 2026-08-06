@@ -35,7 +35,7 @@ const NAV = [
   { key: 'suppliers',  path: '/admin2/suppliers',  legacy: null,                    icon: 'suppliers',  ar: 'الموردون',       en: 'Suppliers',          live: true },
   { key: 'quotations', path: '/admin2/quotations', legacy: null,                    icon: 'quotations', ar: 'طلبات التسعير',  en: 'Quotation Requests', live: true },
   { key: 'import',     path: '/admin2/import',     legacy: null,                    icon: 'import',     ar: 'استيراد كتالوج', en: 'Import Catalog',     live: true },
-  { key: 'notifs',     path: '/admin2/notifications', legacy: null,                 icon: 'bell',       ar: 'الإشعارات',      en: 'Notifications',      live: false },
+  { key: 'notifs',     path: '/admin2/notifications', legacy: null,                 icon: 'bell',       ar: 'الإشعارات',      en: 'Notifications',      live: true },
 ];
 
 // Collapsed "current console" — the legacy marketplace, kept reachable, out of
