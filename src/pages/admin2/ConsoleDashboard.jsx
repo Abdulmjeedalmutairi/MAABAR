@@ -29,9 +29,9 @@ export default function ConsoleDashboard({ user, profile, lang }) {
   // The single most pressing item → surfaced as the "next action" line.
   const nextAction = () => {
     if (!s) return null;
-    if (s.catalogsToReview > 0) return { t: isAr ? `${s.catalogsToReview} كتالوج بانتظار مراجعتك` : `${s.catalogsToReview} catalogs need your review`, go: '/admin/catalog-import' };
-    if (s.pendingQuotations > 0) return { t: isAr ? `${s.pendingQuotations} طلب تسعير بانتظار المورّد` : `${s.pendingQuotations} quotations awaiting a supplier`, go: '/admin/concierge' };
-    if (s.unreadMessages > 0) return { t: isAr ? `${s.unreadMessages} رسالة غير مقروءة` : `${s.unreadMessages} unread messages`, go: '/admin/conversations' };
+    if (s.catalogsToReview > 0) return { t: isAr ? `${s.catalogsToReview} كتالوج بانتظار مراجعتك` : `${s.catalogsToReview} catalogs need your review`, go: '/admin2/import' };
+    if (s.pendingQuotations > 0) return { t: isAr ? `${s.pendingQuotations} طلب تسعير بانتظار المورّد` : `${s.pendingQuotations} quotations awaiting a supplier`, go: '/admin2/quotations' };
+    if (s.unreadMessages > 0) return { t: isAr ? `${s.unreadMessages} رسالة غير مقروءة` : `${s.unreadMessages} unread messages`, go: '/admin2/notifications' };
     if (s.waitingInvitation > 0) return { t: isAr ? `${s.waitingInvitation} مورّد جاهز للدعوة` : `${s.waitingInvitation} suppliers ready to invite`, go: '/admin2/suppliers' };
     return null;
   };
@@ -39,17 +39,17 @@ export default function ConsoleDashboard({ user, profile, lang }) {
 
   const CARDS = [
     { k: 'unreadMessages', ico: KI.msg, ar: 'رسائل غير مقروءة', en: 'Unread messages', hintAr: 'محادثات بانتظار المصنع', hintEn: 'awaiting a supplier reply', go: '/admin2/notifications', tone: 'attn' },
-    { k: 'pendingQuotations', ico: KI.quote, ar: 'طلبات تسعير معلّقة', en: 'Pending quotations', hintAr: 'لم يُقدَّم لها عرض بعد', hintEn: 'no offer yet', go: '/admin/concierge', tone: 'attn' },
+    { k: 'pendingQuotations', ico: KI.quote, ar: 'طلبات تسعير معلّقة', en: 'Pending quotations', hintAr: 'لم يُقدَّم لها عرض بعد', hintEn: 'no offer yet', go: '/admin2/quotations', tone: 'attn' },
     { k: 'waitingInvitation', ico: KI.invite, ar: 'موردون بلا تسجيل', en: 'Suppliers to invite', hintAr: 'جاهزون لإرسال دعوة', hintEn: 'ready for an invitation', go: '/admin2/suppliers', tone: 'plain' },
-    { k: 'catalogsToReview', ico: KI.catalog, ar: 'كتالوجات للمراجعة', en: 'Catalogs to review', hintAr: 'انتهى استخراجها', hintEn: 'extraction finished', go: '/admin/catalog-import', tone: 'hot' },
+    { k: 'catalogsToReview', ico: KI.catalog, ar: 'كتالوجات للمراجعة', en: 'Catalogs to review', hintAr: 'انتهى استخراجها', hintEn: 'extraction finished', go: '/admin2/import', tone: 'hot' },
     { k: 'newTradersToday', ico: KI.trader, ar: 'تجّار جدد اليوم', en: 'New traders today', hintAr: 'سجّلوا اليوم', hintEn: 'registered today', go: '/admin/traders', tone: 'plain' },
     { k: 'openTickets', ico: KI.ticket, ar: 'تذاكر دعم مفتوحة', en: 'Open support tickets', hintAr: 'بانتظار ردّ', hintEn: 'awaiting a reply', go: '/admin/support', tone: 'hot' },
   ];
 
   const QUICK = [
-    { ico: 'import', ar: 'استيراد كتالوج', en: 'Import catalog', subAr: 'ارفع PDF واستخرج', subEn: 'Upload a PDF & extract', go: '/admin/catalog-import' },
+    { ico: 'import', ar: 'استيراد كتالوج', en: 'Import catalog', subAr: 'ارفع PDF واستخرج', subEn: 'Upload a PDF & extract', go: '/admin2/import' },
     { ico: 'suppliers', ar: 'إنشاء / إدارة مورّد', en: 'Create / manage supplier', subAr: 'مركز الموردين', subEn: 'Supplier hub', go: '/admin2/suppliers' },
-    { ico: 'quotations', ar: 'طلبات التسعير', en: 'Quotation requests', subAr: 'راجع الطلبات', subEn: 'Review requests', go: '/admin/concierge' },
+    { ico: 'quotations', ar: 'طلبات التسعير', en: 'Quotation requests', subAr: 'راجع الطلبات', subEn: 'Review requests', go: '/admin2/quotations' },
     { ico: 'quotations', ar: 'قوالب الرسائل', en: 'Message templates', subAr: 'شوف ما تُرسله للمصانع', subEn: 'See what you send factories', go: '/admin2/templates' },
   ];
 
