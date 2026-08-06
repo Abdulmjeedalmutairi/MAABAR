@@ -200,6 +200,18 @@
 .ac-savebar { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; padding: 14px 0 2px; background: linear-gradient(to top, var(--ac-bg) 60%, transparent); }
 .ac-placeholder { text-align: center; padding: 48px 20px; color: var(--ac-faint); font-size: 13.5px; }
 
+/* ── Wizard stepper ──────────────────────────────────────────────────────── */
+.ac-stepper { display: flex; align-items: center; margin: 4px 0 26px; }
+.ac-step { display: flex; align-items: center; gap: 9px; }
+.ac-step-dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; background: var(--ac-sunk); color: var(--ac-faint); border: 1px solid var(--ac-line-2); }
+.ac-step.on .ac-step-dot { background: var(--ac-ink); color: #fff; border-color: var(--ac-ink); }
+.ac-step.done .ac-step-dot { background: var(--ac-ok); color: #fff; border-color: var(--ac-ok); }
+.ac-step-lbl { font-size: 12.5px; font-weight: 600; color: var(--ac-faint); white-space: nowrap; }
+.ac-step.on .ac-step-lbl, .ac-step.done .ac-step-lbl { color: var(--ac-ink); }
+.ac-step-line { flex: 1; height: 1.5px; background: var(--ac-line-2); margin: 0 12px; min-width: 16px; }
+.ac-step-line.done { background: var(--ac-ok); }
+@media (max-width: 720px) { .ac-step-lbl { display: none; } .ac-step-line { margin: 0 6px; } }
+
 /* ── Dashboard ───────────────────────────────────────────────────────────── */
 .ac-hello { font-size: 15px; color: var(--ac-muted); margin: 0 0 20px; }
 .ac-hello b { color: var(--ac-ink); font-weight: 700; }

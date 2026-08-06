@@ -34,7 +34,7 @@ const NAV = [
   { key: 'dashboard',  path: '/admin2/dashboard',  legacy: null,                    icon: 'dashboard',  ar: 'الرئيسية',       en: 'Dashboard',          live: true },
   { key: 'suppliers',  path: '/admin2/suppliers',  legacy: null,                    icon: 'suppliers',  ar: 'الموردون',       en: 'Suppliers',          live: true },
   { key: 'quotations', path: '/admin2/quotations', legacy: null,                    icon: 'quotations', ar: 'طلبات التسعير',  en: 'Quotation Requests', live: true },
-  { key: 'import',     path: '/admin2/import',     legacy: '/admin/catalog-import', icon: 'import',     ar: 'استيراد كتالوج', en: 'Import Catalog',     live: false },
+  { key: 'import',     path: '/admin2/import',     legacy: null,                    icon: 'import',     ar: 'استيراد كتالوج', en: 'Import Catalog',     live: true },
   { key: 'notifs',     path: '/admin2/notifications', legacy: null,                 icon: 'bell',       ar: 'الإشعارات',      en: 'Notifications',      live: false },
 ];
 
