@@ -1,4 +1,5 @@
-import { sb } from '../supabase';
+import * as tus from 'tus-js-client';
+import { sb, SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase';
 import { normalizeCerts } from './certifications';
 
 // Data layer for the admin Catalog Import tool. Reads the staging tables
@@ -45,16 +46,49 @@ export async function findImportByHash(hash) {
   return data || null;
 }
 
-export async function createImport(file, notes = '', mode = 'curated', fileHash = null) {
+// Resumable (TUS) upload — REQUIRED for large catalog PDFs. The standard
+// sb.storage.upload() sends the whole file in a single POST, which the storage
+// API gateway rejects/times-out for big bodies (~50MB+) regardless of the
+// bucket/global size limit. TUS streams the file in 6MB chunks and resumes if
+// the connection drops, so any size up to the project's global limit goes
+// through. onProgress(fraction 0..1) is optional. Resolves on success, rejects
+// with the tus error otherwise.
+async function uploadResumable(bucket, path, file, onProgress) {
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('not_authenticated');
+  await new Promise((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: { authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'x-upsert': 'true' },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: bucket,
+        objectName: path,
+        contentType: file.type || 'application/pdf',
+        cacheControl: '3600',
+      },
+      chunkSize: 6 * 1024 * 1024,   // Supabase requires exactly 6MB chunks (except the last)
+      onError: reject,
+      onProgress: (sent, total) => { if (onProgress && total) onProgress(sent / total); },
+      onSuccess: resolve,
+    });
+    // Resume a prior interrupted upload of the same file if one exists.
+    upload.findPreviousUploads()
+      .then((prev) => { if (prev.length) upload.resumeFromPreviousUpload(prev[0]); upload.start(); })
+      .catch(() => upload.start());
+  });
+}
+
+export async function createImport(file, notes = '', mode = 'curated', fileHash = null, onProgress = null) {
   const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const path = `${id}/source.pdf`;
   const hash = fileHash || await hashFile(file).catch(() => null);
-  const up = await sb.storage.from('factory-catalogs').upload(path, file, {
-    contentType: file.type || 'application/pdf', upsert: true,
-  });
-  if (up.error) throw up.error;
+  await uploadResumable('factory-catalogs', path, file, onProgress);
   const { data: { user } } = await sb.auth.getUser();
   const { error } = await sb.from('factory_catalog_imports').insert({
     id, source_pdf_path: path, original_filename: file.name, status: 'queued',
