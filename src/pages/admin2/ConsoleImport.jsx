@@ -7,6 +7,7 @@ import {
   workerConfigured, HIGH_CONF,
 } from '../../lib/catalogImport';
 import { displayCategoryForCode } from '../../lib/factoryCategories';
+import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
 const STEPS = [
@@ -224,20 +225,36 @@ function PreviewStep({ isAr, lang, batch, products, importId, onNext }) {
 // ── Step 4: Assign supplier ──────────────────────────────────────────────────
 function AssignStep({ isAr, lang, batch, importId, onAssigned, setErr }) {
   const ff = batch?.factory_fields || {};
+  const cats = UI_CATEGORIES[lang] || UI_CATEGORIES.ar;
   const [mode, setMode] = useState('new');
   const [facs, setFacs] = useState(null);
   const [existingId, setExistingId] = useState('');
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
+  // Editable factory identity, pre-filled from what the AI detected — the admin
+  // confirms/corrects it before the row is created (category is NOT NULL, etc.).
+  const [form, setForm] = useState({
+    name_original: nf(ff.name_original) || nf(ff.name_en) || '',
+    name_en: nf(ff.name_en) || '',
+    category: nf(ff.category) || 'other',
+    city: nf(ff.city) || '',
+    country: nf(ff.country) || 'China',
+    email: nf(ff.email) || '',
+    phone: nf(ff.phone) || '',
+  });
+  const set = (k, v) => setForm((s) => ({ ...s, [k]: v }));
   useEffect(() => { fetchFactories().then(setFacs).catch(() => setFacs([])); }, []);
-  const name = nf(ff.name_original) || nf(ff.name_en) || (isAr ? 'مصنع جديد' : 'New factory');
   const shown = (facs || []).filter((f) => !q.trim() || [f.company_name, f.company_name_latin].filter(Boolean).join(' ').toLowerCase().includes(q.trim().toLowerCase())).slice(0, 40);
 
   const confirm = async () => {
     if (mode === 'existing' && !existingId) { setErr(isAr ? 'اختر مورّداً' : 'Pick a supplier'); return; }
+    if (mode === 'new' && !form.name_original.trim() && !form.name_en.trim()) { setErr(isAr ? 'أدخل اسم المصنع' : 'Enter the factory name'); return; }
     setBusy(true); setErr('');
     try {
-      const fid = await resolveFactory({ importId, mode, fields: ff, existingId: mode === 'existing' ? existingId : undefined, profileImage: null });
+      const fields = mode === 'new'
+        ? { ...ff, name_original: form.name_original.trim(), name_en: form.name_en.trim(), category: form.category || 'other', city: form.city.trim(), country: form.country.trim() || 'China', email: form.email.trim(), phone: form.phone.trim() }
+        : ff;
+      const fid = await resolveFactory({ importId, mode, fields, existingId: mode === 'existing' ? existingId : undefined, profileImage: null });
       onAssigned(fid);
     } catch (e) { setErr(e.message || 'assign failed'); setBusy(false); }
   };
@@ -246,11 +263,29 @@ function AssignStep({ isAr, lang, batch, importId, onAssigned, setErr }) {
     <>
       <div className="ac-card">
         <p className="ac-card-title">{isAr ? 'إلى أي مورّد؟' : 'To which supplier?'}</p>
-        <div className="ac-chiprow" style={{ marginBottom: 14 }}>
-          <button className={`ac-chip${mode === 'new' ? ' on' : ''}`} onClick={() => setMode('new')}>{isAr ? `إنشاء جديد: ${name}` : `Create new: ${name}`}</button>
+        <div className="ac-chiprow" style={{ marginBottom: 16 }}>
+          <button className={`ac-chip${mode === 'new' ? ' on' : ''}`} onClick={() => setMode('new')}>{isAr ? 'إنشاء مورّد جديد' : 'Create new supplier'}</button>
           <button className={`ac-chip${mode === 'existing' ? ' on' : ''}`} onClick={() => setMode('existing')}>{isAr ? 'إرفاق بموجود' : 'Attach to existing'}</button>
         </div>
-        {mode === 'existing' && (
+
+        {mode === 'new' ? (
+          <div className="ac-form-grid">
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'اسم المصنع (الأصلي)' : 'Company name (original)'}</label>
+              <input className="ac-input" value={form.name_original} onChange={(e) => set('name_original', e.target.value)} /></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'الاسم اللاتيني' : 'Latin name'}</label>
+              <input className="ac-input" value={form.name_en} onChange={(e) => set('name_en', e.target.value)} dir="ltr" /></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'الفئة *' : 'Category *'}</label>
+              <select className="ac-input" value={form.category} onChange={(e) => set('category', e.target.value)}>{cats.map((c) => <option key={c.val} value={c.val}>{c.label}</option>)}</select></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'المدينة' : 'City'}</label>
+              <input className="ac-input" value={form.city} onChange={(e) => set('city', e.target.value)} /></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'الدولة' : 'Country'}</label>
+              <input className="ac-input" value={form.country} onChange={(e) => set('country', e.target.value)} /></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'الإيميل' : 'Email'}</label>
+              <input className="ac-input" value={form.email} onChange={(e) => set('email', e.target.value)} dir="ltr" placeholder="factory@example.com" /></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'الهاتف / واتساب' : 'Phone / WhatsApp'}</label>
+              <input className="ac-input" value={form.phone} onChange={(e) => set('phone', e.target.value)} dir="ltr" placeholder="+8613800138000" /></div>
+          </div>
+        ) : (
           <>
             <input className="ac-input" style={{ marginBottom: 10 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder={isAr ? 'ابحث عن المورّد…' : 'Search supplier…'} />
             <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid var(--ac-line)', borderRadius: 10 }}>

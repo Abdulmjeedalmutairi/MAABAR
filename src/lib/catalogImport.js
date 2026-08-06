@@ -262,7 +262,7 @@ export async function resolveFactory({ importId, mode, fields, existingId, profi
       company_name_latin: nf(fields.name_en),
       email: nf(fields.email) || '',        // NOT NULL column — UI should require it
       phone: nf(fields.phone),
-      category: fields.category,             // required UI_CATEGORIES code
+      category: nf(fields.category) || 'other',  // NOT NULL — default when AI missed it
       city: nf(fields.city),
       address: nf(fields.address),           // buyer-visible
       country: fields.country || 'China',
