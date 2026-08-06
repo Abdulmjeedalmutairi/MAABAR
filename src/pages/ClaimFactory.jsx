@@ -15,8 +15,8 @@ const T = {
     newMsgs: (n) => `${n} new ${n === 1 ? 'message' : 'messages'} from Saudi traders`,
     quoteReq: 'New quote request', qty: 'Qty',
     noActivity: 'Start receiving quote requests from Saudi buyers.',
-    ctaTitle: 'Create your account to reply to requests and manage your page',
-    ctaSub: 'Free, takes less than a minute. You get every ability except receiving payments.',
+    ctaTitle: 'Sign in to reply to buyers and manage your page',
+    ctaSub: 'Your page is already prepared for you — just verify it’s you. Under a minute.',
     google: 'Continue with Google', email: 'Continue with Email',
     claim: 'Confirm ownership & start', enter: 'Enter your dashboard',
     haveAccount: 'Already have an account? Sign in', skip: 'Skip — view public page',
@@ -34,8 +34,8 @@ const T = {
     newMsgs: (n) => `${n} 条来自沙特贸易商的新消息`,
     quoteReq: '新报价请求', qty: '数量',
     noActivity: '开始接收来自沙特买家的报价请求。',
-    ctaTitle: '创建账户以回复请求并管理您的主页',
-    ctaSub: '免费，不到一分钟。除收款外，您拥有全部权限。',
+    ctaTitle: '登录即可回复买家并管理您的主页',
+    ctaSub: '您的主页已为您准备好 — 只需验证身份，不到一分钟。',
     google: '使用 Google 继续', email: '使用邮箱继续',
     claim: '确认所有权并开始', enter: '进入您的后台',
     haveAccount: '已有账户？登录', skip: '跳过 — 查看公开页面',
@@ -109,7 +109,10 @@ export default function ClaimFactory() {
   const name = nf(pre.company_name_latin) || nf(pre.company_name) || 'Factory';
   const secondary = nf(pre.company_name) && pre.company_name !== name ? pre.company_name : '';
   const cover = (Array.isArray(pre.factory_images) && pre.factory_images[0]) || pre.profile_image || null;
-  const desc = nf(t === T.zh ? pre.description_zh : pre.description_en) || nf(pre.description_en) || nf(pre.description_ar);
+  // Supplier-facing: English (default) or Chinese only — never the Arabic description.
+  const desc = lang === 'zh'
+    ? (nf(pre.description_zh) || nf(pre.description_en))
+    : (nf(pre.description_en) || nf(pre.description_zh));
   const claimedOther = pre.already_claimed && !pre.is_owner;
 
   const stats = [
@@ -158,13 +161,13 @@ export default function ClaimFactory() {
           <button className="cf-btn cf-primary" onClick={() => nav('/dashboard')}>{t.enter}</button>
         ) : user ? (
           <>
-            <div className="cf-lock">🔒 {t.ctaTitle}</div>
+            <div className="cf-lock">{t.ctaTitle}</div>
             <p className="cf-cta-sub">{t.ctaSub}</p>
             <button className="cf-btn cf-primary" onClick={doClaim} disabled={busy}>{busy ? t.working : t.claim}</button>
           </>
         ) : (
           <>
-            <div className="cf-lock">🔒 {t.ctaTitle}</div>
+            <div className="cf-lock">{t.ctaTitle}</div>
             <p className="cf-cta-sub">{t.ctaSub}</p>
             {!emailMode ? (
               <>
