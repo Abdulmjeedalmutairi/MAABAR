@@ -30,6 +30,23 @@ const isUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 const nf = (v) => (v && v !== 'not_found' ? v : '');
 const isPriced = (p) => !!(p.price && String(p.price).trim() && p.price !== 'not_found');
 
+// Smart-search normalizer: lowercase, strip Arabic diacritics + tatweel, unify
+// alef/ya/ta-marbuta variants, drop punctuation, collapse spaces — so a typed
+// "اريكه" matches "أريكة" and "t-shirt" matches "T Shirt". Latin + CJK letters
+// and digits are kept as-is, so cross-language matching still works via the
+// product's ar/en/zh names.
+const normalize = (s) => String(s || '')
+  .toLowerCase()
+  .replace(/[ً-ْـ]/g, '')               // tashkeel + tatweel
+  .replace(/[أإآٱ]/g, 'ا')    // أ إ آ ٱ → ا
+  .replace(/ى/g, 'ي')                        // ى → ي
+  .replace(/ة/g, 'ه')                        // ة → ه
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')                    // punctuation/symbols → space
+  .replace(/\s+/g, ' ')
+  .trim();
+// Every query token must appear somewhere in the product's search text (AND).
+const searchMatches = (hay, tokens) => tokens.every((t) => hay.includes(t));
+
 // Global /products ordering: interleave products so no two CONSECUTIVE items
 // share a factory or (best-effort) a category, while surfacing priced items
 // earlier. Priced tend to cluster in one factory, so we can't put them all first
@@ -103,7 +120,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       setLoading(true);
       // factory_products can exceed PostgREST's default 1000-row cap, so page
       // through all of them — otherwise whole factories past row 1000 never show.
-      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order';
+      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en';
       const fetchAllProducts = async () => {
         const all = [];
         for (let from = 0; ; from += 1000) {
@@ -122,9 +139,19 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       if (!alive) return;
       const facMap = {};
       (facs || []).forEach((f) => { facMap[f.id] = f; });   // only ACTIVE factories (public view) → respects the draft gate
-      const joined = mixProducts((prods || [])
-        .map((p) => ({ ...p, factory: facMap[p.factory_id] }))
-        .filter((p) => p.factory && isUrl(p.image)));
+      // Join, then precompute each product's normalized search text (_hay) once —
+      // names (ar/en/zh) + ref + description + factory name — so smart search stays
+      // fast across the full catalog on every keystroke.
+      const joined = (prods || [])
+        .map((p) => {
+          const factory = facMap[p.factory_id];
+          const _hay = normalize([
+            p.name_ar, p.name_en, p.name_zh, p.ref_code, p.description_ar, p.description_en,
+            factory && factory.company_name, factory && factory.company_name_latin,
+          ].filter(Boolean).join(' '));
+          return { ...p, factory, _hay };
+        })
+        .filter((p) => p.factory && isUrl(p.image));
       setItems(joined);
       setLoading(false);
     })();
@@ -140,13 +167,11 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       const codes = codesForDisplayCategory(activeKey);
       list = list.filter((p) => codes.includes(p.factory.category));
     }
-    const s = q.trim().toLowerCase();
-    if (s) {
-      list = list.filter((p) => [
-        p.name_ar, p.name_en, p.factory.company_name, p.factory.company_name_latin,
-      ].filter(Boolean).some((v) => v.toLowerCase().includes(s)));
-    }
-    return list;
+    // Smart search: normalize the query the same way, split into tokens, and
+    // require every token to appear in the product's precomputed search text.
+    const tokens = normalize(q).split(' ').filter(Boolean);
+    if (tokens.length) list = list.filter((p) => searchMatches(p._hay, tokens));
+    return mixProducts(list);   // curated cross-factory interleave
   }, [items, activeCat, activeKey, q]);
 
   const shown = filtered.slice(0, visible);
