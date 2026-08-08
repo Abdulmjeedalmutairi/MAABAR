@@ -68,6 +68,7 @@ export default function FactoryThread({ user, lang = 'ar' }) {
       lang={lang}
       selfRole="trader"
       header={{ name: facName, avatar: fac?.profile_image || null, meta: location }}
+      showChinaTime={!fac?.country || /china|中国|الصين/i.test(fac.country)}
       emptyText={t.empty}
       onBack={() => nav(-1)}
       loadMessages={async () => { const m = await fetchTraderMessages(threadId); markTraderRead(threadId); return m; }}

@@ -7,9 +7,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 // parent supplies the data-source functions and header. Purely counterpart-masked:
 // bubbles carry no sender names, only the header identifies the other party.
 const S = {
-  ar: { ph: 'اكتب رسالتك…', send: 'إرسال', loading: 'جارٍ التحميل…', back: 'رجوع' },
-  en: { ph: 'Type your message…', send: 'Send', loading: 'Loading…', back: 'Back' },
-  zh: { ph: '输入您的消息…', send: '发送', loading: '加载中…', back: '返回' },
+  ar: { ph: 'اكتب رسالتك…', send: 'إرسال', loading: 'جارٍ التحميل…', back: 'رجوع', chinaTime: 'توقيت الصين' },
+  en: { ph: 'Type your message…', send: 'Send', loading: 'Loading…', back: 'Back', chinaTime: 'China time' },
+  zh: { ph: '输入您的消息…', send: '发送', loading: '加载中…', back: '返回', chinaTime: '中国时间' },
 };
 
 const CSS = `
@@ -82,7 +82,7 @@ function fmtTime(iso, lang) {
 
 export default function ThreadChat({
   lang = 'ar', selfRole, header = {}, emptyText = '', onBack, headerExtra = null,
-  loadMessages, sendMessage, pollMs = 5000, pendingProduct = null,
+  loadMessages, sendMessage, pollMs = 5000, pendingProduct = null, showChinaTime = false,
 }) {
   const isAr = lang === 'ar';
   const s = S[lang] || S.ar;
@@ -91,7 +91,19 @@ export default function ThreadChat({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState(pendingProduct || null);   // product attached to the next message
+  const [chinaTime, setChinaTime] = useState('');
   const bottomRef = useRef(null);
+
+  // Live China clock in the header — factories are in China, so the trader sees
+  // the counterpart's local time (mirrors the direct supplier chat). Opt-in via
+  // showChinaTime so the factory-side view never labels the buyer's time.
+  useEffect(() => {
+    if (!showChinaTime) return undefined;
+    const update = () => setChinaTime(new Date().toLocaleTimeString('en', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit' }));
+    update();
+    const timer = setInterval(update, 30000);
+    return () => clearInterval(timer);
+  }, [showChinaTime]);
 
   const refresh = useCallback(async () => {
     try { const m = await loadMessages(); setMessages(m); }
@@ -140,6 +152,7 @@ export default function ThreadChat({
           <div>
             <p className="ftc-name">{header.name}</p>
             {header.meta && <p className="ftc-meta">{header.meta}</p>}
+            {showChinaTime && chinaTime && <p className="ftc-meta">{chinaTime} · {s.chinaTime}</p>}
           </div>
           {headerExtra && <div className="ftc-hx">{headerExtra}</div>}
         </div>
