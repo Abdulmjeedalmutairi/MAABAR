@@ -83,6 +83,7 @@ function fmtTime(iso, lang) {
 export default function ThreadChat({
   lang = 'ar', selfRole, header = {}, emptyText = '', onBack, headerExtra = null,
   loadMessages, sendMessage, pollMs = 5000, pendingProduct = null, showChinaTime = false,
+  onHeaderClick = null,
 }) {
   const isAr = lang === 'ar';
   const s = S[lang] || S.ar;
@@ -149,8 +150,11 @@ export default function ThreadChat({
           {header.avatar
             ? <img className="ftc-ava" src={header.avatar} alt="" />
             : <div className="ftc-ava">{(header.name || '?')[0]}</div>}
-          <div>
-            <p className="ftc-name">{header.name}</p>
+          <div onClick={onHeaderClick || undefined} style={onHeaderClick ? { cursor: 'pointer' } : undefined}>
+            <p className="ftc-name">
+              {header.name}
+              {onHeaderClick && <span style={{ fontSize: 11, marginInlineStart: 6, color: 'rgba(0,0,0,0.4)' }}>↗</span>}
+            </p>
             {header.meta && <p className="ftc-meta">{header.meta}</p>}
             {showChinaTime && chinaTime && <p className="ftc-meta">{chinaTime} · {s.chinaTime}</p>}
           </div>
