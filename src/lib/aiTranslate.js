@@ -5,23 +5,24 @@
  * calls the maabar-ai edge function with task=chat_translation and falls
  * back to Ai-proxy automatically) and adds:
  *   - lightweight source-language detection (CJK / Arabic / English)
- *   - in-memory cache keyed by source|target|text, so repeated reads of the
- *     same supplier description on the same page never re-hit the API
  *   - graceful fallback: any failure returns the original text untouched
  *     and an `error` flag so the UI can suppress the "AI translated" pill
  *
- * The cache lives only for the page session (refresh clears it). That's
- * intentional for v1 — most traders view one supplier at a time and the
- * latency cost on refresh is one round-trip per field.
+ * Two-tier cache: an in-memory Map for instant same-page hits, plus localStorage
+ * so each text is translated by the API only once, ever — reused on every later
+ * page load / reopen (mirrors the mobile aiTranslate's AsyncStorage persistence).
  */
 
 import { translateChatMessage } from './maabarAi/client';
 
 const SUPPORTED = ['ar', 'en', 'zh'];
 
-// Module-level cache. Key: `${sourceLang}|${targetLang}|${text}`.
-// Value: { translated, sourceLang, error }.
+// Two-tier cache. Key: `${sourceLang}|${targetLang}|${text}`.
+//   1. in-memory Map — instant hits within the same page session.
+//   2. localStorage  — persists each translation across reloads/reopens, so a
+//      given text is sent to the API only once, ever.
 const cache = new Map();
+const STORE_PREFIX = 'mtr|';   // maabar translation cache (localStorage)
 
 export function detectSourceLang(text) {
   if (!text || typeof text !== 'string') return 'en';
@@ -56,6 +57,17 @@ export async function translateText(text, targetLang, sourceLangHint) {
   const cacheKey = `${source}|${target}|${trimmed}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
+  // Persistent hit — already translated on a previous page load. No API call.
+  const storeKey = `${STORE_PREFIX}${cacheKey}`;
+  try {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(storeKey) : null;
+    if (saved != null) {
+      const hit = { translated: saved, sourceLang: source, error: null };
+      cache.set(cacheKey, hit);
+      return hit;
+    }
+  } catch { /* storage unavailable (private mode / quota) — fall through to API */ }
+
   try {
     const translated = await translateChatMessage({
       text: trimmed,
@@ -70,6 +82,8 @@ export async function translateText(text, targetLang, sourceLangHint) {
       error: ok ? null : 'empty_response',
     };
     cache.set(cacheKey, result);
+    // Persist only real translations so the next page load reuses them.
+    if (ok) { try { localStorage.setItem(storeKey, result.translated); } catch { /* quota/full — ignore */ } }
     return result;
   } catch (err) {
     const result = {

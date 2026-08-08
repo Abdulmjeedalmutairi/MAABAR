@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { translateText, detectSourceLang } from '../../lib/aiTranslate';
 
 // Shared conversation UI for factory threads, used by both sides:
 //  • trader view (selfRole="trader") — loads/sends via the base tables
@@ -7,9 +8,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 // parent supplies the data-source functions and header. Purely counterpart-masked:
 // bubbles carry no sender names, only the header identifies the other party.
 const S = {
-  ar: { ph: 'اكتب رسالتك…', send: 'إرسال', loading: 'جارٍ التحميل…', back: 'رجوع', chinaTime: 'توقيت الصين' },
-  en: { ph: 'Type your message…', send: 'Send', loading: 'Loading…', back: 'Back', chinaTime: 'China time' },
-  zh: { ph: '输入您的消息…', send: '发送', loading: '加载中…', back: '返回', chinaTime: '中国时间' },
+  ar: { ph: 'اكتب رسالتك…', send: 'إرسال', loading: 'جارٍ التحميل…', back: 'رجوع', chinaTime: 'توقيت الصين', translating: 'جارٍ الترجمة…' },
+  en: { ph: 'Type your message…', send: 'Send', loading: 'Loading…', back: 'Back', chinaTime: 'China time', translating: 'Translating…' },
+  zh: { ph: '输入您的消息…', send: '发送', loading: '加载中…', back: '返回', chinaTime: '中国时间', translating: '翻译中…' },
 };
 
 const CSS = `
@@ -31,6 +32,7 @@ const CSS = `
   .ftc-row.them .ftc-bubble { background: #fff; color: rgba(0,0,0,0.85); border: 1px solid rgba(0,0,0,0.08); border-bottom-left-radius: 5px; }
   .ftc-row.sys .ftc-bubble { background: #f2ede3; color: #8a7a5f; font-size: 12.5px; border-radius: 10px; }
   .ftc-time { font-size: 10.5px; color: rgba(0,0,0,0.35); margin: 3px 4px 0; font-family: var(--font-sans); }
+  .ftc-xlate { font-size: 12.5px; color: rgba(0,0,0,0.5); font-style: italic; margin: 4px 4px 0; line-height: 1.5; white-space: pre-wrap; word-break: break-word; font-family: var(--font-sans); }
   .ftc-composer { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(0,0,0,0.08); background: #fff; align-items: flex-end; }
   .ftc-input { flex: 1; resize: none; border: 1px solid rgba(0,0,0,0.16); border-radius: 12px; padding: 10px 14px; font-size: 16px; font-family: inherit; max-height: 120px; outline: none; line-height: 1.5; }
   .ftc-input:focus { border-color: rgba(0,0,0,0.4); }
@@ -93,6 +95,8 @@ export default function ThreadChat({
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState(pendingProduct || null);   // product attached to the next message
   const [chinaTime, setChinaTime] = useState('');
+  const [xlate, setXlate] = useState({});       // { [msgId]: translatedText } for counterpart messages
+  const [xlating, setXlating] = useState({});   // { [msgId]: true } in-flight
   const bottomRef = useRef(null);
 
   // Live China clock in the header — factories are in China, so the trader sees
@@ -105,6 +109,31 @@ export default function ThreadChat({
     const timer = setInterval(update, 30000);
     return () => clearInterval(timer);
   }, [showChinaTime]);
+
+  // Auto-translate each incoming (counterpart) message into the reader's language,
+  // detecting the source from the text. Mirrors the direct chat's auto-translation;
+  // results are cached per message id, so a message is translated only once.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const m of messages) {
+        const isThem = m.sender_role !== selfRole && m.sender_role !== 'admin';
+        const body = (m.content || '').trim();
+        if (!isThem || !body || xlate[m.id] !== undefined || xlating[m.id]) continue;
+        if (detectSourceLang(body) === lang) continue;   // already in the reader's language
+        setXlating((x) => ({ ...x, [m.id]: true }));
+        try {
+          const { translated, sourceLang, error } = await translateText(body, lang);
+          if (!cancelled) setXlate((x) => ({ ...x, [m.id]: (!error && translated && sourceLang !== lang) ? translated : '' }));
+        } catch {
+          if (!cancelled) setXlate((x) => ({ ...x, [m.id]: '' }));
+        } finally {
+          if (!cancelled) setXlating((x) => { const n = { ...x }; delete n[m.id]; return n; });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [messages, lang, selfRole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = useCallback(async () => {
     try { const m = await loadMessages(); setMessages(m); }
@@ -170,6 +199,9 @@ export default function ThreadChat({
                   <div className={`ftc-row ${role}`} key={m.id}>
                     {m.product_ref && <ProductRefCard pr={m.product_ref} lang={lang} />}
                     {m.content ? <div className="ftc-bubble">{m.content}</div> : null}
+                    {role === 'them' && m.content && (xlating[m.id] || xlate[m.id])
+                      ? <div className="ftc-xlate">{xlating[m.id] ? s.translating : xlate[m.id]}</div>
+                      : null}
                     <span className="ftc-time">{fmtTime(m.created_at, lang)}</span>
                   </div>
                 );
