@@ -47,18 +47,25 @@ function mixProducts(list) {
   const queues = [...byFac.values()];
   const out = [];
   let lastFac = null, lastCat = null;
+  const lastUsed = new Map();   // factory_id -> position it was last emitted
   while (queues.some((q) => q.length)) {
     const heads = queues.map((q) => q[0]).filter(Boolean);
     let cands = heads.filter((p) => p.factory_id !== lastFac);   // avoid same factory back-to-back
     if (!cands.length) cands = heads;
     const catCands = cands.filter((p) => (p.factory && p.factory.category) !== lastCat);  // then avoid same category
     if (catCands.length) cands = catCands;
-    cands.sort((a, b) => (isPriced(b) - isPriced(a)) || (byFac.get(b.factory_id).length - byFac.get(a.factory_id).length));
+    // Fair round-robin: take from the factory used LEAST recently (never-used = -1
+    // sorts first), so every factory is represented early instead of ping-ponging
+    // between the two with the most products; priced items only break ties.
+    cands.sort((a, b) =>
+      ((lastUsed.get(a.factory_id) ?? -1) - (lastUsed.get(b.factory_id) ?? -1))
+      || (isPriced(b) - isPriced(a)));
     const pick = cands[0];
     byFac.get(pick.factory_id).shift();
     out.push(pick);
     lastFac = pick.factory_id;
     lastCat = pick.factory && pick.factory.category;
+    lastUsed.set(pick.factory_id, out.length);
   }
   return out;
 }
@@ -94,9 +101,23 @@ export default function FactoryProducts({ lang = 'ar', user }) {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [{ data: facs }, { data: prods }] = await Promise.all([
+      // factory_products can exceed PostgREST's default 1000-row cap, so page
+      // through all of them — otherwise whole factories past row 1000 never show.
+      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order';
+      const fetchAllProducts = async () => {
+        const all = [];
+        for (let from = 0; ; from += 1000) {
+          const { data, error } = await sb.from('factory_products').select(PROD_COLS)
+            .order('factory_id', { ascending: true }).range(from, from + 999);
+          if (error || !data || !data.length) break;
+          all.push(...data);
+          if (data.length < 1000) break;
+        }
+        return all;
+      };
+      const [{ data: facs }, prods] = await Promise.all([
         sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
-        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order'),
+        fetchAllProducts(),
       ]);
       if (!alive) return;
       const facMap = {};
