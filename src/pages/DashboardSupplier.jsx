@@ -91,6 +91,7 @@ import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceL
 import { BUCKET_PRODUCT_MEDIA, BUCKET_PRODUCT_CERTS, removeStorageObjectByUrl } from '../lib/productMediaCleanup';
 import { loadProductCertifications, saveProductCertifications, emptyCertRow, CERT_TYPES, CERT_MAX_COUNT } from '../lib/productCertifications';
 import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
+import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -369,7 +370,6 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       .then(() => {}, (e) => console.error('[nudge] dismiss failed:', e?.message));
   };
   const isVerificationLocked = supplierState.isUnderReviewStage || supplierState.isApprovedStage;
-  const verificationLockMessage = 'Complete verification to unlock the full supplier experience on Maabar';
   const verificationDraftSavedLabel = draftSavedAt ? formatDraftSavedAt(draftSavedAt, lang) : '';
   const verificationStepLabels = [
     isAr ? 'بيانات الشركة' : lang === 'zh' ? '公司资料' : 'Company profile',
@@ -2739,34 +2739,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
 
           {isRestrictedSupplierTab && (
             <div style={{ ...section, maxWidth: 760 }}>
-              <div style={{
-                padding: '28px 28px 24px',
-                borderRadius: 'var(--radius-xl)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-subtle)',
-              }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 10, fontWeight: 500 }}>
-                  {isAr ? 'صلاحيات المورد' : lang === 'zh' ? '供应商权限' : 'MAABAR SUPPLIER ACCESS'}
-                </p>
-                <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 12, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
-                  {verificationLockMessage}
-                </h2>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.9, marginBottom: 18, ...arFont }}>
-                  {isAr
-                    ? 'هذه الصفحة تبقى مقفلة إلى أن تكتمل عملية التحقق ويتم اعتماد الحساب. حالياً يمكنك استخدام لوحة المورد، إعدادات الملف، ومسار التحقق فقط.'
-                    : lang === 'zh'
-                      ? '该页面会保持锁定，直到认证完成并且账户通过审核。目前您只能使用供应商控制台、资料设置和认证流程。'
-                      : 'This page stays locked until verification is completed and the supplier account is approved. For now, you can use only the supplier dashboard, profile settings, and verification flow.'}
-                </p>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <SupplierPayoutLockBanner
+                lang={lang}
+                actions={<>
                   <button onClick={openVerificationFlow} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
                     {supplierState.isUnderReviewStage ? (isAr ? 'عرض حالة التحقق' : lang === 'zh' ? '查看认证状态' : 'View verification status') : t.verificationCtaAction}
                   </button>
                   <button onClick={() => setActiveTab('overview')} className="btn-outline" style={{ fontSize: 11, minHeight: 36 }}>
                     {isAr ? 'العودة للوحة المورد' : lang === 'zh' ? '返回控制台' : 'Back to dashboard'}
                   </button>
-                </div>
-              </div>
+                </>}
+              />
             </div>
           )}
 
@@ -2878,9 +2861,13 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </div>
 
                   <div style={{ padding: '22px 24px', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', marginBottom: 24 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>{t.onboardingLockedTitle}</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-disabled)', lineHeight: 1.8, marginBottom: 14, ...arFont }}>{t.onboardingLockedBody}</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, ...arFont }}>
+                      {isAr ? 'يمكنك البدء الآن — التحقق ليس شرطاً' : lang === 'zh' ? '您现在就可以开始 — 无需先认证' : 'You can start now — verification isn’t required'}
+                    </p>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 14, ...arFont }}>
+                      {isAr ? 'قدّم عروضك، راسل المشترين، وأضِف منتجاتك من الآن. التحقق مطلوب فقط لاستلام المدفوعات.' : lang === 'zh' ? '现在即可报价、与买家沟通并添加产品。仅在收款时才需要完成认证。' : 'Send offers, message buyers and add products right away. Verification is only needed to receive payouts.'}
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                       {[
                         isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests',
                         isAr ? 'المنتجات' : lang === 'zh' ? '产品' : 'Products',
@@ -2888,11 +2875,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         isAr ? 'الرسائل' : lang === 'zh' ? '消息' : 'Messages',
                         isAr ? 'العينات' : lang === 'zh' ? '样品' : 'Samples',
                       ].map((item) => (
-                        <span key={item} style={{ padding: '6px 10px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 0.3 }}>
-                          {item} · {isAr ? 'مقفل' : lang === 'zh' ? '锁定' : 'Locked'}
+                        <span key={item} style={{ padding: '6px 10px', borderRadius: 'var(--radius-chip)', border: '1px solid rgba(45,122,79,0.2)', background: 'rgba(45,122,79,0.06)', color: 'var(--green)', fontSize: 11, letterSpacing: 0.3 }}>
+                          {item} · {isAr ? 'متاح' : lang === 'zh' ? '已开放' : 'Available'}
                         </span>
                       ))}
                     </div>
+                    <button onClick={() => setActiveTab('requests')} className="btn-dark-sm" style={{ fontSize: 11, minHeight: 36 }}>
+                      {isAr ? 'ابدأ العمل الآن — تصفّح الطلبات' : lang === 'zh' ? '立即开始 — 浏览需求' : 'Start working now — browse requests'}
+                    </button>
                   </div>
 
                   <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--text-disabled)', fontSize: 11, cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase', padding: 0, transition: 'color 0.2s' }}
