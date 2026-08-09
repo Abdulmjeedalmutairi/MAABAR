@@ -269,7 +269,7 @@ export default function Home({ lang, user, displayCurrency }) {
           ))}
         </div>
         <div className="home2-mg-foot">
-          <button className="home2-mg-cta" onClick={() => nav('/request')} style={arFont}>
+          <button className="home2-mg-cta" onClick={() => nav('/managed')} style={arFont}>
             {t.mgBtn}<span aria-hidden="true">{isAr ? '←' : '→'}</span>
           </button>
           <div className="home2-mg-proof">
