@@ -81,6 +81,19 @@ export function convertCurrencyAmount(amount, sourceCurrency, targetCurrency, ra
   return usdValue * targetRate;
 }
 
+// Convert a FREE-TEXT catalog price ("$10 (1-49 PCS), $9 (≥100 PCS)") to SAR for
+// Arabic display. Catalog prices are USD-denominated ($-prefixed); only the
+// $-anchored amounts are converted (quantities in the tier labels are left
+// untouched). Western digits + "ر.س" label. Non-price text passes through, so
+// "On request" callers still get null upstream.
+export function catalogPriceToSAR(text, rates = DEFAULT_RATES) {
+  const rate = (rates && rates.SAR) || DEFAULT_RATES.SAR;
+  return String(text || '').replace(/\$\s?(\d+(?:\.\d+)?)/g, (_m, num) => {
+    const sar = Math.round(parseFloat(num) * rate);
+    return `${sar.toLocaleString('en-US')} ر.س`;
+  });
+}
+
 export function formatCurrencyAmount(amount, currency, lang = 'en', options = {}) {
   const value = Number(amount || 0);
   if (!Number.isFinite(value)) return '—';

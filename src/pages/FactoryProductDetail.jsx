@@ -10,6 +10,7 @@ import NegotiablePill from '../components/NegotiablePill';
 import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { getFactoryProductImages } from '../lib/productMedia';
+import { catalogPriceToSAR } from '../lib/displayCurrency';
 
 const T = {
   ar: {
@@ -158,6 +159,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const priceText = (() => {
     const p = (product.price || '').trim();
     if (!p) return null;
+    if (isAr) return catalogPriceToSAR(p);   // Arabic trader → SAR (Western digits)
     const cur = (product.currency || '').trim();
     return cur && !p.toLowerCase().includes(cur.toLowerCase()) ? `${p} ${cur}` : p;
   })();
