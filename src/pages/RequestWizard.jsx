@@ -21,6 +21,7 @@ const T = {
     pageTitle: 'طلب مُدار',
     intro: 'نستلم طلبك بالكامل ونتولّى البحث والتواصل والتوصيل حتى باب بيتك.',
     stages: ['تفاصيل الطلب', 'المتطلبات', 'الموازنة والدفع', 'المتابعة والتسليم'],
+    videoStrong: 'نصوّر لك المنتج بالفيديو قبل الشحن', videoRest: 'لتتأكد بنفسك قبل أن يصلك.',
     titleLabel: 'عنوان الطلب', titleHint: 'عنوان مختصر يوضّح ما تريد',
     titlePlaceholder: 'مثال: كراسي مكتب دوّارة',
     catLabel: 'ما الذي تبحث عنه؟', catHint: 'اختر الفئة الأقرب لطلبك', catPlaceholder: 'اختر الفئة',
@@ -48,6 +49,7 @@ const T = {
     pageTitle: 'Managed order',
     intro: 'We take your request end to end — sourcing, negotiation, and delivery to your door.',
     stages: ['Request details', 'Requirements', 'Budget & payment', 'Follow-up & delivery'],
+    videoStrong: 'We send you a video of your product before shipping', videoRest: 'so you can check it yourself before it arrives.',
     titleLabel: 'Request title', titleHint: 'A short title of what you need',
     titlePlaceholder: 'e.g. Swivel office chairs',
     catLabel: 'What are you looking for?', catHint: 'Pick the closest category', catPlaceholder: 'Choose a category',
@@ -75,6 +77,7 @@ const T = {
     pageTitle: '托管订单',
     intro: '我们全程负责您的需求——寻源、谈判、直至送货上门。',
     stages: ['需求详情', '要求', '预算与付款', '跟进与交付'],
+    videoStrong: '发货前我们会为您拍摄产品视频', videoRest: '让您在收货前亲自确认。',
     titleLabel: '需求标题', titleHint: '简短说明您想要什么',
     titlePlaceholder: '例如：办公转椅',
     catLabel: '您在找什么？', catHint: '选择最接近的类别', catPlaceholder: '选择类别',
@@ -226,6 +229,12 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
                   {i < t.stages.length - 1 && <div style={{ flex: 1, height: 1, background: 'var(--border)', marginTop: 15 }} />}
                 </React.Fragment>
               ))}
+            </div>
+
+            {/* Reassurance the buyer should know up front */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'rgba(45,106,79,0.06)', border: '1px solid rgba(45,106,79,0.22)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flex: '0 0 auto' }}><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l6-3v10l-6-3z" /></svg>
+              <p style={{ ...font, fontSize: 13, lineHeight: 1.6, margin: 0, color: 'var(--text-primary)' }}><strong>{t.videoStrong}</strong> — {t.videoRest}</p>
             </div>
 
             {/* Title (buyer writes it) */}
