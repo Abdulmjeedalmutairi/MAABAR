@@ -25,7 +25,7 @@ const T = {
     mgBullets: ['بحث عن أفضل الموردين والمصانع', 'مفاوضات للحصول على أفضل العروض', 'فحص الجودة والشحن والتخليص', 'توصيل حتى باب بيتك'],
     mgFlow: ['استلام طلبك', 'بحث ومقارنة', 'إدارة الطلب', 'شحن وتخليص', 'توصيل لباب بيتك'],
     mgStats: [['فريق متخصص', 'يدير طلبك'], ['عروض موثوقة', 'ومقارنة دقيقة'], ['توفير وقتك', 'وتقليل مجهودك'], ['متابعة مستمرة', 'حتى استلام طلبك']],
-    mgProofStrong: 'أكثر من 9,900 تاجر ومستورد',
+    mgProofStrong: 'أكثر من 1,000 تاجر ومستورد',
     mgProofSub: 'يثقون بفريق مَعبر في طلباتهم من الصين',
     mgBtn: 'ابدأ طلبك الآن',
     productsTitle: 'منتجات',
@@ -55,7 +55,7 @@ const T = {
     mgBullets: ['Sourcing the best suppliers & factories', 'Negotiating the best offers for you', 'Quality checks, shipping & customs', 'Delivery to your doorstep'],
     mgFlow: ['Your request', 'Search & compare', 'Managing the order', 'Ship & clear', 'To your door'],
     mgStats: [['Specialist team', 'runs your order'], ['Trusted offers', '& careful comparison'], ['Saves your time', '& effort'], ['Ongoing follow-up', 'until you receive']],
-    mgProofStrong: 'Over 9,900 traders & importers',
+    mgProofStrong: 'Over 1,000 traders & importers',
     mgProofSub: 'trust the Maabar team with their China orders',
     mgBtn: 'Start your request',
     productsTitle: 'Products',
@@ -85,7 +85,7 @@ const T = {
     mgBullets: ['寻找最优质的供应商与工厂', '为您争取最优惠的报价', '质检、运输与清关', '送货到您家门口'],
     mgFlow: ['接收需求', '搜索比价', '订单管理', '运输清关', '送货上门'],
     mgStats: [['专业团队', '为您处理'], ['可靠报价', '精准比价'], ['节省时间', '减少精力'], ['持续跟进', '直到签收']],
-    mgProofStrong: '超过 9,900 名商家与进口商',
+    mgProofStrong: '超过 1,000 名商家与进口商',
     mgProofSub: '信赖 Maabar 团队处理他们的中国订单',
     mgBtn: '立即开始',
     productsTitle: '产品',
@@ -273,7 +273,7 @@ export default function Home({ lang, user, displayCurrency }) {
             {t.mgBtn}<span aria-hidden="true">{isAr ? '←' : '→'}</span>
           </button>
           <div className="home2-mg-proof">
-            <div className="home2-mg-avs" aria-hidden="true"><i className="lead">+9K</i><i /><i /><i /></div>
+            <div className="home2-mg-avs" aria-hidden="true"><i className="lead">+1K</i><i /><i /><i /></div>
             <div className="home2-mg-proof-t">
               <b style={arFont}>{t.mgProofStrong}</b>
               <span style={arFont}>{t.mgProofSub}</span>
