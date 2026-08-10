@@ -18,13 +18,16 @@ const PAGE = 12;
 const T = {
   ar: { title: 'المنتجات', sub: 'تصفّح منتجات المصانع من كتالوجاتها الرسمية واطلب عرض سعر مباشرة.',
         search: 'ابحث عن منتج أو مصنع…', moq: 'الحد الأدنى', quote: 'عرض سعر', chat: 'راسل', onReq: 'عند الطلب',
-        more: 'تحميل المزيد', empty: 'لا توجد منتجات في هذه الفئة بعد.', loading: 'جارٍ التحميل…' },
+        more: 'تحميل المزيد', empty: 'لا توجد منتجات في هذه الفئة بعد.', loading: 'جارٍ التحميل…',
+        noteEyebrow: 'نماذج من المتاح', noteBody: 'ما تراه هنا نماذج مختارة — لدى المصانع والموردين تشكيلة أوسع بكثير مما هو معروض. لم تجد ما تبحث عنه؟ تواصل مع المورد وستجد المزيد.' },
   en: { title: 'Products', sub: 'Browse products from factory catalogs and request a quote directly.',
         search: 'Search a product or factory…', moq: 'MOQ', quote: 'Quote', chat: 'Chat', onReq: 'On request',
-        more: 'Load more', empty: 'No products in this category yet.', loading: 'Loading…' },
+        more: 'Load more', empty: 'No products in this category yet.', loading: 'Loading…',
+        noteEyebrow: "A selection of what's available", noteBody: "What you see here is a curated selection — factories and suppliers offer far more than what's listed. Didn't find what you need? Reach out to the supplier and you'll find more." },
   zh: { title: '产品', sub: '浏览工厂目录中的产品并直接请求报价。',
         search: '搜索产品或工厂…', moq: '起订量', quote: '报价', chat: '联系', onReq: '面议',
-        more: '加载更多', empty: '该类别暂无产品。', loading: '加载中…' },
+        more: '加载更多', empty: '该类别暂无产品。', loading: '加载中…',
+        noteEyebrow: '可选商品的一部分', noteBody: '这里展示的只是精选样例 — 工厂与供应商的种类远不止于此。没找到想要的？联系供应商，会有更多选择。' },
 };
 
 const isUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
@@ -209,6 +212,24 @@ export default function FactoryProducts({ lang = 'ar', user }) {
               {ch.label}
             </button>
           ))}
+        </div>
+
+        {/* Curated-selection note — these are examples; suppliers offer more */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 13, flexDirection: isAr ? 'row-reverse' : 'row',
+          background: '#FCF9F3', border: '1px solid rgba(154,118,54,0.22)', borderRadius: 18,
+          padding: 16, margin: '16px 0', boxShadow: '0 5px 12px rgba(154,118,54,0.07)',
+        }}>
+          <div style={{ flex: '0 0 auto', width: 42, height: 42, borderRadius: 12, background: 'rgba(154,118,54,0.12)', border: '1px solid rgba(154,118,54,0.28)', display: 'grid', placeItems: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9A7636" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l1.9 4.8L18.9 9l-4.8 1.5L12 15l-1.9-4.5L5.1 9l5-1.2z" />
+              <path d="M18.5 14.5l.9 2.2 2.1.6-2.1.7-.9 2.1-.9-2.1-2.1-.7 2.1-.6z" />
+            </svg>
+          </div>
+          <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#9A7636', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.noteEyebrow}</div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.noteBody}</div>
+          </div>
         </div>
 
         {loading ? (
