@@ -11,24 +11,45 @@ import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
 } from '../lib/factoryCategories';
+import { catalogPriceToSAR } from '../lib/displayCurrency';
 
 const PAGE = 12;
 
 const T = {
   ar: { title: 'المنتجات', sub: 'تصفّح منتجات المصانع من كتالوجاتها الرسمية واطلب عرض سعر مباشرة.',
         search: 'ابحث عن منتج أو مصنع…', moq: 'الحد الأدنى', quote: 'عرض سعر', chat: 'راسل', onReq: 'عند الطلب',
-        more: 'تحميل المزيد', empty: 'لا توجد منتجات في هذه الفئة بعد.', loading: 'جارٍ التحميل…' },
+        more: 'تحميل المزيد', empty: 'لا توجد منتجات في هذه الفئة بعد.', loading: 'جارٍ التحميل…',
+        noteEyebrow: 'نماذج من المتاح', noteBody: 'ما تراه هنا نماذج مختارة — لدى المصانع والموردين تشكيلة أوسع بكثير مما هو معروض. لم تجد ما تبحث عنه؟ تواصل مع المورد وستجد المزيد.' },
   en: { title: 'Products', sub: 'Browse products from factory catalogs and request a quote directly.',
         search: 'Search a product or factory…', moq: 'MOQ', quote: 'Quote', chat: 'Chat', onReq: 'On request',
-        more: 'Load more', empty: 'No products in this category yet.', loading: 'Loading…' },
+        more: 'Load more', empty: 'No products in this category yet.', loading: 'Loading…',
+        noteEyebrow: "A selection of what's available", noteBody: "What you see here is a curated selection — factories and suppliers offer far more than what's listed. Didn't find what you need? Reach out to the supplier and you'll find more." },
   zh: { title: '产品', sub: '浏览工厂目录中的产品并直接请求报价。',
         search: '搜索产品或工厂…', moq: '起订量', quote: '报价', chat: '联系', onReq: '面议',
-        more: '加载更多', empty: '该类别暂无产品。', loading: '加载中…' },
+        more: '加载更多', empty: '该类别暂无产品。', loading: '加载中…',
+        noteEyebrow: '可选商品的一部分', noteBody: '这里展示的只是精选样例 — 工厂与供应商的种类远不止于此。没找到想要的？联系供应商，会有更多选择。' },
 };
 
 const isUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
 const nf = (v) => (v && v !== 'not_found' ? v : '');
 const isPriced = (p) => !!(p.price && String(p.price).trim() && p.price !== 'not_found');
+
+// Smart-search normalizer: lowercase, strip Arabic diacritics + tatweel, unify
+// alef/ya/ta-marbuta variants, drop punctuation, collapse spaces — so a typed
+// "اريكه" matches "أريكة" and "t-shirt" matches "T Shirt". Latin + CJK letters
+// and digits are kept as-is, so cross-language matching still works via the
+// product's ar/en/zh names.
+const normalize = (s) => String(s || '')
+  .toLowerCase()
+  .replace(/[ً-ْـ]/g, '')               // tashkeel + tatweel
+  .replace(/[أإآٱ]/g, 'ا')    // أ إ آ ٱ → ا
+  .replace(/ى/g, 'ي')                        // ى → ي
+  .replace(/ة/g, 'ه')                        // ة → ه
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')                    // punctuation/symbols → space
+  .replace(/\s+/g, ' ')
+  .trim();
+// Every query token must appear somewhere in the product's search text (AND).
+const searchMatches = (hay, tokens) => tokens.every((t) => hay.includes(t));
 
 // Global /products ordering: interleave products so no two CONSECUTIVE items
 // share a factory or (best-effort) a category, while surfacing priced items
@@ -47,18 +68,25 @@ function mixProducts(list) {
   const queues = [...byFac.values()];
   const out = [];
   let lastFac = null, lastCat = null;
+  const lastUsed = new Map();   // factory_id -> position it was last emitted
   while (queues.some((q) => q.length)) {
     const heads = queues.map((q) => q[0]).filter(Boolean);
     let cands = heads.filter((p) => p.factory_id !== lastFac);   // avoid same factory back-to-back
     if (!cands.length) cands = heads;
     const catCands = cands.filter((p) => (p.factory && p.factory.category) !== lastCat);  // then avoid same category
     if (catCands.length) cands = catCands;
-    cands.sort((a, b) => (isPriced(b) - isPriced(a)) || (byFac.get(b.factory_id).length - byFac.get(a.factory_id).length));
+    // Fair round-robin: take from the factory used LEAST recently (never-used = -1
+    // sorts first), so every factory is represented early instead of ping-ponging
+    // between the two with the most products; priced items only break ties.
+    cands.sort((a, b) =>
+      ((lastUsed.get(a.factory_id) ?? -1) - (lastUsed.get(b.factory_id) ?? -1))
+      || (isPriced(b) - isPriced(a)));
     const pick = cands[0];
     byFac.get(pick.factory_id).shift();
     out.push(pick);
     lastFac = pick.factory_id;
     lastCat = pick.factory && pick.factory.category;
+    lastUsed.set(pick.factory_id, out.length);
   }
   return out;
 }
@@ -94,16 +122,40 @@ export default function FactoryProducts({ lang = 'ar', user }) {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [{ data: facs }, { data: prods }] = await Promise.all([
+      // factory_products can exceed PostgREST's default 1000-row cap, so page
+      // through all of them — otherwise whole factories past row 1000 never show.
+      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en';
+      const fetchAllProducts = async () => {
+        const all = [];
+        for (let from = 0; ; from += 1000) {
+          const { data, error } = await sb.from('factory_products').select(PROD_COLS)
+            .order('factory_id', { ascending: true }).range(from, from + 999);
+          if (error || !data || !data.length) break;
+          all.push(...data);
+          if (data.length < 1000) break;
+        }
+        return all;
+      };
+      const [{ data: facs }, prods] = await Promise.all([
         sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
-        sb.from('factory_products').select('id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order'),
+        fetchAllProducts(),
       ]);
       if (!alive) return;
       const facMap = {};
       (facs || []).forEach((f) => { facMap[f.id] = f; });   // only ACTIVE factories (public view) → respects the draft gate
-      const joined = mixProducts((prods || [])
-        .map((p) => ({ ...p, factory: facMap[p.factory_id] }))
-        .filter((p) => p.factory && isUrl(p.image)));
+      // Join, then precompute each product's normalized search text (_hay) once —
+      // names (ar/en/zh) + ref + description + factory name — so smart search stays
+      // fast across the full catalog on every keystroke.
+      const joined = (prods || [])
+        .map((p) => {
+          const factory = facMap[p.factory_id];
+          const _hay = normalize([
+            p.name_ar, p.name_en, p.name_zh, p.ref_code, p.description_ar, p.description_en,
+            factory && factory.company_name, factory && factory.company_name_latin,
+          ].filter(Boolean).join(' '));
+          return { ...p, factory, _hay };
+        })
+        .filter((p) => p.factory && isUrl(p.image));
       setItems(joined);
       setLoading(false);
     })();
@@ -119,13 +171,11 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       const codes = codesForDisplayCategory(activeKey);
       list = list.filter((p) => codes.includes(p.factory.category));
     }
-    const s = q.trim().toLowerCase();
-    if (s) {
-      list = list.filter((p) => [
-        p.name_ar, p.name_en, p.factory.company_name, p.factory.company_name_latin,
-      ].filter(Boolean).some((v) => v.toLowerCase().includes(s)));
-    }
-    return list;
+    // Smart search: normalize the query the same way, split into tokens, and
+    // require every token to appear in the product's precomputed search text.
+    const tokens = normalize(q).split(' ').filter(Boolean);
+    if (tokens.length) list = list.filter((p) => searchMatches(p._hay, tokens));
+    return mixProducts(list);   // curated cross-factory interleave
   }, [items, activeCat, activeKey, q]);
 
   const shown = filtered.slice(0, visible);
@@ -140,6 +190,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const priceText = (p) => {
     const v = (nf(p.price) || '').trim();
     if (!v) return null;
+    if (isAr) return catalogPriceToSAR(v);   // Arabic trader → SAR (Western digits)
     const cur = (nf(p.currency) || '').trim();
     return cur && !v.toLowerCase().includes(cur.toLowerCase()) ? `${v} ${cur}` : v;
   };
@@ -161,6 +212,24 @@ export default function FactoryProducts({ lang = 'ar', user }) {
               {ch.label}
             </button>
           ))}
+        </div>
+
+        {/* Curated-selection note — these are examples; suppliers offer more */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 13, flexDirection: isAr ? 'row-reverse' : 'row',
+          background: '#FCF9F3', border: '1px solid rgba(154,118,54,0.22)', borderRadius: 18,
+          padding: 16, margin: '16px 0', boxShadow: '0 5px 12px rgba(154,118,54,0.07)',
+        }}>
+          <div style={{ flex: '0 0 auto', width: 42, height: 42, borderRadius: 12, background: 'rgba(154,118,54,0.12)', border: '1px solid rgba(154,118,54,0.28)', display: 'grid', placeItems: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9A7636" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l1.9 4.8L18.9 9l-4.8 1.5L12 15l-1.9-4.5L5.1 9l5-1.2z" />
+              <path d="M18.5 14.5l.9 2.2 2.1.6-2.1.7-.9 2.1-.9-2.1-2.1-.7 2.1-.6z" />
+            </svg>
+          </div>
+          <div style={{ flex: 1, textAlign: isAr ? 'right' : 'left' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#9A7636', marginBottom: 3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.noteEyebrow}</div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.noteBody}</div>
+          </div>
         </div>
 
         {loading ? (

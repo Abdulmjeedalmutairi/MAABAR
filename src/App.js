@@ -48,6 +48,7 @@ import Requests from './pages/Requests';
 import Factories from './pages/Factories';
 import FactoryProducts from './pages/FactoryProducts';
 import RequestWizard from './pages/RequestWizard';
+import ManagedExplain from './pages/ManagedExplain';
 import FactoryDetail from './pages/FactoryDetail';
 import FactoryProductDetail from './pages/FactoryProductDetail';
 import FactoryRequestView from './pages/FactoryRequestView';
@@ -382,6 +383,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/about"          element={<About           {...sharedProps} />} />
         <Route path="/contact"        element={<Contact         {...sharedProps} />} />
         <Route path="/support"        element={<Support         {...sharedProps} />} />
+        <Route path="/managed"        element={<ManagedExplain  {...sharedProps} />} />
         <Route path="/request"        element={<RequestWizard   {...sharedProps} />} />
         <Route path="/requests"       element={withSupplierCapability(supplierState?.canAccessRequests, <Requests        {...sharedProps} />)} />
         <Route path="/factories"          element={<Factories       {...sharedProps} />} />

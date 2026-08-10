@@ -390,7 +390,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const stepFieldKeys = (n) => {
     if (n === 1) return [phoneIdentity ? 'supPhone' : 'email', 'pass'];
     if (n === 2) return isSupplier
-      ? ['supCompany', 'country', 'supCity', 'speciality']
+      ? []   // supplier signup: company details are optional now — completed later in onboarding
       : phoneIdentity
         ? ['firstName', 'lastName', 'city']
         : ['firstName', 'lastName', 'phone', 'city'];
@@ -726,8 +726,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   };
 
   const doGoogleLogin = async () => {
-    const resumePath = hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard';
-    const redirectTo = buildAuthCallbackUrl(resumePath, 'buyer');
+    // Supplier signup/sign-in via Google: pass role=supplier so AuthCallback
+    // promotes a brand-new OAuth account to supplier (claim_supplier_role) and
+    // routes into the supplier app.
+    const resumePath = isSupplier
+      ? '/dashboard/supplier'
+      : (hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard');
+    const redirectTo = buildAuthCallbackUrl(resumePath, isSupplier ? 'supplier' : 'buyer');
 
     await sb.auth.signInWithOAuth({
       provider: 'google',
@@ -737,15 +742,15 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
 
   const inputStyle = {
     width: '100%',
-    padding: '12px 0',
+    padding: '13px 15px',
     background: 'transparent',
-    border: 'none',
-    borderBottom: '1px solid var(--border-default)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
     fontSize: 14,
     color: 'var(--text-primary)',
     outline: 'none',
     boxSizing: 'border-box',
-    transition: 'border-color 0.2s, background 0.2s',
+    transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
     fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
   };
 
@@ -766,9 +771,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
     ...inputStyle,
     ...(showValidation && validationErrors[fieldKey]
       ? {
-          borderBottomColor: '#d66b6b',
-          boxShadow: 'inset 0 -1px 0 #d66b6b',
-          background: 'rgba(214,107,107,0.04)',
+          borderColor: '#d66b6b',
+          boxShadow: '0 0 0 3px rgba(214,107,107,0.10)',
+          background: 'rgba(214,107,107,0.03)',
         }
       : {}),
     ...extraStyle,
@@ -872,7 +877,17 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
           {isAr ? `→ ${l.back}` : `← ${l.back}`}
         </button>
 
-        <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: isSupplier && mode === 'signup' ? 460 : 400 }}>
+        <div style={{
+          position: 'relative',
+          zIndex: 2,
+          width: '100%',
+          maxWidth: mode === 'signup' ? (isSupplier ? 520 : 480) : 420,
+          background: 'var(--bg-raised)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 20,
+          padding: '32px 24px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 10px 30px rgba(0,0,0,0.05)',
+        }}>
           <div style={{ marginBottom: 40 }}>
             <BrandLogo size="sm" align={isAr ? 'flex-end' : 'flex-start'} muted />
           </div>
@@ -1392,7 +1407,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </div>
               )}
 
-              {!isSupplier && showAccountStep && (
+              {showAccountStep && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />

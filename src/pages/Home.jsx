@@ -19,11 +19,15 @@ const T = {
       { key: 'manufacture', title: 'اطلب تصنيع منتجك',  desc: 'حوّل فكرتك إلى منتج مُصنّع' },
       { key: 'support',     title: 'دعم باللغة العربية', desc: 'فريق ودعم بالعربية دائمًا' },
     ],
-    mgBadge: 'من الباب إلى الباب',
+    mgBadge: 'الخدمة الأكثر طلباً',
     mgTitle: 'الطلب المُدار',
-    mgSub: 'نستلم طلبك ونتولّاه بالكامل حتى باب بيتك — بلا تعقيد ولا وسطاء.',
-    mgBullets: ['فريق مختص يبحث ويفاوض ويشتري بدلاً عنك', 'شهادات المطابقة السعودية المطلوبة (سابر/ساسو)', 'تصوير المنتج قبل الشحن للتأكّد', 'شحن وتخليص جمركي وتوصيل لباب بيتك — أنت فقط تستلم'],
-    mgBtn: 'اطلب طلبًا مُدارًا',
+    mgSub: 'نستلم طلبك بالكامل ونتولّاه حتى باب بيتك.',
+    mgBullets: ['بحث عن أفضل الموردين والمصانع', 'مفاوضات للحصول على أفضل العروض', 'فحص الجودة والشحن والتخليص', 'توصيل حتى باب بيتك'],
+    mgFlow: ['استلام طلبك', 'بحث ومقارنة', 'إدارة الطلب', 'شحن وتخليص', 'توصيل لباب بيتك'],
+    mgStats: [['فريق متخصص', 'يدير طلبك'], ['عروض موثوقة', 'ومقارنة دقيقة'], ['توفير وقتك', 'وتقليل مجهودك'], ['متابعة مستمرة', 'حتى استلام طلبك']],
+    mgProofStrong: 'أكثر من 1,000 تاجر ومستورد',
+    mgProofSub: 'يثقون بفريق مَعبر في طلباتهم من الصين',
+    mgBtn: 'ابدأ طلبك الآن',
     productsTitle: 'منتجات',
     viewAll: 'عرض الكل',
     ctaTitle: 'جاهز تبدأ استيرادك بثقة؟',
@@ -45,11 +49,15 @@ const T = {
       { key: 'manufacture', title: 'Request manufacturing', desc: 'Turn your idea into a product' },
       { key: 'support',     title: 'Arabic support',        desc: 'Arabic support, always' },
     ],
-    mgBadge: 'Door to door',
+    mgBadge: 'Most requested service',
     mgTitle: 'Managed Sourcing',
-    mgSub: 'We handle your order end to end — right to your doorstep, no hassle, no middlemen.',
-    mgBullets: ['A specialist team sources, negotiates & buys for you', 'Required Saudi conformity certificates (SABER/SASO)', 'Product photographed before shipping', 'Shipping, customs & doorstep delivery — you just receive'],
-    mgBtn: 'Request managed sourcing',
+    mgSub: 'We handle your order end to end — right to your doorstep.',
+    mgBullets: ['Sourcing the best suppliers & factories', 'Negotiating the best offers for you', 'Quality checks, shipping & customs', 'Delivery to your doorstep'],
+    mgFlow: ['Your request', 'Search & compare', 'Managing the order', 'Ship & clear', 'To your door'],
+    mgStats: [['Specialist team', 'runs your order'], ['Trusted offers', '& careful comparison'], ['Saves your time', '& effort'], ['Ongoing follow-up', 'until you receive']],
+    mgProofStrong: 'Over 1,000 traders & importers',
+    mgProofSub: 'trust the Maabar team with their China orders',
+    mgBtn: 'Start your request',
     productsTitle: 'Products',
     viewAll: 'View all',
     ctaTitle: 'Ready to import with confidence?',
@@ -71,11 +79,15 @@ const T = {
       { key: 'manufacture', title: '定制制造',   desc: '把创意变成可制造的产品' },
       { key: 'support',     title: '阿拉伯语支持', desc: '始终提供阿拉伯语支持' },
     ],
-    mgBadge: '门到门',
+    mgBadge: '最受欢迎的服务',
     mgTitle: '托管采购',
-    mgSub: '我们全程代办您的订单 — 直送到您家门口，省心无中间商。',
-    mgBullets: ['专业团队为您寻源、议价并采购', '沙特合规认证（SABER/SASO）', '发货前拍摄产品照片', '运输、清关并送货上门 — 您只需签收'],
-    mgBtn: '申请托管采购',
+    mgSub: '我们全程代办您的订单 — 直送到您家门口。',
+    mgBullets: ['寻找最优质的供应商与工厂', '为您争取最优惠的报价', '质检、运输与清关', '送货到您家门口'],
+    mgFlow: ['接收需求', '搜索比价', '订单管理', '运输清关', '送货上门'],
+    mgStats: [['专业团队', '为您处理'], ['可靠报价', '精准比价'], ['节省时间', '减少精力'], ['持续跟进', '直到签收']],
+    mgProofStrong: '超过 1,000 名商家与进口商',
+    mgProofSub: '信赖 Maabar 团队处理他们的中国订单',
+    mgBtn: '立即开始',
     productsTitle: '产品',
     viewAll: '查看全部',
     ctaTitle: '准备好放心进口了吗？',
@@ -95,6 +107,21 @@ const ICONS = {
   manufacture: (<svg {...svgProps}><path d="M14 4l-1 5 5-2v11H6V7l5 2-1-5z" /><path d="M6 21h12" /></svg>),
   support:     (<svg {...svgProps}><path d="M4 14v-2a8 8 0 0116 0v2" /><rect x="2.5" y="14" width="4" height="6" rx="1.4" /><rect x="17.5" y="14" width="4" height="6" rx="1.4" /></svg>),
 };
+
+// Managed-card flow + stat icons (stroke/fill come from CSS). Order matches mgFlow / mgStats.
+const MG_FLOW_ICONS = [
+  (<svg viewBox="0 0 24 24"><path d="M14 3v5h5M9 3h6l5 5v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /></svg>),
+  (<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>),
+  (<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>),
+  (<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="1" /><path d="M3 8l3-4h12l3 4" /></svg>),
+  (<svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14M9 21v-6h6v6" /></svg>),
+];
+const MG_STAT_ICONS = [
+  (<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>),
+  (<svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 .4-4 3.3 1.3 5-4.3-2.8L7.7 16.7 9 11.7 5 8.4 10 8z" /></svg>),
+  (<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>),
+  (<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2v-6h4M4 12v5a2 2 0 0 0 2 2h2v-6H4" /></svg>),
+];
 
 const APP_STORE_URL = 'https://apps.apple.com/sa/app/maabar-%D9%85%D8%B9%D8%A8%D8%B1/id6780046671';
 
@@ -200,21 +227,58 @@ export default function Home({ lang, user, displayCurrency }) {
         ))}
       </section>
 
-      {/* ── Managed sourcing — premium gold band ── */}
-      <section className="home2-managed reveal">
-        <span className="home2-shine" aria-hidden="true" />
-        <div className="home2-managed-content">
-          <div className="home2-managed-head">
-            <h2 className="home2-managed-title" style={arFont}>{t.mgTitle}</h2>
-            <span className="home2-managed-badge" style={arFont}>★ {t.mgBadge}</span>
+      {/* ── Managed sourcing — premium managed-service card ── */}
+      <section className="home2-mg reveal">
+        <div className="home2-mg-badges">
+          <span className="home2-mg-pill" style={arFont}>★ {t.mgBadge}</span>
+        </div>
+        <div className="home2-mg-main">
+          <div className="home2-mg-left">
+            <div className="home2-mg-titlerow">
+              <span className="home2-mg-seal" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>
+              </span>
+              <h2 className="home2-mg-title" style={arFont}>{t.mgTitle}</h2>
+            </div>
+            <p className="home2-mg-sub" style={arFont}>{t.mgSub}</p>
+            <div className="home2-mg-rule" aria-hidden="true" />
+            <ul className="home2-mg-bul">
+              {t.mgBullets.map((b, i) => (
+                <li key={i} style={arFont}><span className="home2-mg-ck">✓</span>{b}</li>
+              ))}
+            </ul>
           </div>
-          <p className="home2-managed-sub" style={arFont}>{t.mgSub}</p>
-          <ul className="home2-managed-bullets">
-            {t.mgBullets.map((b, i) => (
-              <li key={i} style={arFont}><span className="home2-check">✓</span>{b}</li>
+          <div className="home2-mg-flow" aria-hidden="true">
+            {t.mgFlow.map((label, i) => (
+              <React.Fragment key={i}>
+                <div className={'home2-mg-node' + (i === 2 ? ' mid' : '')}>
+                  <div className="home2-mg-nbox">{MG_FLOW_ICONS[i]}</div>
+                  <div className="home2-mg-nlb" style={arFont}>{label}</div>
+                </div>
+                {i < t.mgFlow.length - 1 && <div className="home2-mg-link" />}
+              </React.Fragment>
             ))}
-          </ul>
-          <button className="btn-primary home2-managed-btn" onClick={() => nav('/request')}>{t.mgBtn}</button>
+          </div>
+        </div>
+        <div className="home2-mg-stats">
+          {t.mgStats.map((st, i) => (
+            <div className="home2-mg-stat" key={i}>
+              {MG_STAT_ICONS[i]}
+              <div><b style={arFont}>{st[0]}</b><span style={arFont}>{st[1]}</span></div>
+            </div>
+          ))}
+        </div>
+        <div className="home2-mg-foot">
+          <button className="home2-mg-cta" onClick={() => nav('/managed')} style={arFont}>
+            {t.mgBtn}<span aria-hidden="true">{isAr ? '←' : '→'}</span>
+          </button>
+          <div className="home2-mg-proof">
+            <div className="home2-mg-avs" aria-hidden="true"><i className="lead">+1K</i><i /><i /><i /></div>
+            <div className="home2-mg-proof-t">
+              <b style={arFont}>{t.mgProofStrong}</b>
+              <span style={arFont}>{t.mgProofSub}</span>
+            </div>
+          </div>
         </div>
       </section>
 

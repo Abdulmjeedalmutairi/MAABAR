@@ -24,6 +24,7 @@ Environment (Cloud Run):
 """
 import json
 import os
+import re
 import tempfile
 import time
 import traceback
@@ -232,6 +233,32 @@ def _gemini(prompt, image_bytes=None, json_schema=None, max_tokens=1024):
     return resp.text or ""
 
 
+def _loads_lenient(raw):
+    """Parse the model's JSON, tolerating code fences and MAX_TOKENS truncation.
+    A bilingual description can be long; if the JSON is cut off mid-string we still
+    pull out whatever ar/en values are present, so the admin gets a partial
+    suggestion instead of a 500 from json.loads on an unterminated string."""
+    if not raw:
+        return {}
+    s = raw.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json)?|```$", "", s, flags=re.I).strip()
+    try:
+        return json.loads(s)
+    except Exception:  # noqa: BLE001 — truncated/partial JSON: salvage the fields
+        out = {}
+        for k in ("ar", "en"):
+            # a properly closed value first; else an unterminated (truncated) tail
+            m = (re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)"' % k, s)
+                 or re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)$' % k, s))
+            if m:
+                try:
+                    out[k] = json.loads('"' + m.group(1) + '"')
+                except Exception:  # noqa: BLE001
+                    out[k] = m.group(1)
+        return out
+
+
 @app.route("/assist", methods=["POST", "OPTIONS"])
 def assist():
     if request.method == "OPTIONS":
@@ -260,8 +287,8 @@ def assist():
                 "so it reads well on a public profile — just do NOT fabricate hard facts (an exact street number, "
                 "certifications, or numbers not implied by the context). Keep it concise and professional. Only if "
                 "the context is truly empty, return empty strings.\n\nCONTEXT:\n" + json.dumps(context, ensure_ascii=False)[:4000])
-            raw = _gemini(prompt, image_bytes=img, json_schema=_BILINGUAL, max_tokens=512)
-            data = json.loads(raw) if raw else {}
+            raw = _gemini(prompt, image_bytes=img, json_schema=_BILINGUAL, max_tokens=2048)
+            data = _loads_lenient(raw)
             return jsonify({"ar": data.get("ar", ""), "en": data.get("en", "")}), 200
 
         if mode == "ask":

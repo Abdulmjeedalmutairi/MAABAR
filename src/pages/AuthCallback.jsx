@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { sanitizeNextPath } from '../lib/authRedirects';
@@ -112,6 +112,7 @@ export default function AuthCallback({ user, profile, lang }) {
     return () => { active = false; };
   }, [searchParams, hashParams, authType]);
 
+  const promotedRef = useRef(false);
   useEffect(() => {
     if (status !== 'ready' || !user) return;
 
@@ -120,10 +121,22 @@ export default function AuthCallback({ user, profile, lang }) {
       return;
     }
 
+    // Social supplier signup (role=supplier on the callback URL): the OAuth account
+    // is created as buyer/none, so promote it to supplier via the DB-guarded
+    // claim_supplier_role RPC, then route into the supplier app.
+    if (requestedRole === 'supplier' && !promotedRef.current) {
+      promotedRef.current = true;
+      (async () => {
+        try { await sb.rpc('claim_supplier_role'); } catch { /* best-effort */ }
+        nav('/dashboard/supplier', { replace: true });
+      })();
+      return;
+    }
+
     if (profile) {
       nav(nextPath, { replace: true });
     }
-  }, [status, user, profile, nextPath, nav]);
+  }, [status, user, profile, nextPath, nav, requestedRole]);
 
   // Fallback timeout — if profile is still null after 5 seconds, redirect to dashboard anyway
   useEffect(() => {

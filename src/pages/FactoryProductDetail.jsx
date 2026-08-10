@@ -10,24 +10,25 @@ import NegotiablePill from '../components/NegotiablePill';
 import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { getFactoryProductImages } from '../lib/productMedia';
+import { catalogPriceToSAR } from '../lib/displayCurrency';
 
 const T = {
   ar: {
-    back: 'رجوع إلى المصنع', byFactory: 'المصنع', ref: 'رمز المنتج', zoom: 'اضغط للتكبير', prev: 'السابق', next: 'التالي',
+    back: 'رجوع إلى المصنع', byFactory: 'المصنع', maker: 'الصانع', verifiedByMaabar: 'موثّق من معبر', ref: 'رمز المنتج', zoom: 'اضغط للتكبير', prev: 'السابق', next: 'التالي',
     requestCta: 'اطلب عرض سعر', msgFactory: 'راسل المصنع', msgStarting: 'جارٍ الفتح…',
     notFound: 'المنتج غير موجود', loading: '…',
     specsLabel: 'المواصفات', descLabel: 'الوصف', customLabel: 'خيارات التخصيص', moqLabel: 'الحد الأدنى للطلب',
     contactDetails: 'تواصل مع المورد للتفاصيل', note: 'المصنع يرد بالسعر — لا حاجة لإدخال ميزانية.',
   },
   en: {
-    back: 'Back to factory', byFactory: 'Factory', ref: 'Ref', zoom: 'Click to zoom', prev: 'Previous', next: 'Next',
+    back: 'Back to factory', byFactory: 'Factory', maker: 'Maker', verifiedByMaabar: 'Verified by Maabar', ref: 'Ref', zoom: 'Click to zoom', prev: 'Previous', next: 'Next',
     requestCta: 'Request a quote', msgFactory: 'Message the factory', msgStarting: 'Opening…',
     notFound: 'Product not found', loading: '…',
     specsLabel: 'Specifications', descLabel: 'Description', customLabel: 'Customization options', moqLabel: 'MOQ',
     contactDetails: 'Contact supplier for details', note: 'The factory responds with pricing — no budget needed.',
   },
   zh: {
-    back: '返回工厂', byFactory: '工厂', ref: '货号', zoom: '点击放大', prev: '上一个', next: '下一个',
+    back: '返回工厂', byFactory: '工厂', maker: '制造商', verifiedByMaabar: '经 Maabar 认证', ref: '货号', zoom: '点击放大', prev: '上一个', next: '下一个',
     requestCta: '请求报价', msgFactory: '联系工厂', msgStarting: '正在打开…',
     notFound: '未找到产品', loading: '…',
     specsLabel: '规格', descLabel: '描述', customLabel: '定制选项', moqLabel: '起订量',
@@ -143,6 +144,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const productName = (isAr ? product.name_ar : lang === 'zh' ? product.name_zh : product.name_en)
     || product.name_en || product.name_ar || product.name_zh || '—';
   const factoryName = (factory.company_name_latin || '').trim() || factory.company_name || '';
+  const factoryLoc = [factory.city, factory.country].filter(Boolean).join(isAr ? '، ' : ', ');
   const gallery = getFactoryProductImages(product);
   const mainImg = selectedImage || gallery[0] || null;
 
@@ -157,6 +159,7 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
   const priceText = (() => {
     const p = (product.price || '').trim();
     if (!p) return null;
+    if (isAr) return catalogPriceToSAR(p);   // Arabic trader → SAR (Western digits)
     const cur = (product.currency || '').trim();
     return cur && !p.toLowerCase().includes(cur.toLowerCase()) ? `${p} ${cur}` : p;
   })();
@@ -219,10 +222,35 @@ export default function FactoryProductDetail({ lang = 'ar', user, displayCurrenc
 
           {/* ── Info + request ── */}
           <div style={{ flex: '1 1 360px', minWidth: 280 }}>
-            <h1 className={`fx-h1${arc}`} style={{ fontSize: isAr ? 24 : 28, marginBottom: 8 }}>{productName}</h1>
-            <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 4px', fontSize: 13 }}>
-              {c.byFactory}: <Link to={`/factory/${factoryId}`} style={{ color: 'var(--text-primary)', textDecoration: 'underline', textUnderlineOffset: 3 }}>{factoryName}</Link>
-            </p>
+            <h1 className={`fx-h1${arc}`} style={{ fontSize: isAr ? 24 : 28, marginBottom: 10 }}>{productName}</h1>
+
+            {/* ── Premium maker strip: the factory as a named, vetted manufacturer ── */}
+            <Link to={`/factory/${factoryId}`} style={{
+              display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-card)',
+              background: 'var(--bg-subtle)', padding: '11px 13px', margin: '0 0 12px',
+            }}>
+              {factory.profile_image
+                ? <img src={factory.profile_image} alt="" style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: '1px solid var(--border)' }} />
+                : <span style={{ width: 46, height: 46, borderRadius: '50%', flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Cormorant Garamond', serif", fontSize: 21, color: '#8B7355', background: 'var(--bg-hero)', border: '1.5px solid rgba(139,115,85,0.35)' }}>{(factoryName || '?')[0]}</span>}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.maker}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.3, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{factoryName}</span>
+                  {factory.is_verified && (
+                    <span style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: 'var(--green)', color: '#fff', fontSize: 9.5 }}>✓</span>
+                  )}
+                </div>
+                {(factoryLoc || factory.is_verified) && (
+                  <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {factoryLoc}{factoryLoc && factory.is_verified ? ' · ' : ''}
+                    {factory.is_verified && <span style={{ color: 'var(--green)', fontWeight: 700 }}>{c.verifiedByMaabar}</span>}
+                  </div>
+                )}
+              </div>
+              <span style={{ flex: '0 0 auto', color: 'var(--text-muted)', fontSize: 18 }}>{isAr ? '‹' : '›'}</span>
+            </Link>
+
             {product.ref_code && (
               <p className={`fx-card-meta${arc}`} style={{ margin: '0 0 10px', fontSize: 12 }}>{c.ref}: {product.ref_code}</p>
             )}
