@@ -1,5 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { translateText, detectSourceLang } from '../../lib/aiTranslate';
+import { translateText } from '../../lib/aiTranslate';
+import { sb } from '../../supabase';
+
+const LANG_NAMES = { ar: 'العربية', en: 'English', zh: '中文' };
+
+// aiTranslate detects the source and persists to localStorage; we also persist to
+// factory_message_translations (DB) so a line is translated once and reused
+// cross-device/session — full parity with the direct chat.
+async function translateChatLine(text, target) {
+  if (!text || target === 'off') return null;
+  const { translated, sourceLang, error } = await translateText(text, target);
+  if (error || sourceLang === target) return null;
+  return { translated, source: sourceLang };
+}
 
 // Shared conversation UI for factory threads, used by both sides:
 //  • trader view (selfRole="trader") — loads/sends via the base tables
@@ -8,9 +21,9 @@ import { translateText, detectSourceLang } from '../../lib/aiTranslate';
 // parent supplies the data-source functions and header. Purely counterpart-masked:
 // bubbles carry no sender names, only the header identifies the other party.
 const S = {
-  ar: { ph: 'اكتب رسالتك…', send: 'إرسال', loading: 'جارٍ التحميل…', back: 'رجوع', chinaTime: 'توقيت الصين', translating: 'جارٍ الترجمة…' },
-  en: { ph: 'Type your message…', send: 'Send', loading: 'Loading…', back: 'Back', chinaTime: 'China time', translating: 'Translating…' },
-  zh: { ph: '输入您的消息…', send: '发送', loading: '加载中…', back: '返回', chinaTime: '中国时间', translating: '翻译中…' },
+  ar: { ph: 'اكتب رسالتك…', send: 'إرسال', loading: 'جارٍ التحميل…', back: 'رجوع', chinaTime: 'توقيت الصين', translating: 'جارٍ الترجمة…', transOff: 'بدون ترجمة', transTitle: 'ترجمة الرسائل' },
+  en: { ph: 'Type your message…', send: 'Send', loading: 'Loading…', back: 'Back', chinaTime: 'China time', translating: 'Translating…', transOff: 'No translation', transTitle: 'Translate messages' },
+  zh: { ph: '输入您的消息…', send: '发送', loading: '加载中…', back: '返回', chinaTime: '中国时间', translating: '翻译中…', transOff: '不翻译', transTitle: '翻译消息' },
 };
 
 const CSS = `
@@ -20,7 +33,8 @@ const CSS = `
   .ftc-ava { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: #efe9df; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #8B7355; font-family: var(--font-sans); }
   .ftc-name { font-size: 15px; font-weight: 600; color: rgba(0,0,0,0.86); margin: 0; line-height: 1.3; }
   .ftc-meta { font-size: 12px; color: rgba(0,0,0,0.45); margin: 0; }
-  .ftc-hx { margin-inline-start: auto; flex-shrink: 0; }
+  .ftc-hx { flex-shrink: 0; }
+  .ftc-trans { margin-inline-start: auto; flex-shrink: 0; font-size: 12.5px; font-family: var(--font-sans); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.14); background: #fff; color: rgba(0,0,0,0.7); cursor: pointer; max-width: 150px; }
   .ftc-scroll { flex: 1; overflow-y: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-base, #faf8f4); }
   .ftc-empty { margin: auto; color: rgba(0,0,0,0.4); font-size: 14px; text-align: center; max-width: 320px; line-height: 1.6; }
   .ftc-row { display: flex; flex-direction: column; max-width: 78%; }
@@ -95,8 +109,10 @@ export default function ThreadChat({
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState(pendingProduct || null);   // product attached to the next message
   const [chinaTime, setChinaTime] = useState('');
-  const [xlate, setXlate] = useState({});       // { [msgId]: translatedText } for counterpart messages
-  const [xlating, setXlating] = useState({});   // { [msgId]: true } in-flight
+  // Translation — 'off' | 'ar' | 'en' | 'zh', defaults ON to the reader's language.
+  const [transTarget, setTransTarget] = useState(lang);
+  const [translations, setTranslations] = useState({});   // { `${target}:${msgId}`: text }
+  const [pendingTrans, setPendingTrans] = useState({});   // { cacheKey: true } in-flight
   const bottomRef = useRef(null);
 
   // Live China clock in the header — factories are in China, so the trader sees
@@ -110,30 +126,52 @@ export default function ThreadChat({
     return () => clearInterval(timer);
   }, [showChinaTime]);
 
-  // Auto-translate each incoming (counterpart) message into the reader's language,
-  // detecting the source from the text. Mirrors the direct chat's auto-translation;
-  // results are cached per message id, so a message is translated only once.
+  // Translation — DB cache first (factory_message_translations), then translate
+  // only the still-missing incoming messages and persist them, so each line is
+  // translated by the AI exactly once. Mirrors the direct chat.
   useEffect(() => {
+    if (transTarget === 'off' || !messages.length) return undefined;
     let cancelled = false;
+
     (async () => {
-      for (const m of messages) {
-        const isThem = m.sender_role !== selfRole && m.sender_role !== 'admin';
-        const body = (m.content || '').trim();
-        if (!isThem || !body || xlate[m.id] !== undefined || xlating[m.id]) continue;
-        if (detectSourceLang(body) === lang) continue;   // already in the reader's language
-        setXlating((x) => ({ ...x, [m.id]: true }));
-        try {
-          const { translated, sourceLang, error } = await translateText(body, lang);
-          if (!cancelled) setXlate((x) => ({ ...x, [m.id]: (!error && translated && sourceLang !== lang) ? translated : '' }));
-        } catch {
-          if (!cancelled) setXlate((x) => ({ ...x, [m.id]: '' }));
-        } finally {
-          if (!cancelled) setXlating((x) => { const n = { ...x }; delete n[m.id]; return n; });
-        }
+      const incoming = messages.filter((m) =>
+        m.sender_role !== selfRole && m.sender_role !== 'admin' && (m.content || '').trim());
+      if (!incoming.length) return;
+
+      const dbHits = {};
+      const realIds = incoming.filter((m) => !String(m.id).startsWith('tmp-')).map((m) => m.id);
+      if (realIds.length) {
+        const { data } = await sb.from('factory_message_translations')
+          .select('message_id, translated_text')
+          .like('direction', `%_to_${transTarget}`)
+          .in('message_id', realIds);
+        (data || []).forEach((row) => { dbHits[`${transTarget}:${row.message_id}`] = row.translated_text; });
+        if (!cancelled && Object.keys(dbHits).length) setTranslations((prev) => ({ ...prev, ...dbHits }));
       }
+      if (cancelled) return;
+
+      incoming.forEach((msg) => {
+        const cacheKey = `${transTarget}:${msg.id}`;
+        if (translations[cacheKey] || dbHits[cacheKey] || pendingTrans[cacheKey]) return;
+        setPendingTrans((prev) => ({ ...prev, [cacheKey]: true }));
+        translateChatLine(msg.content, transTarget).then((result) => {
+          if (cancelled) return;
+          setPendingTrans((prev) => { const n = { ...prev }; delete n[cacheKey]; return n; });
+          if (!result) return;
+          setTranslations((prev) => ({ ...prev, [cacheKey]: result.translated }));
+          if (!String(msg.id).startsWith('tmp-')) {
+            sb.from('factory_message_translations').upsert({
+              message_id: msg.id,
+              direction: `${result.source}_to_${transTarget}`,
+              translated_text: result.translated,
+            }, { onConflict: 'message_id,direction' }).then(() => {}, () => {});
+          }
+        });
+      });
     })();
+
     return () => { cancelled = true; };
-  }, [messages, lang, selfRole]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transTarget, messages.length, selfRole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = useCallback(async () => {
     try { const m = await loadMessages(); setMessages(m); }
@@ -187,6 +225,11 @@ export default function ThreadChat({
             {header.meta && <p className="ftc-meta">{header.meta}</p>}
             {showChinaTime && chinaTime && <p className="ftc-meta">{chinaTime} · {s.chinaTime}</p>}
           </div>
+          <select className="ftc-trans" value={transTarget} title={s.transTitle} aria-label={s.transTitle}
+            onChange={(e) => setTransTarget(e.target.value)}>
+            <option value="off">🌐 {s.transOff}</option>
+            {['ar', 'en', 'zh'].map((k) => <option key={k} value={k}>🌐 {LANG_NAMES[k]}</option>)}
+          </select>
           {headerExtra && <div className="ftc-hx">{headerExtra}</div>}
         </div>
 
@@ -195,12 +238,15 @@ export default function ThreadChat({
             : messages.length === 0 ? <p className="ftc-empty">{emptyText}</p>
               : messages.map((m) => {
                 const role = m.sender_role === selfRole ? 'me' : m.sender_role === 'admin' ? 'sys' : 'them';
+                const cacheKey = `${transTarget}:${m.id}`;
+                const translated = (role === 'them' && m.content && transTarget !== 'off') ? translations[cacheKey] : null;
+                const translating = (role === 'them' && m.content && transTarget !== 'off' && !translated) ? pendingTrans[cacheKey] : false;
                 return (
                   <div className={`ftc-row ${role}`} key={m.id}>
                     {m.product_ref && <ProductRefCard pr={m.product_ref} lang={lang} />}
                     {m.content ? <div className="ftc-bubble">{m.content}</div> : null}
-                    {role === 'them' && m.content && (xlating[m.id] || xlate[m.id])
-                      ? <div className="ftc-xlate">{xlating[m.id] ? s.translating : xlate[m.id]}</div>
+                    {(translated || translating)
+                      ? <div className="ftc-xlate">{translating ? s.translating : translated}</div>
                       : null}
                     <span className="ftc-time">{fmtTime(m.created_at, lang)}</span>
                   </div>
