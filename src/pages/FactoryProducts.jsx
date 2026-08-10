@@ -51,13 +51,27 @@ const normalize = (s) => String(s || '')
 // Every query token must appear somewhere in the product's search text (AND).
 const searchMatches = (hay, tokens) => tokens.every((t) => hay.includes(t));
 
-// Global /products ordering (unified with the mobile catalog): NEWEST first,
-// with priced products surfaced to the front. Priced items lead (each group
-// still newest-first), so a buyer sees the freshest, quotable products first.
+// Global /products ordering (unified with the mobile catalog). Rhythm: one priced
+// product, then up to two NEW products from DIFFERENT categories, repeat — so
+// priced items lead throughout while fresh, varied products sit right beside them.
+// Both queues are newest-first; the "rest" picks avoid repeating the last category.
 function orderProducts(list) {
-  return [...list].sort((a, b) =>
-    (isPriced(b) - isPriced(a))
-    || (new Date(b.created_at || 0) - new Date(a.created_at || 0)));
+  const byNew = (a, b) => (new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const catOf = (p) => (p.factory && p.factory.category) || null;
+  const priced = list.filter(isPriced).sort(byNew);
+  const rest = list.filter((p) => !isPriced(p)).sort(byNew);
+  const out = [];
+  let lastCat = null;
+  const takeRest = () => {
+    let idx = rest.findIndex((p) => catOf(p) !== lastCat);
+    if (idx === -1) idx = 0;   // all remaining share the last category → take newest
+    return rest.splice(idx, 1)[0];
+  };
+  while (priced.length || rest.length) {
+    if (priced.length) { const p = priced.shift(); out.push(p); lastCat = catOf(p); }
+    for (let k = 0; k < 2 && rest.length; k += 1) { const p = takeRest(); out.push(p); lastCat = catOf(p); }
+  }
+  return out;
 }
 
 export default function FactoryProducts({ lang = 'ar', user }) {
