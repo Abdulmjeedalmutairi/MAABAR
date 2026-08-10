@@ -51,25 +51,37 @@ const normalize = (s) => String(s || '')
 // Every query token must appear somewhere in the product's search text (AND).
 const searchMatches = (hay, tokens) => tokens.every((t) => hay.includes(t));
 
-// Global /products ordering (unified with the mobile catalog). Rhythm: one priced
-// product, then up to two NEW products from DIFFERENT categories, repeat — so
-// priced items lead throughout while fresh, varied products sit right beside them.
-// Both queues are newest-first; the "rest" picks avoid repeating the last category.
+// Global /products ordering (unified with the mobile catalog). Round-robin ACROSS
+// factories so one factory's products never clump together — at each step we take
+// the best head that isn't the same factory (then not the same category) as the
+// last item, preferring priced then newest. So priced items still lead throughout,
+// but they're spread across factories/categories for variety.
 function orderProducts(list) {
   const byNew = (a, b) => (new Date(b.created_at || 0) - new Date(a.created_at || 0));
   const catOf = (p) => (p.factory && p.factory.category) || null;
-  const priced = list.filter(isPriced).sort(byNew);
-  const rest = list.filter((p) => !isPriced(p)).sort(byNew);
+  const byFac = new Map();
+  for (const p of list) {
+    if (!byFac.has(p.factory_id)) byFac.set(p.factory_id, []);
+    byFac.get(p.factory_id).push(p);
+  }
+  for (const q of byFac.values()) q.sort((a, b) => (isPriced(b) - isPriced(a)) || byNew(a, b));
   const out = [];
+  let lastFac = null;
   let lastCat = null;
-  const takeRest = () => {
-    let idx = rest.findIndex((p) => catOf(p) !== lastCat);
-    if (idx === -1) idx = 0;   // all remaining share the last category → take newest
-    return rest.splice(idx, 1)[0];
-  };
-  while (priced.length || rest.length) {
-    if (priced.length) { const p = priced.shift(); out.push(p); lastCat = catOf(p); }
-    for (let k = 0; k < 2 && rest.length; k += 1) { const p = takeRest(); out.push(p); lastCat = catOf(p); }
+  while (out.length < list.length) {
+    const heads = [];
+    for (const q of byFac.values()) if (q.length) heads.push(q[0]);
+    if (!heads.length) break;
+    let pool = heads.filter((p) => p.factory_id !== lastFac);
+    if (!pool.length) pool = heads;
+    const catPool = pool.filter((p) => catOf(p) !== lastCat);
+    if (catPool.length) pool = catPool;
+    pool.sort((a, b) => (isPriced(b) - isPriced(a)) || byNew(a, b));
+    const pick = pool[0];
+    byFac.get(pick.factory_id).shift();
+    out.push(pick);
+    lastFac = pick.factory_id;
+    lastCat = catOf(pick);
   }
   return out;
 }
