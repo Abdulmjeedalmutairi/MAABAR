@@ -390,7 +390,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   const stepFieldKeys = (n) => {
     if (n === 1) return [phoneIdentity ? 'supPhone' : 'email', 'pass'];
     if (n === 2) return isSupplier
-      ? ['supCompany', 'country', 'supCity', 'speciality']
+      ? []   // supplier signup: company details are optional now — completed later in onboarding
       : phoneIdentity
         ? ['firstName', 'lastName', 'city']
         : ['firstName', 'lastName', 'phone', 'city'];
@@ -726,8 +726,13 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
   };
 
   const doGoogleLogin = async () => {
-    const resumePath = hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard';
-    const redirectTo = buildAuthCallbackUrl(resumePath, 'buyer');
+    // Supplier signup/sign-in via Google: pass role=supplier so AuthCallback
+    // promotes a brand-new OAuth account to supplier (claim_supplier_role) and
+    // routes into the supplier app.
+    const resumePath = isSupplier
+      ? '/dashboard/supplier'
+      : (hasPendingAiReview() ? getIdeaFlowResumePath() : '/dashboard');
+    const redirectTo = buildAuthCallbackUrl(resumePath, isSupplier ? 'supplier' : 'buyer');
 
     await sb.auth.signInWithOAuth({
       provider: 'google',
@@ -1402,7 +1407,7 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
                 </div>
               )}
 
-              {!isSupplier && showAccountStep && (
+              {showAccountStep && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
