@@ -51,44 +51,13 @@ const normalize = (s) => String(s || '')
 // Every query token must appear somewhere in the product's search text (AND).
 const searchMatches = (hay, tokens) => tokens.every((t) => hay.includes(t));
 
-// Global /products ordering: interleave products so no two CONSECUTIVE items
-// share a factory or (best-effort) a category, while surfacing priced items
-// earlier. Priced tend to cluster in one factory, so we can't put them all first
-// without clumping that factory — instead each factory lists its priced first,
-// and a round-robin merge pulls priced forward whenever that factory's turn comes.
-function mixProducts(list) {
-  const byFac = new Map();
-  for (const p of list) {
-    if (!byFac.has(p.factory_id)) byFac.set(p.factory_id, []);
-    byFac.get(p.factory_id).push(p);
-  }
-  for (const q of byFac.values()) {
-    q.sort((a, b) => (isPriced(b) - isPriced(a)) || ((a.sort_order ?? 0) - (b.sort_order ?? 0)));
-  }
-  const queues = [...byFac.values()];
-  const out = [];
-  let lastFac = null, lastCat = null;
-  const lastUsed = new Map();   // factory_id -> position it was last emitted
-  while (queues.some((q) => q.length)) {
-    const heads = queues.map((q) => q[0]).filter(Boolean);
-    let cands = heads.filter((p) => p.factory_id !== lastFac);   // avoid same factory back-to-back
-    if (!cands.length) cands = heads;
-    const catCands = cands.filter((p) => (p.factory && p.factory.category) !== lastCat);  // then avoid same category
-    if (catCands.length) cands = catCands;
-    // Fair round-robin: take from the factory used LEAST recently (never-used = -1
-    // sorts first), so every factory is represented early instead of ping-ponging
-    // between the two with the most products; priced items only break ties.
-    cands.sort((a, b) =>
-      ((lastUsed.get(a.factory_id) ?? -1) - (lastUsed.get(b.factory_id) ?? -1))
-      || (isPriced(b) - isPriced(a)));
-    const pick = cands[0];
-    byFac.get(pick.factory_id).shift();
-    out.push(pick);
-    lastFac = pick.factory_id;
-    lastCat = pick.factory && pick.factory.category;
-    lastUsed.set(pick.factory_id, out.length);
-  }
-  return out;
+// Global /products ordering (unified with the mobile catalog): NEWEST first,
+// with priced products surfaced to the front. Priced items lead (each group
+// still newest-first), so a buyer sees the freshest, quotable products first.
+function orderProducts(list) {
+  return [...list].sort((a, b) =>
+    (isPriced(b) - isPriced(a))
+    || (new Date(b.created_at || 0) - new Date(a.created_at || 0)));
 }
 
 export default function FactoryProducts({ lang = 'ar', user }) {
@@ -124,7 +93,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
       setLoading(true);
       // factory_products can exceed PostgREST's default 1000-row cap, so page
       // through all of them — otherwise whole factories past row 1000 never show.
-      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en';
+      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en, created_at';
       const fetchAllProducts = async () => {
         const all = [];
         for (let from = 0; ; from += 1000) {
@@ -175,7 +144,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
     // require every token to appear in the product's precomputed search text.
     const tokens = normalize(q).split(' ').filter(Boolean);
     if (tokens.length) list = list.filter((p) => searchMatches(p._hay, tokens));
-    return mixProducts(list);   // curated cross-factory interleave
+    return orderProducts(list);   // priced-first, then newest
   }, [items, activeCat, activeKey, q]);
 
   const shown = filtered.slice(0, visible);
