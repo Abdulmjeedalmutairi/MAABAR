@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { fetchFactoryProducts, updateFactoryProduct, deleteFactoryProduct, fetchFactories } from '../../lib/catalogImport';
+import { fetchFactoryProducts, updateFactoryProduct, deleteFactoryProduct, fetchFactories, setAllFactoryProductsPrice } from '../../lib/catalogImport';
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
 const CURRENCIES = ['', 'USD', 'CNY', 'SAR', 'AED', 'EUR'];
@@ -88,6 +88,11 @@ export default function SupplierProductsTab({ factoryId, lang, isAr, flash }) {
         <input className="ac-input" style={{ flex: '1 1 220px' }} value={q} onChange={(e) => setQ(e.target.value)}
           placeholder={isAr ? 'ابحث بالاسم أو الكود…' : 'Search name or SKU…'} />
         <button className="ac-btn ac-btn-sm" onClick={selectAll}>{allSelected ? (isAr ? 'إلغاء الكل' : 'Deselect all') : (isAr ? 'تحديد الكل' : 'Select all')}</button>
+        {rows.length > 0 && (
+          <button className="ac-btn ac-btn-sm" onClick={() => setBulk('priceAll')} title={isAr ? 'طبّق سعرًا واحدًا على كل منتجات المصنع' : 'Apply one price to every product'}>
+            {isAr ? 'سعر موحّد للكل' : 'Uniform price'}
+          </button>
+        )}
         <span style={{ fontSize: 12.5, color: 'var(--ac-faint)' }}>{isAr ? `${filtered.length} منتج` : `${filtered.length} products`}</span>
       </div>
 
@@ -138,6 +143,16 @@ export default function SupplierProductsTab({ factoryId, lang, isAr, flash }) {
 
       {edit && <EditModal p={edit} isAr={isAr} onClose={() => setEdit(null)} onSave={async (patch) => { await applyPatch([edit.id], patch); setEdit(null); }} />}
       {bulk === 'price' && <BulkPriceModal count={sel.size} isAr={isAr} onClose={() => setBulk(null)} onApply={async (patch) => { await applyPatch([...sel], patch); setBulk(null); }} />}
+      {bulk === 'priceAll' && <BulkPriceModal count={rows.length} allProducts isAr={isAr} onClose={() => setBulk(null)}
+        onApply={async (patch) => {
+          setBusy(true);
+          try {
+            await setAllFactoryProductsPrice(factoryId, patch.price, patch.currency);
+            setRows((rs) => rs.map((p) => ({ ...p, price: patch.price, currency: patch.currency })));
+            flash(isAr ? 'طُبّق السعر على كل المنتجات' : 'Price applied to all products');
+          } catch { flash(isAr ? 'تعذّر التحديث' : 'Update failed'); }
+          setBusy(false); setBulk(null);
+        }} />}
       {bulk === 'section' && <BulkSectionModal count={sel.size} isAr={isAr} onClose={() => setBulk(null)} onApply={async (patch) => { await applyPatch([...sel], patch); setBulk(null); }} />}
       {bulk === 'move' && <BulkMoveModal count={sel.size} isAr={isAr} currentId={factoryId} onClose={() => setBulk(null)}
         onApply={async (targetId) => { const ids = [...sel]; await Promise.all(ids.map((id) => updateFactoryProduct(id, { factory_id: targetId }))); setRows((rs) => rs.filter((p) => !sel.has(p.id))); clearSel(); setBulk(null); flash(isAr ? 'تم النقل' : 'Moved'); }} />}
@@ -178,12 +193,21 @@ function EditModal({ p, isAr, onClose, onSave }) {
 }
 
 // ── Bulk pricing ─────────────────────────────────────────────────────────────
-function BulkPriceModal({ count, isAr, onClose, onApply }) {
+function BulkPriceModal({ count, isAr, onClose, onApply, allProducts = false }) {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const title = allProducts
+    ? (isAr ? `سعر موحّد لكل المنتجات (${count})` : `Uniform price — all ${count} products`)
+    : (isAr ? `تسعير ${count} منتج` : `Price ${count} products`);
   return (
-    <Modal title={isAr ? `تسعير ${count} منتج` : `Price ${count} products`} onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <div style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+        {allProducts && (
+          <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--ac-faint)', lineHeight: 1.6 }}>
+            {isAr ? 'يستبدل سعر كل منتجات هذا المصنع بالسعر أدناه (يشمل المسعّرة سابقًا).'
+              : 'Overwrites the price on every product of this factory (including already-priced ones).'}
+          </p>
+        )}
         <div className="ac-form-grid">
           <div className="ac-field"><label className="ac-flabel">{isAr ? 'السعر' : 'Price'}</label>
             <input className="ac-input" value={price} onChange={(e) => setPrice(e.target.value)} dir="ltr" placeholder={isAr ? 'مثال: 12.50' : 'e.g. 12.50'} /></div>

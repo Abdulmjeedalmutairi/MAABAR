@@ -356,6 +356,16 @@ export async function updateFactoryProduct(productId, patch) {
   if (error) throw error;
 }
 
+// Set ONE catalog-wide price (or clear to "on request") on EVERY product of a
+// factory — for suppliers that quote a single price for the whole range. One
+// UPDATE keyed by factory_id, not N per-row round-trips.
+export async function setAllFactoryProductsPrice(factoryId, price, currency) {
+  const { error } = await sb.from('factory_products')
+    .update({ price: price || null, currency: currency || null })
+    .eq('factory_id', factoryId);
+  if (error) throw error;
+}
+
 export async function deleteFactoryProduct(productId) {
   const { error } = await sb.from('factory_products').delete().eq('id', productId);
   if (error) throw error;
