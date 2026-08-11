@@ -232,6 +232,13 @@ export default function ConsoleSuppliers({ user, profile, lang }) {
                       <div className="ac-smeta-item"><span className="ac-smeta-num" style={{ fontSize: 13 }}>{relTime(r.last_activity, isAr)}</span><span className="ac-smeta-lbl">{isAr ? 'آخر نشاط' : 'Activity'}</span></div>
                     </div>
 
+                    {r.last_editor && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--ac-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : undefined }}>
+                        {isAr ? 'آخر تعديل بواسطة ' : 'Last edited by '}
+                        <span style={{ color: 'var(--ac-muted)', fontWeight: 600 }}>{r.last_editor}</span>
+                      </div>
+                    )}
+
                     <div className="ac-sactions">
                       <button className="ac-btn ac-btn-sm" style={{ flex: 1 }} onClick={() => open(r)}><Ico d={AP.open} />{isAr ? 'فتح' : 'Open'}</button>
                       <button className="ac-iconbtn" title={isAr ? 'مشاركة الرابط' : 'Copy link'} onClick={() => copy(shareUrl(r), isAr ? 'نُسخ رابط الصفحة' : 'Link copied')}><Ico d={AP.share} /></button>

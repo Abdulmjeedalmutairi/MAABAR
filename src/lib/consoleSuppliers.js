@@ -26,7 +26,7 @@ export async function fetchConsoleSuppliers() {
       'id, company_name, company_name_latin, category, city, country, address, profile_image, ' +
       'factory_images, certifications, is_verified, is_featured, is_active, private_label, ' +
       'linked_supplier_id, email, phone, founded_year, export_markets, description_ar, description_en, ' +
-      'created_at, updated_at',
+      'created_at, updated_at, updated_by',
     ),
     sb.from('factory_products').select('factory_id, updated_at'),
     sb.from('factory_catalog_imports').select('factory_id, created_at'),
@@ -38,6 +38,16 @@ export async function fetchConsoleSuppliers() {
   ]);
   if (facErr) throw facErr;
   if (supErr) throw supErr;
+
+  // Resolve the last editor's display name for each factory (updated_by → profile).
+  // Editors are staff/admins, not in the supplier `sups` set, so fetch separately.
+  const editorIds = [...new Set((facs || []).map((f) => f.updated_by).filter(Boolean))];
+  const editorMap = {};
+  if (editorIds.length) {
+    const { data: eds } = await sb.from('profiles').select('id, full_name, email').in('id', editorIds);
+    for (const e of eds || []) editorMap[e.id] = nf(e.full_name) || nf(e.email) || null;
+  }
+  const editorName = (id) => (id ? editorMap[id] || null : null);
 
   // factory_products / catalog imports → per-factory counts + last activity
   const pCount = {}, pLast = {};
@@ -97,6 +107,7 @@ export async function fetchConsoleSuppliers() {
       has_catalog: fac ? (cCount[fac.id] || 0) > 0 : false,
       has_profile: true,
       last_activity: newest([p.created_at, spLast[p.id], fac?.updated_at, fac ? pLast[fac.id] : null]),
+      last_editor: fac ? editorName(fac.updated_by) : null,
     };
   });
 
@@ -117,6 +128,7 @@ export async function fetchConsoleSuppliers() {
       has_catalog: (cCount[f.id] || 0) > 0,
       has_profile: hasProfile,
       last_activity: newest([f.updated_at, pLast[f.id], cLast[f.id], f.created_at]),
+      last_editor: editorName(f.updated_by),
     };
   });
 
