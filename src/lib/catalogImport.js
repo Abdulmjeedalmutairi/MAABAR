@@ -455,6 +455,14 @@ export function bulkApproveHighConfidence(factoryId, products, meta = {}, thresh
   return approveProducts(factoryId, rows, meta);
 }
 
+// Approve EVERY remaining product at once (any confidence) — for catalogs where
+// the whole extraction is already good and card-by-card review is unnecessary.
+// Touches only not-yet-decided rows (pending / edited); leaves approved + skipped.
+export function approveAllPending(factoryId, products, meta = {}) {
+  const rows = products.filter((p) => p.status === 'pending' || p.status === 'edited');
+  return approveProducts(factoryId, rows, meta);
+}
+
 export async function updateStagedProduct(id, extracted_json, image_path) {
   const patch = { extracted_json, status: 'edited' };
   if (image_path !== undefined) patch.image_path = image_path;

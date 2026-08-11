@@ -945,6 +945,17 @@ def run_extraction(pdf_path, *, model="gemini-2.5-flash", chunk_pages=80, min_pa
             prof_flags = [{"page_number": int(_lg["page_number"]), "kind": "logo",
                            "position": "", "description": "outline-detected"}] + prof_flags
         profile_imgs = match_and_score(products, images, prof_flags)
+        # Fallback: if neither the outline nor the model flagged a logo/cover, use
+        # the largest image on the earliest page (almost always the cover/branding)
+        # so a factory is NEVER created without a logo. The admin can still swap it.
+        if not profile_imgs and images:
+            first_pg = min(im["page"] for im in images)
+            cover = max((im for im in images if im["page"] == first_pg),
+                        key=lambda x: x["area"], default=None)
+            if cover is not None:
+                profile_imgs = [{**cover, "flag": {"kind": "cover", "position": "",
+                                                   "description": "fallback-cover"}}]
+                print("  logo: none flagged — using largest cover-page image as fallback")
         csv_fields = csv_prefill(csv_path, pdf_path) if csv_path else {}
         gfac = gem.get("factory") or {}
         factory_fields = {

@@ -7,7 +7,7 @@ import ProfileImagePicker from '../../components/admin/catalog/ProfileImagePicke
 import ProductReviewCard from '../../components/admin/catalog/ProductReviewCard';
 import {
   fetchImport, fetchFactory, fetchFactories, resolveFactory, HIGH_CONF,
-  approveProduct, bulkApproveHighConfidence, skipProduct, finalizeImport,
+  approveProduct, bulkApproveHighConfidence, approveAllPending, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
   cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
   uploadProfileImage, updateImportMode,
@@ -401,6 +401,18 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     } catch (e) { errMsg(e); }
     setBusy(false);
   };
+  // Approve EVERYTHING remaining (any confidence) — one click when the whole
+  // catalog is already good, instead of stepping through every card.
+  const handleApproveAll = async () => {
+    if (busy) return;
+    setBusy(true); setActionMsg({ ok: false, text: '' });
+    try {
+      const { count } = await approveAllPending(savedFactoryId, products, buildMeta());
+      setProducts((ps) => ps.map((p) => (p.status === 'pending' || p.status === 'edited' ? { ...p, status: 'approved' } : p)));
+      setActionMsg({ ok: true, text: isAr ? `تم اعتماد ${count} منتج.` : `Approved ${count} products.` });
+    } catch (e) { errMsg(e); }
+    setBusy(false);
+  };
   const handleFinalize = async () => {
     if (busy) return;
     setBusy(true);
@@ -780,13 +792,22 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                   <p className="ci-hint">{isAr ? 'احفظ المصنع أولاً لتفعيل اعتماد المنتجات.' : 'Save the factory first to enable product approval.'}</p>
                 ) : (
                   <>
-                    {counts.high > 0 && (
+                    {(counts.high + counts.mid) > 0 && (
                       <div style={{ marginBottom: 16 }}>
-                        <button className="ci-btn-primary" onClick={handleBulk} disabled={busy}>
-                          {isAr ? `اعتماد كل ذوي الثقة العالية (${counts.high})` : `Approve All High-Confidence (${counts.high})`}
-                        </button>
-                        <p className="ci-hint">
-                          {isAr ? `يضيف ${counts.high} منتجاً بثقة ≥ 0.7 إلى الكتالوج الحي دفعة واحدة.` : `Adds the ${counts.high} products scoring ≥ 0.7 to the live catalog in one step.`}
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <button className="ci-btn-primary" onClick={handleApproveAll} disabled={busy}>
+                            {isAr ? `اعتماد الكل (${counts.high + counts.mid})` : `Approve All (${counts.high + counts.mid})`}
+                          </button>
+                          {counts.high > 0 && counts.mid > 0 && (
+                            <button className="ci-btn-ghost" onClick={handleBulk} disabled={busy}>
+                              {isAr ? `الثقة العالية فقط (${counts.high})` : `High-confidence only (${counts.high})`}
+                            </button>
+                          )}
+                        </div>
+                        <p className="ci-hint" style={{ marginTop: 8 }}>
+                          {isAr
+                            ? `«اعتماد الكل» يضيف كل المنتجات المتبقّية (${counts.high + counts.mid}) إلى الكتالوج الحي دفعة واحدة — استخدمه إذا كانت المراجعة كلها تمام.`
+                            : `“Approve All” adds every remaining product (${counts.high + counts.mid}) to the live catalog at once — use it when the whole batch looks good.`}
                         </p>
                       </div>
                     )}
