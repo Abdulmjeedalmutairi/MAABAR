@@ -89,10 +89,12 @@
 .ac-sub { margin: 5px 0 0; font-size: 13.5px; color: var(--ac-muted); }
 
 /* ── Account chip ────────────────────────────────────────────────────────── */
-.ac-account { display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 6px; background: transparent; border: 1px solid transparent; border-radius: var(--ac-r-pill); cursor: pointer; min-height: 40px; transition: background .12s, border-color .12s; }
-.ac-account:hover { background: var(--ac-hover); border-color: var(--ac-line); }
-.ac-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; background: var(--ac-ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
-.ac-account-name { font-size: 13px; color: var(--ac-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-account { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 6px; background: var(--ac-panel); border: 1px solid var(--ac-line); border-radius: 14px; cursor: pointer; min-height: 46px; box-shadow: var(--ac-shadow-sm); transition: background .12s, border-color .12s, box-shadow .12s; }
+.ac-account:hover { background: var(--ac-hover); border-color: var(--ac-line-2); box-shadow: var(--ac-shadow); }
+.ac-avatar { width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0; background: linear-gradient(150deg, #2C2720, var(--ac-ink)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 2px rgba(26,24,20,0.18); }
+.ac-account-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.25; }
+.ac-account-name { font-size: 13.5px; font-weight: 650; color: var(--ac-ink); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-account-role { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ac-faint); }
 .ac-menu { position: absolute; top: calc(100% + 8px); min-width: 210px; z-index: 400; background: var(--ac-panel); border: 1px solid var(--ac-line); border-radius: 13px; box-shadow: var(--ac-shadow); overflow: hidden; }
 .ac-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; min-height: 44px; background: transparent; border: none; cursor: pointer; font-size: 13px; color: var(--ac-muted); transition: background .12s, color .12s; }
 .ac-menu-item:hover { background: var(--ac-hover); color: var(--ac-ink); }
@@ -270,7 +272,8 @@
   .ac-main.ltr, .ac-main.rtl { margin-inline-start: 0; }
   .ac-topbar { padding: 0 14px; height: 56px; }
   .ac-crumb-root, .ac-crumb-sep { display: none; }
-  .ac-account-name { display: none; }
+  .ac-account-meta { display: none; }
+  .ac-account { min-height: 40px; padding: 5px; }
   .ac-page { padding: 16px; }
   .ac-hamburger { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; background: transparent; border-radius: var(--ac-r-ctrl); color: var(--ac-ink); cursor: pointer; }
   .ac-drawer-ov { display: block; position: fixed; inset: 0; z-index: 99; background: rgba(26,24,20,0.4); backdrop-filter: blur(2px); }
