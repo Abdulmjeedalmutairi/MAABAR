@@ -85,10 +85,12 @@ export function convertCurrencyAmount(amount, sourceCurrency, targetCurrency, ra
 // Arabic display. Catalog prices are USD-denominated ($-prefixed); only the
 // $-anchored amounts are converted (quantities in the tier labels are left
 // untouched). Western digits + "ر.س" label. Non-price text passes through, so
-// "On request" callers still get null upstream.
+// "On request" callers still get null upstream. An optional "US"/"USD" prefix on
+// the amount (e.g. "US$1.50") is consumed too — otherwise the letters survive the
+// swap and render as a stray "US6 ر.س".
 export function catalogPriceToSAR(text, rates = DEFAULT_RATES) {
   const rate = (rates && rates.SAR) || DEFAULT_RATES.SAR;
-  return String(text || '').replace(/\$\s?(\d+(?:\.\d+)?)/g, (_m, num) => {
+  return String(text || '').replace(/(?:USD?)?\s?\$\s?(\d+(?:\.\d+)?)/gi, (_m, num) => {
     const sar = Math.round(parseFloat(num) * rate);
     return `${sar.toLocaleString('en-US')} ر.س`;
   });
