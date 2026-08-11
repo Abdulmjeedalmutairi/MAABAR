@@ -4,7 +4,7 @@ import ConsoleShell from '../../components/admin2/ConsoleShell';
 import {
   createImport, triggerExtraction, fetchImport, fetchImports, fetchFactories,
   resolveFactory, approveProducts, bulkApproveHighConfidence, finalizeImport,
-  workerConfigured, HIGH_CONF,
+  workerConfigured, HIGH_CONF, uploadProfileImage,
 } from '../../lib/catalogImport';
 import { displayCategoryForCode } from '../../lib/factoryCategories';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
@@ -75,7 +75,7 @@ export default function ConsoleImport({ user, profile, lang }) {
         {step === 1 && <UploadStep isAr={isAr} nav={nav} onStarted={(id) => { goStep(id); setStep(2); }} setErr={setErr} />}
         {step === 2 && <ExtractStep isAr={isAr} importId={importId} onExtracted={(b, ps) => { setBatch(b); setProducts(ps); setStep(3); }} onFailed={setErr} onRetry={() => setStep(1)} />}
         {step === 3 && <PreviewStep isAr={isAr} lang={lang} batch={batch} products={products} importId={importId} onNext={() => setStep(4)} />}
-        {step === 4 && <AssignStep isAr={isAr} lang={lang} batch={batch} importId={importId} onAssigned={(fid) => { setFactoryId(fid); setStep(5); }} setErr={setErr} />}
+        {step === 4 && <AssignStep isAr={isAr} lang={lang} batch={batch} products={products} importId={importId} onAssigned={(fid) => { setFactoryId(fid); setStep(5); }} setErr={setErr} />}
         {step === 5 && <PublishStep isAr={isAr} lang={lang} batch={batch} products={products} importId={importId} factoryId={factoryId} nav={nav} setErr={setErr} />}
       </div>
     </ConsoleShell>
@@ -223,7 +223,7 @@ function PreviewStep({ isAr, lang, batch, products, importId, onNext }) {
 }
 
 // ── Step 4: Assign supplier ──────────────────────────────────────────────────
-function AssignStep({ isAr, lang, batch, importId, onAssigned, setErr }) {
+function AssignStep({ isAr, lang, batch, products = [], importId, onAssigned, setErr }) {
   const ff = batch?.factory_fields || {};
   const cats = UI_CATEGORIES[lang] || UI_CATEGORIES.ar;
   const [mode, setMode] = useState('new');
@@ -231,6 +231,32 @@ function AssignStep({ isAr, lang, batch, importId, onAssigned, setErr }) {
   const [existingId, setExistingId] = useState('');
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Logo: the worker already flags one (profile_image_path) + alternates
+  // (factory_fields.profile_candidates); product images are further fallbacks.
+  // Default-select the worker's pick so a new factory is NEVER created logo-less,
+  // and let the admin switch to any candidate or upload one from their device.
+  const isUrl = (u) => typeof u === 'string' && /^https?:\/\//i.test(u);
+  const logoPool = Array.from(new Set([
+    batch?.profile_image_path,
+    ...(Array.isArray(ff.profile_candidates) ? ff.profile_candidates : []),
+    ...products.map((p) => p.image_path),
+  ].filter(isUrl)));
+  const [logo, setLogo] = useState(
+    isUrl(batch?.profile_image_path) ? batch.profile_image_path
+      : (Array.isArray(ff.profile_candidates) && ff.profile_candidates.find(isUrl)) || null,
+  );
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoRef = useRef(null);
+  const onPickLogo = async (e) => {
+    const file = e.target.files?.[0];
+    if (logoRef.current) logoRef.current.value = '';
+    if (!file) return;
+    setUploadingLogo(true);
+    try { const url = await uploadProfileImage(importId, file); setLogo(url); }
+    catch (e2) { setErr((isAr ? 'تعذّر رفع الشعار: ' : 'Logo upload failed: ') + (e2.message || '')); }
+    setUploadingLogo(false);
+  };
   // Editable factory identity, pre-filled from what the AI detected — the admin
   // confirms/corrects it before the row is created (category is NOT NULL, etc.).
   const [form, setForm] = useState({
@@ -254,7 +280,10 @@ function AssignStep({ isAr, lang, batch, importId, onAssigned, setErr }) {
       const fields = mode === 'new'
         ? { ...ff, name_original: form.name_original.trim(), name_en: form.name_en.trim(), category: form.category || 'other', city: form.city.trim(), country: form.country.trim() || 'China', email: form.email.trim(), phone: form.phone.trim() }
         : ff;
-      const fid = await resolveFactory({ importId, mode, fields, existingId: mode === 'existing' ? existingId : undefined, profileImage: null });
+      // New factory → set the chosen logo. Existing → keep its own logo unless the
+      // admin explicitly picked/uploaded a different one here.
+      const profileImage = mode === 'new' ? logo : (logo && logo !== batch?.profile_image_path ? logo : null);
+      const fid = await resolveFactory({ importId, mode, fields, existingId: mode === 'existing' ? existingId : undefined, profileImage });
       onAssigned(fid);
     } catch (e) { setErr(e.message || 'assign failed'); setBusy(false); }
   };
@@ -298,6 +327,44 @@ function AssignStep({ isAr, lang, batch, importId, onAssigned, setErr }) {
           </>
         )}
       </div>
+
+      <div className="ac-card">
+        <p className="ac-card-title">{isAr ? 'شعار المصنع' : 'Factory logo'}</p>
+        <p style={{ margin: '-4px 0 12px', fontSize: 12, color: 'var(--ac-faint)' }}>
+          {mode === 'existing'
+            ? (isAr ? 'اختياري — اتركه ليبقى شعار المصنع الحالي، أو اختر/ارفع بديلاً.' : 'Optional — leave to keep the factory’s current logo, or pick/upload a replacement.')
+            : (isAr ? 'اختار جيميني شعاراً — بدّله أو ارفع واحداً من جهازك إن لزم.' : 'Gemini picked a logo — switch it or upload one from your device.')}
+        </p>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ width: 88, height: 88, borderRadius: 12, border: '1px solid var(--ac-line)', background: '#fff', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {logo ? <img src={logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              : <span style={{ fontSize: 11, color: 'var(--ac-faint)' }}>{isAr ? 'بلا شعار' : 'No logo'}</span>}
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            {logoPool.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                {logoPool.slice(0, 12).map((u) => (
+                  <button key={u} type="button" onClick={() => setLogo(u)}
+                    style={{ width: 46, height: 46, borderRadius: 8, padding: 0, cursor: 'pointer', overflow: 'hidden', background: '#fff',
+                      border: `2px solid ${logo === u ? '#1a1814' : 'var(--ac-line)'}` }}>
+                    <img src={u} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button type="button" className="ac-btn ac-btn-sm" onClick={() => logoRef.current?.click()} disabled={uploadingLogo}>
+                {uploadingLogo ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : (isAr ? '↑ رفع شعار من الجهاز' : '↑ Upload from device')}
+              </button>
+              {logo && (
+                <button type="button" className="ac-btn ac-btn-sm" onClick={() => setLogo(null)}>{isAr ? 'إزالة' : 'Clear'}</button>
+              )}
+              <input ref={logoRef} type="file" accept="image/*" hidden onChange={onPickLogo} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="ac-savebar"><button className="ac-btn ac-btn-primary" onClick={confirm} disabled={busy}>{busy ? (isAr ? 'جارٍ…' : 'Working…') : (isAr ? 'التالي: النشر' : 'Next: publish')}</button></div>
     </>
   );
