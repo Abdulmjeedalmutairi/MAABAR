@@ -62,8 +62,8 @@ function Brand({ isAr }) {
         <span style={{ color: 'var(--ac-line-2)', fontSize: 13 }}>|</span>
         <span style={{ fontFamily: 'var(--font-ar)', fontSize: 14, fontWeight: 600, color: 'var(--ac-muted)' }}>مَعبر</span>
       </div>
-      <div style={{ marginTop: 6, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.2em', color: 'var(--ac-faint)', textTransform: 'uppercase' }}>
-        {isAr ? 'كونسول' : 'Console'}
+      <div style={{ marginTop: 6, fontSize: 9.5, fontWeight: 700, letterSpacing: isAr ? '0' : '0.2em', color: 'var(--ac-faint)', textTransform: 'uppercase', fontFamily: isAr ? 'var(--font-ar)' : undefined }}>
+        {isAr ? 'لوحة الإدارة' : 'Admin Panel'}
       </div>
     </div>
   );
@@ -91,9 +91,12 @@ export default function ConsoleShell({ children, user, profile, lang, active }) 
 
   const name = profile?.full_name || profile?.email || 'Admin';
   const initial = (name || 'A').trim().charAt(0).toUpperCase();
-  const role = (profile?.role || '').replace('_', ' ');
+  const roleRaw = (profile?.role || '').toLowerCase();
+  const role = roleRaw === 'super_admin' ? (isAr ? 'المالك' : 'Owner')
+    : roleRaw === 'admin' ? (isAr ? 'مشرفة' : 'Admin')
+      : (profile?.role || '').replace('_', ' ');
   const current = NAV.find((n) => n.key === active);
-  const pageLabel = current ? (isAr ? current.ar : current.en) : (isAr ? 'كونسول' : 'Console');
+  const pageLabel = current ? (isAr ? current.ar : current.en) : (isAr ? 'لوحة الإدارة' : 'Admin Panel');
 
   const Sidebar = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -137,7 +140,7 @@ export default function ConsoleShell({ children, user, profile, lang, active }) 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                 <button className="ac-hamburger" onClick={() => setDrawer(true)} aria-label={isAr ? 'القائمة' : 'Menu'}><Icon name="menu" size={20} /></button>
                 <div className="ac-crumb">
-                  <span className="ac-crumb-root">{isAr ? 'كونسول' : 'Console'}</span>
+                  <span className="ac-crumb-root" style={{ fontFamily: isAr ? 'var(--font-ar)' : undefined }}>{isAr ? 'لوحة الإدارة' : 'Admin Panel'}</span>
                   <span className="ac-crumb-sep">/</span>
                   <span className="ac-crumb-page" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{pageLabel}</span>
                 </div>
@@ -145,7 +148,10 @@ export default function ConsoleShell({ children, user, profile, lang, active }) 
               <div ref={menuRef} style={{ position: 'relative' }}>
                 <button className="ac-account" onClick={() => setMenu((o) => !o)} style={{ flexDirection: isAr ? 'row-reverse' : 'row' }}>
                   <span className="ac-avatar">{initial}</span>
-                  <span className="ac-account-name" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{name}</span>
+                  <span className="ac-account-meta" style={{ textAlign: isAr ? 'right' : 'left' }}>
+                    <span className="ac-account-name" style={{ fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{name}</span>
+                    {role && <span className="ac-account-role" style={{ fontFamily: isAr ? 'var(--font-ar)' : undefined }}>{role}</span>}
+                  </span>
                   <Icon name="chevron" size={14} style={{ opacity: 0.5 }} />
                 </button>
                 {menu && (

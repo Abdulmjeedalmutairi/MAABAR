@@ -39,6 +39,7 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
   const TAB_KEYS = ['overview', 'products', 'catalogs', 'requests', 'messages', 'profile', 'settings'];
   const [fac, setFac] = useState(null);
   const [account, setAccount] = useState(null);
+  const [editor, setEditor] = useState(null);   // who last created/edited this factory
   const [pCount, setPCount] = useState(0);
   const [err, setErr] = useState('');
   const [tab, setTab] = useState(TAB_KEYS.includes(params.get('tab')) ? params.get('tab') : 'overview');
@@ -56,6 +57,10 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
         sb.from('profiles').select('id, email, full_name, created_at').eq('id', f.linked_supplier_id).maybeSingle()
           .then(({ data }) => setAccount(data || null));
       }
+      if (f.updated_by) {
+        sb.from('profiles').select('id, full_name, email').eq('id', f.updated_by).maybeSingle()
+          .then(({ data }) => setEditor(data ? (nf(data.full_name) || nf(data.email) || null) : null));
+      } else { setEditor(null); }
     } catch (e) { setErr(e.message || 'load failed'); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
@@ -96,6 +101,13 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 className="ac-dname">{name}</h1>
             {latin && <p className="ac-dlatin" dir="ltr" style={{ textAlign: isAr ? 'right' : 'left' }}>{latin}</p>}
+            {(editor || fac.updated_at) && (
+              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: 'var(--ac-faint)', textAlign: isAr ? 'right' : 'left' }}>
+                {isAr ? 'آخر تعديل' : 'Last edited'}
+                {fac.updated_at ? ` · ${new Date(fac.updated_at).toLocaleDateString(isAr ? 'ar' : 'en')}` : ''}
+                {editor && <>{isAr ? ' · بواسطة ' : ' · by '}<span style={{ color: 'var(--ac-muted)', fontWeight: 600 }}>{editor}</span></>}
+              </p>
+            )}
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}>
               {fac.linked_supplier_id
                 ? <span className="ac-badge ok"><span className="dot" />{isAr ? 'مسجّل' : 'Registered'}</span>
