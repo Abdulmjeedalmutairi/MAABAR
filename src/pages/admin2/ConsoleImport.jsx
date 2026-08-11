@@ -4,7 +4,7 @@ import ConsoleShell from '../../components/admin2/ConsoleShell';
 import {
   createImport, triggerExtraction, fetchImport, fetchImports, fetchFactories,
   resolveFactory, approveProducts, bulkApproveHighConfidence, finalizeImport,
-  workerConfigured, HIGH_CONF, uploadProfileImage,
+  workerConfigured, HIGH_CONF, uploadProfileImage, setAllFactoryProductsPrice,
 } from '../../lib/catalogImport';
 import { displayCategoryForCode } from '../../lib/factoryCategories';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
@@ -380,12 +380,21 @@ function PublishStep({ isAr, lang, batch, products, importId, factoryId, nav, se
   const [scope, setScope] = useState('all');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  // Optional: this factory quotes ONE price for its whole range — stamp it on
+  // every product right after publishing, instead of editing them one by one.
+  const [uniformOn, setUniformOn] = useState(false);
+  const [upPrice, setUpPrice] = useState('');
+  const [upCur, setUpCur] = useState('USD');
+  const CUR = ['USD', 'CNY', 'SAR', 'AED', 'EUR'];
 
   const publish = async () => {
     setBusy(true); setErr('');
     try {
       if (scope === 'high') await bulkApproveHighConfidence(factoryId, products, meta);
       else await approveProducts(factoryId, pending, meta);
+      // Uniform price applies to every product of the factory, so it must run
+      // AFTER the staged rows are inserted into factory_products.
+      if (uniformOn && upPrice.trim()) await setAllFactoryProductsPrice(factoryId, upPrice.trim(), upCur);
       await finalizeImport(importId);
       setDone(true);
     } catch (e) { setErr(e.message || 'publish failed'); setBusy(false); }
@@ -418,7 +427,26 @@ function PublishStep({ isAr, lang, batch, products, importId, factoryId, nav, se
           <input type="radio" checked={scope === 'high'} onChange={() => setScope('high')} style={{ width: 18, height: 18, accentColor: '#1a1814' }} />
         </label>
       </div>
-      <div className="ac-savebar"><button className="ac-btn ac-btn-primary" onClick={publish} disabled={busy}>{busy ? (isAr ? 'جارٍ النشر…' : 'Publishing…') : (isAr ? 'نشر' : 'Publish')}</button></div>
+
+      <div className="ac-card">
+        <label className="ac-toggle-row" style={{ cursor: 'pointer' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13.5 }}>{isAr ? 'سعر موحّد لكل المنتجات' : 'Uniform price for all products'}</div>
+            <div style={{ fontSize: 12, color: 'var(--ac-faint)' }}>{isAr ? 'لمصنع يعطي سعرًا واحدًا لكل المدى — يُطبَّق على كل المنتجات عند النشر.' : 'For a factory that quotes one price for its whole range — stamped on every product on publish.'}</div>
+          </div>
+          <input type="checkbox" checked={uniformOn} onChange={(e) => setUniformOn(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#1a1814' }} />
+        </label>
+        {uniformOn && (
+          <div className="ac-form-grid" style={{ marginTop: 12 }}>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'السعر' : 'Price'}</label>
+              <input className="ac-input" value={upPrice} onChange={(e) => setUpPrice(e.target.value)} dir="ltr" placeholder={isAr ? 'مثال: 12.50' : 'e.g. 12.50'} /></div>
+            <div className="ac-field"><label className="ac-flabel">{isAr ? 'العملة' : 'Currency'}</label>
+              <select className="ac-input" value={upCur} onChange={(e) => setUpCur(e.target.value)}>{CUR.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
+          </div>
+        )}
+      </div>
+
+      <div className="ac-savebar"><button className="ac-btn ac-btn-primary" onClick={publish} disabled={busy || (uniformOn && !upPrice.trim())}>{busy ? (isAr ? 'جارٍ النشر…' : 'Publishing…') : (isAr ? 'نشر' : 'Publish')}</button></div>
     </>
   );
 }
