@@ -15,6 +15,7 @@ const PATHS = {
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   menu: 'M3 6h18M3 12h18M3 18h18',
   chevron: 'M6 9l6 6 6-6',
+  contacts: 'M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z',
 };
 export function Icon({ name, size = 17, style }) {
   const d = PATHS[name];
@@ -33,6 +34,7 @@ export function Icon({ name, size = 17, style }) {
 const NAV = [
   { key: 'dashboard',  path: '/admin2/dashboard',  legacy: null,                    icon: 'dashboard',  ar: 'الرئيسية',       en: 'Dashboard',          live: true },
   { key: 'suppliers',  path: '/admin2/suppliers',  legacy: null,                    icon: 'suppliers',  ar: 'الموردون',       en: 'Suppliers',          live: true },
+  { key: 'factory-contacts', path: '/admin2/factory-contacts', legacy: null,          icon: 'contacts',   ar: 'تواصل المصانع',  en: 'Factory Contacts',   live: true },
   { key: 'quotations', path: '/admin2/quotations', legacy: null,                    icon: 'quotations', ar: 'طلبات التسعير',  en: 'Quotation Requests', live: true },
   { key: 'import',     path: '/admin2/import',     legacy: null,                    icon: 'import',     ar: 'استيراد كتالوج', en: 'Import Catalog',     live: true },
   { key: 'notifs',     path: '/admin2/notifications', legacy: null,                 icon: 'bell',       ar: 'الإشعارات',      en: 'Notifications',      live: true },

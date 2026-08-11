@@ -74,6 +74,7 @@ import ConsoleImport from './pages/admin2/ConsoleImport';
 import ConsoleTemplates from './pages/admin2/ConsoleTemplates';
 import ConsoleNotifications from './pages/admin2/ConsoleNotifications';
 import ConsoleSuppliers from './pages/admin2/ConsoleSuppliers';
+import ConsoleFactoryContacts from './pages/admin2/ConsoleFactoryContacts';
 import ConsoleSupplierDetail from './pages/admin2/ConsoleSupplierDetail';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
 import AdminCatalogImport from './pages/admin/AdminCatalogImport';
@@ -414,6 +415,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/admin2"                  element={<Navigate to="/admin2/dashboard" replace />} />
         <Route path="/admin2/dashboard"        element={<ConsoleDashboard     {...sharedProps} />} />
         <Route path="/admin2/suppliers"        element={<ConsoleSuppliers     {...sharedProps} />} />
+        <Route path="/admin2/factory-contacts" element={<ConsoleFactoryContacts {...sharedProps} />} />
         <Route path="/admin2/suppliers/:id"    element={<ConsoleSupplierDetail {...sharedProps} />} />
         <Route path="/admin2/quotations"       element={<ConsoleQuotations    {...sharedProps} />} />
         <Route path="/admin2/import"           element={<ConsoleImport        {...sharedProps} />} />
