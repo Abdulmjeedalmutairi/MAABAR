@@ -62,7 +62,7 @@ using (
     )
     and exists (
       select 1 from public.products p
-      where p.id::text = requests.product_ref
+      where p.id = requests.product_ref          -- product_ref is uuid (matches live policy)
         and p.supplier_id = auth.uid()
     )
   )
