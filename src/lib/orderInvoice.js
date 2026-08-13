@@ -46,13 +46,15 @@ export async function fetchInvoiceById(id) {
   return data || null;
 }
 
-// The supplier's own active products (for the chat-invoice product picker).
+// The supplier's own products (for the chat-invoice product picker). Includes
+// inactive/unpublished ones — a supplier can invoice a product they agreed on in
+// chat even before their account is verified/the product is published.
 export async function fetchMyProductsForInvoice() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return [];
   const { data } = await sb.from('products')
     .select('id, name_ar, name_en, name_zh, price_from, currency')
-    .eq('supplier_id', user.id).eq('is_active', true).order('created_at', { ascending: false });
+    .eq('supplier_id', user.id).order('created_at', { ascending: false });
   return data || [];
 }
 
