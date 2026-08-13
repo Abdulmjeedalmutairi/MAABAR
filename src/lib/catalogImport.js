@@ -168,6 +168,30 @@ export async function uploadProfileImage(importId, file) {
   return sb.storage.from('factory-images').getPublicUrl(path).data.publicUrl;
 }
 
+// Upload a SEPARATE price file (PDF / Excel / CSV / image) some factories send
+// instead of putting prices on the catalog. Stored in the private factory-catalogs
+// bucket and recorded on the import row; the worker's /match-prices then reads it.
+// Returns the stored object path.
+export async function uploadPriceFile(importId, file) {
+  const ext = ((file?.name || '').split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
+  const path = `${importId}/price.${ext}`;
+  const up = await sb.storage.from('factory-catalogs').upload(path, file, {
+    contentType: file.type || 'application/octet-stream', upsert: true,
+  });
+  if (up.error) throw up.error;
+  const { error } = await sb.from('factory_catalog_imports')
+    .update({ price_file_path: path, price_matched_at: null }).eq('id', importId);
+  if (error) throw error;
+  return path;
+}
+
+// Match the uploaded price file to the extracted products (Gemini, on the worker).
+// The worker writes each matched price/currency into the staging rows' extracted_json;
+// returns { matched, total, unmatched }. The UI refreshes to show the filled prices.
+export async function triggerPriceMatch(importId) {
+  return callWorker('/match-prices', { import_id: importId });
+}
+
 // Update the per-catalog guidance (used to re-curate with new instructions).
 export async function updateImportNotes(importId, notes) {
   const { error } = await sb.from('factory_catalog_imports')
