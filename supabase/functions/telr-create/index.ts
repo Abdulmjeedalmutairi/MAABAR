@@ -24,9 +24,15 @@ function json(body: unknown, status: number, req: Request) {
 }
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-const TELR_STORE_ID = Deno.env.get('TELR_STORE_ID') || '';
-const TELR_AUTH_KEY = Deno.env.get('TELR_AUTH_KEY') || '';
 const TELR_TEST = Deno.env.get('TELR_TEST') ?? '1';   // "1" test, "0" live
+// Separate Telr stores for web vs app (platform picks the credentials).
+function telrCreds(platform: string) {
+  const app = platform === 'app';
+  return {
+    store: Deno.env.get(app ? 'TELR_STORE_ID_APP' : 'TELR_STORE_ID') || '',
+    key: Deno.env.get(app ? 'TELR_AUTH_KEY_APP' : 'TELR_AUTH_KEY') || '',
+  };
+}
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -38,10 +44,11 @@ const DEPOSIT_PCT = 0.30;
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
   if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, req);
-  if (!TELR_STORE_ID || !TELR_AUTH_KEY) return json({ error: 'Telr credentials are not configured on the server.' }, 500, req);
 
   try {
-    const { requestId, stage, returnUrl } = await req.json();
+    const { requestId, stage, returnUrl, platform } = await req.json();
+    const { store, key } = telrCreds(String(platform || 'web'));
+    if (!store || !key) return json({ error: 'Telr credentials are not configured on the server.' }, 500, req);
     const stg = String(stage || 'full');
     if (!requestId || !['deposit', 'balance', 'full'].includes(stg)) {
       return json({ error: 'requestId and a valid stage (deposit|balance|full) are required.' }, 400, req);
@@ -97,8 +104,8 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         method: 'create',
-        store: Number(TELR_STORE_ID),
-        authkey: TELR_AUTH_KEY,
+        store: Number(store),
+        authkey: key,
         order: {
           cartid,
           test: TELR_TEST,
