@@ -21,34 +21,30 @@ async function callEdge(fn, body) {
   return json;
 }
 
-export function createTelrOrder(requestId, stage, returnUrl) {
-  return callEdge('telr-create', { requestId, stage, platform: 'web', returnUrl });
-}
+const stashKey = (id) => `telr:${id}`;
 
-export function verifyTelrOrder(requestId, ref) {
-  return callEdge('telr-verify', { requestId, ref, platform: 'web' });
-}
-
-const stashKey = (requestId) => `telr:${requestId}`;
-
-// Start a hosted-page payment: create the order, stash its ref, redirect to Telr.
+// Start a hosted-page payment for an order (kind 'order') or a chat invoice
+// (kind 'invoice'): create the Telr order, stash its ref, redirect to Telr.
 // stage: 'deposit' | 'balance' | 'full'.
-export async function startTelrPayment(requestId, stage) {
-  const returnUrl = `${window.location.origin}/telr-return?requestId=${encodeURIComponent(requestId)}&stage=${encodeURIComponent(stage)}`;
-  const order = await createTelrOrder(requestId, stage, returnUrl);
-  try { sessionStorage.setItem(stashKey(requestId), JSON.stringify({ ref: order.ref, stage })); } catch { /* ignore */ }
+export async function startTelrPayment(id, stage, kind = 'order') {
+  const idParam = kind === 'invoice' ? `invoiceId=${encodeURIComponent(id)}` : `requestId=${encodeURIComponent(id)}`;
+  const returnUrl = `${window.location.origin}/telr-return?${idParam}&stage=${encodeURIComponent(stage)}&kind=${kind}`;
+  const createBody = kind === 'invoice' ? { invoiceId: id } : { requestId: id };
+  const order = await callEdge('telr-create', { ...createBody, stage, platform: 'web', returnUrl });
+  try { sessionStorage.setItem(stashKey(id), JSON.stringify({ ref: order.ref, stage, kind })); } catch { /* ignore */ }
   window.location.href = order.url;
 }
 
 // On the return page: recover the stashed ref and verify server-side.
-export async function completeTelrReturn(requestId) {
-  let ref = null;
+export async function completeTelrReturn(id) {
+  let ref = null; let kind = 'order';
   try {
-    const raw = sessionStorage.getItem(stashKey(requestId));
-    if (raw) ref = JSON.parse(raw).ref;
+    const raw = sessionStorage.getItem(stashKey(id));
+    if (raw) { const s = JSON.parse(raw); ref = s.ref; kind = s.kind || 'order'; }
   } catch { /* ignore */ }
   if (!ref) throw new Error('Missing payment reference — please retry the payment.');
-  const result = await verifyTelrOrder(requestId, ref);
-  try { sessionStorage.removeItem(stashKey(requestId)); } catch { /* ignore */ }
+  const body = kind === 'invoice' ? { invoiceId: id, ref } : { requestId: id, ref };
+  const result = await callEdge('telr-verify', { ...body, platform: 'web' });
+  try { sessionStorage.removeItem(stashKey(id)); } catch { /* ignore */ }
   return result;
 }

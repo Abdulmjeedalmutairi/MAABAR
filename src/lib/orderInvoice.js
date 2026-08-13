@@ -30,6 +30,32 @@ export async function issueOrderInvoice(requestId) {
   return data;
 }
 
+// Chat-agreement invoice: a supplier issues an invoice to a trader for one of
+// their products (agreed in chat). Returns the created invoice (status 'issued').
+export async function issueChatInvoice({ buyerId, productRef, quantity, unitPrice, incoterms, port, hsCode, notes, currency }) {
+  const { data, error } = await sb.rpc('issue_chat_invoice', {
+    p_buyer_id: buyerId, p_product_ref: productRef, p_quantity: Number(quantity) || 1, p_unit_price: Number(unitPrice) || 0,
+    p_incoterms: incoterms || null, p_port: port || null, p_hs_code: hsCode || null, p_notes: notes || null, p_currency: currency || 'SAR',
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchInvoiceById(id) {
+  const { data } = await sb.from('order_invoices').select('*').eq('id', id).maybeSingle();
+  return data || null;
+}
+
+// The supplier's own active products (for the chat-invoice product picker).
+export async function fetchMyProductsForInvoice() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return [];
+  const { data } = await sb.from('products')
+    .select('id, name_ar, name_en, name_zh, price_from, currency')
+    .eq('supplier_id', user.id).eq('is_active', true).order('created_at', { ascending: false });
+  return data || [];
+}
+
 // A sensible default first line item from the order/product.
 export function defaultLineItem(order) {
   const qty = Number(order?.quantity) || 1;

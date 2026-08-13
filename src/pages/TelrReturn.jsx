@@ -9,23 +9,23 @@ export default function TelrReturn({ lang = 'ar' }) {
   const isAr = lang === 'ar';
   const nav = useNavigate();
   const [params] = useSearchParams();
-  const requestId = params.get('requestId');
+  const id = params.get('requestId') || params.get('invoiceId');
   const [state, setState] = useState('verifying'); // verifying | ok | failed
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!requestId) { setState('failed'); setMessage(isAr ? 'طلب غير معروف.' : 'Unknown order.'); return; }
+      if (!id) { setState('failed'); setMessage(isAr ? 'مرجع غير معروف.' : 'Unknown reference.'); return; }
       try {
-        await completeTelrReturn(requestId);
+        await completeTelrReturn(id);
         if (!cancelled) { setState('ok'); }
       } catch (e) {
         if (!cancelled) { setState('failed'); setMessage(e.message || (isAr ? 'تعذّر تأكيد الدفع.' : 'Could not confirm payment.')); }
       }
     })();
     return () => { cancelled = true; };
-  }, [requestId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const t = {
     verifying: isAr ? 'جارٍ تأكيد الدفع…' : 'Confirming your payment…',

@@ -9,6 +9,8 @@ import { translateChatMessage } from '../lib/maabarAi/client';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
 import BrandedLoading from '../components/BrandedLoading';
 import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessage, fetchOwnerFactoryMessages, sendOwnerFactoryMessage } from '../lib/factoryChat';
+import ChatInvoiceComposer from '../components/ChatInvoiceComposer';
+import ChatInvoiceCard from '../components/ChatInvoiceCard';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
@@ -109,7 +111,7 @@ const COPY = {
 };
 
 function isMediaMessage(content) {
-  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:'));
+  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:') || content.startsWith('[invoice:'));
 }
 
 export default function Chat({ lang, user, profile }) {
@@ -123,6 +125,10 @@ export default function Chat({ lang, user, profile }) {
   const isFactory = !!factoryId;
   const isFactoryOwner = isFactory && !!traderId;
   const productRef = location.state?.product || null;
+  // A supplier can issue a chat invoice to the counterpart buyer (direct chat or
+  // the factory-owner view); the buyer is the conversation counterpart.
+  const invoiceBuyerId = isFactoryOwner ? traderId : (isFactory ? null : partnerId);
+  const canIssueInvoice = profile?.role === 'supplier' && !!invoiceBuyerId;
   const [messages, setMessages] = useState([]);
   const [partner, setPartner] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +137,7 @@ export default function Chat({ lang, user, profile }) {
   const [translations, setTranslations] = useState({});
   const [translatingIds, setTranslatingIds] = useState(new Set());
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showInvoiceComposer, setShowInvoiceComposer] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [chinaTime, setChinaTime] = useState('');
   const bodyRef = useRef(null);
@@ -491,6 +498,9 @@ export default function Chat({ lang, user, profile }) {
   };
 
   const renderMessageContent = (content) => {
+    if (content?.startsWith('[invoice:') && content.endsWith(']')) {
+      return <ChatInvoiceCard invoiceId={content.slice(9, -1)} myId={user?.id} lang={lang} />;
+    }
     if (content?.startsWith('[img:') && content.endsWith(']')) {
       const url = content.slice(5, -1);
       return <img src={url} alt="" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 'var(--radius-md)', display: 'block', objectFit: 'cover' }} />;
@@ -562,6 +572,12 @@ export default function Chat({ lang, user, profile }) {
             )}
           </div>
         </div>
+        {canIssueInvoice && (
+          <button onClick={() => setShowInvoiceComposer(true)}
+            style={{ alignSelf: 'center', background: 'none', border: '1px solid #0C6B5A', color: '#0C6B5A', borderRadius: 8, padding: '6px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {isAr ? '🧾 فاتورة' : '🧾 Invoice'}
+          </button>
+        )}
       </div>
 
       <div style={{
@@ -755,6 +771,15 @@ export default function Chat({ lang, user, profile }) {
           </svg>
         </button>
       </div>
+
+      {showInvoiceComposer && canIssueInvoice && (
+        <ChatInvoiceComposer
+          buyerId={invoiceBuyerId}
+          lang={lang}
+          onClose={() => setShowInvoiceComposer(false)}
+          onIssued={(inv) => { setShowInvoiceComposer(false); sendMessage(`[invoice:${inv.id}]`); }}
+        />
+      )}
     </div>
   );
 }
