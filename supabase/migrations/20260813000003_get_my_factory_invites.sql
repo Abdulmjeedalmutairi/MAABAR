@@ -19,12 +19,12 @@ returns table (
   factory_product_id uuid,
   title_ar text,
   title_en text,
-  quantity integer
+  quantity text            -- requests.quantity is a text column; keep it as-is
 )
 language sql stable security definer set search_path to 'public' as $function$
   select i.slug, i.request_id, i.status, i.created_at, i.expires_at,
          i.factory_id, i.factory_product_id,
-         r.title_ar, r.title_en, r.quantity
+         r.title_ar, r.title_en, r.quantity::text
   from public.request_factory_invites i
   join public.factory_directory d
     on d.id = i.factory_id and d.linked_supplier_id = auth.uid()
