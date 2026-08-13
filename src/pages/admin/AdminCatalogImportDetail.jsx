@@ -10,7 +10,7 @@ import {
   approveProduct, bulkApproveHighConfidence, approveAllPending, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
   cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
-  uploadProfileImage, updateImportMode,
+  uploadProfileImage, updateImportMode, uploadPriceFile, triggerPriceMatch,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -421,6 +421,71 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
     setBusy(false);
   };
 
+  // ── Separate price file — upload + Gemini match, then an easy price review ──
+  const [priceFile, setPriceFile] = useState(null);
+  const [matching, setMatching] = useState(false);
+  const [priceMsg, setPriceMsg] = useState({ ok: false, text: '' });
+  const [priceEdits, setPriceEdits] = useState({});   // { [pid]: { price, currency } }
+  const [savingPrices, setSavingPrices] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(false);   // reveal the review table
+  const priceFileRef = useRef(null);
+
+  const priceVal = (p) => (priceEdits[p.id]?.price ?? p.extracted_json?.price ?? '');
+  const currVal = (p) => (priceEdits[p.id]?.currency ?? p.extracted_json?.currency ?? '');
+  const editPrice = (p, field, v) => setPriceEdits((e) => ({
+    ...e,
+    [p.id]: {
+      price: field === 'price' ? v : (e[p.id]?.price ?? p.extracted_json?.price ?? ''),
+      currency: field === 'currency' ? v : (e[p.id]?.currency ?? p.extracted_json?.currency ?? ''),
+    },
+  }));
+
+  // Upload the price file, then let the worker match it to the extracted products.
+  const runPriceMatch = async () => {
+    if (!priceFile || matching) return;
+    setMatching(true); setPriceMsg({ ok: false, text: '' });
+    try {
+      await uploadPriceFile(id, priceFile);
+      const res = await triggerPriceMatch(id);
+      await load(true);           // refresh staging → prices now filled in
+      setPriceEdits({}); setPriceOpen(true);
+      setPriceFile(null); if (priceFileRef.current) priceFileRef.current.value = '';
+      setPriceMsg({ ok: true, text: isAr
+        ? `طوبقت الأسعار لـ ${res.matched} من ${res.total} منتج${res.unmatched ? ` (${res.unmatched} بدون سعر)` : ''}.`
+        : `Matched ${res.matched} of ${res.total} products${res.unmatched ? ` (${res.unmatched} left unpriced)` : ''}.` });
+    } catch (e) { setPriceMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setMatching(false);
+  };
+
+  // Persist the reviewed prices back to staging; optionally approve everything in
+  // one go (the "I glanced and I'm sure" path the admin asked for).
+  const savePrices = async (thenApproveAll = false) => {
+    setSavingPrices(true); setPriceMsg({ ok: false, text: '' });
+    try {
+      const fresh = products.map((p) => {
+        const pe = priceEdits[p.id];
+        if (!pe) return p;
+        const ej = { ...(p.extracted_json || {}), price: (pe.price || '').trim() || null, currency: (pe.currency || '').trim() || null };
+        return { ...p, extracted_json: ej, status: p.status === 'pending' ? 'edited' : p.status };
+      });
+      await Promise.all(Object.keys(priceEdits).map((pid) => {
+        const p = fresh.find((x) => x.id === pid);
+        return p ? updateStagedProduct(pid, p.extracted_json, undefined) : null;
+      }));
+      setProducts(fresh); setPriceEdits({});
+      if (thenApproveAll && savedFactoryId) {
+        const { count } = await approveAllPending(savedFactoryId, fresh, buildMeta());
+        setProducts((ps) => ps.map((p) => (p.status === 'pending' || p.status === 'edited' ? { ...p, status: 'approved' } : p)));
+        setPriceMsg({ ok: true, text: isAr ? `تم حفظ الأسعار واعتماد ${count} منتج.` : `Prices saved and ${count} products approved.` });
+      } else {
+        setPriceMsg({ ok: true, text: isAr ? 'تم حفظ الأسعار.' : 'Prices saved.' });
+      }
+    } catch (e) { setPriceMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setSavingPrices(false);
+  };
+
+  const pricedCount = products.filter((p) => (priceVal(p) || '').toString().trim()).length;
+
   // Keyboard: Enter=approve, Del/Esc=skip, arrows=navigate — ignored while typing in a field.
   useEffect(() => {
     if (!savedFactoryId || reviewQueue.length === 0) return undefined;
@@ -770,6 +835,97 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                   )}
                 </div>
               )}
+
+              {/* Separate price file — some factories send prices in their own
+                  PDF / Excel; Gemini matches it to the extracted products. */}
+              <div className="ci-card">
+                <h2 className="ci-h2">{isAr ? '💵 ملف الأسعار (اختياري)' : '💵 Price file (optional)'}</h2>
+                <p className="ci-hint" style={{ margin: '0 0 12px' }}>
+                  {isAr ? 'هل أرسل المصنع الأسعار في ملف منفصل (PDF أو Excel)؟ ارفعه وسيطابقه جيميني مع المنتجات المستخرجة.'
+                        : 'Did the factory send prices in a separate file (PDF or Excel)? Upload it and Gemini will match it to the extracted products.'}
+                </p>
+                {batch.price_file_path && !priceFile && (
+                  <p style={{ margin: '0 0 10px', fontSize: 12, fontFamily: FB, color: '#3f9d5a' }}>
+                    {isAr ? '✓ يوجد ملف أسعار مرفوع' : '✓ A price file is attached'}
+                    {batch.price_matched_at ? (isAr ? ' وتمت مطابقته.' : ' and matched.') : (isAr ? ' (لم تُشغّل المطابقة بعد).' : ' (not matched yet).')}
+                  </p>
+                )}
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input ref={priceFileRef} type="file" accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.webp"
+                    onChange={(e) => setPriceFile(e.target.files?.[0] || null)}
+                    style={{ fontSize: 12.5, fontFamily: FB }} />
+                  <button className="ci-btn-primary" onClick={runPriceMatch}
+                    disabled={!priceFile || matching || !workerConfigured()}>
+                    {matching ? (isAr ? 'جارٍ المطابقة…' : 'Matching…') : (isAr ? 'رفع ومطابقة الأسعار' : 'Upload & match prices')}
+                  </button>
+                  {(pricedCount > 0 || batch.price_matched_at) && (
+                    <button className="ci-btn-ghost" onClick={() => setPriceOpen((o) => !o)}>
+                      {priceOpen ? (isAr ? 'إخفاء الأسعار' : 'Hide prices') : (isAr ? 'مراجعة الأسعار' : 'Review prices')}
+                    </button>
+                  )}
+                </div>
+                {!workerConfigured() && (
+                  <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#b8860b', fontFamily: FB }}>
+                    {isAr ? 'المطابقة تتطلّب خادم الاستخراج (يمكنك مع ذلك تعديل الأسعار يدوياً بالأسفل).' : 'Matching needs the extraction worker (you can still edit prices manually below).'}
+                  </p>
+                )}
+                {priceMsg.text && (
+                  <div style={{ marginTop: 10, fontSize: 13, color: priceMsg.ok ? '#3f9d5a' : '#c0392b', fontFamily: FB }}>{priceMsg.text}</div>
+                )}
+
+                {/* Easy price review — one glance over every product's price, editable,
+                    with a single "save & approve all" for when it all looks right. */}
+                {priceOpen && products.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                      <span style={{ fontSize: 12.5, fontFamily: FB, color: 'rgba(0,0,0,0.6)' }}>
+                        {isAr ? `${pricedCount} من ${products.length} لها سعر` : `${pricedCount} of ${products.length} priced`}
+                      </span>
+                      <span style={{ fontSize: 11, fontFamily: FB, color: 'rgba(0,0,0,0.4)' }}>
+                        {isAr ? 'اترك السعر فارغاً لعرض «عند الطلب»' : 'Leave empty to show “On request”'}
+                      </span>
+                    </div>
+                    <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8 }}>
+                      {products.map((p, i) => {
+                        const nm = p.extracted_json?.product_name || {};
+                        const label = (isAr ? (nm.ar || nm.en) : (nm.en || nm.ar)) || (isAr ? 'منتج' : 'Product');
+                        const ref = p.extracted_json?.ref_code && p.extracted_json.ref_code !== 'not_found' ? p.extracted_json.ref_code : '';
+                        const has = (priceVal(p) || '').toString().trim();
+                        return (
+                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+                            borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.05)', background: has ? 'transparent' : 'rgba(201,134,63,0.05)' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12.5, fontFamily: FB, color: 'rgba(0,0,0,0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+                              {ref && <div style={{ fontSize: 10.5, fontFamily: FB, color: 'rgba(0,0,0,0.4)' }}>{ref}</div>}
+                            </div>
+                            <input value={priceVal(p)} onChange={(e) => editPrice(p, 'price', e.target.value)}
+                              placeholder={isAr ? 'السعر' : 'Price'} dir="ltr"
+                              style={{ width: 110, padding: '6px 8px', border: '1px solid rgba(0,0,0,0.14)', borderRadius: 6, fontSize: 12.5, fontFamily: FB, textAlign: 'center' }} />
+                            <input value={currVal(p)} onChange={(e) => editPrice(p, 'currency', e.target.value)}
+                              placeholder={isAr ? 'العملة' : 'Cur'} dir="ltr"
+                              style={{ width: 62, padding: '6px 8px', border: '1px solid rgba(0,0,0,0.14)', borderRadius: 6, fontSize: 12.5, fontFamily: FB, textAlign: 'center' }} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button className="ci-btn-ghost" onClick={() => savePrices(false)} disabled={savingPrices || !Object.keys(priceEdits).length}>
+                        {savingPrices ? (isAr ? 'جارٍ الحفظ…' : 'Saving…') : (isAr ? 'حفظ الأسعار' : 'Save prices')}
+                      </button>
+                      {savedFactoryId && (
+                        <button className="ci-btn-primary" onClick={() => savePrices(true)} disabled={savingPrices}>
+                          {isAr ? 'حفظ الأسعار واعتماد كل المنتجات' : 'Save prices & approve all products'}
+                        </button>
+                      )}
+                      {!savedFactoryId && (
+                        <span style={{ fontSize: 11.5, fontFamily: FB, color: 'rgba(0,0,0,0.45)' }}>
+                          {isAr ? 'احفظ المصنع أولاً لاعتماد الكل.' : 'Save the factory first to approve all.'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Step 3 — products (approval UI lands in commit 3) */}
               <div className="ci-card">
