@@ -611,7 +611,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       sb.from('requests').select('id', { count: 'exact' }).eq('buyer_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
       ids.length > 0
-        ? sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending').in('request_id', ids)
+        ? sb.from('offers').select('id', { count: 'exact' }).eq('status', 'pending').in('request_id', ids).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null')
         : Promise.resolve({ count: 0 }),
       sb.from('product_inquiries').select('id', { count: 'exact' }).eq('buyer_id', user.id),
     ]);
@@ -656,7 +656,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       .limit(5);
     if (reqs && reqs.length > 0) {
       const withOffers = await Promise.all(reqs.map(async (r) => {
-        const { data: offers } = await sb.from('offers').select('*').eq('request_id', r.id);
+        const { data: offers } = await sb.from('offers').select('*').eq('request_id', r.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
         const withProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
         return { ...r, offers: withProfiles || [] };
       }));
@@ -709,7 +709,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       }, {});
 
       const withOffers = await Promise.all(data.map(async (request) => {
-        const { data: offers } = await sb.from('offers').select('*').eq('request_id', request.id);
+        const { data: offers } = await sb.from('offers').select('*').eq('request_id', request.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
         const offersWithProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
         return {
           ...request,
@@ -1025,6 +1025,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       .select('id,supplier_id')
       .eq('request_id', requestId)
       .eq('status', 'pending')
+      .or('managed_visibility.eq.buyer_visible,managed_visibility.is.null')
       .neq('id', offerId);
     const { data: reqData } = await sb.from('requests').select('title_ar,title_en').eq('id', requestId).single();
     const reqTitle = reqData?.title_ar || reqData?.title_en || '';
