@@ -91,6 +91,7 @@ import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceL
 import { BUCKET_PRODUCT_MEDIA, BUCKET_PRODUCT_CERTS, removeStorageObjectByUrl } from '../lib/productMediaCleanup';
 import { loadProductCertifications, saveProductCertifications, emptyCertRow, CERT_TYPES, CERT_MAX_COUNT } from '../lib/productCertifications';
 import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
+import ConnectFactoryPrompt from '../components/supplier/ConnectFactoryPrompt';
 import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
@@ -2756,6 +2757,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
+              <ConnectFactoryPrompt user={user} lang={lang} onLinked={() => window.location.reload()} />
               {profile.maabar_supplier_id && (
                 <div onClick={() => setActiveTab('wallet')} style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)', border: '1px solid rgba(176,141,46,.5)', borderRadius: 16, padding: '18px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                   <div>
