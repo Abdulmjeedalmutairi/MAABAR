@@ -58,7 +58,7 @@ as $$
   select exists (
     select 1
     from public.requests r
-    join public.products p on p.id::text = r.product_ref
+    join public.products p on p.id = r.product_ref   -- product_ref is uuid (matches live schema)
     where r.id = p_request_id
       and p.supplier_id = coalesce(p_uid, auth.uid())
   );
