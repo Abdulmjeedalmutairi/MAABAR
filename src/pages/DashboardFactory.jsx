@@ -146,6 +146,7 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
   const [threads, setThreads] = useState([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const [inboxUnread, setInboxUnread] = useState(0);
+  const [invites, setInvites] = useState([]);   // pending quote-request invites (the "request that brought you")
 
   const loadThreads = useCallback(async () => {
     setThreadsLoading(true);
@@ -159,6 +160,13 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
   // Load once on mount for the tab badge, and whenever the Messages tab opens.
   useEffect(() => { loadThreads(); }, [loadThreads]);
   useEffect(() => { if (tab === 'messages') loadThreads(); }, [tab, loadThreads]);
+  // Pending quote-request invites for the factories this account owns.
+  useEffect(() => {
+    (async () => {
+      try { const { data } = await sb.rpc('get_my_factory_invites'); setInvites(data || []); }
+      catch { /* ignore */ }
+    })();
+  }, []);
 
   const hydrate = useCallback((fac) => {
     setFactory(fac);
@@ -276,6 +284,29 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
             <button className="dfx-ghost" onClick={() => sb.auth.signOut()}>{t.signout}</button>
           </div>
         </div>
+
+        {invites.length > 0 && (
+          <div style={{ marginBottom: 18, padding: '16px 18px', background: 'linear-gradient(135deg,#FCF8F0,#F1F7F1)', border: '1px solid rgba(45,122,79,0.28)', borderRadius: 14 }}>
+            <p style={{ margin: 0, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: '#2d7a4f', fontWeight: 700, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr ? 'بانتظارك' : 'Waiting for you'}
+            </p>
+            <h3 style={{ margin: '6px 0 10px', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+              {isAr ? `لديك ${invites.length} طلب عرض سعر` : `You have ${invites.length} quote request${invites.length > 1 ? 's' : ''}`}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {invites.slice(0, 4).map((iv) => (
+                <button key={iv.slug} onClick={() => nav(`/f/${iv.slug}`)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'var(--bg-raised,#fff)', border: '1px solid var(--border-subtle,#eee)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', textAlign: isAr ? 'right' : 'left', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {(isAr ? (iv.title_ar || iv.title_en) : (iv.title_en || iv.title_ar)) || (isAr ? 'طلب عرض سعر' : 'Quote request')}
+                    {iv.quantity ? <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}> · {iv.quantity} {isAr ? 'وحدة' : 'units'}</span> : null}
+                  </span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: '#2d7a4f', whiteSpace: 'nowrap' }}>{isAr ? 'أرسل عرضك ←' : 'Send offer →'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="dfx-tabs">
           <button className={`dfx-tab ${tab === 'profile' ? 'on' : ''}`} onClick={() => setTab('profile')}>{t.tabProfile}</button>
