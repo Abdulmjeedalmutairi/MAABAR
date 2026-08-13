@@ -38,6 +38,7 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
+import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
@@ -525,6 +526,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [samples, setSamples] = useState([]);
   const [directOrders, setDirectOrders] = useState([]);
   const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
+  const [invoiceOrder, setInvoiceOrder] = useState(null);   // { requestId, order } for the invoice modal
   const [directOrderPaying, setDirectOrderPaying] = useState({});
   const [directOrderActioning, setDirectOrderActioning] = useState({});
   const focusedRequestId = new URLSearchParams(location.search).get('request');
@@ -2455,6 +2457,13 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                     })()}
 
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {['paid', 'shipping', 'arrived', 'delivered'].includes(r.status) && (
+                        <button
+                          onClick={() => setInvoiceOrder({ requestId: r.id, order: { request_ref: r.request_ref, buyer_name: profile?.company_name || profile?.full_name || '', supplier_name: supplierName, product_name: productName, quantity: qty, unit_price: unitPrice, currency } })}
+                          style={{ padding: '11px 18px', fontSize: 13, fontWeight: 600, minHeight: 44, background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                          {isAr ? 'الفاتورة' : lang === 'zh' ? '发票' : 'Invoice'}
+                        </button>
+                      )}
                       {r.status === 'supplier_confirmed' && (
                         <button
                           onClick={() => payDirectOrder(r)}
@@ -3014,6 +3023,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       />
 
       <Footer lang={lang} />
+
+      {invoiceOrder && (
+        <OrderInvoiceModal
+          requestId={invoiceOrder.requestId}
+          order={invoiceOrder.order}
+          role="buyer"
+          lang={lang}
+          onClose={() => setInvoiceOrder(null)}
+        />
+      )}
     </div>
   );
 }

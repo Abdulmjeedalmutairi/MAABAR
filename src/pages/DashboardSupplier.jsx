@@ -5,6 +5,7 @@ import { sb, SUPABASE_URL } from '../supabase';
 import { uploadWithProgress } from '../lib/uploadWithProgress';
 import Footer from '../components/Footer';
 import ManagedSupplierMatchesPanel from '../components/ManagedSupplierMatchesPanel';
+import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import { getManagedMatchGroup, isManagedRequest } from '../lib/managedSourcing';
 import {
   DISPLAY_CURRENCIES,
@@ -224,6 +225,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [directOrders, setDirectOrders] = useState([]);
   const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
+  const [invoiceOrder, setInvoiceOrder] = useState(null);   // { requestId, order } for the invoice modal
   const [directOrderActioning, setDirectOrderActioning] = useState({});
   const [directOrdersNowMs, setDirectOrdersNowMs] = useState(() => Date.now());
   const [paidDirectOrders, setPaidDirectOrders] = useState([]);
@@ -3548,6 +3550,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                         </div>
                       </div>
 
+                      <div style={{ marginBottom: 10 }}>
+                        <button
+                          onClick={() => setInvoiceOrder({ requestId: r.id, order: { request_ref: r.request_ref, buyer_name: buyerName, supplier_name: profile?.company_name || profile?.full_name || '', product_name: productName, quantity: Number(r.quantity) || 1, unit_price: Number(product.price_from ?? product.price ?? 0) || 0, currency: product.currency || 'SAR' } })}
+                          style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, background: 'none', border: '1px solid #0C6B5A', color: '#0C6B5A', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
+                          {isAr ? 'إصدار الفاتورة' : lang === 'zh' ? '开具发票' : 'Issue Invoice'}
+                        </button>
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10, alignItems: 'center' }}>
                         <select
                           value={shippingCompany}
@@ -5760,6 +5770,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       )}
 
       <Footer lang={lang} />
+
+      {invoiceOrder && (
+        <OrderInvoiceModal
+          requestId={invoiceOrder.requestId}
+          order={invoiceOrder.order}
+          role="supplier"
+          lang={lang}
+          onClose={() => setInvoiceOrder(null)}
+        />
+      )}
     </div>
   );
 }
