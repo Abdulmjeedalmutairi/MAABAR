@@ -41,14 +41,9 @@ where not exists (select 1 from public.messages m where m.legacy_ftm_id = ftm.id
   -- a non-trader message needs a real sender to carry over
   and (ftm.sender_role = 'trader' or ftm.sender_id is not null);
 
--- Carry over stored translations, remapping to the new message ids.
-insert into public.message_translations (message_id, direction, translated_text, created_at)
-select m.id, fmt.direction, fmt.translated_text, fmt.created_at
-from public.factory_message_translations fmt
-join public.messages m on m.legacy_ftm_id = fmt.message_id
-where not exists (
-  select 1 from public.message_translations mt
-  where mt.message_id = m.id and mt.direction = fmt.direction
-);
+-- NOTE: stored factory translations are intentionally NOT carried over — the
+-- live message_translations schema differs (no `direction` column) and cached
+-- translations regenerate automatically on view, so they are not worth a fragile
+-- cross-schema copy. Only the messages themselves are migrated above.
 
 commit;
