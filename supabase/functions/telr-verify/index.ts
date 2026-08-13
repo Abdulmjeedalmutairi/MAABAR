@@ -8,12 +8,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // the goods portion (paid / 1.05) and maabar_fee is the 5% portion. Stage (deposit
 // vs balance) is derived server-side from any existing first_paid row.
 
-const ALLOWED_ORIGINS = ['https://maabar.io', 'http://localhost:3000'];
+// Reflect the caller's origin (auth-gated endpoint — a valid user JWT is required)
+// so local-network / tunnel testing works from any device. Tighten before go-live.
 function corsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '';
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const origin = req.headers.get('Origin') || '*';
   return {
-    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };

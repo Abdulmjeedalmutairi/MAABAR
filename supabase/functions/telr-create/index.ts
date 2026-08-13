@@ -9,12 +9,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Secrets (Supabase → Edge Function secrets): TELR_STORE_ID, TELR_AUTH_KEY.
 // Test mode is on (test:"1") until go-live (live also needs the egress IP allowlisted in Telr).
 
-const ALLOWED_ORIGINS = ['https://maabar.io', 'http://localhost:3000'];
+// Reflect the caller's origin (the endpoint is auth-gated — a valid user JWT is
+// required — so this is safe; it lets local-network / tunnel testing work from any
+// device). Tighten to a fixed allowlist before go-live if desired.
 function corsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '';
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const origin = req.headers.get('Origin') || '*';
   return {
-    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
