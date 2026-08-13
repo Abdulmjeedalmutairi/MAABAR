@@ -24,15 +24,11 @@ export default function ChatInvoiceComposer({ buyerId, lang = 'ar', onIssued, on
     (async () => {
       const list = await fetchMyProductsForInvoice();
       setProducts(list);
-      if (list[0]) { setProductRef(list[0].id); setPrice(String(list[0].price_from ?? '')); }
+      if (list[0]) setProductRef(list[0].id);
     })();
   }, []);
 
-  const onPick = (id) => {
-    setProductRef(id);
-    const p = products.find(x => x.id === id);
-    if (p && !price) setPrice(String(p.price_from ?? ''));
-  };
+  const onPick = (id) => setProductRef(id);
 
   const subtotal = (Number(qty) || 0) * (Number(price) || 0);
   const fee = Math.round(subtotal * 5) / 100;

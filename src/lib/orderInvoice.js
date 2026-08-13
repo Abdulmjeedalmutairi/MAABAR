@@ -52,8 +52,10 @@ export async function fetchInvoiceById(id) {
 export async function fetchMyProductsForInvoice() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return [];
+  // Products have no scalar price column (pricing is tiered) — the supplier types
+  // the agreed price in the composer, so we only need name + currency here.
   const { data } = await sb.from('products')
-    .select('id, name_ar, name_en, name_zh, price_from, currency')
+    .select('id, name_ar, name_en, name_zh, currency')
     .eq('supplier_id', user.id).order('created_at', { ascending: false });
   return data || [];
 }
