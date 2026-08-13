@@ -42,8 +42,8 @@ serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, req);
 
   try {
-    const { requestId, ref, platform } = await req.json();
-    if (!requestId || !ref) return json({ error: 'requestId and ref are required.' }, 400, req);
+    const { requestId, invoiceId, ref, platform } = await req.json();
+    if ((!requestId && !invoiceId) || !ref) return json({ error: 'ref and requestId or invoiceId are required.' }, 400, req);
     const { store, key } = telrCreds(String(platform || 'web'));
     if (!store || !key) return json({ error: 'Telr credentials are not configured on the server.' }, 500, req);
 
@@ -77,28 +77,56 @@ serve(async (req) => {
     const { data: dup } = await admin.from('payments').select('id,status').eq('telr_ref', ref).maybeSingle();
     if (dup) return json({ ok: true, payment: dup, alreadyRecorded: true }, 200, req);
 
-    // (3) Load request + confirm ownership; derive goods total (offer or product).
-    const { data: request } = await admin.from('requests')
-      .select('id, buyer_id, quantity, product_ref, payment_pct, status').eq('id', requestId).single();
-    if (!request) return json({ error: 'Order not found.' }, 404, req);
-    if (request.buyer_id !== user.id) return json({ error: 'Not your order.' }, 403, req);
+    // (3) Resolve the order + amounts. A chat invoice (invoiceId) has no order yet —
+    // create the direct order on this (first) payment; a requestId already has one.
+    let buyerId: string; let supplierId: string | null = null;
+    let totalCharged = 0; let targetRequestId: string;
 
-    const qty = Number(request.quantity) || 1;
-    let goods = 0; let supplierId: string | null = null;
-    const { data: offer } = await admin.from('offers')
-      .select('supplier_id, price, shipping_cost').eq('request_id', requestId).eq('status', 'accepted').maybeSingle();
-    if (offer) { goods = Number(offer.price) * qty + (Number(offer.shipping_cost) || 0); supplierId = offer.supplier_id; }
-    else {
-      const { data: product } = await admin.from('products').select('supplier_id, price_from').eq('id', request.product_ref).maybeSingle();
-      if (!product) return json({ error: 'No price source for this order.' }, 409, req);
-      goods = Number(product.price_from) * qty; supplierId = product.supplier_id;
+    if (invoiceId) {
+      const { data: inv } = await admin.from('order_invoices')
+        .select('id, buyer_id, supplier_id, product_ref, quantity, total, status, request_id').eq('id', invoiceId).maybeSingle();
+      if (!inv) return json({ error: 'Invoice not found.' }, 404, req);
+      if (inv.buyer_id !== user.id) return json({ error: 'Not your invoice.' }, 403, req);
+      buyerId = inv.buyer_id; supplierId = inv.supplier_id;
+      totalCharged = round2(Number(inv.total));
+      if (paid > totalCharged + 0.01) return json({ error: 'Paid amount exceeds the invoice total.', paid, totalCharged }, 409, req);
+
+      if (inv.request_id) {
+        targetRequestId = inv.request_id;   // order already created (e.g. by the deposit)
+      } else {
+        const { data: product } = await admin.from('products').select('name_ar, name_en, name_zh').eq('id', inv.product_ref).maybeSingle();
+        const { data: newReq, error: reqErr } = await admin.from('requests').insert({
+          buyer_id: inv.buyer_id, product_ref: inv.product_ref, quantity: String(inv.quantity || 1),
+          title_ar: product?.name_ar || null, title_en: product?.name_en || null, title_zh: product?.name_zh || null,
+          sourcing_mode: 'direct', request_kind: 'direct', status: 'paid',
+        }).select('id').single();
+        if (reqErr || !newReq) return json({ error: 'Failed to create the order.', detail: reqErr?.message }, 500, req);
+        targetRequestId = newReq.id;
+        await admin.from('order_invoices').update({ request_id: newReq.id, status: 'paid' }).eq('id', invoiceId);
+      }
+    } else {
+      const { data: request } = await admin.from('requests')
+        .select('id, buyer_id, quantity, product_ref, status').eq('id', requestId).single();
+      if (!request) return json({ error: 'Order not found.' }, 404, req);
+      if (request.buyer_id !== user.id) return json({ error: 'Not your order.' }, 403, req);
+      targetRequestId = request.id; buyerId = request.buyer_id;
+      const qty = Number(request.quantity) || 1;
+      let goods = 0;
+      const { data: offer } = await admin.from('offers')
+        .select('supplier_id, price, shipping_cost').eq('request_id', requestId).eq('status', 'accepted').maybeSingle();
+      if (offer) { goods = Number(offer.price) * qty + (Number(offer.shipping_cost) || 0); supplierId = offer.supplier_id; }
+      else {
+        const { data: product } = await admin.from('products').select('supplier_id, price_from').eq('id', request.product_ref).maybeSingle();
+        if (!product) return json({ error: 'No price source for this order.' }, 409, req);
+        goods = Number(product.price_from) * qty; supplierId = product.supplier_id;
+      }
+      totalCharged = round2(goods * (1 + FEE_PCT));
+      if (paid > totalCharged + 0.01) return json({ error: 'Paid amount exceeds the order total.', paid, totalCharged }, 409, req);
     }
-    const totalCharged = round2(goods * (1 + FEE_PCT));
-    if (paid > totalCharged + 0.01) return json({ error: 'Paid amount exceeds the order total.', paid, totalCharged }, 409, req);
 
-    // (4) Stage from an existing first_paid row.
+    // (4) Stage from an existing first_paid row on the target order.
     const { data: firstPay } = await admin.from('payments')
-      .select('id, amount').eq('request_id', requestId).eq('status', 'first_paid').maybeSingle();
+      .select('id, amount').eq('request_id', targetRequestId).eq('status', 'first_paid').maybeSingle();
     const isSecond = Boolean(firstPay);
     if (isSecond) {
       const remaining = round2(totalCharged - Number(firstPay!.amount || 0));
@@ -109,7 +137,7 @@ serve(async (req) => {
     const supplierPortion = round2(paid / (1 + FEE_PCT));
     const feePortion = round2(paid - supplierPortion);
     const row = {
-      request_id: requestId, buyer_id: request.buyer_id, supplier_id: supplierId,
+      request_id: targetRequestId, buyer_id: buyerId, supplier_id: supplierId,
       amount: paid,
       amount_first: isSecond ? 0 : paid,
       amount_second: isSecond ? paid : 0,
@@ -129,7 +157,7 @@ serve(async (req) => {
 
     await admin.from('requests')
       .update({ status: isSecond ? 'shipping' : 'paid', ...(isSecond ? { shipping_status: 'shipping' } : {}), payment_id: inserted.id })
-      .eq('id', requestId);
+      .eq('id', targetRequestId);
 
     if (!isSecond && supplierId) {
       const isFull = paid >= totalCharged - 0.01;
@@ -139,7 +167,7 @@ serve(async (req) => {
         title_ar: isFull ? `تم استلام الدفع كاملاً — ${amt}. ابدأ التجهيز الآن` : `وصلت دفعتك الأولى — ${amt}. ابدأ التجهيز الآن`,
         title_en: isFull ? `Full payment received — ${amt}. Start preparation now` : `First payment received — ${amt}. Start preparation now`,
         title_zh: isFull ? `已收到全额付款 — ${amt}。立即开始备货` : `首付已收到 — ${amt}。立即开始备货`,
-        ref_id: requestId, is_read: false,
+        ref_id: targetRequestId, is_read: false,
       });
     }
 
