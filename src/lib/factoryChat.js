@@ -49,6 +49,32 @@ export async function sendBuyerFactoryMessage(factoryId, myId, content, productR
   return data;
 }
 
+// The buyer's own factory conversations, grouped by factory, newest first, with
+// factory identity, last preview and unread (owner replies the buyer hasn't read).
+export async function fetchMyBuyerThreads(myId) {
+  const { data, error } = await sb.from('messages')
+    .select('id, sender_id, receiver_id, factory_id, content, created_at, is_read')
+    .not('factory_id', 'is', null)
+    .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  const threads = {};
+  for (const m of (data || [])) {
+    const key = m.factory_id;
+    if (!threads[key]) threads[key] = { factory_id: key, last_preview: '', last_at: null, unread: 0 };
+    threads[key].last_preview = m.content;   // ascending → last wins
+    threads[key].last_at = m.created_at;
+    if (m.receiver_id === myId && !m.is_read) threads[key].unread += 1;   // an owner reply to me
+  }
+  const list = Object.values(threads).sort((a, b) => new Date(b.last_at) - new Date(a.last_at));
+  if (!list.length) return [];
+  const facIds = list.map((t) => t.factory_id);
+  const { data: facs } = await sb.from('factory_directory_public')
+    .select('id, company_name, company_name_latin, profile_image').in('id', facIds);
+  const fm = Object.fromEntries((facs || []).map((f) => [f.id, f]));
+  return list.map((t) => ({ ...t, factory: fm[t.factory_id] || null }));
+}
+
 // ── Factory-owner side ──────────────────────────────────────────────────────
 // One thread: all messages between factory F and trader T, chronological.
 export async function fetchOwnerFactoryMessages(factoryId, traderId) {
