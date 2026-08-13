@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_ANON_KEY, SUPABASE_FUNCTIONS_URL } from '../supabase';
 import {
   getTranslationDirection,
@@ -8,6 +8,7 @@ import {
 import { translateChatMessage } from '../lib/maabarAi/client';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
 import BrandedLoading from '../components/BrandedLoading';
+import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessage } from '../lib/factoryChat';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
@@ -80,8 +81,13 @@ function isMediaMessage(content) {
 }
 
 export default function Chat({ lang, user, profile }) {
-  const { partnerId } = useParams();
+  const { partnerId, factoryId } = useParams();
   const nav = useNavigate();
+  const location = useLocation();
+  // Factory mode: the conversation target is a factory_directory row (which may
+  // have no account yet), not a profile. Reached via /chat/f/:factoryId.
+  const isFactory = !!factoryId;
+  const productRef = location.state?.product || null;
   const [messages, setMessages] = useState([]);
   const [partner, setPartner] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -156,7 +162,7 @@ export default function Chat({ lang, user, profile }) {
     return () => {
       if (channelRef.current) sb.removeChannel(channelRef.current);
     };
-  }, [partnerId, user]);
+  }, [partnerId, factoryId, user]);
 
   useEffect(() => {
     if (bodyRef.current) {
@@ -241,12 +247,39 @@ export default function Chat({ lang, user, profile }) {
   }, [messages, selectedDirection.source, selectedDirection.target, translationDirection, translations, translatingIds, user]);
 
   const loadPartner = async () => {
+    if (isFactory) {
+      // A factory has no profile; render its public identity. lang defaults to
+      // 'zh' so the translation direction infers correctly (Chinese factory).
+      const f = await fetchFactoryIdentity(factoryId);
+      if (f) setPartner({
+        id: f.id,
+        company_name: f.company_name || f.company_name_latin,
+        full_name: f.company_name_latin || f.company_name,
+        avatar_url: f.profile_image,
+        lang: 'zh',
+        __factory: true,
+      });
+      return;
+    }
     const [data] = await fetchProfileDirectoryByIds(sb, [partnerId]);
     if (data) setPartner(data);
   };
 
   const loadMessages = async () => {
     if (!user) return;
+    if (isFactory) {
+      const data = await fetchBuyerFactoryMessages(factoryId, user.id);
+      setMessages(data);
+      setLoading(false);
+      // Mark the factory's replies (receiver = me) read.
+      await sb.from('messages')
+        .update({ is_read: true })
+        .eq('factory_id', factoryId)
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
+      window.dispatchEvent(new CustomEvent('maabar:messages-read'));
+      return;
+    }
     const { data } = await sb
       .from('messages')
       .select('*')
@@ -270,7 +303,7 @@ export default function Chat({ lang, user, profile }) {
   const subscribeRealtime = () => {
     if (channelRef.current) sb.removeChannel(channelRef.current);
     const channel = sb
-      .channel(`chat-${user.id}-${partnerId}`)
+      .channel(`chat-${user.id}-${factoryId || partnerId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -278,7 +311,9 @@ export default function Chat({ lang, user, profile }) {
         filter: `receiver_id=eq.${user.id}`,
       }, async (payload) => {
         const message = payload.new;
-        if (message.sender_id !== partnerId) return;
+        // Factory mode: accept the owner's replies for this factory. Direct mode:
+        // accept only messages from this partner.
+        if (isFactory ? message.factory_id !== factoryId : message.sender_id !== partnerId) return;
         setMessages((current) => {
           if (current.find((item) => item.id === message.id)) return current;
           return [...current, message];
@@ -296,6 +331,23 @@ export default function Chat({ lang, user, profile }) {
     if (!text || sending) return;
     if (!content) setInput('');
     setSending(true);
+
+    if (isFactory) {
+      const tempMessage = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id, receiver_id: null, factory_id: factoryId,
+        content: text, created_at: new Date().toISOString(), is_read: false,
+      };
+      setMessages((current) => [...current, tempMessage]);
+      try {
+        // Attach the product card only to the first message of the thread.
+        const includeProduct = productRef && messages.length === 0;
+        await sendBuyerFactoryMessage(factoryId, user.id, text, includeProduct ? productRef : null);
+      } catch (_e) { /* surfaced on reload */ }
+      setSending(false);
+      loadMessages();
+      return;
+    }
 
     const tempMessage = {
       id: `temp-${Date.now()}`,

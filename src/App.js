@@ -401,6 +401,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
         <Route path="/suppliers"      element={<Navigate to="/factories" replace />} />
+        <Route path="/chat/f/:factoryId" element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat {...sharedProps} />)} />
         <Route path="/chat/:partnerId"element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat            {...sharedProps} />)} />
         <Route path="/inbox"          element={withSupplierCapability(supplierState?.canAccessMessaging, <Inbox           {...sharedProps} />)} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
