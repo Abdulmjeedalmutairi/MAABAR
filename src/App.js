@@ -54,6 +54,7 @@ import FactoryProductDetail from './pages/FactoryProductDetail';
 import FactoryRequestView from './pages/FactoryRequestView';
 import SupplierProfile from './pages/SupplierProfile';
 import Chat from './pages/Chat';
+import TelrReturn from './pages/TelrReturn';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
@@ -405,6 +406,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/chat/f/:factoryId/:traderId" element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat {...sharedProps} />)} />
         <Route path="/chat/:partnerId"element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat            {...sharedProps} />)} />
         <Route path="/inbox"          element={withSupplierCapability(supplierState?.canAccessMessaging, <Inbox           {...sharedProps} />)} />
+        <Route path="/telr-return"    element={<TelrReturn      {...sharedProps} />} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
         <Route path="/privacy"        element={<Privacy         {...sharedProps} />} />
         <Route path="/faq"            element={<FAQ             {...sharedProps} />} />

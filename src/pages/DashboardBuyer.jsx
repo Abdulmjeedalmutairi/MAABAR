@@ -39,6 +39,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 import Footer from '../components/Footer';
 import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
+import { startTelrPayment } from '../lib/telrPay';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
 const getTrackingUrl = (company, num) => {
@@ -904,7 +905,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     loadMyDirectOrders();
   };
 
-  const payDirectOrder = async (request) => {
+  // Pay via Telr (hosted page): deposit 30% or full 100%. Creates the order
+  // server-side (with the visible 5% Maabar fee) and redirects to Telr.
+  const payDirectOrder = async (request, stage = 'full') => {
     if (!request?.id || !request?.product) {
       alert(isAr ? 'تعذّر تجهيز الدفع — حاول إعادة تحميل الصفحة' : 'Could not prepare payment — try refreshing the page');
       return;
@@ -914,26 +917,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       return;
     }
     setDirectOrderPaying(prev => ({ ...prev, [request.id]: true }));
-
-    const product = request.product;
-    const supplierId = product.supplier_id;
-    const supplierProfile = product.profiles || null;
-
-    const offer = {
-      id: request.id,
-      request_id: request.id,
-      supplier_id: supplierId,
-      profiles: supplierProfile,
-      price: Number(deriveProductPriceFrom(product) || 0),
-      currency: product.currency || 'USD',
-      delivery_days: product.spec_lead_time_days || 30,
-      status: 'accepted',
-      isDirect: true,
-    };
-    console.log('[payDirectOrder] navigating to /checkout with payload:', { offer, request });
-
-    setDirectOrderPaying(prev => ({ ...prev, [request.id]: false }));
-    nav('/checkout', { state: { offer, request } });
+    try {
+      await startTelrPayment(request.id, stage);   // redirects to Telr on success
+    } catch (e) {
+      setDirectOrderPaying(prev => ({ ...prev, [request.id]: false }));
+      alert(e.message || (isAr ? 'تعذّر بدء الدفع' : 'Could not start payment'));
+    }
   };
 
   const loadMySamples = async () => {
@@ -2465,13 +2454,21 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         </button>
                       )}
                       {r.status === 'supplier_confirmed' && (
-                        <button
-                          onClick={() => payDirectOrder(r)}
-                          disabled={paying || !product?.supplier_id}
-                          className="btn-primary"
-                          style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3 }}>
-                          {paying ? '…' : isAr ? 'ادفع الآن ←' : lang === 'zh' ? '立即付款 →' : 'Pay Now →'}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => payDirectOrder(r, 'deposit')}
+                            disabled={paying || !product?.supplier_id}
+                            style={{ padding: '11px 18px', fontSize: 13, fontWeight: 600, minHeight: 44, background: 'none', border: '1px solid var(--green)', borderRadius: 'var(--radius-md)', color: 'var(--green)', cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                            {isAr ? 'ادفع العربون (٣٠٪)' : lang === 'zh' ? '支付定金 (30%)' : 'Pay deposit (30%)'}
+                          </button>
+                          <button
+                            onClick={() => payDirectOrder(r, 'full')}
+                            disabled={paying || !product?.supplier_id}
+                            className="btn-primary"
+                            style={{ padding: '11px 22px', fontSize: 13, fontWeight: 600, minHeight: 44, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', letterSpacing: isAr ? 0 : 0.3 }}>
+                            {paying ? '…' : isAr ? 'ادفع كامل ←' : lang === 'zh' ? '全额付款 →' : 'Pay in full →'}
+                          </button>
+                        </>
                       )}
                       {r.status === 'shipping' && (
                         <button
