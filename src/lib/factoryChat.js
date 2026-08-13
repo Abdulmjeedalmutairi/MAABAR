@@ -61,6 +61,40 @@ export async function fetchOwnerFactoryMessages(factoryId, traderId) {
   return data || [];
 }
 
+// The owner's factory conversations, grouped by (factory, trader), newest first,
+// with buyer + factory identities, last preview and unread (trader messages the
+// owner hasn't read). RLS returns only the owner's factories' rows.
+export async function fetchMyOwnerThreads(myId) {
+  const { data, error } = await sb.from('messages')
+    .select('id, sender_id, receiver_id, factory_id, content, created_at, is_read')
+    .not('factory_id', 'is', null)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  const threads = {};
+  for (const m of (data || [])) {
+    // The trader is the non-owner party. A buyer→factory inbound has receiver
+    // NULL (trader = sender); an owner reply has sender = me (trader = receiver).
+    const trader = m.sender_id === myId ? m.receiver_id : m.sender_id;
+    if (!trader) continue;
+    const key = `${m.factory_id}:${trader}`;
+    if (!threads[key]) threads[key] = { factory_id: m.factory_id, trader_id: trader, last_preview: '', last_at: null, unread: 0 };
+    threads[key].last_preview = m.content;   // ascending → last wins
+    threads[key].last_at = m.created_at;
+    if (m.sender_id !== myId && !m.is_read) threads[key].unread += 1;
+  }
+  const list = Object.values(threads).sort((a, b) => new Date(b.last_at) - new Date(a.last_at));
+  if (!list.length) return [];
+  const traderIds = [...new Set(list.map((t) => t.trader_id))];
+  const facIds = [...new Set(list.map((t) => t.factory_id))];
+  const [{ data: profs }, { data: facs }] = await Promise.all([
+    sb.from('profile_directory').select('id, full_name, company_name, avatar_url').in('id', traderIds),
+    sb.from('factory_directory_public').select('id, company_name, company_name_latin').in('id', facIds),
+  ]);
+  const pm = Object.fromEntries((profs || []).map((p) => [p.id, p]));
+  const fm = Object.fromEntries((facs || []).map((f) => [f.id, f]));
+  return list.map((t) => ({ ...t, trader: pm[t.trader_id] || null, factory: fm[t.factory_id] || null }));
+}
+
 // Owner replies to trader T on factory F.
 export async function sendOwnerFactoryMessage(factoryId, ownerId, traderId, content) {
   const body = (content || '').trim();

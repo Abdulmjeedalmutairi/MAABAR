@@ -7,7 +7,7 @@ import {
   fetchMyFactory, fetchFactoryProducts, fetchFactoryImagePool, updateFactory,
   updateFactoryProduct, deleteFactoryProduct, createFactoryProduct,
 } from '../lib/catalogImport';
-import { fetchMyFactoryThreads } from '../lib/factoryThreads';
+import { fetchMyOwnerThreads } from '../lib/factoryChat';
 
 // Self-service dashboard for a factory that has CLAIMED its directory row
 // (role='supplier' + linked_supplier_id). It can edit its descriptive profile,
@@ -151,9 +151,12 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
   const loadThreads = useCallback(async () => {
     setThreadsLoading(true);
     try {
-      const list = await fetchMyFactoryThreads();
-      setThreads(list);
-      setInboxUnread(list.reduce((n, r) => n + (r.unread || 0), 0));
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const list = await fetchMyOwnerThreads(user.id);
+        setThreads(list);
+        setInboxUnread(list.reduce((n, r) => n + (r.unread || 0), 0));
+      }
     } catch { /* keep empty */ }
     setThreadsLoading(false);
   }, []);
@@ -320,19 +323,22 @@ export default function DashboardFactory({ factory: initial, lang = 'en' }) {
             : threads.length === 0 ? <p className="dfx-inbox-empty">{t.inboxEmpty}</p>
               : (
                 <div className="dfx-inbox">
-                  {threads.map((th) => (
-                    <button className="dfx-inbox-item" key={th.thread_id} onClick={() => nav(`/factory/thread/${th.thread_id}`)}>
-                      <div className="dfx-inbox-ava">{t.buyer[0]}</div>
+                  {threads.map((th) => {
+                    const buyerName = th.trader?.company_name || th.trader?.full_name || t.buyer;
+                    return (
+                    <button className="dfx-inbox-item" key={`${th.factory_id}:${th.trader_id}`} onClick={() => nav(`/chat/f/${th.factory_id}/${th.trader_id}`)}>
+                      <div className="dfx-inbox-ava">{buyerName[0]}</div>
                       <div className="dfx-inbox-main">
-                        <p className="dfx-inbox-name">{t.buyer}</p>
+                        <p className="dfx-inbox-name">{buyerName}</p>
                         <p className="dfx-inbox-prev">{th.last_preview || t.startChat}</p>
                       </div>
                       <div className="dfx-inbox-side">
-                        <span className="dfx-inbox-time">{fmtWhen(th.last_message_at)}</span>
+                        <span className="dfx-inbox-time">{fmtWhen(th.last_at)}</span>
                         {th.unread > 0 && <span className="dfx-inbox-badge">{th.unread}</span>}
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )
         ) : (

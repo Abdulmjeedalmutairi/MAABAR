@@ -8,7 +8,7 @@ import {
 import { translateChatMessage } from '../lib/maabarAi/client';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
 import BrandedLoading from '../components/BrandedLoading';
-import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessage } from '../lib/factoryChat';
+import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessage, fetchOwnerFactoryMessages, sendOwnerFactoryMessage } from '../lib/factoryChat';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
@@ -81,12 +81,15 @@ function isMediaMessage(content) {
 }
 
 export default function Chat({ lang, user, profile }) {
-  const { partnerId, factoryId } = useParams();
+  const { partnerId, factoryId, traderId } = useParams();
   const nav = useNavigate();
   const location = useLocation();
   // Factory mode: the conversation target is a factory_directory row (which may
-  // have no account yet), not a profile. Reached via /chat/f/:factoryId.
+  // have no account yet), not a profile.
+  //   • buyer view  — /chat/f/:factoryId            (talks to the factory)
+  //   • owner view  — /chat/f/:factoryId/:traderId  (factory owner ↔ that buyer)
   const isFactory = !!factoryId;
+  const isFactoryOwner = isFactory && !!traderId;
   const productRef = location.state?.product || null;
   const [messages, setMessages] = useState([]);
   const [partner, setPartner] = useState(null);
@@ -162,7 +165,7 @@ export default function Chat({ lang, user, profile }) {
     return () => {
       if (channelRef.current) sb.removeChannel(channelRef.current);
     };
-  }, [partnerId, factoryId, user]);
+  }, [partnerId, factoryId, traderId, user]);
 
   useEffect(() => {
     if (bodyRef.current) {
@@ -247,6 +250,12 @@ export default function Chat({ lang, user, profile }) {
   }, [messages, selectedDirection.source, selectedDirection.target, translationDirection, translations, translatingIds, user]);
 
   const loadPartner = async () => {
+    if (isFactoryOwner) {
+      // Owner view: the "partner" shown is the buyer (trader).
+      const [data] = await fetchProfileDirectoryByIds(sb, [traderId]);
+      if (data) setPartner(data);
+      return;
+    }
     if (isFactory) {
       // A factory has no profile; render its public identity. lang defaults to
       // 'zh' so the translation direction infers correctly (Chinese factory).
@@ -267,6 +276,19 @@ export default function Chat({ lang, user, profile }) {
 
   const loadMessages = async () => {
     if (!user) return;
+    if (isFactoryOwner) {
+      const data = await fetchOwnerFactoryMessages(factoryId, traderId);
+      setMessages(data);
+      setLoading(false);
+      // Mark the trader's messages read.
+      await sb.from('messages')
+        .update({ is_read: true })
+        .eq('factory_id', factoryId)
+        .eq('sender_id', traderId)
+        .eq('is_read', false);
+      window.dispatchEvent(new CustomEvent('maabar:messages-read'));
+      return;
+    }
     if (isFactory) {
       const data = await fetchBuyerFactoryMessages(factoryId, user.id);
       setMessages(data);
@@ -303,17 +325,22 @@ export default function Chat({ lang, user, profile }) {
   const subscribeRealtime = () => {
     if (channelRef.current) sb.removeChannel(channelRef.current);
     const channel = sb
-      .channel(`chat-${user.id}-${factoryId || partnerId}`)
+      .channel(`chat-${user.id}-${factoryId || partnerId}-${traderId || ''}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: `receiver_id=eq.${user.id}`,
+        // Owner view listens on the factory (inbound has receiver_id NULL);
+        // everyone else listens on their own inbox.
+        filter: isFactoryOwner ? `factory_id=eq.${factoryId}` : `receiver_id=eq.${user.id}`,
       }, async (payload) => {
         const message = payload.new;
-        // Factory mode: accept the owner's replies for this factory. Direct mode:
-        // accept only messages from this partner.
-        if (isFactory ? message.factory_id !== factoryId : message.sender_id !== partnerId) return;
+        const relevant = isFactoryOwner
+          ? (message.sender_id === traderId)          // a new message from this buyer
+          : isFactory
+            ? (message.factory_id === factoryId)      // the factory owner's reply
+            : (message.sender_id === partnerId);      // this direct partner
+        if (!relevant) return;
         setMessages((current) => {
           if (current.find((item) => item.id === message.id)) return current;
           return [...current, message];
@@ -331,6 +358,19 @@ export default function Chat({ lang, user, profile }) {
     if (!text || sending) return;
     if (!content) setInput('');
     setSending(true);
+
+    if (isFactoryOwner) {
+      const tempMessage = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id, receiver_id: traderId, factory_id: factoryId,
+        content: text, created_at: new Date().toISOString(), is_read: false,
+      };
+      setMessages((current) => [...current, tempMessage]);
+      try { await sendOwnerFactoryMessage(factoryId, user.id, traderId, text); } catch (_e) { /* surfaced on reload */ }
+      setSending(false);
+      loadMessages();
+      return;
+    }
 
     if (isFactory) {
       const tempMessage = {
