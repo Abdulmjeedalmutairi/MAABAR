@@ -13,31 +13,63 @@ import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessag
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
 
+// Role-specific quick-reply templates (mirrors the mobile ChatScreen): a buyer
+// asks sourcing questions; a supplier / factory owner answers with pricing/terms.
+// The viewer's own role picks the set. English messages translate cleanly for the
+// Chinese side via the chat's auto-translation.
 const MSG_TEMPLATES = {
-  ar: [
-    { label: 'المنتج', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
-    { label: 'السعر', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
-    { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
-    { label: 'العينة', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
-    { label: 'الشحن', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
-    { label: 'الدفع', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
-  ],
-  en: [
-    { label: 'Product', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
-    { label: 'Price', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
-    { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
-    { label: 'Sample', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
-    { label: 'Shipping', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
-    { label: 'Payment', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
-  ],
-  zh: [
-    { label: '产品', msg: '能提供更多产品详情吗？规格、材料和可用颜色？' },
-    { label: '价格', msg: '批量订购的单价是多少？量大可以优惠吗？' },
-    { label: 'MOQ', msg: '最小起订量是多少？首次订单有灵活性吗？' },
-    { label: '样品', msg: '你们提供产品样品吗？样品费用和运到沙特的时间是多少？' },
-    { label: '运输', msg: '你们有哪些运到沙特的运输方式？预计到货时间是多少？' },
-    { label: '付款', msg: '付款条件是什么？接受Maabar平台支付系统吗？' },
-  ],
+  buyer: {
+    ar: [
+      { label: 'المنتج', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
+      { label: 'السعر', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
+      { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
+      { label: 'العينة', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
+      { label: 'الشحن', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
+      { label: 'الدفع', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
+    ],
+    en: [
+      { label: 'Product', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
+      { label: 'Price', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
+      { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
+      { label: 'Sample', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
+      { label: 'Shipping', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
+      { label: 'Payment', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
+    ],
+    zh: [
+      { label: '产品', msg: '能提供更多产品详情吗？规格、材料和可用颜色？' },
+      { label: '价格', msg: '批量订购的单价是多少？量大可以优惠吗？' },
+      { label: 'MOQ', msg: '最小起订量是多少？首次订单有灵活性吗？' },
+      { label: '样品', msg: '你们提供产品样品吗？样品费用和运到沙特的时间是多少？' },
+      { label: '运输', msg: '你们有哪些运到沙特的运输方式？预计到货时间是多少？' },
+      { label: '付款', msg: '付款条件是什么？接受Maabar平台支付系统吗？' },
+    ],
+  },
+  supplier: {
+    ar: [
+      { label: 'السعر', msg: 'Our best unit price for this quantity is [price]. Larger quantities get a better rate.' },
+      { label: 'MOQ', msg: 'Our minimum order quantity for this product is [MOQ]. We can be flexible on a first order.' },
+      { label: 'العينة', msg: 'Yes, we can provide a sample. Sample cost is [cost] and it ships to Saudi Arabia in about [days] days.' },
+      { label: 'الإنتاج', msg: 'Production lead time is about [days] days after the order is confirmed.' },
+      { label: 'الشحن', msg: 'We ship to Saudi Arabia via [method]. Estimated delivery is about [days] days.' },
+      { label: 'الدفع', msg: 'We accept payment through the Maabar platform: [x]% upfront and the balance on shipping.' },
+    ],
+    en: [
+      { label: 'Price', msg: 'Our best unit price for this quantity is [price]. Larger quantities get a better rate.' },
+      { label: 'MOQ', msg: 'Our minimum order quantity for this product is [MOQ]. We can be flexible on a first order.' },
+      { label: 'Sample', msg: 'Yes, we can provide a sample. Sample cost is [cost] and it ships to Saudi Arabia in about [days] days.' },
+      { label: 'Lead time', msg: 'Production lead time is about [days] days after the order is confirmed.' },
+      { label: 'Shipping', msg: 'We ship to Saudi Arabia via [method]. Estimated delivery is about [days] days.' },
+      { label: 'Payment', msg: 'We accept payment through the Maabar platform: [x]% upfront and the balance on shipping.' },
+    ],
+    zh: [
+      { label: '价格', msg: '此数量的最优单价为 [price]。数量越大价格越优惠。' },
+      { label: 'MOQ', msg: '该产品的最小起订量为 [MOQ]。首次订单我们可以灵活处理。' },
+      { label: '样品', msg: '可以提供样品。样品费用为 [cost]，运到沙特约需 [days] 天。' },
+      { label: '生产', msg: '订单确认后生产周期约为 [days] 天。' },
+      { label: '运输', msg: '我们通过 [method] 运往沙特，预计约 [days] 天送达。' },
+      { label: '付款', msg: '我们通过 Maabar 平台收款：[x]% 定金，余款发货前支付。' },
+    ],
+  },
 };
 
 const COPY = {
@@ -106,7 +138,10 @@ export default function Chat({ lang, user, profile }) {
   const fileRef = useRef(null);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const isAr = lang === 'ar';
-  const templates = MSG_TEMPLATES[lang] || MSG_TEMPLATES.ar;
+  // Templates follow the VIEWER's role: a supplier / factory owner answering a
+  // buyer gets the supplier reply set, not the buyer's sourcing questions.
+  const myRole = profile?.role === 'supplier' ? 'supplier' : 'buyer';
+  const templates = (MSG_TEMPLATES[myRole] || MSG_TEMPLATES.buyer)[lang] || (MSG_TEMPLATES[myRole] || MSG_TEMPLATES.buyer).ar;
   const t = COPY[lang] || COPY.ar;
   const translationDirection = useMemo(() => inferTranslationDirection(lang, partner?.lang), [lang, partner?.lang]);
   const selectedDirection = getTranslationDirection(translationDirection);
