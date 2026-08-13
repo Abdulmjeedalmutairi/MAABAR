@@ -25,13 +25,14 @@ function json(body: unknown, status: number, req: Request) {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const TELR_TEST = Deno.env.get('TELR_TEST') ?? '1';   // "1" test, "0" live
-// Separate Telr stores for web vs app (platform picks the credentials).
+// Separate Telr stores for web vs app (platform picks the credentials). The app
+// store falls back to the web store, so a single-store merchant only needs to set
+// TELR_STORE_ID / TELR_AUTH_KEY.
 function telrCreds(platform: string) {
   const app = platform === 'app';
-  return {
-    store: Deno.env.get(app ? 'TELR_STORE_ID_APP' : 'TELR_STORE_ID') || '',
-    key: Deno.env.get(app ? 'TELR_AUTH_KEY_APP' : 'TELR_AUTH_KEY') || '',
-  };
+  const store = (app ? Deno.env.get('TELR_STORE_ID_APP') : '') || Deno.env.get('TELR_STORE_ID') || '';
+  const key = (app ? Deno.env.get('TELR_AUTH_KEY_APP') : '') || Deno.env.get('TELR_AUTH_KEY') || '';
+  return { store, key };
 }
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
