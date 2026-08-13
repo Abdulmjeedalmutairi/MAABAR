@@ -645,6 +645,9 @@ export default function Login({ user, profile, setUser, setProfile, lang }) {
             .single();
           if (prof) {
             setProfile(prof);
+            // Auto-link this supplier to its pre-existing factory row by phone/email
+            // (best-effort, server-side, no-op when nothing matches).
+            if (isSupplier) { try { await sb.rpc('link_account_to_factory'); } catch { /* best-effort */ } }
             nav(isSupplier ? getSupplierPrimaryRoute(prof, data.user) : '/dashboard');
             return;
           }
