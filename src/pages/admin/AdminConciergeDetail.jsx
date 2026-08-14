@@ -7,6 +7,7 @@ import AdminNoteThread from '../../components/admin/AdminNoteThread';
 import { sb, SUPABASE_FUNCTIONS_URL, SUPABASE_ANON_KEY } from '../../supabase';
 import { logAdminAction } from '../../lib/adminAudit';
 import { CUSTOMIZATION_CHIPS, DELIVERY_TIMEFRAMES, REQUEST_UNITS, labelFor } from '../../lib/requestFormOptions';
+import { waTo } from '../../lib/maabarContact';
 
 const SEND_EMAIL_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 
@@ -127,7 +128,7 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
     ] = await Promise.all([
       sb.from('requests')
         .select(`
-          id, buyer_id, category, description, budget_per_unit, quantity, unit, created_at,
+          id, buyer_id, request_ref, title_ar, title_en, contact_phone, category, description, budget_per_unit, quantity, unit, created_at,
           sourcing_mode, managed_status, payment_plan, sample_requirement, response_deadline,
           requester:profiles!requests_buyer_id_fkey(full_name, email, company_name, whatsapp, wechat),
           brief:managed_request_briefs(
@@ -531,10 +532,20 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
 
           {/* Requester + request details */}
           <SectionCard title={isAr ? 'مقدم الطلب' : 'Requester'}>
+            {(request.contact_phone || request.requester?.whatsapp) && (
+              <a href={waTo(request.contact_phone || request.requester?.whatsapp, `مرحباً، بخصوص طلبك المُدار رقم ${request.request_ref || request.id}`)}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', borderRadius: 9, padding: '9px 16px', fontSize: 13, fontWeight: 600, textDecoration: 'none', marginBottom: 14 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.01c-.24.68-1.42 1.3-1.95 1.34-.5.04-.5.4-3.15-.66-2.67-1.05-4.35-3.76-4.48-3.94-.13-.18-1.07-1.42-1.07-2.71 0-1.29.68-1.92.92-2.19.24-.26.52-.33.7-.33.17 0 .35 0 .5.01.16.01.38-.06.59.45.24.58.81 2 .88 2.15.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.29-.12.56.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.8.85.27.13.44.2.5.31.07.11.07.63-.17 1.31z" /></svg>
+                {isAr ? 'راسل التاجر على واتساب' : 'Message trader on WhatsApp'}
+              </a>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px 24px', marginBottom: request.description ? 16 : 0 }}>
+              <InfoItem label={isAr ? 'رقم الطلب' : 'Order no.'} value={request.request_ref} />
               <InfoItem label={isAr ? 'الاسم' : 'Name'} value={request.requester?.full_name} />
               <InfoItem label="Email" value={request.requester?.email} />
               <InfoItem label={isAr ? 'الشركة' : 'Company'} value={request.requester?.company_name} />
+              <InfoItem label={isAr ? 'الجوال' : 'Phone'} value={request.contact_phone} />
               <InfoItem label={isAr ? 'واتساب' : 'WhatsApp'} value={request.requester?.whatsapp} />
               <InfoItem
                 label={isAr ? 'التصنيف' : 'Category'}

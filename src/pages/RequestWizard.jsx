@@ -5,6 +5,8 @@ import Footer from '../components/Footer';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
 import { DISPLAY_CURRENCIES, normalizeDisplayCurrency } from '../lib/displayCurrency';
 import { createManagedRequest } from '../lib/createManagedRequest';
+import { sendMaabarEmail } from '../lib/maabarEmail';
+import { waLink } from '../lib/maabarContact';
 import { sb } from '../supabase';
 
 const DRAFT_KEY = 'maabar_wizard_draft';
@@ -40,10 +42,12 @@ const T = {
       { val: '30', label: '30% مقدماً', hint: 'خيار شائع' },
       { val: '100', label: '100% مقدماً' },
     ],
-    successTitle: 'تم استلام طلبك',
-    successBody: 'سيتواصل معك فريق مَعبر قريباً على الواتساب لبدء البحث والتفاوض نيابةً عنك — حتى يصلك طلبك إلى باب بيتك.',
-    successNote: 'يمكنك متابعة حالة طلبك في أي وقت من لوحتك.',
+    successTitle: 'استلمنا طلبك ✓',
+    successBody: 'سيتم تعيين مدير حساب مخصّص يتواصل معك عبر واتساب خلال ساعات لتنسيق التفاصيل والبدء بالبحث والتفاوض نيابةً عنك — حتى يصلك طلبك إلى باب بيتك.',
+    successNote: 'يمكنك متابعة مراحل طلبك في أي وقت من لوحتك.',
     successBtn: 'متابعة الطلب',
+    successWa: 'راسلنا على واتساب الآن',
+    successRef: 'رقم طلبك',
   },
   en: {
     pageTitle: 'Managed order',
@@ -68,10 +72,12 @@ const T = {
       { val: '30', label: '30% upfront', hint: 'Popular choice' },
       { val: '100', label: '100% upfront' },
     ],
-    successTitle: 'Your request is received',
-    successBody: 'The Maabar team will contact you shortly on WhatsApp to start sourcing and negotiating on your behalf — all the way to your door.',
-    successNote: 'You can track your order status anytime from your dashboard.',
+    successTitle: 'Request received ✓',
+    successBody: 'A dedicated account manager will contact you on WhatsApp within hours to coordinate the details and start sourcing & negotiating on your behalf — all the way to your door.',
+    successNote: 'You can track your order stages anytime from your dashboard.',
     successBtn: 'View request',
+    successWa: 'Message us on WhatsApp',
+    successRef: 'Your order no.',
   },
   zh: {
     pageTitle: '托管订单',
@@ -96,10 +102,12 @@ const T = {
       { val: '30', label: '预付 30%', hint: '常见选择' },
       { val: '100', label: '预付 100%' },
     ],
-    successTitle: '已收到您的需求',
-    successBody: 'Maabar 团队将很快通过 WhatsApp 与您联系，代您开始寻源与谈判——直至送货上门。',
-    successNote: '您可随时在仪表板中跟踪订单状态。',
+    successTitle: '已收到您的需求 ✓',
+    successBody: '我们将为您指派专属客户经理，数小时内通过 WhatsApp 与您联系，协调细节并代您开始寻源与谈判——直至送货上门。',
+    successNote: '您可随时在仪表板中跟踪订单阶段。',
     successBtn: '查看需求',
+    successWa: '通过 WhatsApp 联系我们',
+    successRef: '订单号',
   },
 };
 
@@ -190,8 +198,20 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
     if (factoryId) {
       try { await sb.functions.invoke('factory-request-email', { body: { requestId: request.id, factoryId } }); } catch { /* best-effort */ }
     }
+    // Alert Maabar ops of the new managed request — with the trader's contact so
+    // the account manager can reach out on WhatsApp immediately. Best-effort.
+    try {
+      await sendMaabarEmail({ type: 'admin_new_request', data: {
+        requestId: request.request_ref || request.id,
+        titleAr: request.title_ar, titleEn: request.title_en,
+        category: request.category, quantity: request.quantity, unit: request.unit,
+        budget: request.budget_per_unit ? `${request.budget_per_unit} ${request.budget_currency || ''}` : null,
+        phone: request.contact_phone || String(form.phone || '').trim(),
+        buyerName: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || null,
+      } });
+    } catch { /* best-effort */ }
     try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-    setSubmitted(request.id);
+    setSubmitted(request);
   }
 
   const dir = isAr ? 'rtl' : 'ltr';
@@ -211,9 +231,20 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8B7355" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
             </div>
             <h2 className={`fx-h1${arc}`} style={{ fontSize: 26, margin: '0 0 10px' }}>{t.successTitle}</h2>
+            <p style={{ ...font, fontSize: 13, color: 'var(--text-muted)', margin: '0 0 14px' }}>
+              {t.successRef}: <b style={{ color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{submitted.request_ref || submitted.id}</b>
+            </p>
             <p className={`fx-sub${arc}`} style={{ margin: '0 auto 8px', maxWidth: 470 }}>{t.successBody}</p>
             <p style={{ ...font, fontSize: 12.5, color: 'var(--text-muted)', margin: '0 auto 26px', maxWidth: 420 }}>{t.successNote}</p>
-            <button type="button" className={`fx-btn-primary${arc}`} onClick={() => nav('/dashboard?tab=requests&request=' + submitted)}>{t.successBtn}</button>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href={waLink(`استفسار عن طلبي المُدار رقم ${submitted.request_ref || submitted.id}`)} target="_blank" rel="noopener noreferrer"
+                style={{ ...font, display: 'inline-flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 22px', fontSize: 14, fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.01c-.24.68-1.42 1.3-1.95 1.34-.5.04-.5.4-3.15-.66-2.67-1.05-4.35-3.76-4.48-3.94-.13-.18-1.07-1.42-1.07-2.71 0-1.29.68-1.92.92-2.19.24-.26.52-.33.7-.33.17 0 .35 0 .5.01.16.01.38-.06.59.45.24.58.81 2 .88 2.15.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.29-.12.56.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.8.85.27.13.44.2.5.31.07.11.07.63-.17 1.31z" /></svg>
+                {t.successWa}
+              </a>
+              <button type="button" onClick={() => nav('/dashboard?tab=requests&request=' + submitted.id)}
+                style={{ ...font, background: 'none', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 22px', fontSize: 14, color: 'var(--text-primary)', cursor: 'pointer' }}>{t.successBtn}</button>
+            </div>
           </div>
         ) : (
           <>

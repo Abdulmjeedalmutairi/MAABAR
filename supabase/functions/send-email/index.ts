@@ -235,24 +235,34 @@ const templates: Record<string, (d: any) => any> = {
   // Admin alert: a new admin-managed request (managed or "اصنع فكرتك" idea) was
   // submitted and needs review/matching. Recipient is ADMIN_EMAIL (same pattern
   // as admin_new_supplier). Not sent for direct/targeted requests.
-  admin_new_request: (d) => ({
-    subject: `طلب جديد على معبر — ${d.requestTitle || d.titleAr || d.titleEn || ''}`,
+  admin_new_request: (d) => {
+    const digits = String(d.phone || '').replace(/[^\d]/g, '');
+    const intlPhone = digits.startsWith('966') ? digits
+      : digits.startsWith('0') ? '966' + digits.slice(1)
+      : (digits.length === 9 && digits.startsWith('5')) ? '966' + digits : digits;
+    const waHref = intlPhone ? `https://wa.me/${intlPhone}?text=${encodeURIComponent('مرحباً، بخصوص طلبك المُدار رقم ' + (d.requestId || ''))}` : '';
+    return {
+    subject: `طلب مُدار جديد — ${d.requestId || d.titleAr || d.titleEn || ''}`,
     to: ADMIN_EMAIL,
     html: wrap(`
 <div class="bd">
-<p class="gr">New Request Submitted</p>
+<p class="gr">New Managed Request</p>
 <p class="tg">${d.isIdea ? 'طلب «اصنع فكرتك» جديد' : 'طلب مُدار جديد'}</p>
 <div class="ib">
 <p class="il">تفاصيل الطلب</p>
-<div class="ir"><span class="ik">العنوان</span><span class="iv">${d.titleAr || d.requestTitle || d.titleEn || '-'}</span></div>
-<div class="ir"><span class="ik">النوع</span><span class="iv">${d.isIdea ? 'اصنع فكرتك' : 'الطلب المُدار'}</span></div>
-<div class="ir"><span class="ik">التصنيف</span><span class="iv">${d.category || '-'}</span></div>
-<div class="ir"><span class="ik">الكمية</span><span class="iv">${d.quantity || '-'}</span></div>
 <div class="ir"><span class="ik">رقم الطلب</span><span class="iv">${d.requestId || '-'}</span></div>
+<div class="ir"><span class="ik">العنوان</span><span class="iv">${d.titleAr || d.requestTitle || d.titleEn || '-'}</span></div>
+<div class="ir"><span class="ik">التصنيف</span><span class="iv">${d.category || '-'}</span></div>
+<div class="ir"><span class="ik">الكمية</span><span class="iv">${d.quantity || '-'}${d.unit ? ' ' + d.unit : ''}</span></div>
+<div class="ir"><span class="ik">الميزانية</span><span class="iv">${d.budget || '-'}</span></div>
+<div class="ir"><span class="ik">التاجر</span><span class="iv">${d.buyerName || '-'}</span></div>
+<div class="ir"><span class="ik">الجوال</span><span class="iv">${d.phone || '-'}</span></div>
 </div>
-<div class="bw"><a href="https://maabar.io/admin-seed" class="bt">مراجعة الطلب ←</a></div>
+${waHref ? `<div class="bw"><a href="${waHref}" class="bt" style="background:#25D366;">راسل التاجر على واتساب ←</a></div>` : ''}
+<div class="bw"><a href="https://maabar.io/admin/concierge" class="bt">مراجعة الطلب ←</a></div>
 </div>`),
-  }),
+    };
+  },
 
   supplier_approved: (d) => {
     const lang = d.lang || 'ar';
@@ -371,6 +381,90 @@ ${hasConfirmUrl ? `
     };
     console.log('[supplier_confirmation] returning:', JSON.stringify({ subject: result.subject, htmlLength: result.html?.length, htmlDefined: !!result.html }));
     return result;
+  },
+
+  // ─── Admin outreach templates ──────────────────────────────────────────────
+  // Sent only by the admin-send-email function (they are in SERVER_ONLY_TYPES, so
+  // the internal secret is required). Each takes d.ctaUrl so the platform-aware
+  // link work can inject an app or web destination without touching the copy; the
+  // fallback here is always the website, which is the correct default for anyone
+  // whose platform we do not know.
+
+  // Segment 1 — registered but never confirmed their email.
+  // The CTA goes to the sign-in page rather than a confirmation link: a fresh
+  // confirmation link can only be minted by Supabase Auth, and the sign-in page
+  // already offers "resend confirmation". Promising a one-click confirm we cannot
+  // generate here would be worse than pointing at the place that can.
+  nudge_confirm_email: (d) => {
+    const lang = d.lang || 'ar';
+    const url = d.ctaUrl || 'https://maabar.io/login';
+    const t = ({
+      ar: { subject: 'أكمل تفعيل حسابك في مَعبر', eyebrow: 'Confirm your email', title: `أهلاً ${d.name || ''}،`, body: 'حسابك في مَعبر جاهز، ولم يتبقَّ سوى تأكيد بريدك الإلكتروني لتتمكن من الدخول. إن لم تصلك رسالة التأكيد، يمكنك طلب إرسالها من جديد من صفحة الدخول.', cta: 'تأكيد البريد ←' },
+      en: { subject: 'Finish activating your Maabar account', eyebrow: 'Confirm your email', title: `Hello ${d.name || ''},`, body: 'Your Maabar account is ready — all that is left is confirming your email address so you can sign in. If the confirmation message never arrived, you can request a new one from the sign-in page.', cta: 'Confirm email →' },
+      zh: { subject: '完成您的 Maabar 账户激活', eyebrow: 'Confirm your email', title: `${d.name || ''}，您好`, body: '您的 Maabar 账户已就绪，只需确认您的电子邮箱即可登录。如果您没有收到确认邮件，可以在登录页面重新发送。', cta: '确认邮箱 →' },
+    } as any)[lang] || { subject: 'أكمل تفعيل حسابك في مَعبر', eyebrow: 'Confirm your email', title: `أهلاً ${d.name || ''}،`, body: 'يتبقّى تأكيد بريدك الإلكتروني.', cta: 'تأكيد البريد ←' };
+    return ({ subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p>${t.body}</p>
+<div class="bw"><a href="${url}" class="bt">${t.cta}</a></div>
+</div>`, { lang, subject: t.subject, preheader: t.body }) });
+  },
+
+  // Segment 2 — supplier confirmed their email but has not uploaded documents.
+  // Always the website: document upload is only fully implemented on web, so this
+  // one ignores last_platform by design.
+  nudge_supplier_upload_docs: (d) => {
+    const lang = d.lang || 'ar';
+    const url = d.ctaUrl || 'https://maabar.io/dashboard';
+    const t = ({
+      ar: { subject: 'أكمل توثيق حسابك في مَعبر', eyebrow: 'Verification required', title: `أهلاً ${d.name || ''}،`, body: 'حسابك مفعّل، ولإتاحة عرض منتجاتك على التجار السعوديين نحتاج مستندات التوثيق: السجل التجاري وصورة المصنع. الرفع يستغرق دقائق من لوحة المورد.', cta: 'رفع المستندات ←' },
+      en: { subject: 'Complete your Maabar verification', eyebrow: 'Verification required', title: `Hello ${d.name || ''},`, body: 'Your account is active. To make your products visible to Saudi buyers we need your verification documents: your business licence and a photo of your facility. Uploading them takes a few minutes from the supplier dashboard.', cta: 'Upload documents →' },
+      zh: { subject: '完成您的 Maabar 认证', eyebrow: 'Verification required', title: `${d.name || ''}，您好`, body: '您的账户已激活。为了让沙特买家看到您的产品，我们需要您的认证材料：营业执照和工厂照片。在供应商控制台上传只需几分钟。', cta: '上传认证材料 →' },
+    } as any)[lang] || { subject: 'أكمل توثيق حسابك في مَعبر', eyebrow: 'Verification required', title: `أهلاً ${d.name || ''}،`, body: 'نحتاج مستندات التوثيق.', cta: 'رفع المستندات ←' };
+    return ({ subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p>${t.body}</p>
+<div class="bw"><a href="${url}" class="bt">${t.cta}</a></div>
+</div>`, { lang, subject: t.subject, preheader: t.body }) });
+  },
+
+  // Segment 3 — documents submitted, sitting in the review queue. Reassurance, not
+  // a nudge: there is nothing for them to do, so there is no CTA.
+  notice_supplier_under_review: (d) => {
+    const lang = d.lang || 'ar';
+    const t = ({
+      ar: { subject: 'مستنداتك قيد المراجعة — مَعبر', eyebrow: 'Under review', title: `أهلاً ${d.name || ''}،`, body: 'وصلتنا مستندات التوثيق الخاصة بك وهي الآن قيد المراجعة لدى فريق مَعبر. لا يلزمك أي إجراء الآن — سنراسلك فور اكتمال المراجعة.' },
+      en: { subject: 'Your documents are under review — Maabar', eyebrow: 'Under review', title: `Hello ${d.name || ''},`, body: 'We have received your verification documents and the Maabar team is reviewing them. Nothing is needed from you right now — we will write to you as soon as the review is complete.' },
+      zh: { subject: '您的认证材料正在审核中 — Maabar', eyebrow: 'Under review', title: `${d.name || ''}，您好`, body: '我们已收到您的认证材料，Maabar 团队正在审核。目前您无需任何操作——审核完成后我们会立即通知您。' },
+    } as any)[lang] || { subject: 'مستنداتك قيد المراجعة — مَعبر', eyebrow: 'Under review', title: `أهلاً ${d.name || ''}،`, body: 'مستنداتك قيد المراجعة.' };
+    return ({ subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p>${t.body}</p>
+</div>`, { lang, subject: t.subject, preheader: t.body }) });
+  },
+
+  // Segment 4 — trader confirmed their email but has never created a request.
+  nudge_trader_first_request: (d) => {
+    const lang = d.lang || 'ar';
+    const url = d.ctaUrl || 'https://maabar.io/requests';
+    const t = ({
+      ar: { subject: 'ابدأ أول طلب استيراد لك في مَعبر', eyebrow: 'Create your first request', title: `أهلاً ${d.name || ''}،`, body: 'حسابك جاهز. اكتب ما تريد استيراده — المنتج والكمية — ويصلك عروض أسعار من موردين صينيين موثّقين. لا تحتاج خبرة سابقة بالاستيراد، ونحن نتولّى التفاوض والتحقق.', cta: 'أنشئ طلبك الأول ←' },
+      en: { subject: 'Start your first sourcing request on Maabar', eyebrow: 'Create your first request', title: `Hello ${d.name || ''},`, body: 'Your account is ready. Describe what you want to import — the product and the quantity — and verified Chinese suppliers will send you quotes. No prior importing experience needed; we handle the vetting and the back-and-forth.', cta: 'Create your first request →' },
+      zh: { subject: '在 Maabar 发布您的第一个采购需求', eyebrow: 'Create your first request', title: `${d.name || ''}，您好`, body: '您的账户已就绪。描述您想采购的产品和数量，经过认证的中国供应商就会向您报价。无需进出口经验，验证与洽谈由我们负责。', cta: '发布第一个需求 →' },
+    } as any)[lang] || { subject: 'ابدأ أول طلب استيراد لك في مَعبر', eyebrow: 'Create your first request', title: `أهلاً ${d.name || ''}،`, body: 'أنشئ طلبك الأول.', cta: 'أنشئ طلبك ←' };
+    return ({ subject: t.subject, html: wrap(`
+<div class="bd">
+<p class="gr">${t.eyebrow}</p>
+<p class="tg">${t.title}</p>
+<p>${t.body}</p>
+<div class="bw"><a href="${url}" class="bt">${t.cta}</a></div>
+</div>`, { lang, subject: t.subject, preheader: t.body }) });
   },
 
   trader_welcome: (d) => {
@@ -996,7 +1090,17 @@ function secretsMatch(a: string, b: string): boolean {
 // type the legacy anon path is deleted (end of Phase C).
 const SERVER_ONLY_TYPES = new Set<string>([
   // Phase A — added one-by-one as each type's callers move server-side.
-  // (empty for now: direct_order_rejected is still sent by DashboardSupplier.jsx:1401)
+  // (direct_order_rejected is still sent by DashboardSupplier.jsx:1401, so it
+  //  cannot be locked until that caller moves.)
+  //
+  // The admin outreach types are locked from birth: they are sent only by
+  // admin-send-email, which holds the internal secret, so there is no client
+  // caller to break. Bulk outreach is the single most abusable capability here —
+  // it must never have been reachable with the public anon key.
+  'nudge_confirm_email',
+  'nudge_supplier_upload_docs',
+  'notice_supplier_under_review',
+  'nudge_trader_first_request',
 ]);
 
 // ─── Transactional path hardening ────────────────────────────────────────────
