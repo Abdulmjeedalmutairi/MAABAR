@@ -46,6 +46,16 @@ export async function fetchInvoiceById(id) {
   return data || null;
 }
 
+// Payments recorded against an order (for the invoice's deposit/balance schedule).
+// RLS returns only rows the caller may see (their own as buyer or supplier).
+export async function fetchInvoicePayments(requestId) {
+  if (!requestId) return [];
+  const { data } = await sb.from('payments')
+    .select('status, amount, payment_pct, amount_first, amount_second')
+    .eq('request_id', requestId).order('created_at', { ascending: true });
+  return data || [];
+}
+
 // The supplier's own products (for the chat-invoice product picker). Includes
 // inactive/unpublished ones — a supplier can invoice a product they agreed on in
 // chat even before their account is verified/the product is published.
