@@ -64,6 +64,15 @@ const CSS = `
 .mo-approve:disabled{ opacity:0.55; cursor:default; }
 .mo-neg{ background:none; border:1px solid var(--hair-strong); border-radius:9px; padding:12px 16px; font-size:13px; color:var(--ink); text-decoration:none; display:inline-flex; align-items:center; }
 .mo-assure{ display:flex; gap:7px; padding:10px 15px; background:rgba(47,93,58,0.08); border-top:1px solid rgba(47,93,58,0.15); font-size:11.5px; color:#2c5236; }
+.mo-fp{ display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--hair); }
+.mo-fpi{ padding:10px 15px; border-inline-end:1px solid var(--hair); border-bottom:1px solid var(--hair); }
+.mo-fpi:nth-child(2n){ border-inline-end:none; }
+.mo-fpi .l{ font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint); }
+.mo-fpi .v{ font-size:12.5px; color:var(--ink); margin-top:2px; }
+.mo-certs{ display:flex; flex-wrap:wrap; gap:5px; padding:10px 15px; border-bottom:1px solid var(--hair); }
+.mo-cert{ font-size:10.5px; color:var(--ink-soft); background:rgba(154,123,79,0.08); border:1px solid rgba(154,123,79,0.25); border-radius:5px; padding:2px 8px; }
+.mo-photos{ display:flex; gap:6px; padding:10px 15px; overflow-x:auto; border-bottom:1px solid var(--hair); }
+.mo-photos img{ width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid var(--hair); flex-shrink:0; }
 `;
 
 const WA = (
@@ -119,6 +128,7 @@ export default function ManagedOrder({ lang = 'ar' }) {
   const isUSD = invCur === 'USD';
   const offerSar = offer ? toSAR(offer.total, invCur) : 0;
   const offerRef = offer && isUSD ? `≈ ${money(Number(offer.total), invCur)}` : '';
+  const fp = offer?.factory_profile;   // anonymized factory profile (no name/contact)
 
   const pay = async (stage) => {
     if (!offer) return;
@@ -174,6 +184,24 @@ export default function ManagedOrder({ lang = 'ar' }) {
                 {stg.key === 'offer' && offer && offer.status !== 'paid' && (
                   <div className="mo-offer">
                     <div className="mo-otop"><span className="k">{t.offerK}</span><span className="mo-ofac">{t.fac}</span></div>
+                    {fp && (
+                      <>
+                        <div className="mo-fp">
+                          {fp.city && <div className="mo-fpi"><div className="l">{isAr ? 'الموقع' : 'Location'}</div><div className="v">{fp.city}</div></div>}
+                          {fp.years && <div className="mo-fpi"><div className="l">{isAr ? 'الخبرة' : 'Experience'}</div><div className="v">{fp.years} {isAr ? 'سنة' : 'yrs'}</div></div>}
+                          {fp.rating && <div className="mo-fpi"><div className="l">{isAr ? 'التقييم' : 'Rating'}</div><div className="v">★ {fp.rating}</div></div>}
+                          {fp.capacity && <div className="mo-fpi"><div className="l">{isAr ? 'الطاقة الإنتاجية' : 'Capacity'}</div><div className="v">{fp.capacity}</div></div>}
+                          {fp.export_markets && <div className="mo-fpi"><div className="l">{isAr ? 'أسواق التصدير' : 'Export markets'}</div><div className="v">{fp.export_markets}</div></div>}
+                          {fp.moq && <div className="mo-fpi"><div className="l">{isAr ? 'أقل كمية' : 'MOQ'}</div><div className="v">{fp.moq}</div></div>}
+                        </div>
+                        {Array.isArray(fp.certifications) && fp.certifications.length > 0 && (
+                          <div className="mo-certs">{fp.certifications.map((c, i) => <span key={i} className="mo-cert">{c}</span>)}</div>
+                        )}
+                        {Array.isArray(fp.photos) && fp.photos.length > 0 && (
+                          <div className="mo-photos">{fp.photos.map((p, i) => <img key={i} src={p} alt="" />)}</div>
+                        )}
+                      </>
+                    )}
                     <div className="mo-orow"><span className="mo-ok">{t.total}</span><span className="mo-ov">{money(offerSar, isUSD ? 'SAR' : invCur)}<small> {isUSD ? 'SAR' : invCur}</small></span></div>
                     {offerRef ? <div className="mo-oref">{offerRef}</div> : null}
                     <div className="mo-oact">
