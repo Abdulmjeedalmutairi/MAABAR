@@ -185,7 +185,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const priceText = (p) => {
     const v = (nf(p.price) || '').trim();
     if (!v) return null;
-    if (isAr) return catalogPriceToSAR(v);   // Arabic trader → SAR (Western digits)
+    if (isAr) return catalogPriceToSAR(v, p.currency);   // Arabic trader → SAR (Western digits)
     const cur = (nf(p.currency) || '').trim();
     return cur && !v.toLowerCase().includes(cur.toLowerCase()) ? `${v} ${cur}` : v;
   };
