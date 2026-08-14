@@ -11,6 +11,7 @@ import BrandedLoading from '../components/BrandedLoading';
 import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessage, fetchOwnerFactoryMessages, sendOwnerFactoryMessage } from '../lib/factoryChat';
 import ChatInvoiceComposer from '../components/ChatInvoiceComposer';
 import ChatInvoiceCard from '../components/ChatInvoiceCard';
+import PurchaseRequestCard from '../components/PurchaseRequestCard';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
@@ -111,7 +112,7 @@ const COPY = {
 };
 
 function isMediaMessage(content) {
-  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:') || content.startsWith('[invoice:'));
+  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:') || content.startsWith('[invoice:') || content.startsWith('[request:'));
 }
 
 export default function Chat({ lang, user, profile }) {
@@ -138,6 +139,7 @@ export default function Chat({ lang, user, profile }) {
   const [translatingIds, setTranslatingIds] = useState(new Set());
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showInvoiceComposer, setShowInvoiceComposer] = useState(false);
+  const [composerRequest, setComposerRequest] = useState(null);   // pre-fill the composer from a [request:ID] card
   const [uploading, setUploading] = useState(false);
   const [chinaTime, setChinaTime] = useState('');
   const bodyRef = useRef(null);
@@ -501,6 +503,16 @@ export default function Chat({ lang, user, profile }) {
     if (content?.startsWith('[invoice:') && content.endsWith(']')) {
       return <ChatInvoiceCard invoiceId={content.slice(9, -1)} myId={user?.id} lang={lang} />;
     }
+    if (content?.startsWith('[request:') && content.endsWith(']')) {
+      return (
+        <PurchaseRequestCard
+          requestId={content.slice(9, -1)}
+          myId={user?.id}
+          lang={lang}
+          onIssue={(req) => { setComposerRequest(req); setShowInvoiceComposer(true); }}
+        />
+      );
+    }
     if (content?.startsWith('[img:') && content.endsWith(']')) {
       const url = content.slice(5, -1);
       return <img src={url} alt="" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 'var(--radius-md)', display: 'block', objectFit: 'cover' }} />;
@@ -774,10 +786,11 @@ export default function Chat({ lang, user, profile }) {
 
       {showInvoiceComposer && canIssueInvoice && (
         <ChatInvoiceComposer
-          buyerId={invoiceBuyerId}
+          buyerId={composerRequest?.buyer_id || invoiceBuyerId}
+          request={composerRequest}
           lang={lang}
-          onClose={() => setShowInvoiceComposer(false)}
-          onIssued={(inv) => { setShowInvoiceComposer(false); sendMessage(`[invoice:${inv.id}]`); }}
+          onClose={() => { setShowInvoiceComposer(false); setComposerRequest(null); }}
+          onIssued={(inv) => { setShowInvoiceComposer(false); setComposerRequest(null); sendMessage(`[invoice:${inv.id}]`); }}
         />
       )}
     </div>

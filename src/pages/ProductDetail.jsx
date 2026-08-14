@@ -20,6 +20,7 @@ import {
   getProductInquiryTemplates,
 } from '../lib/productInquiry';
 import BrandedLoading from '../components/BrandedLoading';
+import PurchaseRequestForm from '../components/PurchaseRequestForm';
 
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
@@ -484,6 +485,7 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showBuyForm, setShowBuyForm] = useState(false);
+  const [showReqForm, setShowReqForm] = useState(false);   // purchase-request form → chat
   const [showSampleForm, setShowSampleForm] = useState(false);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [qty, setQty] = useState('');
@@ -1312,15 +1314,13 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
-              {/* Flat-product only: Buy Now */}
-              {!product.has_variants && (
-                <button
-                  className="btn-primary"
-                  style={{ background: '#1a1a1a', color: '#fff', letterSpacing: 0 }}
-                  onClick={() => { setShowBuyForm(!showBuyForm); setShowSampleForm(false); setShowInquiryForm(false); }}>
-                  {tT.pdBuyNowBtn}
-                </button>
-              )}
+              {/* Primary: request to buy → structured form → supplier issues an invoice in chat */}
+              <button
+                className="btn-primary"
+                style={{ background: '#1a1a1a', color: '#fff', letterSpacing: 0 }}
+                onClick={() => setShowReqForm(true)}>
+                {isAr ? 'اطلب شراء' : lang === 'zh' ? '发起采购' : 'Request to buy'}
+              </button>
 
               <button
                 className="btn-outline"
@@ -1342,6 +1342,15 @@ export default function ProductDetail({ lang, user, profile, displayCurrency, ex
                 {tT.pdContactSupplierBtn}
               </button>
             </div>
+
+            {showReqForm && supplierId && (
+              <PurchaseRequestForm
+                product={product}
+                lang={lang}
+                onClose={() => setShowReqForm(false)}
+                onSubmitted={() => { setShowReqForm(false); nav(`/chat/${supplierId}`); }}
+              />
+            )}
           </>
         )}
 
