@@ -35,6 +35,9 @@ const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 const FEE_PCT = 0.05;
+// Suppliers quote in USD; Saudi buyers pay in SAR at the fixed 3.75 peg (SAMA).
+const SAR_PER_USD = 3.75;
+const toSar = (n: number, cur?: string) => round2(Number(n) * (String(cur || 'SAR').toUpperCase() === 'USD' ? SAR_PER_USD : 1));
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
@@ -83,11 +86,11 @@ serve(async (req) => {
 
     if (invoiceId) {
       const { data: inv } = await admin.from('order_invoices')
-        .select('id, buyer_id, supplier_id, product_ref, quantity, total, status, request_id').eq('id', invoiceId).maybeSingle();
+        .select('id, buyer_id, supplier_id, product_ref, quantity, total, currency, status, request_id').eq('id', invoiceId).maybeSingle();
       if (!inv) return json({ error: 'Invoice not found.' }, 404, req);
       if (inv.buyer_id !== user.id) return json({ error: 'Not your invoice.' }, 403, req);
       buyerId = inv.buyer_id; supplierId = inv.supplier_id;
-      totalCharged = round2(Number(inv.total));
+      totalCharged = toSar(inv.total, inv.currency);
       if (paid > totalCharged + 0.01) return json({ error: 'Paid amount exceeds the invoice total.', paid, totalCharged }, 409, req);
 
       if (inv.request_id) {
@@ -123,17 +126,21 @@ serve(async (req) => {
       if (!request) return json({ error: 'Order not found.' }, 404, req);
       if (request.buyer_id !== user.id) return json({ error: 'Not your order.' }, 403, req);
       targetRequestId = request.id; buyerId = request.buyer_id;
-      const qty = Number(request.quantity) || 1;
-      let goods = 0;
-      const { data: offer } = await admin.from('offers')
-        .select('supplier_id, price, shipping_cost').eq('request_id', requestId).eq('status', 'accepted').maybeSingle();
-      if (offer) { goods = Number(offer.price) * qty + (Number(offer.shipping_cost) || 0); supplierId = offer.supplier_id; }
-      else {
-        const { data: product } = await admin.from('products').select('supplier_id, price_from').eq('id', request.product_ref).maybeSingle();
-        if (!product) return json({ error: 'No price source for this order.' }, 409, req);
-        goods = Number(product.price_from) * qty; supplierId = product.supplier_id;
+      // A chat-agreement order prices off its linked invoice (the balance payment);
+      // fall back to an accepted offer.
+      const { data: linkedInv } = await admin.from('order_invoices')
+        .select('total, currency, supplier_id').eq('request_id', requestId).maybeSingle();
+      if (linkedInv) {
+        totalCharged = toSar(linkedInv.total, linkedInv.currency); supplierId = linkedInv.supplier_id;
+      } else {
+        const qty = Number(request.quantity) || 1;
+        const { data: offer } = await admin.from('offers')
+          .select('supplier_id, price, shipping_cost').eq('request_id', requestId).eq('status', 'accepted').maybeSingle();
+        if (!offer) return json({ error: 'No price source for this order.' }, 409, req);
+        const goods = Number(offer.price) * qty + (Number(offer.shipping_cost) || 0);
+        supplierId = offer.supplier_id;
+        totalCharged = round2(goods * (1 + FEE_PCT));
       }
-      totalCharged = round2(goods * (1 + FEE_PCT));
       if (paid > totalCharged + 0.01) return json({ error: 'Paid amount exceeds the order total.', paid, totalCharged }, 409, req);
     }
 

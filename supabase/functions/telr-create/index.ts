@@ -42,6 +42,10 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSess
 
 const FEE_PCT = 0.05;   // visible 5% Maabar platform fee on the buyer side
 const DEPOSIT_PCT = 0.30;
+// Suppliers quote in USD; Saudi buyers pay in SAR. The Riyal is pegged to the USD
+// at a fixed 3.75 (SAMA), so we charge the SAR equivalent — Telr settles in SAR.
+const SAR_PER_USD = 3.75;
+const toSar = (n: number, cur?: string) => round2(Number(n) * (String(cur || 'SAR').toUpperCase() === 'USD' ? SAR_PER_USD : 1));
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
@@ -69,31 +73,34 @@ serve(async (req) => {
     let refLabel = '';
     if (invoiceId) {
       const { data: inv } = await admin.from('order_invoices')
-        .select('id, buyer_id, total, status, invoice_number').eq('id', invoiceId).maybeSingle();
+        .select('id, buyer_id, total, currency, status, invoice_number').eq('id', invoiceId).maybeSingle();
       if (!inv) return json({ error: 'Invoice not found.' }, 404, req);
       if (inv.buyer_id !== user.id) return json({ error: 'Not your invoice.' }, 403, req);
       if (inv.status === 'paid') return json({ error: 'This invoice is already paid.' }, 409, req);
-      totalCharged = round2(Number(inv.total));
+      totalCharged = toSar(inv.total, inv.currency);
       refLabel = inv.invoice_number || `INV-${String(invoiceId).slice(0, 8)}`;
     } else {
       const { data: request } = await admin.from('requests')
         .select('id, buyer_id, quantity, product_ref, request_ref, status').eq('id', requestId).single();
       if (!request) return json({ error: 'Order not found.' }, 404, req);
       if (request.buyer_id !== user.id) return json({ error: 'Not your order.' }, 403, req);
-      const qty = Number(request.quantity) || 1;
-      let goods = 0;
-      const { data: offer } = await admin.from('offers')
-        .select('price, shipping_cost').eq('request_id', requestId).eq('status', 'accepted').maybeSingle();
-      if (offer) {
-        goods = Number(offer.price) * qty + (Number(offer.shipping_cost) || 0);
+      // A chat-agreement order carries its price on the linked invoice (source of
+      // truth — used for the balance payment). Fall back to an accepted offer.
+      const { data: linkedInv } = await admin.from('order_invoices')
+        .select('total, currency, invoice_number').eq('request_id', requestId).maybeSingle();
+      if (linkedInv) {
+        totalCharged = toSar(linkedInv.total, linkedInv.currency);
+        refLabel = linkedInv.invoice_number || request.request_ref || requestId;
       } else {
-        const { data: product } = await admin.from('products').select('price_from').eq('id', request.product_ref).maybeSingle();
-        if (!product) return json({ error: 'No price source for this order.' }, 409, req);
-        goods = Number(product.price_from) * qty;
+        const qty = Number(request.quantity) || 1;
+        const { data: offer } = await admin.from('offers')
+          .select('price, shipping_cost').eq('request_id', requestId).eq('status', 'accepted').maybeSingle();
+        if (!offer) return json({ error: 'No price source for this order.' }, 409, req);
+        const goods = Number(offer.price) * qty + (Number(offer.shipping_cost) || 0);
+        if (!(goods > 0)) return json({ error: 'Order amount is invalid.' }, 409, req);
+        totalCharged = round2(goods * (1 + FEE_PCT));
+        refLabel = request.request_ref || requestId;
       }
-      if (!(goods > 0)) return json({ error: 'Order amount is invalid.' }, 409, req);
-      totalCharged = round2(goods * (1 + FEE_PCT));
-      refLabel = request.request_ref || requestId;
     }
 
     // Charge for this stage.

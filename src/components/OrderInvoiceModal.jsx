@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchOrderInvoice, saveOrderInvoice, issueOrderInvoice, fetchInvoicePayments, defaultLineItem } from '../lib/orderInvoice';
+import { toSAR } from '../lib/currency';
 
 // Direct-order / chat-agreement invoice — the official document Maabar generates on
 // behalf of the supplier. The supplier fills line items + trade details (draft) and
@@ -130,7 +131,7 @@ const INVOICE_CSS = `
 
 // Build the invoice document markup once (used for the on-screen view AND print).
 function invoiceHTML({ t, isAr, isSupplier, invoiceNo, dateStr, statusBadge, badgeNa, buyerName, buyerSub, supplierName, supplierSub,
-  items, currency, subtotal, fee, total, specEntries, sched, meta }) {
+  items, cur, conv, grandRef, currency, subtotal, fee, total, specEntries, sched, meta }) {
   const rows = items.map((it) => {
     const attrs = Array.isArray(it.attrs) ? it.attrs : [];
     const attrHtml = attrs.length ? `<div class="iv-attrs">${attrs.map((a) => {
@@ -139,15 +140,16 @@ function invoiceHTML({ t, isAr, isSupplier, invoiceNo, dateStr, statusBadge, bad
     }).join('')}</div>` : (it.variant ? `<div class="iv-attrs"><span>${esc(it.variant)}</span></div>` : '');
     const qty = Number(it.qty) || 0; const unit = Number(it.unit_price) || 0;
     return `<tr><td><div class="iv-itname">${esc(it.desc || '')}</div>${it.desc2 ? `<div class="iv-itdesc">${esc(it.desc2)}</div>` : ''}${attrHtml}</td>
-      <td class="num">${qty.toLocaleString('en-US')}</td><td class="num">${money(unit, currency)}</td><td class="num">${money(qty * unit, currency)}</td></tr>`;
+      <td class="num">${qty.toLocaleString('en-US')}</td><td class="num">${money(conv(unit), cur)}</td><td class="num">${money(conv(qty * unit), cur)}</td></tr>`;
   }).join('');
 
+  const grandRefHtml = grandRef ? `<div class="iv-supnote">${esc(grandRef)}</div>` : '';
   const totalsHtml = isSupplier
-    ? `<div class="iv-grand"><span class="k">${esc(t.receivable)}</span><span class="v">${money(subtotal, currency)}</span></div>
-       <div class="iv-supnote">${esc(t.supplierNote)}</div>`
-    : `<div class="iv-trow"><span class="k">${esc(t.subtotal)}</span><span class="v">${money(subtotal, currency)}</span></div>
-       <div class="iv-trow fee"><span class="k">${esc(t.fee)}<small>${esc(t.feeSub)}</small></span><span class="v">${money(fee, currency)}</span></div>
-       <div class="iv-grand"><span class="k">${esc(t.grand)}</span><span class="v">${money(total, currency)}<small>${esc(currency)}</small></span></div>`;
+    ? `<div class="iv-grand"><span class="k">${esc(t.receivable)}</span><span class="v">${money(conv(subtotal), cur)}</span></div>
+       ${grandRefHtml}<div class="iv-supnote">${esc(t.supplierNote)}</div>`
+    : `<div class="iv-trow"><span class="k">${esc(t.subtotal)}</span><span class="v">${money(conv(subtotal), cur)}</span></div>
+       <div class="iv-trow fee"><span class="k">${esc(t.fee)}<small>${esc(t.feeSub)}</small></span><span class="v">${money(conv(fee), cur)}</span></div>
+       <div class="iv-grand"><span class="k">${esc(t.grand)}</span><span class="v">${money(conv(total), cur)}<small>${esc(cur)}</small></span></div>${grandRefHtml}`;
 
   const specsHtml = specEntries.length ? `<div class="iv-panel"><div class="iv-panel-head">${esc(t.specsHead)}</div><div class="iv-specs">${
     specEntries.map((s) => `<div class="iv-spec${s.wide ? ' wide' : ''}"><div class="k">${esc(s.k)}</div><div class="v">${esc(s.v)}</div></div>`).join('')
@@ -155,9 +157,9 @@ function invoiceHTML({ t, isAr, isSupplier, invoiceNo, dateStr, statusBadge, bad
 
   const schedHtml = sched ? `<div class="iv-panel"><div class="iv-panel-head">${esc(isSupplier ? t.recvSched : t.schedHead)}</div><div class="iv-sched">
       <div class="iv-cell"><div class="iv-cell-top"><span class="iv-pct">${esc(t.deposit)}</span><span class="iv-chip ${sched.depPaid ? 'paid' : 'hold'}">${sched.depPaid ? t.paidChip : t.pending}</span></div>
-        <div class="iv-amt">${money(sched.dep, currency)}</div><div class="iv-note">${esc(isSupplier ? t.depNoteSup : t.depNoteBuyer)}</div></div>
+        <div class="iv-amt">${money(conv(sched.dep), cur)}</div><div class="iv-note">${esc(isSupplier ? t.depNoteSup : t.depNoteBuyer)}</div></div>
       <div class="iv-cell"><div class="iv-cell-top"><span class="iv-pct">${esc(t.balance)}</span><span class="iv-chip ${sched.balPaid ? 'paid' : 'hold'}">${sched.balPaid ? t.paidChip : t.holdChip}</span></div>
-        <div class="iv-amt">${money(sched.bal, currency)}</div><div class="iv-note">${esc(isSupplier ? t.balNoteSup : t.balNoteBuyer)}</div></div>
+        <div class="iv-amt">${money(conv(sched.bal), cur)}</div><div class="iv-note">${esc(isSupplier ? t.balNoteSup : t.balNoteBuyer)}</div></div>
     </div></div>` : '';
 
   const metaHtml = meta.length ? `<div class="iv-meta">${meta.map((m) => `<div class="m"><span>${esc(m.k)}</span>${esc(m.v)}</div>`).join('')}</div>` : '';
@@ -219,6 +221,15 @@ export default function OrderInvoiceModal({ requestId, order, role, lang = 'ar',
   const subtotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0);
   const fee = round2(subtotal * 0.05);
   const total = round2(subtotal + fee);
+  // Supplier quotes in the invoice currency (USD); the Saudi buyer sees SAR (primary,
+  // at the fixed 3.75 peg) with the USD original as a reference under the total.
+  const invCur = String(currency || 'SAR').toUpperCase();
+  const isUSD = invCur === 'USD';
+  const primaryCur = isSupplier ? invCur : (isUSD ? 'SAR' : invCur);
+  const conv = (isSupplier || !isUSD) ? (n) => Number(n) : (n) => toSAR(n, invCur);
+  const grandRef = isUSD
+    ? (isSupplier ? `≈ ${money(toSAR(subtotal, invCur), 'SAR')}` : `≈ ${money(total, invCur)}`)
+    : '';
   const invoiceNo = inv?.invoice_number || order?.request_ref || '—';
   const specs = inv?.specs;
   const specEntries = Array.isArray(specs)
@@ -245,7 +256,7 @@ export default function OrderInvoiceModal({ requestId, order, role, lang = 'ar',
     buyerSub: order?.buyer_city || '',
     supplierName: order?.supplier_name || (isAr ? 'المورّد' : 'Supplier'),
     supplierSub: order?.supplier_city || '',
-    items, currency, subtotal, fee, total, specEntries,
+    items, cur: primaryCur, conv, grandRef, currency, subtotal, fee, total, specEntries,
     sched: (finalized || firstPaid) ? sched : null,
     meta: [
       incoterms && { k: 'Incoterms', v: incoterms },

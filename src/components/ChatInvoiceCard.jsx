@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchInvoiceById } from '../lib/orderInvoice';
 import { startTelrPayment } from '../lib/telrPay';
+import { toSAR } from '../lib/currency';
 
 // Compact invoice card inside the chat (the [invoice:ID] message), in Maabar's
 // identity (dark header + wordmark). Role-aware money: the buyer sees the total
@@ -35,8 +36,13 @@ export default function ChatInvoiceCard({ invoiceId, myId, lang = 'ar' }) {
   const extra = Array.isArray(inv.line_items) ? inv.line_items.length - 1 : 0;
   const isPaid = inv.status === 'paid';
   const isBuyer = inv.buyer_id === myId;
+  const invCur = String(inv.currency || 'SAR').toUpperCase();
+  const isUSD = invCur === 'USD';
   const goods = inv.goods_subtotal != null ? Number(inv.goods_subtotal) : Number(inv.total) / 1.05;
-  const shown = isBuyer ? Number(inv.total) : goods;
+  // buyer sees SAR (peg 3.75) with the USD original beneath; supplier sees their USD receivable
+  const primaryCur = isBuyer ? (isUSD ? 'SAR' : invCur) : invCur;
+  const shown = isBuyer ? toSAR(inv.total, invCur) : goods;
+  const usdRef = isBuyer && isUSD ? `≈ ${money(Number(inv.total), invCur)}` : '';
 
   return (
     <div style={{ border: '1px solid rgba(154,123,79,0.35)', borderRadius: 12, overflow: 'hidden', maxWidth: 300, background: '#F7F4EE', boxShadow: '0 6px 20px -8px rgba(20,18,16,0.4)' }}>
@@ -52,7 +58,8 @@ export default function ChatInvoiceCard({ invoiceId, myId, lang = 'ar' }) {
             {extra > 0 && <span style={{ fontSize: 11, color: '#6B655B', fontWeight: 400 }}> {isAr ? `+${extra} صنف` : `+${extra} more`}</span>}
           </div>
         )}
-        <div style={{ fontSize: 17, fontWeight: 700, color: '#141210', fontFamily: "'Palatino Linotype',Georgia,serif", fontVariantNumeric: 'tabular-nums' }}>{money(shown, inv.currency)}</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: '#141210', fontFamily: "'Palatino Linotype',Georgia,serif", fontVariantNumeric: 'tabular-nums' }}>{money(shown, primaryCur)}</div>
+        {usdRef && <div style={{ fontSize: 11, color: '#8F887C', fontVariantNumeric: 'tabular-nums' }}>{usdRef}</div>}
         <div style={{ fontSize: 10.5, color: '#6B655B', marginBottom: isBuyer && !isPaid ? 11 : 0 }}>{isBuyer ? t.feeBuyer : t.receivable}</div>
         {isPaid ? (
           <div style={{ fontSize: 12, color: '#2F5D3A', fontWeight: 700, marginTop: 7 }}>{t.paid}</div>
