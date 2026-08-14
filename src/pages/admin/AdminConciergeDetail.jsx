@@ -4,6 +4,7 @@ import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
 import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminNoteThread from '../../components/admin/AdminNoteThread';
+import ManagedOpsPanel from '../../components/admin/ManagedOpsPanel';
 import { sb, SUPABASE_FUNCTIONS_URL, SUPABASE_ANON_KEY } from '../../supabase';
 import { logAdminAction } from '../../lib/adminAudit';
 import { CUSTOMIZATION_CHIPS, DELIVERY_TIMEFRAMES, REQUEST_UNITS, labelFor } from '../../lib/requestFormOptions';
@@ -529,6 +530,13 @@ export default function AdminConciergeDetail({ user, profile, lang, ...rest }) {
               </button>
             </div>
           </div>
+
+          {/* Managed operations — the lifecycle Maabar drives (stage / offer / video) */}
+          {String(request.sourcing_mode || '') === 'managed' && (
+            <SectionCard title={isAr ? 'عمليات الطلب المُدار' : 'Managed operations'}>
+              <ManagedOpsPanel requestId={id} managedStatus={request.managed_status} isAr={isAr} onChanged={load} />
+            </SectionCard>
+          )}
 
           {/* Requester + request details */}
           <SectionCard title={isAr ? 'مقدم الطلب' : 'Requester'}>

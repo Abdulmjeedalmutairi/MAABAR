@@ -31,6 +31,23 @@ export async function addManagedEvent({ requestId, stage, kind = 'note', title, 
   return data;
 }
 
+// Admin presents the single curated offer (creates the managed order_invoice +
+// flips managed_status to 'offer_ready').
+export async function createManagedOffer({ requestId, lineItems, currency, factoryProfile, notes }) {
+  const { data, error } = await sb.rpc('create_managed_offer', {
+    p_request_id: requestId, p_line_items: lineItems || [], p_currency: currency || 'USD',
+    p_factory_profile: factoryProfile || null, p_notes: notes || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// All events for a request (admin sees non-buyer-visible ones too, via RLS).
+export async function fetchManagedEvents(requestId) {
+  const { data } = await sb.from('managed_events').select('*').eq('request_id', requestId).order('created_at', { ascending: true });
+  return data || [];
+}
+
 export async function setManagedStage(requestId, managedStatus) {
   const { error } = await sb.from('requests').update({ managed_status: managedStatus }).eq('id', requestId);
   if (error) throw error;
