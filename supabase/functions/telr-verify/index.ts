@@ -100,8 +100,22 @@ serve(async (req) => {
           sourcing_mode: 'direct', request_kind: 'direct', status: 'paid',
         }).select('id').single();
         if (reqErr || !newReq) return json({ error: 'Failed to create the order.', detail: reqErr?.message }, 500, req);
-        targetRequestId = newReq.id;
-        await admin.from('order_invoices').update({ request_id: newReq.id, status: 'paid' }).eq('id', invoiceId);
+        // Atomically claim the invoice for THIS order. A double-fired verify (React
+        // StrictMode, a retry, two tabs) must NOT create a second order: only the
+        // call that flips request_id from NULL wins; the loser drops its duplicate
+        // request and reuses the winner's. Pairs with the telr_ref-unique payment.
+        const { data: claimed } = await admin.from('order_invoices')
+          .update({ request_id: newReq.id, status: 'paid' })
+          .eq('id', invoiceId).is('request_id', null)
+          .select('request_id').maybeSingle();
+        if (claimed?.request_id === newReq.id) {
+          targetRequestId = newReq.id;
+        } else {
+          await admin.from('requests').delete().eq('id', newReq.id);   // lost the race — undo the dup order
+          const { data: inv2 } = await admin.from('order_invoices').select('request_id').eq('id', invoiceId).maybeSingle();
+          if (!inv2?.request_id) return json({ error: 'Failed to link the order.' }, 500, req);
+          targetRequestId = inv2.request_id;
+        }
       }
     } else {
       const { data: request } = await admin.from('requests')

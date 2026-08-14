@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { completeTelrReturn } from '../lib/telrPay';
 
@@ -13,10 +13,16 @@ export default function TelrReturn({ lang = 'ar' }) {
   const [state, setState] = useState('verifying'); // verifying | ok | failed
   const [message, setMessage] = useState('');
 
+  // Verify ONCE per reference. Without this guard, React StrictMode (dev) double-
+  // invokes the effect and fires two telr-verify calls that race — the server is
+  // now idempotent too, but not firing twice is the cleaner first line of defence.
+  const startedRef = useRef('');
   useEffect(() => {
+    if (!id) { setState('failed'); setMessage(isAr ? 'مرجع غير معروف.' : 'Unknown reference.'); return undefined; }
+    if (startedRef.current === id) return undefined;
+    startedRef.current = id;
     let cancelled = false;
     (async () => {
-      if (!id) { setState('failed'); setMessage(isAr ? 'مرجع غير معروف.' : 'Unknown reference.'); return; }
       try {
         await completeTelrReturn(id);
         if (!cancelled) { setState('ok'); }
