@@ -115,7 +115,7 @@ export default function ConsoleQuotations({ user, profile, lang }) {
                   {r.ship_to ? <span>{isAr ? 'الشحن' : 'Ship'}: {r.ship_to}</span> : null}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-                  <button className="ac-btn ac-btn-sm" onClick={() => nav(`/admin/concierge/${r.id}`)}>{isAr ? 'فتح' : 'Open'}</button>
+                  <button className="ac-btn ac-btn-sm" onClick={() => nav(r.kind === 'managed' ? `/admin2/managed/${r.id}` : `/admin/concierge/${r.id}`)}>{isAr ? 'فتح' : 'Open'}</button>
                   <button className="ac-btn ac-btn-sm" onClick={() => copyShare(r)} disabled={!r.invite_slug} style={{ opacity: r.invite_slug ? 1 : 0.5 }}>{isAr ? 'رابط المشاركة' : 'Share link'}</button>
                   {r.factory && <button className="ac-btn ac-btn-sm" onClick={() => waSupplier(r)} disabled={!digits(r.factory.phone)} style={{ opacity: digits(r.factory.phone) ? 1 : 0.5 }}>WhatsApp</button>}
                   {r.factory && <button className="ac-btn ac-btn-sm" onClick={() => setInvite({ factoryId: r.factory.id, request: r })}>{isAr ? 'إرسال دعوة' : 'Send invitation'}</button>}

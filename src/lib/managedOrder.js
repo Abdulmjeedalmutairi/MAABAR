@@ -14,6 +14,21 @@ export async function fetchManagedTracker(requestId) {
   return { request: reqRes.data || null, events: evRes.data || [], offer: (invRes.data && invRes.data[0]) || null };
 }
 
+// Admin console: all managed orders (list) + one order's full detail.
+export async function fetchManagedOrders() {
+  const { data } = await sb.from('requests')
+    .select('id, request_ref, title_ar, title_en, managed_status, status, created_at, quantity, unit, budget_per_unit, budget_currency, contact_phone, reference_image, requester:profiles!requests_buyer_id_fkey(full_name, company_name, whatsapp)')
+    .eq('sourcing_mode', 'managed').order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function fetchManagedOrderAdmin(requestId) {
+  const { data } = await sb.from('requests')
+    .select('*, requester:profiles!requests_buyer_id_fkey(full_name, company_name, email, whatsapp)')
+    .eq('id', requestId).maybeSingle();
+  return data || null;
+}
+
 export async function fetchAccountManager(userId) {
   if (!userId) return null;
   const { data } = await sb.from('profiles').select('full_name, avatar_url').eq('id', userId).maybeSingle();

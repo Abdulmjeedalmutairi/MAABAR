@@ -73,6 +73,8 @@ import AdminOverview from './pages/admin/AdminOverview';
 import ConsoleDashboard from './pages/admin2/ConsoleDashboard';
 import ConsoleQuotations from './pages/admin2/ConsoleQuotations';
 import ConsoleImport from './pages/admin2/ConsoleImport';
+import ConsoleManaged from './pages/admin2/ConsoleManaged';
+import ConsoleManagedDetail from './pages/admin2/ConsoleManagedDetail';
 import ConsoleTemplates from './pages/admin2/ConsoleTemplates';
 import ConsoleNotifications from './pages/admin2/ConsoleNotifications';
 import ConsoleSuppliers from './pages/admin2/ConsoleSuppliers';
@@ -420,6 +422,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         {/* Admin Console v2 (parallel build — factory_directory-centric) */}
         <Route path="/admin2"                  element={<Navigate to="/admin2/dashboard" replace />} />
         <Route path="/admin2/dashboard"        element={<ConsoleDashboard     {...sharedProps} />} />
+        <Route path="/admin2/managed"          element={<ConsoleManaged       {...sharedProps} />} />
+        <Route path="/admin2/managed/:id"      element={<ConsoleManagedDetail {...sharedProps} />} />
         <Route path="/admin2/suppliers"        element={<ConsoleSuppliers     {...sharedProps} />} />
         <Route path="/admin2/factory-contacts" element={<ConsoleFactoryContacts {...sharedProps} />} />
         <Route path="/admin2/suppliers/:id"    element={<ConsoleSupplierDetail {...sharedProps} />} />

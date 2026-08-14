@@ -9,6 +9,7 @@ const PATHS = {
   dashboard: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
   suppliers: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01',
   quotations: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5',
+  managed: 'M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.3 7L12 12l8.7-5M12 22V12',
   import: 'M12 3v10M8 9l4 4 4-4M20 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2',
   bell: 'M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
   legacy: 'M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8M3 3v5h5M12 7v5l3 2',
@@ -33,6 +34,7 @@ export function Icon({ name, size = 17, style }) {
 // parallel build; each phase flips one to `live` on its new /admin2 route. ──────
 const NAV = [
   { key: 'dashboard',  path: '/admin2/dashboard',  legacy: null,                    icon: 'dashboard',  ar: 'الرئيسية',       en: 'Dashboard',          live: true },
+  { key: 'managed',    path: '/admin2/managed',    legacy: null,                    icon: 'managed',    ar: 'الطلبات المُدارة', en: 'Managed Orders',   live: true, featured: true },
   { key: 'suppliers',  path: '/admin2/suppliers',  legacy: null,                    icon: 'suppliers',  ar: 'الموردون',       en: 'Suppliers',          live: true },
   { key: 'factory-contacts', path: '/admin2/factory-contacts', legacy: null,          icon: 'contacts',   ar: 'تواصل المصانع',  en: 'Factory Contacts',   live: true },
   { key: 'quotations', path: '/admin2/quotations', legacy: null,                    icon: 'quotations', ar: 'طلبات التسعير',  en: 'Quotation Requests', live: true },
@@ -104,9 +106,11 @@ export default function ConsoleShell({ children, user, profile, lang, active }) 
       <div role="navigation" className="ac-nav">
         {NAV.map((item) => (
           <button key={item.key} className={`ac-nav-item${active === item.key ? ' on' : ''}`} onClick={() => go(item)}
-                  style={{ flexDirection: isAr ? 'row-reverse' : 'row', textAlign: isAr ? 'right' : 'left' }}>
-            <Icon name={item.icon} className="ac-nav-ico" style={{ opacity: active === item.key ? 1 : 0.72 }} />
-            <span style={{ flex: 1, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{isAr ? item.ar : item.en}</span>
+                  style={{ flexDirection: isAr ? 'row-reverse' : 'row', textAlign: isAr ? 'right' : 'left',
+                    ...(item.featured && active !== item.key ? { background: 'rgba(154,123,79,0.09)' } : {}) }}>
+            <Icon name={item.icon} className="ac-nav-ico" style={{ opacity: active === item.key ? 1 : 0.82, color: item.featured && active !== item.key ? '#9A7B4F' : undefined }} />
+            <span style={{ flex: 1, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', fontWeight: item.featured ? 700 : undefined }}>{isAr ? item.ar : item.en}</span>
+            {item.featured && <span style={{ fontSize: 10, color: '#9A7B4F' }}>★</span>}
             {item.live === false && <span className="ac-nav-arrow">{isAr ? '↗' : '↗'}</span>}
           </button>
         ))}
