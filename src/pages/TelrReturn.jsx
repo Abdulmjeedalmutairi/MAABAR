@@ -13,24 +13,26 @@ export default function TelrReturn({ lang = 'ar' }) {
   const [state, setState] = useState('verifying'); // verifying | ok | failed
   const [message, setMessage] = useState('');
 
-  // Verify ONCE per reference. Without this guard, React StrictMode (dev) double-
-  // invokes the effect and fires two telr-verify calls that race — the server is
-  // now idempotent too, but not firing twice is the cleaner first line of defence.
+  // Verify ONCE per reference. The ref guard means React StrictMode's (dev) double
+  // effect-invoke fires telr-verify only once. We deliberately do NOT gate the
+  // setState on a per-run "cancelled" flag: StrictMode's synthetic cleanup would
+  // flip it and swallow the result, leaving an eternal spinner even though the
+  // payment succeeded. The page is transient (navigates via button), so a stray
+  // setState after a real unmount is harmless. The server is idempotent regardless.
   const startedRef = useRef('');
   useEffect(() => {
-    if (!id) { setState('failed'); setMessage(isAr ? 'مرجع غير معروف.' : 'Unknown reference.'); return undefined; }
-    if (startedRef.current === id) return undefined;
+    if (!id) { setState('failed'); setMessage(isAr ? 'مرجع غير معروف.' : 'Unknown reference.'); return; }
+    if (startedRef.current === id) return;
     startedRef.current = id;
-    let cancelled = false;
     (async () => {
       try {
         await completeTelrReturn(id);
-        if (!cancelled) { setState('ok'); }
+        setState('ok');
       } catch (e) {
-        if (!cancelled) { setState('failed'); setMessage(e.message || (isAr ? 'تعذّر تأكيد الدفع.' : 'Could not confirm payment.')); }
+        setState('failed');
+        setMessage(e.message || (isAr ? 'تعذّر تأكيد الدفع.' : 'Could not confirm payment.'));
       }
     })();
-    return () => { cancelled = true; };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const t = {
