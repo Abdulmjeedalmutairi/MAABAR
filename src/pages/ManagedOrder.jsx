@@ -69,7 +69,10 @@ const CSS = `
 .mo-fpi:nth-child(2n){ border-inline-end:none; }
 .mo-fpi .l{ font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint); }
 .mo-fpi .v{ font-size:12.5px; color:var(--ink); margin-top:2px; }
-.mo-certs{ display:flex; flex-wrap:wrap; gap:5px; padding:10px 15px; border-bottom:1px solid var(--hair); }
+.mo-certblock{ padding:10px 15px; border-bottom:1px solid var(--hair); }
+.mo-certlabel{ font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint); margin-bottom:6px; }
+.mo-certs-in{ display:flex; flex-wrap:wrap; gap:5px; }
+.mo-onote{ padding:10px 15px; border-bottom:1px solid var(--hair); font-size:12.5px; color:var(--muted); line-height:1.55; }
 .mo-cert{ font-size:10.5px; color:var(--ink-soft); background:rgba(154,123,79,0.08); border:1px solid rgba(154,123,79,0.25); border-radius:5px; padding:2px 8px; }
 .mo-photos{ display:flex; gap:6px; padding:10px 15px; overflow-x:auto; border-bottom:1px solid var(--hair); }
 .mo-photos img{ width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid var(--hair); flex-shrink:0; }
@@ -193,12 +196,19 @@ export default function ManagedOrder({ lang = 'ar' }) {
                           {fp.capacity && <div className="mo-fpi"><div className="l">{isAr ? 'الطاقة الإنتاجية' : 'Capacity'}</div><div className="v">{fp.capacity}</div></div>}
                           {fp.export_markets && <div className="mo-fpi"><div className="l">{isAr ? 'أسواق التصدير' : 'Export markets'}</div><div className="v">{fp.export_markets}</div></div>}
                           {fp.moq && <div className="mo-fpi"><div className="l">{isAr ? 'أقل كمية' : 'MOQ'}</div><div className="v">{fp.moq}</div></div>}
+                          {fp.lead_time && <div className="mo-fpi"><div className="l">{isAr ? 'مدة التسليم المتوقعة' : 'Est. delivery'}</div><div className="v">{fp.lead_time}</div></div>}
                         </div>
                         {Array.isArray(fp.certifications) && fp.certifications.length > 0 && (
-                          <div className="mo-certs">{fp.certifications.map((c, i) => <span key={i} className="mo-cert">{c}</span>)}</div>
+                          <div className="mo-certblock">
+                            <div className="mo-certlabel">{isAr ? 'شهادات الجودة' : 'Quality certifications'}</div>
+                            <div className="mo-certs-in">{fp.certifications.map((c, i) => <span key={i} className="mo-cert">{c}</span>)}</div>
+                          </div>
                         )}
                         {Array.isArray(fp.photos) && fp.photos.length > 0 && (
                           <div className="mo-photos">{fp.photos.map((p, i) => <img key={i} src={p} alt="" />)}</div>
+                        )}
+                        {offer.notes && (
+                          <div className="mo-onote"><div className="mo-certlabel">{isAr ? 'ملاحظات' : 'Notes'}</div>{offer.notes}</div>
                         )}
                       </>
                     )}
