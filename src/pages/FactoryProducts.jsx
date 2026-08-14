@@ -51,37 +51,71 @@ const normalize = (s) => String(s || '')
 // Every query token must appear somewhere in the product's search text (AND).
 const searchMatches = (hay, tokens) => tokens.every((t) => hay.includes(t));
 
-// Global /products ordering (unified with the mobile catalog). Round-robin ACROSS
-// factories so one factory's products never clump together — at each step we take
-// the best head that isn't the same factory (then not the same category) as the
-// last item, preferring priced then newest. So priced items still lead throughout,
-// but they're spread across factories/categories for variety.
+// Global /products ordering (unified with the mobile catalog). Two passes:
+//   1) COLLAPSE rows that reuse the EXACT same image — the catalog import sometimes
+//      over-splits a "brand-print examples" page into 20+ near-identical products,
+//      all pointing at one photo. We keep one representative per image (+ a "+N"
+//      variant count) so the same picture never repeats down the grid.
+//   2) DIVERSITY round-robin. Suppliers are onboarded in per-category batches (a
+//      whole category in a day), so we round-robin ACROSS CATEGORIES first — fair
+//      turns, so one day's category can't flood the top — and within a category
+//      round-robin across factories. Priced-then-newest breaks ties in each queue.
 function orderProducts(list) {
   const byNew = (a, b) => (new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  const catOf = (p) => (p.factory && p.factory.category) || null;
-  const byFac = new Map();
+  const rank = (a, b) => (isPriced(b) - isPriced(a)) || byNew(a, b);
+  const catOf = (p) => (p.factory && p.factory.category) || '∅';
+
+  // 1) Collapse same-image duplicates → one representative + _variantExtra count.
+  const byImage = new Map();
   for (const p of list) {
-    if (!byFac.has(p.factory_id)) byFac.set(p.factory_id, []);
-    byFac.get(p.factory_id).push(p);
+    const k = p.image || `__${p.id}`;   // missing image → never collapses
+    if (!byImage.has(k)) byImage.set(k, []);
+    byImage.get(k).push(p);
   }
-  for (const q of byFac.values()) q.sort((a, b) => (isPriced(b) - isPriced(a)) || byNew(a, b));
+  const reps = [];
+  for (const group of byImage.values()) {
+    group.sort(rank);
+    const rep = group[0];
+    reps.push(group.length > 1 ? { ...rep, _variantExtra: group.length - 1 } : rep);
+  }
+
+  // 2) Bucket reps by category → factory, then interleave categories fairly.
+  const byCat = new Map();
+  for (const p of reps) {
+    const ck = catOf(p);
+    let fm = byCat.get(ck); if (!fm) byCat.set(ck, fm = new Map());
+    let q = fm.get(p.factory_id); if (!q) fm.set(p.factory_id, q = []);
+    q.push(p);
+  }
+  for (const fm of byCat.values()) for (const q of fm.values()) q.sort(rank);
+
+  const catOrder = [...byCat.keys()];
+  const catHasItems = (ck) => { for (const q of byCat.get(ck).values()) if (q.length) return true; return false; };
+
   const out = [];
+  let ci = 0;          // rotation pointer across categories (fair turns)
   let lastFac = null;
-  let lastCat = null;
-  while (out.length < list.length) {
+  while (out.length < reps.length) {
+    // next category in the rotation that still has items
+    let ck = null;
+    for (let steps = 0; steps < catOrder.length; steps++) {
+      const cand = catOrder[ci % catOrder.length];
+      ci++;
+      if (catHasItems(cand)) { ck = cand; break; }
+    }
+    if (ck == null) break;
+
+    // within the category, pick a factory head (avoid the last factory when we can)
+    const fm = byCat.get(ck);
     const heads = [];
-    for (const q of byFac.values()) if (q.length) heads.push(q[0]);
-    if (!heads.length) break;
+    for (const q of fm.values()) if (q.length) heads.push(q[0]);
     let pool = heads.filter((p) => p.factory_id !== lastFac);
     if (!pool.length) pool = heads;
-    const catPool = pool.filter((p) => catOf(p) !== lastCat);
-    if (catPool.length) pool = catPool;
-    pool.sort((a, b) => (isPriced(b) - isPriced(a)) || byNew(a, b));
+    pool.sort(rank);
     const pick = pool[0];
-    byFac.get(pick.factory_id).shift();
+    fm.get(pick.factory_id).shift();
     out.push(pick);
     lastFac = pick.factory_id;
-    lastCat = catOf(pick);
   }
   return out;
 }
@@ -245,7 +279,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
                   <p className={`fp-pcard-moq${arc}`} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: priceText(p) ? 3 : 0 }}>{priceText(p) || c.onReq}</p>
                   {priceText(p) && <NegotiablePill lang={lang} style={{ marginBottom: 3 }} />}
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
-                  {p.also_count > 0 && <MoreOptionsBadge count={p.also_count} lang={lang} style={{ marginTop: 4 }} />}
+                  {(p._variantExtra || p.also_count) > 0 && <MoreOptionsBadge count={p._variantExtra || p.also_count} lang={lang} style={{ marginTop: 4 }} />}
                   <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                     <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
                     <button type="button" onClick={() => handleMessage(p)} disabled={msgBusy}
