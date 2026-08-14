@@ -9,7 +9,7 @@ import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
-import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
+import { buildProductRef } from '../lib/factoryChat';
 
 const T = {
   ar: {
@@ -123,17 +123,15 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [activeSection, setActiveSection] = useState(null); // section filter (Amazon-style)
   const [visible, setVisible] = useState(20);
   const [viewerReqProduct, setViewerReqProduct] = useState(null); // request a quote for a specific product
-  const [msgBusy, setMsgBusy] = useState(false);
+  // Navigation to the unified chat is instant; kept as a static flag so the
+  // existing button styling (disabled/label) needs no churn.
+  const [msgBusy] = useState(false);
 
-  // Direct chat: open (or reuse) a conversation with this factory, then enter it.
-  async function handleMessageFactory(product) {
+  // Unified chat: open the conversation with this factory (messages-based, via
+  // /chat/f/:factoryId). The product card rides along on the first message.
+  function handleMessageFactory(product) {
     if (!user) { nav('/login'); return; }
-    if (msgBusy) return;
-    setMsgBusy(true);
-    try {
-      const threadId = await startFactoryThread(id);
-      nav(`/messages/factory/${threadId}`, product ? { state: { product: buildProductRef(product) } } : undefined);
-    } catch (e) { setMsgBusy(false); alert(e.message || 'Could not open the conversation.'); }
+    nav(`/chat/f/${id}`, product ? { state: { product: buildProductRef(product) } } : undefined);
   }
 
   useEffect(() => {

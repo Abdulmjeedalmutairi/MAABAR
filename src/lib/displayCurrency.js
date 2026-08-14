@@ -81,19 +81,49 @@ export function convertCurrencyAmount(amount, sourceCurrency, targetCurrency, ra
   return usdValue * targetRate;
 }
 
-// Convert a FREE-TEXT catalog price ("$10 (1-49 PCS), $9 (≥100 PCS)") to SAR for
-// Arabic display. Catalog prices are USD-denominated ($-prefixed); only the
-// $-anchored amounts are converted (quantities in the tier labels are left
-// untouched). Western digits + "ر.س" label. Non-price text passes through, so
-// "On request" callers still get null upstream. An optional "US"/"USD" prefix on
-// the amount (e.g. "US$1.50") is consumed too — otherwise the letters survive the
-// swap and render as a stray "US6 ر.س".
-export function catalogPriceToSAR(text, rates = DEFAULT_RATES) {
-  const rate = (rates && rates.SAR) || DEFAULT_RATES.SAR;
-  return String(text || '').replace(/(?:USD?)?\s?\$\s?(\d+(?:\.\d+)?)/gi, (_m, num) => {
-    const sar = Math.round(parseFloat(num) * rate);
-    return `${sar.toLocaleString('en-US')} ر.س`;
-  });
+// Convert a FREE-TEXT catalog price to SAR for Arabic display. These prices come
+// straight from the Gemini catalog extraction in whatever currency the source
+// listing printed — mostly USD ("$4.99", "US$0.60", ranges "$1.40-$1.81", tiered
+// "$1.50 / $1.30 / $1.1", per-pack "16-Piece: $10.00"), some RMB ("¥390"), and a
+// few with a mislabeled `currency` column. We pick the source currency from the
+// text symbols first, then fall back to the stored `currency`, and convert every
+// price-anchored amount to SAR. Quantities inside tier labels ("(1-49 PCS)") are
+// left intact. Western digits + "ر.س". Empty / "not_found" passes through as "".
+export function catalogPriceToSAR(text, currency, rates = DEFAULT_RATES) {
+  const t = String(text || '').trim();
+  if (!t || t === 'not_found') return '';
+
+  const sarPerUsd = (rates && rates.SAR) || DEFAULT_RATES.SAR;   // 3.75 (SAMA peg)
+  const cnyPerUsd = (rates && rates.CNY) || DEFAULT_RATES.CNY;   // ~7.2
+
+  const hasYuan = /[¥￥元]|RMB|CNY/i.test(t);
+  const hasDollar = /\$|USD/i.test(t);
+  let src;
+  if (hasYuan && !hasDollar) src = 'CNY';
+  else if (hasDollar) src = 'USD';
+  else {
+    const c = String(currency || '').toUpperCase();
+    src = (c === 'RMB' || c === 'CNY') ? 'CNY' : (c === 'SAR') ? 'SAR' : 'USD';
+  }
+
+  const toSar = (n) => {
+    const v = parseFloat(n);
+    if (!Number.isFinite(v)) return null;
+    const sar = src === 'SAR' ? v : src === 'CNY' ? (v * sarPerUsd) / cnyPerUsd : v * sarPerUsd;
+    return `${Math.round(sar).toLocaleString('en-US')} ر.س`;
+  };
+
+  // Symbol-anchored amounts convert; tier quantities (no symbol) survive.
+  if (hasDollar || hasYuan) {
+    return t.replace(/(?:US)?\$\s?(\d+(?:\.\d+)?)|[¥￥]\s?(\d+(?:\.\d+)?)/gi,
+      (m, d, y) => toSar(d != null ? d : y) || m);
+  }
+  // No currency symbol: drop stray currency words, then convert the bare amounts.
+  return t
+    .replace(/\b(?:SAR|USD|RMB|CNY)\b|ر\.?\s?س/gi, '')
+    .replace(/\d+(?:\.\d+)?/g, (n) => toSar(n) || n)
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 export function formatCurrencyAmount(amount, currency, lang = 'en', options = {}) {

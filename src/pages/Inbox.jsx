@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sb } from '../supabase';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
+import { fetchMyBuyerThreads } from '../lib/factoryChat';
 
 export default function Inbox({ lang, user }) {
   const nav = useNavigate();
@@ -22,40 +23,51 @@ export default function Inbox({ lang, user }) {
   }, [user]);
 
   const loadInbox = async () => {
-    const [sent, recv] = await Promise.all([
-      sb.from('messages').select('receiver_id,content,created_at').eq('sender_id', user.id).order('created_at', { ascending: false }),
-      sb.from('messages').select('sender_id,content,created_at,is_read').eq('receiver_id', user.id).order('created_at', { ascending: false })
+    // Direct DMs exclude factory rows (factory_id null); factory conversations are
+    // grouped separately and merged into one unified list.
+    const [sent, recv, factoryThreads] = await Promise.all([
+      sb.from('messages').select('receiver_id,content,created_at').eq('sender_id', user.id).is('factory_id', null).order('created_at', { ascending: false }),
+      sb.from('messages').select('sender_id,content,created_at,is_read').eq('receiver_id', user.id).is('factory_id', null).order('created_at', { ascending: false }),
+      fetchMyBuyerThreads(user.id),
     ]);
 
     const map = {};
     if (sent.data) sent.data.forEach(m => {
       if (!map[m.receiver_id] || new Date(m.created_at) > new Date(map[m.receiver_id].last_time))
-        map[m.receiver_id] = { partner_id: m.receiver_id, last_msg: m.content, last_time: m.created_at, unread: 0 };
+        map[m.receiver_id] = { kind: 'direct', partner_id: m.receiver_id, last_msg: m.content, last_time: m.created_at, unread: 0 };
     });
     if (recv.data) recv.data.forEach(m => {
       if (!map[m.sender_id] || new Date(m.created_at) > new Date(map[m.sender_id].last_time))
-        map[m.sender_id] = { partner_id: m.sender_id, last_msg: m.content, last_time: m.created_at, unread: map[m.sender_id]?.unread || 0 };
+        map[m.sender_id] = { kind: 'direct', partner_id: m.sender_id, last_msg: m.content, last_time: m.created_at, unread: map[m.sender_id]?.unread || 0 };
       if (!m.is_read) map[m.sender_id].unread = (map[m.sender_id].unread || 0) + 1;
     });
 
-    const list = Object.values(map).sort((a, b) => new Date(b.last_time) - new Date(a.last_time));
+    const directList = Object.values(map);
+    const factoryList = (factoryThreads || []).map(th => ({
+      kind: 'factory', factory_id: th.factory_id,
+      last_msg: th.last_preview, last_time: th.last_at, unread: th.unread,
+      profile: { company_name: th.factory?.company_name || th.factory?.company_name_latin || '—' },
+    }));
+
+    const list = [...directList, ...factoryList].sort((a, b) => new Date(b.last_time) - new Date(a.last_time));
     if (!list.length) { setConvs([]); return; }
 
-    const ids = list.map(c => c.partner_id);
-    const profiles = await fetchProfileDirectoryByIds(sb, ids);
+    const ids = directList.map(c => c.partner_id);
+    const profiles = ids.length ? await fetchProfileDirectoryByIds(sb, ids) : [];
     const pm = {};
     if (profiles) profiles.forEach(p => pm[p.id] = p);
 
-    setConvs(list.map(c => ({ ...c, profile: pm[c.partner_id] || {} })));
+    setConvs(list.map(c => c.kind === 'factory' ? c : ({ ...c, profile: pm[c.partner_id] || {} })));
 
-    // mark as read
-    await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('is_read', false);
+    // mark direct DMs as read (factory threads are marked read when opened)
+    await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).is('factory_id', null).eq('is_read', false);
   };
 
-  const openChat = async (partnerId) => {
-    await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('sender_id', partnerId).eq('is_read', false);
-    setConvs(prev => prev.map(c => c.partner_id === partnerId ? { ...c, unread: 0 } : c));
-    nav(`/chat/${partnerId}`);
+  const openChat = async (conv) => {
+    if (conv.kind === 'factory') { nav(`/chat/f/${conv.factory_id}`); return; }
+    await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('sender_id', conv.partner_id).is('factory_id', null).eq('is_read', false);
+    setConvs(prev => prev.map(c => c.partner_id === conv.partner_id ? { ...c, unread: 0 } : c));
+    nav(`/chat/${conv.partner_id}`);
   };
 
   const fmtDate = (d) => {
@@ -105,7 +117,7 @@ export default function Inbox({ lang, user }) {
           ) : convs.map((c, idx) => {
             const name = c.profile?.company_name || c.profile?.full_name || '—';
             return (
-              <div key={c.partner_id} onClick={() => openChat(c.partner_id)} style={{
+              <div key={c.kind === 'factory' ? `f:${c.factory_id}` : c.partner_id} onClick={() => openChat(c)} style={{
                 display: 'flex', alignItems: 'center', gap: 20,
                 padding: '20px 0', borderTop: idx === 0 ? '1px solid var(--border-muted)' : 'none',
                 borderBottom: '1px solid var(--border-muted)',

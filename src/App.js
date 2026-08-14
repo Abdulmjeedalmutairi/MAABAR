@@ -49,11 +49,13 @@ import Factories from './pages/Factories';
 import FactoryProducts from './pages/FactoryProducts';
 import RequestWizard from './pages/RequestWizard';
 import ManagedExplain from './pages/ManagedExplain';
+import ManagedOrder from './pages/ManagedOrder';
 import FactoryDetail from './pages/FactoryDetail';
 import FactoryProductDetail from './pages/FactoryProductDetail';
 import FactoryRequestView from './pages/FactoryRequestView';
 import SupplierProfile from './pages/SupplierProfile';
 import Chat from './pages/Chat';
+import TelrReturn from './pages/TelrReturn';
 import Inbox from './pages/Inbox';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
@@ -71,6 +73,8 @@ import AdminOverview from './pages/admin/AdminOverview';
 import ConsoleDashboard from './pages/admin2/ConsoleDashboard';
 import ConsoleQuotations from './pages/admin2/ConsoleQuotations';
 import ConsoleImport from './pages/admin2/ConsoleImport';
+import ConsoleManaged from './pages/admin2/ConsoleManaged';
+import ConsoleManagedDetail from './pages/admin2/ConsoleManagedDetail';
 import ConsoleTemplates from './pages/admin2/ConsoleTemplates';
 import ConsoleNotifications from './pages/admin2/ConsoleNotifications';
 import ConsoleSuppliers from './pages/admin2/ConsoleSuppliers';
@@ -385,6 +389,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/contact"        element={<Contact         {...sharedProps} />} />
         <Route path="/support"        element={<Support         {...sharedProps} />} />
         <Route path="/managed"        element={<ManagedExplain  {...sharedProps} />} />
+        <Route path="/managed-order/:id" element={<ManagedOrder {...sharedProps} />} />
         <Route path="/request"        element={<RequestWizard   {...sharedProps} />} />
         <Route path="/requests"       element={withSupplierCapability(supplierState?.canAccessRequests, <Requests        {...sharedProps} />)} />
         <Route path="/factories"          element={<Factories       {...sharedProps} />} />
@@ -401,8 +406,11 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         <Route path="/supplier-access" element={<Navigate to="/login/supplier" replace />} />
         <Route path="/supplier/:id"   element={<SupplierProfile {...sharedProps} />} />
         <Route path="/suppliers"      element={<Navigate to="/factories" replace />} />
+        <Route path="/chat/f/:factoryId" element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat {...sharedProps} />)} />
+        <Route path="/chat/f/:factoryId/:traderId" element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat {...sharedProps} />)} />
         <Route path="/chat/:partnerId"element={withSupplierCapability(supplierState?.canAccessMessaging, <Chat            {...sharedProps} />)} />
         <Route path="/inbox"          element={withSupplierCapability(supplierState?.canAccessMessaging, <Inbox           {...sharedProps} />)} />
+        <Route path="/telr-return"    element={<TelrReturn      {...sharedProps} />} />
         <Route path="/terms"          element={<Terms           {...sharedProps} />} />
         <Route path="/privacy"        element={<Privacy         {...sharedProps} />} />
         <Route path="/faq"            element={<FAQ             {...sharedProps} />} />
@@ -414,6 +422,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
         {/* Admin Console v2 (parallel build — factory_directory-centric) */}
         <Route path="/admin2"                  element={<Navigate to="/admin2/dashboard" replace />} />
         <Route path="/admin2/dashboard"        element={<ConsoleDashboard     {...sharedProps} />} />
+        <Route path="/admin2/managed"          element={<ConsoleManaged       {...sharedProps} />} />
+        <Route path="/admin2/managed/:id"      element={<ConsoleManagedDetail {...sharedProps} />} />
         <Route path="/admin2/suppliers"        element={<ConsoleSuppliers     {...sharedProps} />} />
         <Route path="/admin2/factory-contacts" element={<ConsoleFactoryContacts {...sharedProps} />} />
         <Route path="/admin2/suppliers/:id"    element={<ConsoleSupplierDetail {...sharedProps} />} />

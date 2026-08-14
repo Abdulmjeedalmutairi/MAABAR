@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_ANON_KEY, SUPABASE_FUNCTIONS_URL } from '../supabase';
 import {
   getTranslationDirection,
@@ -8,35 +8,71 @@ import {
 import { translateChatMessage } from '../lib/maabarAi/client';
 import { fetchProfileDirectoryByIds } from '../lib/profileVisibility';
 import BrandedLoading from '../components/BrandedLoading';
+import { fetchFactoryIdentity, fetchBuyerFactoryMessages, sendBuyerFactoryMessage, fetchOwnerFactoryMessages, sendOwnerFactoryMessage } from '../lib/factoryChat';
+import ChatInvoiceComposer from '../components/ChatInvoiceComposer';
+import ChatInvoiceCard from '../components/ChatInvoiceCard';
+import PurchaseRequestCard from '../components/PurchaseRequestCard';
 
 const SEND_EMAILS_URL = `${SUPABASE_FUNCTIONS_URL}/send-email`;
 const STORAGE_URL = 'https://utzalmszfqfcofywfetv.supabase.co/storage/v1/object/public/product-images/';
 
+// Role-specific quick-reply templates (mirrors the mobile ChatScreen): a buyer
+// asks sourcing questions; a supplier / factory owner answers with pricing/terms.
+// The viewer's own role picks the set. English messages translate cleanly for the
+// Chinese side via the chat's auto-translation.
 const MSG_TEMPLATES = {
-  ar: [
-    { label: 'المنتج', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
-    { label: 'السعر', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
-    { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
-    { label: 'العينة', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
-    { label: 'الشحن', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
-    { label: 'الدفع', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
-  ],
-  en: [
-    { label: 'Product', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
-    { label: 'Price', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
-    { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
-    { label: 'Sample', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
-    { label: 'Shipping', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
-    { label: 'Payment', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
-  ],
-  zh: [
-    { label: '产品', msg: '能提供更多产品详情吗？规格、材料和可用颜色？' },
-    { label: '价格', msg: '批量订购的单价是多少？量大可以优惠吗？' },
-    { label: 'MOQ', msg: '最小起订量是多少？首次订单有灵活性吗？' },
-    { label: '样品', msg: '你们提供产品样品吗？样品费用和运到沙特的时间是多少？' },
-    { label: '运输', msg: '你们有哪些运到沙特的运输方式？预计到货时间是多少？' },
-    { label: '付款', msg: '付款条件是什么？接受Maabar平台支付系统吗？' },
-  ],
+  buyer: {
+    ar: [
+      { label: 'المنتج', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
+      { label: 'السعر', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
+      { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
+      { label: 'العينة', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
+      { label: 'الشحن', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
+      { label: 'الدفع', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
+    ],
+    en: [
+      { label: 'Product', msg: 'Can you provide more details about this product? Specifications, materials, and available colors?' },
+      { label: 'Price', msg: 'What is the price per unit for bulk orders? Can you offer a discount for larger quantities?' },
+      { label: 'MOQ', msg: 'What is the minimum order quantity? Is there flexibility for first orders?' },
+      { label: 'Sample', msg: 'Do you offer product samples? What is the sample cost and shipping time to Saudi Arabia?' },
+      { label: 'Shipping', msg: 'What shipping methods do you offer to Saudi Arabia? What is the estimated delivery time?' },
+      { label: 'Payment', msg: 'What are your payment terms? Do you accept the Maabar platform payment system?' },
+    ],
+    zh: [
+      { label: '产品', msg: '能提供更多产品详情吗？规格、材料和可用颜色？' },
+      { label: '价格', msg: '批量订购的单价是多少？量大可以优惠吗？' },
+      { label: 'MOQ', msg: '最小起订量是多少？首次订单有灵活性吗？' },
+      { label: '样品', msg: '你们提供产品样品吗？样品费用和运到沙特的时间是多少？' },
+      { label: '运输', msg: '你们有哪些运到沙特的运输方式？预计到货时间是多少？' },
+      { label: '付款', msg: '付款条件是什么？接受Maabar平台支付系统吗？' },
+    ],
+  },
+  supplier: {
+    ar: [
+      { label: 'السعر', msg: 'Our best unit price for this quantity is [price]. Larger quantities get a better rate.' },
+      { label: 'MOQ', msg: 'Our minimum order quantity for this product is [MOQ]. We can be flexible on a first order.' },
+      { label: 'العينة', msg: 'Yes, we can provide a sample. Sample cost is [cost] and it ships to Saudi Arabia in about [days] days.' },
+      { label: 'الإنتاج', msg: 'Production lead time is about [days] days after the order is confirmed.' },
+      { label: 'الشحن', msg: 'We ship to Saudi Arabia via [method]. Estimated delivery is about [days] days.' },
+      { label: 'الدفع', msg: 'We accept payment through the Maabar platform: [x]% upfront and the balance on shipping.' },
+    ],
+    en: [
+      { label: 'Price', msg: 'Our best unit price for this quantity is [price]. Larger quantities get a better rate.' },
+      { label: 'MOQ', msg: 'Our minimum order quantity for this product is [MOQ]. We can be flexible on a first order.' },
+      { label: 'Sample', msg: 'Yes, we can provide a sample. Sample cost is [cost] and it ships to Saudi Arabia in about [days] days.' },
+      { label: 'Lead time', msg: 'Production lead time is about [days] days after the order is confirmed.' },
+      { label: 'Shipping', msg: 'We ship to Saudi Arabia via [method]. Estimated delivery is about [days] days.' },
+      { label: 'Payment', msg: 'We accept payment through the Maabar platform: [x]% upfront and the balance on shipping.' },
+    ],
+    zh: [
+      { label: '价格', msg: '此数量的最优单价为 [price]。数量越大价格越优惠。' },
+      { label: 'MOQ', msg: '该产品的最小起订量为 [MOQ]。首次订单我们可以灵活处理。' },
+      { label: '样品', msg: '可以提供样品。样品费用为 [cost]，运到沙特约需 [days] 天。' },
+      { label: '生产', msg: '订单确认后生产周期约为 [days] 天。' },
+      { label: '运输', msg: '我们通过 [method] 运往沙特，预计约 [days] 天送达。' },
+      { label: '付款', msg: '我们通过 Maabar 平台收款：[x]% 定金，余款发货前支付。' },
+    ],
+  },
 };
 
 const COPY = {
@@ -76,12 +112,24 @@ const COPY = {
 };
 
 function isMediaMessage(content) {
-  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:'));
+  return content && (content.startsWith('[img:') || content.startsWith('[vid:') || content.startsWith('[pdf:') || content.startsWith('[invoice:') || content.startsWith('[request:'));
 }
 
 export default function Chat({ lang, user, profile }) {
-  const { partnerId } = useParams();
+  const { partnerId, factoryId, traderId } = useParams();
   const nav = useNavigate();
+  const location = useLocation();
+  // Factory mode: the conversation target is a factory_directory row (which may
+  // have no account yet), not a profile.
+  //   • buyer view  — /chat/f/:factoryId            (talks to the factory)
+  //   • owner view  — /chat/f/:factoryId/:traderId  (factory owner ↔ that buyer)
+  const isFactory = !!factoryId;
+  const isFactoryOwner = isFactory && !!traderId;
+  const productRef = location.state?.product || null;
+  // A supplier can issue a chat invoice to the counterpart buyer (direct chat or
+  // the factory-owner view); the buyer is the conversation counterpart.
+  const invoiceBuyerId = isFactoryOwner ? traderId : (isFactory ? null : partnerId);
+  const canIssueInvoice = profile?.role === 'supplier' && !!invoiceBuyerId;
   const [messages, setMessages] = useState([]);
   const [partner, setPartner] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +138,8 @@ export default function Chat({ lang, user, profile }) {
   const [translations, setTranslations] = useState({});
   const [translatingIds, setTranslatingIds] = useState(new Set());
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showInvoiceComposer, setShowInvoiceComposer] = useState(false);
+  const [composerRequest, setComposerRequest] = useState(null);   // pre-fill the composer from a [request:ID] card
   const [uploading, setUploading] = useState(false);
   const [chinaTime, setChinaTime] = useState('');
   const bodyRef = useRef(null);
@@ -97,7 +147,10 @@ export default function Chat({ lang, user, profile }) {
   const fileRef = useRef(null);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const isAr = lang === 'ar';
-  const templates = MSG_TEMPLATES[lang] || MSG_TEMPLATES.ar;
+  // Templates follow the VIEWER's role: a supplier / factory owner answering a
+  // buyer gets the supplier reply set, not the buyer's sourcing questions.
+  const myRole = profile?.role === 'supplier' ? 'supplier' : 'buyer';
+  const templates = (MSG_TEMPLATES[myRole] || MSG_TEMPLATES.buyer)[lang] || (MSG_TEMPLATES[myRole] || MSG_TEMPLATES.buyer).ar;
   const t = COPY[lang] || COPY.ar;
   const translationDirection = useMemo(() => inferTranslationDirection(lang, partner?.lang), [lang, partner?.lang]);
   const selectedDirection = getTranslationDirection(translationDirection);
@@ -156,7 +209,7 @@ export default function Chat({ lang, user, profile }) {
     return () => {
       if (channelRef.current) sb.removeChannel(channelRef.current);
     };
-  }, [partnerId, user]);
+  }, [partnerId, factoryId, traderId, user]);
 
   useEffect(() => {
     if (bodyRef.current) {
@@ -241,12 +294,58 @@ export default function Chat({ lang, user, profile }) {
   }, [messages, selectedDirection.source, selectedDirection.target, translationDirection, translations, translatingIds, user]);
 
   const loadPartner = async () => {
+    if (isFactoryOwner) {
+      // Owner view: the "partner" shown is the buyer (trader).
+      const [data] = await fetchProfileDirectoryByIds(sb, [traderId]);
+      if (data) setPartner(data);
+      return;
+    }
+    if (isFactory) {
+      // A factory has no profile; render its public identity. lang defaults to
+      // 'zh' so the translation direction infers correctly (Chinese factory).
+      const f = await fetchFactoryIdentity(factoryId);
+      if (f) setPartner({
+        id: f.id,
+        company_name: f.company_name || f.company_name_latin,
+        full_name: f.company_name_latin || f.company_name,
+        avatar_url: f.profile_image,
+        lang: 'zh',
+        __factory: true,
+      });
+      return;
+    }
     const [data] = await fetchProfileDirectoryByIds(sb, [partnerId]);
     if (data) setPartner(data);
   };
 
   const loadMessages = async () => {
     if (!user) return;
+    if (isFactoryOwner) {
+      const data = await fetchOwnerFactoryMessages(factoryId, traderId);
+      setMessages(data);
+      setLoading(false);
+      // Mark the trader's messages read.
+      await sb.from('messages')
+        .update({ is_read: true })
+        .eq('factory_id', factoryId)
+        .eq('sender_id', traderId)
+        .eq('is_read', false);
+      window.dispatchEvent(new CustomEvent('maabar:messages-read'));
+      return;
+    }
+    if (isFactory) {
+      const data = await fetchBuyerFactoryMessages(factoryId, user.id);
+      setMessages(data);
+      setLoading(false);
+      // Mark the factory's replies (receiver = me) read.
+      await sb.from('messages')
+        .update({ is_read: true })
+        .eq('factory_id', factoryId)
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
+      window.dispatchEvent(new CustomEvent('maabar:messages-read'));
+      return;
+    }
     const { data } = await sb
       .from('messages')
       .select('*')
@@ -270,15 +369,22 @@ export default function Chat({ lang, user, profile }) {
   const subscribeRealtime = () => {
     if (channelRef.current) sb.removeChannel(channelRef.current);
     const channel = sb
-      .channel(`chat-${user.id}-${partnerId}`)
+      .channel(`chat-${user.id}-${factoryId || partnerId}-${traderId || ''}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: `receiver_id=eq.${user.id}`,
+        // Owner view listens on the factory (inbound has receiver_id NULL);
+        // everyone else listens on their own inbox.
+        filter: isFactoryOwner ? `factory_id=eq.${factoryId}` : `receiver_id=eq.${user.id}`,
       }, async (payload) => {
         const message = payload.new;
-        if (message.sender_id !== partnerId) return;
+        const relevant = isFactoryOwner
+          ? (message.sender_id === traderId)          // a new message from this buyer
+          : isFactory
+            ? (message.factory_id === factoryId)      // the factory owner's reply
+            : (message.sender_id === partnerId);      // this direct partner
+        if (!relevant) return;
         setMessages((current) => {
           if (current.find((item) => item.id === message.id)) return current;
           return [...current, message];
@@ -296,6 +402,36 @@ export default function Chat({ lang, user, profile }) {
     if (!text || sending) return;
     if (!content) setInput('');
     setSending(true);
+
+    if (isFactoryOwner) {
+      const tempMessage = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id, receiver_id: traderId, factory_id: factoryId,
+        content: text, created_at: new Date().toISOString(), is_read: false,
+      };
+      setMessages((current) => [...current, tempMessage]);
+      try { await sendOwnerFactoryMessage(factoryId, user.id, traderId, text); } catch (_e) { /* surfaced on reload */ }
+      setSending(false);
+      loadMessages();
+      return;
+    }
+
+    if (isFactory) {
+      const tempMessage = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id, receiver_id: null, factory_id: factoryId,
+        content: text, created_at: new Date().toISOString(), is_read: false,
+      };
+      setMessages((current) => [...current, tempMessage]);
+      try {
+        // Attach the product card only to the first message of the thread.
+        const includeProduct = productRef && messages.length === 0;
+        await sendBuyerFactoryMessage(factoryId, user.id, text, includeProduct ? productRef : null);
+      } catch (_e) { /* surfaced on reload */ }
+      setSending(false);
+      loadMessages();
+      return;
+    }
 
     const tempMessage = {
       id: `temp-${Date.now()}`,
@@ -364,6 +500,19 @@ export default function Chat({ lang, user, profile }) {
   };
 
   const renderMessageContent = (content) => {
+    if (content?.startsWith('[invoice:') && content.endsWith(']')) {
+      return <ChatInvoiceCard invoiceId={content.slice(9, -1)} myId={user?.id} lang={lang} />;
+    }
+    if (content?.startsWith('[request:') && content.endsWith(']')) {
+      return (
+        <PurchaseRequestCard
+          requestId={content.slice(9, -1)}
+          myId={user?.id}
+          lang={lang}
+          onIssue={(req) => { setComposerRequest(req); setShowInvoiceComposer(true); }}
+        />
+      );
+    }
     if (content?.startsWith('[img:') && content.endsWith(']')) {
       const url = content.slice(5, -1);
       return <img src={url} alt="" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 'var(--radius-md)', display: 'block', objectFit: 'cover' }} />;
@@ -435,6 +584,12 @@ export default function Chat({ lang, user, profile }) {
             )}
           </div>
         </div>
+        {canIssueInvoice && (
+          <button onClick={() => setShowInvoiceComposer(true)}
+            style={{ alignSelf: 'center', background: 'none', border: '1px solid #0C6B5A', color: '#0C6B5A', borderRadius: 8, padding: '6px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {isAr ? '🧾 فاتورة' : '🧾 Invoice'}
+          </button>
+        )}
       </div>
 
       <div style={{
@@ -628,6 +783,16 @@ export default function Chat({ lang, user, profile }) {
           </svg>
         </button>
       </div>
+
+      {showInvoiceComposer && canIssueInvoice && (
+        <ChatInvoiceComposer
+          buyerId={composerRequest?.buyer_id || invoiceBuyerId}
+          request={composerRequest}
+          lang={lang}
+          onClose={() => { setShowInvoiceComposer(false); setComposerRequest(null); }}
+          onIssued={(inv) => { setShowInvoiceComposer(false); setComposerRequest(null); sendMessage(`[invoice:${inv.id}]`); }}
+        />
+      )}
     </div>
   );
 }

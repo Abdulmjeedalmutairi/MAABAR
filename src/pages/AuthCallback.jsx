@@ -113,21 +113,36 @@ export default function AuthCallback({ user, profile, lang }) {
   }, [searchParams, hashParams, authType]);
 
   const promotedRef = useRef(false);
+  const linkedRef = useRef(false);
+  // Auto-link a supplier account to its pre-existing factory row (by email/phone).
+  // Idempotent + best-effort; server-side match, so a no-op when there's nothing
+  // to link. Runs once per auth event, BEFORE we route in, so a matched factory
+  // lands on its already-seeded profile/products.
+  const linkFactoryOnce = async () => {
+    if (linkedRef.current) return;
+    linkedRef.current = true;
+    try { await sb.rpc('link_account_to_factory'); } catch { /* best-effort */ }
+  };
+
   useEffect(() => {
     if (status !== 'ready' || !user) return;
 
     if (profile?.role === 'supplier') {
-      nav(getSupplierPrimaryRoute(profile, user), { replace: true });
+      (async () => {
+        await linkFactoryOnce();
+        nav(getSupplierPrimaryRoute(profile, user), { replace: true });
+      })();
       return;
     }
 
     // Social supplier signup (role=supplier on the callback URL): the OAuth account
     // is created as buyer/none, so promote it to supplier via the DB-guarded
-    // claim_supplier_role RPC, then route into the supplier app.
+    // claim_supplier_role RPC, then auto-link to its factory, then route in.
     if (requestedRole === 'supplier' && !promotedRef.current) {
       promotedRef.current = true;
       (async () => {
         try { await sb.rpc('claim_supplier_role'); } catch { /* best-effort */ }
+        await linkFactoryOnce();
         nav('/dashboard/supplier', { replace: true });
       })();
       return;
@@ -136,6 +151,7 @@ export default function AuthCallback({ user, profile, lang }) {
     if (profile) {
       nav(nextPath, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, profile, nextPath, nav, requestedRole]);
 
   // Fallback timeout — if profile is still null after 5 seconds, redirect to dashboard anyway

@@ -5,6 +5,7 @@ import { sb, SUPABASE_URL } from '../supabase';
 import { uploadWithProgress } from '../lib/uploadWithProgress';
 import Footer from '../components/Footer';
 import ManagedSupplierMatchesPanel from '../components/ManagedSupplierMatchesPanel';
+import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import { getManagedMatchGroup, isManagedRequest } from '../lib/managedSourcing';
 import {
   DISPLAY_CURRENCIES,
@@ -91,6 +92,7 @@ import { PRODUCT_TIER_EMBED, deriveProductPriceFrom } from '../lib/productPriceL
 import { BUCKET_PRODUCT_MEDIA, BUCKET_PRODUCT_CERTS, removeStorageObjectByUrl } from '../lib/productMediaCleanup';
 import { loadProductCertifications, saveProductCertifications, emptyCertRow, CERT_TYPES, CERT_MAX_COUNT } from '../lib/productCertifications';
 import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
+import ConnectFactoryPrompt from '../components/supplier/ConnectFactoryPrompt';
 import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
@@ -223,6 +225,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [directOrders, setDirectOrders] = useState([]);
   const [loadingDirectOrders, setLoadingDirectOrders] = useState(false);
+  const [invoiceOrder, setInvoiceOrder] = useState(null);   // { requestId, order } for the invoice modal
   const [directOrderActioning, setDirectOrderActioning] = useState({});
   const [directOrdersNowMs, setDirectOrdersNowMs] = useState(() => Date.now());
   const [paidDirectOrders, setPaidDirectOrders] = useState([]);
@@ -2756,6 +2759,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
+              <ConnectFactoryPrompt user={user} lang={lang} onLinked={() => window.location.reload()} />
               {profile.maabar_supplier_id && (
                 <div onClick={() => setActiveTab('wallet')} style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #FCF8F0, #F7EDD6)', border: '1px solid rgba(176,141,46,.5)', borderRadius: 16, padding: '18px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                   <div>
@@ -3544,6 +3548,14 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                             </span>
                           )}
                         </div>
+                      </div>
+
+                      <div style={{ marginBottom: 10 }}>
+                        <button
+                          onClick={() => setInvoiceOrder({ requestId: r.id, order: { request_ref: r.request_ref, buyer_name: buyerName, supplier_name: profile?.company_name || profile?.full_name || '', product_name: productName, quantity: Number(r.quantity) || 1, unit_price: Number(product.price_from ?? product.price ?? 0) || 0, currency: product.currency || 'SAR' } })}
+                          style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, background: 'none', border: '1px solid #0C6B5A', color: '#0C6B5A', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
+                          {isAr ? 'إصدار الفاتورة' : lang === 'zh' ? '开具发票' : 'Issue Invoice'}
+                        </button>
                       </div>
 
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10, alignItems: 'center' }}>
@@ -5758,6 +5770,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
       )}
 
       <Footer lang={lang} />
+
+      {invoiceOrder && (
+        <OrderInvoiceModal
+          requestId={invoiceOrder.requestId}
+          order={invoiceOrder.order}
+          role="supplier"
+          lang={lang}
+          onClose={() => setInvoiceOrder(null)}
+        />
+      )}
     </div>
   );
 }
