@@ -8,7 +8,7 @@ import { fetchOrderInvoice, saveOrderInvoice, issueOrderInvoice, defaultLineItem
 
 const T = {
   ar: {
-    title: 'فاتورة', draft: 'مسودة', issued: 'صادرة', from: 'صادرة من', to: 'إلى (المشتري)',
+    title: 'فاتورة', draft: 'مسودة', issued: 'صادرة', paid: 'مدفوعة', from: 'صادرة من', to: 'إلى (المشتري)',
     onBehalf: 'صادرة عبر مَعبر نيابةً عن المورّد', desc: 'الوصف', qty: 'الكمية', unit: 'سعر الوحدة',
     amount: 'الإجمالي', subtotal: 'إجمالي البضاعة', fee: 'رسوم منصة مَعبر (5%)', total: 'الإجمالي',
     incoterms: 'شروط التسليم (Incoterms)', port: 'ميناء الشحن', hs: 'HS code', notes: 'ملاحظات',
@@ -18,7 +18,7 @@ const T = {
     issuedOk: 'صدرت الفاتورة ووصلت التاجر.', immutable: 'نسخة رسمية غير قابلة للتعديل.',
   },
   en: {
-    title: 'Invoice', draft: 'Draft', issued: 'Issued', from: 'From', to: 'To (Buyer)',
+    title: 'Invoice', draft: 'Draft', issued: 'Issued', paid: 'Paid', from: 'From', to: 'To (Buyer)',
     onBehalf: 'Issued via Maabar on behalf of the supplier', desc: 'Description', qty: 'Qty', unit: 'Unit price',
     amount: 'Amount', subtotal: 'Goods subtotal', fee: 'Maabar platform fee (5%)', total: 'Total',
     incoterms: 'Incoterms', port: 'Port of loading', hs: 'HS code', notes: 'Notes',
@@ -61,6 +61,9 @@ export default function OrderInvoiceModal({ requestId, order, role, lang = 'ar',
   }, [requestId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const editable = isSupplier && (!inv || inv.status === 'draft');
+  // A 'paid' chat invoice is a finalized document too (a receipt) — the buyer must
+  // be able to view + print it, exactly like an 'issued' one.
+  const finalized = !!inv && (inv.status === 'issued' || inv.status === 'paid');
   const subtotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0);
   const fee = Math.round(subtotal * 5) / 100;
   const total = subtotal + fee;
@@ -134,14 +137,14 @@ export default function OrderInvoiceModal({ requestId, order, role, lang = 'ar',
           <div style={{ textAlign: isAr ? 'left' : 'right' }}>
             <div style={{ fontSize: 16 }}>{t.title}</div>
             <span style={{ fontSize: 11, background: 'rgba(255,255,255,0.16)', padding: '3px 10px', borderRadius: 999 }}>
-              {inv?.status === 'issued' ? t.issued : t.draft} · {invoiceNo}
+              {inv?.status === 'paid' ? t.paid : inv?.status === 'issued' ? t.issued : t.draft} · {invoiceNo}
             </span>
           </div>
         </div>
 
         <div style={{ padding: '20px 26px', maxHeight: '68vh', overflowY: 'auto' }}>
           {loading ? <p style={{ color: 'var(--text-secondary)' }}>…</p> : (
-            (!isSupplier && (!inv || inv.status !== 'issued')) ? (
+            (!isSupplier && !finalized) ? (
               <p style={{ color: 'var(--text-secondary)', padding: '30px 0', textAlign: 'center' }}>{t.notIssued}</p>
             ) : (
             <>
@@ -213,7 +216,7 @@ export default function OrderInvoiceModal({ requestId, order, role, lang = 'ar',
         {/* Actions */}
         <div style={{ padding: '14px 26px', borderTop: '1px solid var(--border-muted)', display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           <button onClick={onClose} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13 }}>{t.close}</button>
-          {(inv?.status === 'issued' || !isSupplier) && inv?.status === 'issued' && (
+          {finalized && (
             <button onClick={doPrint} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', background: 'var(--text-primary)', color: 'var(--bg-base)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>{t.print}</button>
           )}
           {editable && (
