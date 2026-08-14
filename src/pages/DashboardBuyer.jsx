@@ -1883,6 +1883,12 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   {/* ── Status timeline ── */}
                   {!managed && <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />}
                   {managed && <ManagedStatusTimeline status={r.managed_status} hasShortlist={(r.managedShortlist || []).length > 0} isAr={isAr} />}
+                  {managed && (
+                    <button type="button" onClick={() => nav('/managed-order/' + r.id)}
+                      style={{ width: '100%', margin: '0 0 14px', padding: '11px', borderRadius: 'var(--radius-lg)', border: 'none', background: '#1a1814', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'متابعة الطلب المُدار ←' : 'Track managed order →'}
+                    </button>
+                  )}
 
                   {/* ── Payment plan row ── */}
                   {!managed && acceptedOffer && (

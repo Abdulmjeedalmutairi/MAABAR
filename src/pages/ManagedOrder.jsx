@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import { fetchManagedTracker, fetchAccountManager } from '../lib/managedOrder';
-import { MANAGED_STAGES, stageIndexOf, stageKeyOf, isCancelled } from '../lib/managedStages';
+import { MANAGED_STAGES, stageIndexOf, isCancelled } from '../lib/managedStages';
 import { waLink } from '../lib/maabarContact';
 import { toSAR } from '../lib/currency';
 import { startTelrPayment } from '../lib/telrPay';
