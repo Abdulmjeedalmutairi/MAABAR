@@ -37,7 +37,6 @@ import {
 const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/send-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
-import ManagedBuyerRequestPanel from '../components/ManagedBuyerRequestPanel';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import { startTelrPayment } from '../lib/telrPay';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
@@ -191,22 +190,8 @@ function StatusTimeline({ status, isAr }) {
   return <TimelineBar steps={TIMELINE_STEPS} current={timelineIndexFromStatus(status)} isAr={isAr} />;
 }
 
-/* ─── Sourcing timeline (buyer-facing) — a simple, neutral 3-step that hides the
-       internal Maabar pipeline. The buyer just sees: submitted → awaiting → offer.
-       (After acceptance the request moves to "My Orders" with the order timeline.) ─── */
-const SOURCING_STEPS = [
-  { key: 'submitted', ar: 'تم الإرسال', en: 'Submitted' },
-  { key: 'waiting',   ar: 'بانتظار العرض', en: 'Awaiting offer' },
-  { key: 'offer',     ar: 'وصلك عرض', en: 'Offer received' },
-];
-function sourcingTimelineIndex(status, hasShortlist) {
-  const s = String(status || '');
-  if (hasShortlist || ['shortlist_ready', 'buyer_review', 'buyer_selected', 'completed'].includes(s)) return 2;
-  return 1; // submitted / admin_review / sourcing / matching → awaiting the offer
-}
-function ManagedStatusTimeline({ status, hasShortlist, isAr }) {
-  return <TimelineBar steps={SOURCING_STEPS} current={sourcingTimelineIndex(status, hasShortlist)} isAr={isAr} />;
-}
+/* Managed requests no longer use a buyer-facing sourcing timeline here — the full
+   lifecycle lives in the dedicated tracker at /managed-order/:id. */
 
 /* ─── PaymentBadge ───────────────────────── */
 function PaymentBadge({ label, amount, currency, badgeState, isAr }) {
@@ -309,7 +294,7 @@ function PendingBanner({ action, isAr, onGo }) {
     ready_to_ship:      { border: 'rgba(160,136,80,0.35)',  bg: 'rgba(160,136,80,0.05)',  dot: 'var(--warn)' },
     arrived:            { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
     offers:             { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    managed_shortlist:  { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
+    managed_offer:      { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
     messages:           { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
     payment_sent:       { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
     delivery:           { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
@@ -320,7 +305,7 @@ function PendingBanner({ action, isAr, onGo }) {
     if (action.type === 'ready_to_ship')      return isAr ? `الشحنة جاهزة — ادفع الدفعة الثانية · ${action.request?.title_ar || action.request?.title_en}` : `Shipment ready — pay 2nd installment · ${action.request?.title_en || action.request?.title_ar}`;
     if (action.type === 'arrived')            return isAr ? `وصل الطلب — أكد الاستلام · ${action.request?.title_ar || action.request?.title_en}` : `Order arrived — confirm delivery · ${action.request?.title_en || action.request?.title_ar}`;
     if (action.type === 'offers')             return isAr ? `${action.count} عرض ينتظرك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'managed_shortlist')  return isAr ? `العروض المختارة جاهزة — ${action.request?.title_ar || action.request?.title_en}` : `Selected offers ready — ${action.request?.title_en || action.request?.title_ar}`;
+    if (action.type === 'managed_offer')  return isAr ? `عرضك المنسّق جاهز — ${action.request?.title_ar || action.request?.title_en}` : `Your curated offer is ready — ${action.request?.title_en || action.request?.title_ar}`;
     if (action.type === 'payment_sent')       return isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation';
     if (action.type === 'delivery')           return isAr ? `تأكيد الاستلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`;
     if (action.type === 'messages')           return isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`;
@@ -628,8 +613,8 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     if (reqs) {
       reqs.forEach(r => {
         const pending = r.offers?.filter(o => o.status === 'pending') || [];
-        if (String(r.sourcing_mode || 'direct') === 'managed' && String(r.managed_status || '') === 'shortlist_ready') {
-          actions.push({ type: 'managed_shortlist', request: r });
+        if (String(r.sourcing_mode || 'direct') === 'managed' && String(r.managed_status || '') === 'offer_ready') {
+          actions.push({ type: 'managed_offer', request: r });
         } else if (pending.length > 0) {
           actions.push({ type: 'offers', request: r, count: pending.length });
         }
@@ -678,28 +663,10 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       const requestIds = data.map((request) => request.id);
       const managedRequestIds = data.filter((request) => isManagedRequest(request)).map((request) => request.id);
 
-      const [briefsResult, shortlistResult, feedbackResult] = await Promise.all([
-        managedRequestIds.length > 0
-          ? sb.from('managed_request_briefs').select('*').in('request_id', managedRequestIds)
-          : Promise.resolve({ data: [] }),
-        managedRequestIds.length > 0
-          ? sb.from('managed_shortlisted_offers').select('*').in('request_id', managedRequestIds).order('rank', { ascending: true })
-          : Promise.resolve({ data: [] }),
-        managedRequestIds.length > 0
-          ? sb.from('managed_shortlist_feedback').select('*').in('request_id', managedRequestIds).order('created_at', { ascending: false })
-          : Promise.resolve({ data: [] }),
-      ]);
-
-      const shortlistWithProfiles = await attachSupplierProfiles(sb, shortlistResult.data || [], 'supplier_id', 'profiles');
-      const shortlistByRequest = (shortlistWithProfiles || []).reduce((acc, offer) => {
-        acc[offer.request_id] = [...(acc[offer.request_id] || []), offer];
-        return acc;
-      }, {});
+      const briefsResult = managedRequestIds.length > 0
+        ? await sb.from('managed_request_briefs').select('*').in('request_id', managedRequestIds)
+        : { data: [] };
       const briefByRequest = (briefsResult.data || []).reduce((acc, brief) => ({ ...acc, [brief.request_id]: brief }), {});
-      const feedbackByRequest = (feedbackResult.data || []).reduce((acc, entry) => {
-        acc[entry.request_id] = [...(acc[entry.request_id] || []), entry];
-        return acc;
-      }, {});
 
       // Fetch order_line_items for variant-based requests.
       // The FK column is `order_id` (referencing requests.id), not `request_id`.
@@ -718,8 +685,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           ...request,
           offers: offersWithProfiles || [],
           brief: briefByRequest[request.id] || null,
-          managedShortlist: shortlistByRequest[request.id] || [],
-          managedFeedback: feedbackByRequest[request.id] || [],
           lineItems: linesByRequest[request.id] || [],
         };
       }));
@@ -1076,153 +1041,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
     loadMyRequests(); loadPendingActions();
   };
 
-  const recordManagedShortlistAction = async ({ request, shortlistOffer = null, action, reason = null }) => {
-    await sb.from('managed_shortlist_feedback').insert({
-      request_id: request.id,
-      buyer_id: user.id,
-      shortlist_offer_id: shortlistOffer?.id || null,
-      action,
-      reason,
-    });
-  };
-
-  const ensureBuyerVisibleOfferForShortlist = async (shortlistOffer) => {
-    const now = new Date().toISOString();
-    const shippingDays = shortlistOffer.shipping_time_days;
-    const shippingMethodText = shippingDays ? `${shippingDays} shipping days` : null;
-    const negotiationNote = shippingDays ? `shipping_time_days:${shippingDays}` : null;
-
-    if (shortlistOffer.offer_id) {
-      const updates = {
-        managed_visibility: 'buyer_visible',
-        status: 'accepted',
-        shortlisted_at: now,
-      };
-      if (shortlistOffer.unit_price != null) updates.price = shortlistOffer.unit_price;
-      if (shortlistOffer.moq) updates.moq = shortlistOffer.moq;
-      if (shortlistOffer.production_time_days != null) updates.delivery_days = shortlistOffer.production_time_days;
-      if (shippingMethodText) {
-        updates.shipping_method = shippingMethodText;
-        updates.negotiation_note = negotiationNote;
-      }
-      const { data, error } = await sb.from('offers').update(updates).eq('id', shortlistOffer.offer_id).select().maybeSingle();
-      if (error) throw error;
-      return data;
-    }
-
-    const { data: matchRow } = await sb
-      .from('managed_supplier_matches')
-      .select('id')
-      .eq('request_id', shortlistOffer.request_id)
-      .eq('supplier_id', shortlistOffer.supplier_id)
-      .maybeSingle();
-
-    const { data: inserted, error: insertError } = await sb.from('offers').insert({
-      request_id: shortlistOffer.request_id,
-      supplier_id: shortlistOffer.supplier_id,
-      price: shortlistOffer.unit_price,
-      shipping_cost: 0,
-      shipping_method: shippingMethodText,
-      moq: shortlistOffer.moq,
-      delivery_days: shortlistOffer.production_time_days,
-      note: shortlistOffer.selection_reason || shortlistOffer.maabar_notes || null,
-      status: 'accepted',
-      managed_match_id: matchRow?.id || null,
-      managed_visibility: 'buyer_visible',
-      shortlisted_at: now,
-      negotiation_note: negotiationNote,
-    }).select().maybeSingle();
-    if (insertError) throw insertError;
-
-    if (inserted?.id) {
-      await sb.from('managed_shortlisted_offers').update({ offer_id: inserted.id }).eq('id', shortlistOffer.id);
-    }
-    return inserted;
-  };
-
-  const chooseManagedOffer = async (request, shortlistOffer) => {
-    await recordManagedShortlistAction({ request, shortlistOffer, action: 'choose_offer' });
-    await sb.from('managed_shortlisted_offers').update({ selected_by_buyer: true, buyer_selected_at: new Date().toISOString(), status: 'selected_by_buyer' }).eq('id', shortlistOffer.id);
-    await sb.from('managed_shortlisted_offers').update({ selected_by_buyer: false }).eq('request_id', request.id).neq('id', shortlistOffer.id);
-
-    let offer;
-    try {
-      offer = await ensureBuyerVisibleOfferForShortlist(shortlistOffer);
-    } catch (err) {
-      console.error('ensureBuyerVisibleOfferForShortlist error:', err);
-    }
-
-    if (!offer) {
-      alert(isAr ? 'تعذر فتح صفحة الدفع الآن' : lang === 'zh' ? '暂时无法打开结账页面' : 'Unable to open checkout right now');
-      await loadMyRequests();
-      await loadPendingActions();
-      return;
-    }
-
-    // Managed accept lands on `closed` so the supplier still goes through the
-    // "Ready — notify buyer" handshake before the first payment unlocks — same
-    // as the direct-offer flow. No immediate nav to checkout.
-    await sb.from('requests').update({
-      managed_status: 'buyer_selected',
-      managed_last_buyer_action: 'choose_offer',
-      status: 'closed',
-    }).eq('id', request.id);
-
-    // Notify the chosen supplier — they need to confirm readiness next.
-    if (offer?.supplier_id) {
-      try {
-        await sb.from('notifications').insert({
-          user_id: offer.supplier_id,
-          type: 'managed_offer_accepted',
-          title_ar: 'تم قبول عرضك المُدار — أكّد جاهزيتك',
-          title_en: 'Your managed offer was accepted — confirm readiness',
-          title_zh: '您的托管报价已被接受 — 请确认就绪',
-          ref_id: request.id,
-          is_read: false,
-        });
-      } catch (e) { console.error('chooseManagedOffer notify supplier error:', e); }
-      try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'managed_offer_accepted',
-            data: { recipientUserId: offer.supplier_id, name: 'Supplier', requestTitle: request.title_ar || request.title_en || '' },
-          }),
-        });
-      } catch (e) { console.error('chooseManagedOffer email error:', e); }
-    }
-
-    await loadMyRequests();
-    await loadPendingActions();
-    alert(isAr
-      ? 'تم قبول العرض. في انتظار تأكيد المورد الجاهزية ثم يفتح خيار الدفع.'
-      : lang === 'zh'
-        ? '报价已接受。等待供应商确认就绪后，即可开始付款。'
-        : 'Offer accepted. Waiting for the supplier to confirm readiness — payment will unlock once confirmed.');
-  };
-
-  const requestManagedNegotiation = async (request, shortlistOffer, reason) => {
-    await recordManagedShortlistAction({ request, shortlistOffer, action: 'request_negotiation', reason });
-    await sb.from('requests').update({ managed_status: 'sourcing', managed_last_buyer_action: 'request_negotiation' }).eq('id', request.id);
-    await loadMyRequests();
-    await loadPendingActions();
-  };
-
-  const rejectManagedOffer = async (request, shortlistOffer) => {
-    await recordManagedShortlistAction({ request, shortlistOffer, action: 'not_suitable' });
-    await sb.from('managed_shortlisted_offers').update({ status: 'dismissed' }).eq('id', shortlistOffer.id);
-    await sb.from('requests').update({ managed_last_buyer_action: 'not_suitable' }).eq('id', request.id);
-    await loadMyRequests();
-  };
-
-  const restartManagedSearch = async (request) => {
-    await recordManagedShortlistAction({ request, action: 'restart_search' });
-    await sb.from('requests').update({ managed_status: 'sourcing', managed_last_buyer_action: 'restart_search', managed_research_requested_count: (request.managed_research_requested_count || 0) + 1 }).eq('id', request.id);
-    await loadMyRequests();
-    await loadPendingActions();
-  };
-
   const confirmDelivery = async (requestId, supplierId, supplierName) => {
     // Update request status
     await sb.from('requests').update({ status: 'delivered', shipping_status: 'delivered' }).eq('id', requestId);
@@ -1508,7 +1326,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                         isAr={isAr}
                         onGo={() => {
                           if (action.type === 'messages') { setActiveTab('messages'); return; }
-                          if (action.request?.id) {
+                          if (action.type === 'managed_offer' && action.request?.id) {
+                            nav(`/managed-order/${action.request.id}`);
+                          } else if (action.request?.id) {
                             nav(`/dashboard?tab=requests&request=${action.request.id}`, { replace: true });
                           } else {
                             setActiveTab('requests');
@@ -1721,15 +1541,15 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 const isExpanded = expandedReq === r.id || isFocusedRequest;
                 const nextStepCopy = (() => {
                   if (managed) {
-                    if ((r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready') {
+                    if (String(r.managed_status || '') === 'offer_ready') {
                       return {
-                        title: isAr ? 'الخطوة التالية: راجع العروض المختارة لك' : 'Next step: review your selected offers',
-                        body: isAr ? 'كل قرار في هذا الطلب المُدار يتم من نفس الصفحة: اختر العرض المناسب، اطلب تفاوضاً إضافياً، أو اطلب من معبر أن يعيد البحث.' : 'Every decision for this managed request stays in the same page: choose the right offer, ask for more negotiation, or ask Maabar to search again.',
+                        title: isAr ? 'الخطوة التالية: عرضك المنسّق جاهز' : 'Next step: your curated offer is ready',
+                        body: isAr ? 'افتح صفحة المتابعة للاطلاع على العرض واعتماده ودفع العربون.' : 'Open the tracker to review the offer, approve it, and pay the deposit.',
                       };
                     }
                     return {
                       title: isAr ? 'الطلب الآن داخل المسار المُدار' : 'This request is now inside the managed flow',
-                      body: isAr ? 'معبر يجهّز الـ brief، يراجع الوضوح، ويطابق الموردين المناسبين فقط قبل إظهار أفضل 3 عروض لك هنا.' : 'Maabar is preparing the brief, reviewing clarity, and matching only suitable suppliers before showing your top 3 here.',
+                      body: isAr ? 'فريق مَعبر يدير طلبك خطوة بخطوة ويجهّز لك عرضاً منسّقاً. تابع كل التحديثات من صفحة المتابعة.' : 'The Maabar team manages your order step by step and prepares a curated offer. Track every update from the tracker page.',
                     };
                   }
                   if (acceptedOffer && r.status === 'closed') {
@@ -1880,14 +1700,23 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                   {/* ── Folded detail: everything below shows only when expanded ── */}
                   {isExpanded && (<>
-                  {/* ── Status timeline ── */}
+                  {/* ── Status timeline (direct/factory orders) ── */}
                   {!managed && <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />}
-                  {managed && <ManagedStatusTimeline status={r.managed_status} hasShortlist={(r.managedShortlist || []).length > 0} isAr={isAr} />}
+
+                  {/* ── Managed order: the dedicated tracker is the single source of
+                      truth — updates, the curated offer, and payment all live there. ── */}
                   {managed && (
-                    <button type="button" onClick={() => nav('/managed-order/' + r.id)}
-                      style={{ width: '100%', margin: '0 0 14px', padding: '11px', borderRadius: 'var(--radius-lg)', border: 'none', background: '#1a1814', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                      {isAr ? 'متابعة الطلب المُدار ←' : 'Track managed order →'}
-                    </button>
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 10px', lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {String(r.managed_status || '') === 'offer_ready'
+                          ? (isAr ? 'عرضك المنسّق جاهز — افتح صفحة المتابعة للاطلاع عليه واعتماده.' : 'Your curated offer is ready — open the tracker to review and approve it.')
+                          : (isAr ? 'فريق مَعبر يدير طلبك خطوة بخطوة. تابع كل التفاصيل والعرض والدفع من صفحة المتابعة.' : 'The Maabar team manages your order step by step. Track every update, the offer, and payment from the tracker.')}
+                      </p>
+                      <button type="button" onClick={() => nav('/managed-order/' + r.id)}
+                        style={{ width: '100%', margin: 0, padding: '11px', borderRadius: 'var(--radius-lg)', border: 'none', background: '#1a1814', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {isAr ? 'متابعة الطلب المُدار ←' : 'Track managed order →'}
+                      </button>
+                    </div>
                   )}
 
                   {/* ── Payment plan row ── */}
@@ -1897,45 +1726,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
                   {/* ── Tracking card ── */}
                   {!managed && <TrackingCard request={r} isAr={isAr} />}
-
-                  {/* Managed next-step banner (kept for managed only) */}
-                  {managed && (() => {
-                    const ty = requestType(r);
-                    const hasOffers = (r.managedShortlist || []).length > 0 || String(r.managed_status || '') === 'shortlist_ready';
-                    let title, body;
-                    if (hasOffers) {
-                      title = isAr ? 'وصلك عرض — راجعه' : 'An offer is ready — review it';
-                      body = isAr ? 'راجع العرض بالأسفل واقبله للمتابعة.' : 'Review the offer below and accept to proceed.';
-                    } else if (ty === 'factory') {
-                      title = isAr ? 'بانتظار رد المصنع' : 'Awaiting the factory';
-                      body = isAr ? 'سنعرض لك العرض هنا فور وصوله.' : "We'll show the offer here as soon as it arrives.";
-                    } else if (ty === 'idea') {
-                      title = isAr ? 'جارٍ تطوير فكرتك' : 'Developing your idea';
-                      body = isAr ? 'سنعرض لك عروض التصنيع هنا فور جاهزيتها.' : "We'll show manufacturing offers here once they're ready.";
-                    } else {
-                      title = isAr ? 'بانتظار العروض' : 'Awaiting offers';
-                      body = isAr ? 'سنعرض لك العروض هنا فور وصولها.' : "We'll show offers here as soon as they arrive.";
-                    }
-                    return (
-                      <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
-                        <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{title}</p>
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.7, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{body}</p>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Offer-review panel — only once an offer actually arrives (keeps
-                      the internal sourcing process hidden from the buyer before that). */}
-                  {managed && (r.managedShortlist || []).length > 0 && (
-                    <ManagedBuyerRequestPanel
-                      request={r}
-                      lang={lang}
-                      onChooseOffer={chooseManagedOffer}
-                      onRequestNegotiation={requestManagedNegotiation}
-                      onRejectOffer={rejectManagedOffer}
-                      onRestartSearch={restartManagedSearch}
-                    />
-                  )}
 
                   {/* ── Compare offers grid (pending offers only, or all when comparing) ── */}
                   {!managed && pendingOffers.length > 0 && (
