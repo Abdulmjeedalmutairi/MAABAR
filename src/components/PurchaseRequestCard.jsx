@@ -38,7 +38,7 @@ export default function PurchaseRequestCard({ requestId, myId, lang = 'ar', onIs
   if (!req) return <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>…</div>;
   const isSupplier = req.supplier_id === myId;
   const pname = (isAr ? req.product?.name_ar : req.product?.name_en) || req.product?.name_ar || req.product?.name_en || '';
-  const img = req.product?.image || '';
+  const img = req.product?.image_url || '';
   const d = req.details || {};
   const variants = Array.isArray(req.variants) ? req.variants.filter((v) => v.label || v.qty) : [];
   const isPending = req.status === 'pending';

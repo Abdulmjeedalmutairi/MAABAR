@@ -22,7 +22,7 @@ export async function declinePurchaseRequest(id) {
 
 export async function fetchPurchaseRequest(id) {
   const { data } = await sb.from('purchase_requests')
-    .select('*, product:products(name_ar,name_en,name_zh,image)').eq('id', id).maybeSingle();
+    .select('*, product:products(name_ar,name_en,name_zh,image_url)').eq('id', id).maybeSingle();
   return data || null;
 }
 
