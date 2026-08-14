@@ -242,7 +242,7 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.01c-.24.68-1.42 1.3-1.95 1.34-.5.04-.5.4-3.15-.66-2.67-1.05-4.35-3.76-4.48-3.94-.13-.18-1.07-1.42-1.07-2.71 0-1.29.68-1.92.92-2.19.24-.26.52-.33.7-.33.17 0 .35 0 .5.01.16.01.38-.06.59.45.24.58.81 2 .88 2.15.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.29-.12.56.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.8.85.27.13.44.2.5.31.07.11.07.63-.17 1.31z" /></svg>
                 {t.successWa}
               </a>
-              <button type="button" onClick={() => nav('/dashboard?tab=requests&request=' + submitted.id)}
+              <button type="button" onClick={() => nav('/managed-order/' + submitted.id)}
                 style={{ ...font, background: 'none', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 22px', fontSize: 14, color: 'var(--text-primary)', cursor: 'pointer' }}>{t.successBtn}</button>
             </div>
           </div>
