@@ -3197,6 +3197,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
           {!isRestrictedSupplierTab && activeTab === 'requests' && (
             <div style={section}>
               <SupplierRequestsPanel sb={sb} supplierId={user.id} lang={lang}
+                onBrowseOpen={() => setActiveTab('browse-requests')}
                 onAction={(it) => setActiveTab(
                   it.kind === 'message' ? 'messages'
                     : it.kind === 'direct' ? 'direct-orders'

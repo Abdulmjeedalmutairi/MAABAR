@@ -12,25 +12,25 @@ const T = {
     buckets: { needs_response: 'يحتاج ردّك', my_offers: 'عروضي', accepted: 'مقبولة', finished: 'منتهية' },
     kinds: { rfq: 'طلب عرض سعر', direct: 'شراء مباشر', sample: 'طلب عيّنة', inquiry: 'استفسار على منتج', message: 'رسالة' },
     actions: { submit_offer: 'قدّم عرضك ←', confirm_order: 'أكّد الطلب ←', approve_sample: 'وافق أو اعتذر ←', reply_inquiry: 'ردّ على الاستفسار ←', view_offer: 'عرض العرض ←', view_order: 'عرض الطلب ←', view_sample: 'عرض العيّنة ←', view_inquiry: 'عرض الاستفسار ←', reply_message: 'ردّ على الرسالة ←', view_message: 'عرض المحادثة ←' },
-    trader: 'تاجر', qty: 'الكمية', empty: 'لا شيء هنا الآن.', loading: 'جارٍ التحميل…',
+    trader: 'تاجر', qty: 'الكمية', empty: 'لا شيء هنا الآن.', loading: 'جارٍ التحميل…', browseOpen: 'تصفّح طلبات التجار المفتوحة ←',
   },
   en: {
     title: 'Requests', sub: 'Everything that needs your response, in one place',
     buckets: { needs_response: 'Needs your response', my_offers: 'My offers', accepted: 'Accepted', finished: 'Finished' },
     kinds: { rfq: 'Quote request', direct: 'Direct purchase', sample: 'Sample request', inquiry: 'Product inquiry', message: 'Message' },
     actions: { submit_offer: 'Submit your offer →', confirm_order: 'Confirm order →', approve_sample: 'Approve or decline →', reply_inquiry: 'Reply to inquiry →', view_offer: 'View offer →', view_order: 'View order →', view_sample: 'View sample →', view_inquiry: 'View inquiry →', reply_message: 'Reply →', view_message: 'View chat →' },
-    trader: 'Trader', qty: 'Qty', empty: 'Nothing here right now.', loading: 'Loading…',
+    trader: 'Trader', qty: 'Qty', empty: 'Nothing here right now.', loading: 'Loading…', browseOpen: 'Browse open trader requests →',
   },
   zh: {
     title: '需求', sub: '所有需要您回应的事项，集中一处',
     buckets: { needs_response: '待您回应', my_offers: '我的报价', accepted: '已接受', finished: '已完成' },
     kinds: { rfq: '询价', direct: '直接采购', sample: '样品申请', inquiry: '产品咨询', message: '消息' },
     actions: { submit_offer: '提交报价 →', confirm_order: '确认订单 →', approve_sample: '批准或拒绝 →', reply_inquiry: '回复咨询 →', view_offer: '查看报价 →', view_order: '查看订单 →', view_sample: '查看样品 →', view_inquiry: '查看咨询 →', reply_message: '回复 →', view_message: '查看对话 →' },
-    trader: '采购商', qty: '数量', empty: '暂无内容。', loading: '加载中…',
+    trader: '采购商', qty: '数量', empty: '暂无内容。', loading: '加载中…', browseOpen: '浏览公开采购需求 →',
   },
 };
 
-export default function SupplierRequestsPanel({ sb, supplierId, lang = 'ar', onAction }) {
+export default function SupplierRequestsPanel({ sb, supplierId, lang = 'ar', onAction, onBrowseOpen }) {
   const c = T[lang] || T.ar;
   const isAr = lang === 'ar';
   const arFont = isAr ? { fontFamily: 'var(--font-ar)' } : {};
@@ -64,7 +64,10 @@ export default function SupplierRequestsPanel({ sb, supplierId, lang = 'ar', onA
   return (
     <div style={{ maxWidth: 640 }}>
       <h2 style={{ fontSize: isAr ? 24 : 30, fontWeight: 300, marginBottom: 4, color: 'var(--text-primary)', ...arFont }}>{c.title}</h2>
-      <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 18, ...arFont }}>{c.sub}</p>
+      <p style={{ fontSize: 13, color: 'var(--text-disabled)', marginBottom: 12, ...arFont }}>{c.sub}</p>
+      {onBrowseOpen && (
+        <button onClick={onBrowseOpen} style={{ display: 'block', marginBottom: 16, background: 'none', border: 'none', padding: 0, fontSize: 13, fontWeight: 600, color: 'var(--bronze, #8B7355)', cursor: 'pointer', textAlign: isAr ? 'right' : 'left', ...(isAr ? { fontFamily: 'var(--font-ar)' } : {}) }}>{c.browseOpen}</button>
+      )}
 
       {/* status chips */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 18, paddingBottom: 2 }}>
