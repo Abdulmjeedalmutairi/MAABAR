@@ -430,13 +430,17 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
   const [priceOpen, setPriceOpen] = useState(false);   // reveal the review table
   const priceFileRef = useRef(null);
 
-  const priceVal = (p) => (priceEdits[p.id]?.price ?? p.extracted_json?.price ?? '');
-  const currVal = (p) => (priceEdits[p.id]?.currency ?? p.extracted_json?.currency ?? '');
+  // Gemini writes the literal 'not_found' into a product's price/currency when the
+  // price file has no match — treat it as empty ("on request"), never show or
+  // count it as a real value. (Approval already drops it via nf() in catalogImport.)
+  const cleanNF = (v) => (v && v !== 'not_found' ? v : '');
+  const priceVal = (p) => cleanNF(priceEdits[p.id]?.price ?? p.extracted_json?.price ?? '');
+  const currVal = (p) => cleanNF(priceEdits[p.id]?.currency ?? p.extracted_json?.currency ?? '');
   const editPrice = (p, field, v) => setPriceEdits((e) => ({
     ...e,
     [p.id]: {
-      price: field === 'price' ? v : (e[p.id]?.price ?? p.extracted_json?.price ?? ''),
-      currency: field === 'currency' ? v : (e[p.id]?.currency ?? p.extracted_json?.currency ?? ''),
+      price: field === 'price' ? v : cleanNF(e[p.id]?.price ?? p.extracted_json?.price ?? ''),
+      currency: field === 'currency' ? v : cleanNF(e[p.id]?.currency ?? p.extracted_json?.currency ?? ''),
     },
   }));
 

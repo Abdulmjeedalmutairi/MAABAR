@@ -366,7 +366,8 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
 
   return (
     <div dir={pageDir} className="app-shell">
-      {!isChromelessPage && <Navbar {...sharedProps} logoOnly={isSupplierAccessPage} />}
+      {/* The supplier dashboard renders its own header (SupplierHeader), so the global Navbar is hidden there. */}
+      {!isChromelessPage && !(profile?.role === 'supplier' && location.pathname === '/dashboard') && <Navbar {...sharedProps} logoOnly={isSupplierAccessPage} />}
       <Routes>
         {/* Homepage temporarily reverted to <Home> for Moyasar review.
             To re-enable countdown after approval: swap element back to <ComingSoon />
