@@ -3,9 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_URL } from '../supabase';
 import { uploadWithProgress } from '../lib/uploadWithProgress';
-import ManagedSupplierMatchesPanel from '../components/ManagedSupplierMatchesPanel';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
-import { getManagedMatchGroup, isManagedRequest } from '../lib/managedSourcing';
 import {
   DISPLAY_CURRENCIES,
   DEFAULT_DISPLAY_CURRENCY,
@@ -210,10 +208,6 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   const [replyingInquiryId, setReplyingInquiryId] = useState(null);
   const [translatedInquiries, setTranslatedInquiries] = useState({}); // لتخزين الاستفسارات المترجمة
   const [requests, setRequests]             = useState([]);
-  const [managedMatches, setManagedMatches] = useState([]);
-  const [managedMatchGroup, setManagedMatchGroup] = useState('new');
-  const [managedOfferForms, setManagedOfferForms] = useState({});
-  const [managedOfferDrafts, setManagedOfferDrafts] = useState({});
   const [activeTab, setActiveTab]           = useState('overview');
   const [activeCat, setActiveCat]           = useState('all');
   const [activeBottomTab, setActiveBottomTab] = useState('home');
@@ -460,7 +454,6 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     if (activeTab === 'offers')       loadMyOffers();
     if (activeTab === 'messages')     loadInbox();
     if (activeTab === 'my-products')  loadMyProducts();
-    if (activeTab === 'managed-matches') loadManagedMatches();
     if (activeTab === 'samples')      loadSamples();
     if (activeTab === 'product-inquiries') loadProductInquiries();
     if (activeTab === 'reviews')      loadMyReviews();
@@ -590,18 +583,16 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   }, [activeTab]);
 
   const loadStats = async () => {
-    const [products, offersData, messages, acceptedOffers, payments, openProductInquiries, managedMatches, samplesResult] = await Promise.all([
+    const [products, offersData, messages, acceptedOffers, payments, openProductInquiries, samplesResult] = await Promise.all([
       sb.from('products').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('is_active', true),
       sb.from('offers').select('id', { count: 'exact' }).eq('supplier_id', user.id),
       sb.from('messages').select('id', { count: 'exact' }).eq('receiver_id', user.id).eq('is_read', false),
       sb.from('offers').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'accepted'),
       sb.from('payments').select('amount').eq('supplier_id', user.id).eq('status', 'first_paid'),
       sb.from('product_inquiries').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'open'),
-      sb.from('managed_supplier_matches').select('id', { count: 'exact', head: true }).eq('supplier_id', user.id).in('status', ['new', 'viewed', 'quoted', 'under_review']),
       sb.from('samples').select('id', { count: 'exact' }).eq('supplier_id', user.id).eq('status', 'pending'),
     ]);
     const totalSales = (payments.data || []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-    const matchingRequests = managedMatches.count || 0;
     const pendingSamples = samplesResult.count;
     setStats({
       products: products.count || 0,
@@ -610,7 +601,6 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       productInquiries: openProductInquiries.count || 0,
       acceptedOffers: acceptedOffers.count || 0,
       totalSales: Math.round(totalSales),
-      matchingRequests,
       pendingSamples: pendingSamples || 0,
     });
   };
@@ -1662,130 +1652,6 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       setRequests(data.map(r => ({ ...r, lineItems: linesByRequest[r.id] || [] })));
     }
     setLoadingRequests(false);
-  };
-
-  const loadManagedMatches = async () => {
-    if (!user) return;
-    const { data, error } = await sb
-      .from('managed_supplier_matches')
-      .select('*, requests(*)')
-      .eq('supplier_id', user.id)
-      .order('matched_at', { ascending: false });
-
-    if (error) {
-      console.error('loadManagedMatches error:', error);
-      setManagedMatches([]);
-      return;
-    }
-
-    const requestIds = (data || []).map((match) => match.request_id).filter(Boolean);
-    const { data: relatedOffers } = requestIds.length > 0
-      ? await sb.from('offers').select('*').eq('supplier_id', user.id).in('request_id', requestIds)
-      : { data: [] };
-
-    const offerByRequest = (relatedOffers || []).reduce((acc, offer) => ({ ...acc, [offer.request_id]: offer }), {});
-
-    setManagedMatches((data || []).map((match) => ({
-      ...match,
-      offer: offerByRequest[match.request_id] || null,
-    })));
-
-    // Mark any 'new' matches as seen so the admin's queue reflects supplier
-    // awareness. Fire-and-forget — non-blocking for the UI.
-    const unseenIds = (data || []).filter((m) => m.status === 'new').map((m) => m.id);
-    if (unseenIds.length > 0) {
-      sb
-        .from('managed_supplier_matches')
-        .update({ status: 'viewed', viewed_at: new Date().toISOString() })
-        .in('id', unseenIds)
-        .then(({ error }) => {
-          if (error) console.error('loadManagedMatches mark-viewed error:', error);
-        });
-    }
-  };
-
-  const submitManagedMatchOffer = async (match, draft) => {
-    const price = parseFloat(draft.price);
-    const shippingCost = parseFloat(draft.shippingCost);
-    const productionDays = parseInt(draft.productionDays, 10);
-    const shippingDays = parseInt(draft.shippingDays, 10);
-
-    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(shippingCost) || shippingCost < 0 || !String(draft.moq || '').trim() || !Number.isFinite(productionDays) || productionDays <= 0 || !Number.isFinite(shippingDays) || shippingDays <= 0) {
-      alert(isAr ? 'أدخل سعر الوحدة وتكلفة الشحن وMOQ ومدة الإنتاج ومدة الشحن قبل إرسال العرض' : lang === 'zh' ? '请先填写单价、运费、最小起订量、生产周期和运输时效后再发送报价' : 'Please add unit price, shipping cost, MOQ, production days, and shipping days before sending');
-      return;
-    }
-
-    setSubmittingOfferId(match.id);
-    const noteTranslations = await translateOfferNote(draft.note, lang);
-    const payload = {
-      request_id: match.request_id,
-      supplier_id: user.id,
-      price,
-      shipping_cost: shippingCost,
-      // Store the numeric only; lang formatting happens at render time via
-      // getOfferShippingMethod(offer, lang) so each viewer sees their language.
-      shipping_method: shippingDays ? String(shippingDays) : null,
-      moq: draft.moq,
-      delivery_days: productionDays,
-      note: draft.note || null,
-      ...noteTranslations,
-      status: 'pending',
-      managed_match_id: match.id,
-      managed_visibility: 'admin_only',
-      negotiation_note: shippingDays ? `shipping_time_days:${shippingDays}` : null,
-    };
-
-    const existingOfferId = match.offer?.id || null;
-    const query = existingOfferId
-      ? sb.from('offers').update(payload).eq('id', existingOfferId)
-      : sb.from('offers').insert(payload);
-
-    const { error } = await query;
-    if (error) {
-      console.error('submitManagedMatchOffer error:', error);
-      alert(isAr ? 'تعذر إرسال العرض الآن' : lang === 'zh' ? '暂时无法提交报价' : 'Unable to submit the offer right now');
-      setSubmittingOfferId(null);
-      return;
-    }
-
-    await sb.from('managed_supplier_matches').update({
-      status: 'quoted',
-      supplier_note: draft.note || null,
-      supplier_response: 'quoted',
-      supplier_responded_at: new Date().toISOString(),
-    }).eq('id', match.id);
-
-    // Ping every admin so someone can review this managed offer.
-    try {
-      // Admin rows are not readable by a supplier under RLS — resolve admin
-      // recipient ids via SECURITY DEFINER RPC (returns [{ id }]).
-      const { data: admins } = await sb.rpc('get_admin_user_ids');
-      if (admins?.length) {
-        const rows = admins.map((a) => ({
-          user_id: a.id,
-          type: 'managed_offer_received',
-          title_ar: 'وصل عرض مُدار جديد للمراجعة',
-          title_en: 'A new managed offer is ready for review',
-          title_zh: '收到新的托管报价待审核',
-          ref_id: match.request_id,
-          is_read: false,
-        }));
-        await sb.from('notifications').insert(rows);
-      }
-    } catch (e) { console.error('submitManagedMatchOffer notify-admin error:', e); }
-
-    setManagedOfferForms((prev) => ({ ...prev, [match.id]: false }));
-    setSubmittingOfferId(null);
-    await Promise.all([loadManagedMatches(), loadStats()]);
-  };
-
-  const declineManagedMatch = async (match) => {
-    await sb.from('managed_supplier_matches').update({
-      status: 'declined',
-      supplier_response: 'declined',
-      closed_at: new Date().toISOString(),
-    }).eq('id', match.id);
-    await Promise.all([loadManagedMatches(), loadStats()]);
   };
 
   const loadInbox = async () => {
@@ -3146,19 +3012,12 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
                     value={stats.offers > 0 ? `${Math.round((stats.acceptedOffers || 0) / stats.offers * 100)}%` : '—'}
                     onClick={() => setActiveTab('offers')}
                   />
-                  <StatCard
-                    label={isAr ? 'طلبات المشترين المفتوحة' : lang === 'zh' ? '买家的开放需求' : 'Open Buyer Requests'}
-                    value={stats.matchingRequests || '—'}
-                    onClick={() => setActiveTab('managed-matches')}
-                    highlight={(stats.matchingRequests || 0) > 0}
-                  />
                 </div>
               </div>
 
               <div style={{ marginBottom: 40 }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>{t.quickActions}</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-                  <QuickAction title={isAr ? 'طلبات المشترين المفتوحة' : lang === 'zh' ? '买家的开放需求' : 'Open buyer requests'} onClick={() => setActiveTab('managed-matches')} primary isAr={isAr} />
                   <QuickAction title={t.myProducts}     onClick={() => setActiveTab('my-products')} isAr={isAr} />
                   <QuickAction title={t.addNewProduct}  onClick={() => setActiveTab('add-product')} isAr={isAr} />
                 </div>
@@ -3171,29 +3030,6 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
               </button>
                 </>
               ))}
-            </div>
-          )}
-
-          {/* ── MANAGED MATCHES ── */}
-          {!isRestrictedSupplierTab && activeTab === 'managed-matches' && (
-            <div style={section}>
-              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
-              <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 24, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
-                {isAr ? 'الطلبات المطابقة لك' : lang === 'zh' ? '匹配给您的需求' : 'Matched requests for you'}
-              </h2>
-              <ManagedSupplierMatchesPanel
-                lang={lang}
-                matches={managedMatches}
-                activeGroup={managedMatchGroup}
-                onChangeGroup={setManagedMatchGroup}
-                offerForms={managedOfferForms}
-                setOfferForms={setManagedOfferForms}
-                offerDrafts={managedOfferDrafts}
-                setOfferDrafts={setManagedOfferDrafts}
-                submittingOfferId={submittingOfferId}
-                onSubmitOffer={submitManagedMatchOffer}
-                onDeclineMatch={declineManagedMatch}
-              />
             </div>
           )}
 
