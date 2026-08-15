@@ -3,7 +3,6 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_URL } from '../supabase';
 import { uploadWithProgress } from '../lib/uploadWithProgress';
-import Footer from '../components/Footer';
 import ManagedSupplierMatchesPanel from '../components/ManagedSupplierMatchesPanel';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import { getManagedMatchGroup, isManagedRequest } from '../lib/managedSourcing';
@@ -95,6 +94,7 @@ import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardin
 import ConnectFactoryPrompt from '../components/supplier/ConnectFactoryPrompt';
 import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
 import SupplierRequestsPanel from '../components/supplier/SupplierRequestsPanel';
+import SupplierHomePanel from '../components/supplier/SupplierHomePanel';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -2776,7 +2776,16 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                   </span>
                 </div>
               )}
-              {isOnboardingLimited ? (
+              <SupplierHomePanel
+                sb={sb} supplierId={user.id} lang={lang} companyName={name}
+                offersCount={stats.offers} productsCount={stats.products}
+                messagesCount={stats.messages} inquiriesCount={stats.productInquiries}
+                needsVerification={needsVerification}
+                onOpenRequests={() => setActiveTab('requests')}
+                onVerify={() => setActiveTab('verification')}
+              />
+              {/* Legacy overview retained (dead) for rollback; superseded by SupplierHomePanel. */}
+              {false && (isOnboardingLimited ? (
                 <>
                   {showFirstProductNudge && (
                     <div style={{ marginBottom: 24, padding: '20px 24px', background: 'linear-gradient(135deg, #FCF8F0, #F1F7F1)', border: '1px solid rgba(45,122,79,0.28)', borderRadius: 'var(--radius-xl)' }}>
@@ -3142,7 +3151,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
                 {t.backHome}
               </button>
                 </>
-              )}
+              ))}
             </div>
           )}
 
@@ -5784,7 +5793,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
         </>
       )}
 
-      <Footer lang={lang} />
+      {/* marketing footer removed from post-login pages (decision #2) */}
 
       {invoiceOrder && (
         <OrderInvoiceModal
