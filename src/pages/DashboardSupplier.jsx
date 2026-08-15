@@ -419,7 +419,9 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const knownTabs = tabs.map((tab) => tab.id);
+    // 'browse-requests' is a valid non-nav sub-view (the open-RFQ pool, reached from
+    // the unified Requests tab) — keep it out of the unknown-tab → verification redirect.
+    const knownTabs = [...tabs.map((tab) => tab.id), 'browse-requests'];
     if (!knownTabs.includes(activeTab)) {
       setActiveTab(supplierState.isApplicationStage ? 'verification' : 'overview');
     }
