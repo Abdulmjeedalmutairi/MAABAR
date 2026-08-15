@@ -10,6 +10,7 @@ import { sb } from '../supabase';
 import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
 import { buildProductRef } from '../lib/factoryChat';
+import { catalogPriceToSAR } from '../lib/displayCurrency';
 
 const T = {
   ar: {
@@ -183,10 +184,13 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const productImages = catalog.map((p) => p.image).filter(Boolean);
   const heroImages = Array.from(new Set([factory.profile_image, ...productImages].filter(Boolean)));
   const productName = (p) => (isAr ? p.name_ar : lang === 'zh' ? p.name_zh : p.name_en) || p.name_en || p.name_ar || p.name_zh || '';
-  // Catalog price (verbatim + currency unless already shown). null → "On request".
+  // Catalog price → SAR for Arabic buyers (Western digits, dimensions in parens
+  // preserved); other languages see the source price + currency verbatim.
+  // null / 'not_found' → "On request".
   const priceText = (p) => {
     const v = (p.price || '').trim();
-    if (!v) return null;
+    if (!v || v === 'not_found') return null;
+    if (isAr) return catalogPriceToSAR(v, p.currency) || null;
     const cur = (p.currency || '').trim();
     return cur && !v.toLowerCase().includes(cur.toLowerCase()) ? `${v} ${cur}` : v;
   };

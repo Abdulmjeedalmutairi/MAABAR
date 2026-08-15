@@ -118,10 +118,13 @@ export function catalogPriceToSAR(text, currency, rates = DEFAULT_RATES) {
     return t.replace(/(?:US)?\$\s?([\d,]+(?:\.\d+)?)|[¥￥]\s?([\d,]+(?:\.\d+)?)/gi,
       (m, d, y) => toSar(d != null ? d : y) || m);
   }
-  // No currency symbol: drop stray currency words, then convert the bare amounts.
+  // No currency symbol: drop stray currency words, then convert the bare amounts —
+  // but leave numbers inside parentheses alone. Tiered catalog prices label each
+  // amount with a size/qty in parens ("565 (30in), 879 (70in)"); those are
+  // dimensions, not prices, and must not be converted to SAR.
   return t
     .replace(/\b(?:SAR|USD|RMB|CNY)\b|ر\.?\s?س/gi, '')
-    .replace(/[\d,]+(?:\.\d+)?/g, (n) => toSar(n) || n)
+    .replace(/(\([^)]*\))|[\d,]+(?:\.\d+)?/g, (m, paren) => paren || (toSar(m) || m))
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
