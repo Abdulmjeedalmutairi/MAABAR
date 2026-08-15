@@ -107,7 +107,7 @@ export function catalogPriceToSAR(text, currency, rates = DEFAULT_RATES) {
   }
 
   const toSar = (n) => {
-    const v = parseFloat(n);
+    const v = parseFloat(String(n).replace(/,/g, ''));   // strip thousands separators
     if (!Number.isFinite(v)) return null;
     const sar = src === 'SAR' ? v : src === 'CNY' ? (v * sarPerUsd) / cnyPerUsd : v * sarPerUsd;
     return `${Math.round(sar).toLocaleString('en-US')} ر.س`;
@@ -115,13 +115,13 @@ export function catalogPriceToSAR(text, currency, rates = DEFAULT_RATES) {
 
   // Symbol-anchored amounts convert; tier quantities (no symbol) survive.
   if (hasDollar || hasYuan) {
-    return t.replace(/(?:US)?\$\s?(\d+(?:\.\d+)?)|[¥￥]\s?(\d+(?:\.\d+)?)/gi,
+    return t.replace(/(?:US)?\$\s?([\d,]+(?:\.\d+)?)|[¥￥]\s?([\d,]+(?:\.\d+)?)/gi,
       (m, d, y) => toSar(d != null ? d : y) || m);
   }
   // No currency symbol: drop stray currency words, then convert the bare amounts.
   return t
     .replace(/\b(?:SAR|USD|RMB|CNY)\b|ر\.?\s?س/gi, '')
-    .replace(/\d+(?:\.\d+)?/g, (n) => toSar(n) || n)
+    .replace(/[\d,]+(?:\.\d+)?/g, (n) => toSar(n) || n)
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
