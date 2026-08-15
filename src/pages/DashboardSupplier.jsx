@@ -3184,10 +3184,11 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             <div style={section}>
               <SupplierRequestsPanel sb={sb} supplierId={user.id} lang={lang}
                 onAction={(it) => setActiveTab(
-                  it.kind === 'direct' ? 'direct-orders'
-                    : it.kind === 'sample' ? 'samples'
-                      : it.kind === 'inquiry' ? 'product-inquiries'
-                        : it.bucket === 'needs_response' ? 'browse-requests' : 'offers'
+                  it.kind === 'message' ? 'messages'
+                    : it.kind === 'direct' ? 'direct-orders'
+                      : it.kind === 'sample' ? 'samples'
+                        : it.kind === 'inquiry' ? 'product-inquiries'
+                          : it.bucket === 'needs_response' ? 'browse-requests' : 'offers'
                 )} />
             </div>
           )}

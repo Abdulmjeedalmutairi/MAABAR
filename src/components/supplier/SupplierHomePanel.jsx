@@ -11,7 +11,7 @@ const T = {
   ar: {
     eyebrow: 'لوحة المورد', needs: 'يحتاج ردّك', activity: 'نشاطك',
     offers: 'عروض نشطة', products: 'منتجاتك', messages: 'رسائل', inquiries: 'استفسارات',
-    kinds: { rfq: 'طلب عرض سعر', direct: 'شراء مباشر', sample: 'طلب عيّنة', inquiry: 'استفسار على منتج' },
+    kinds: { rfq: 'طلب عرض سعر', direct: 'شراء مباشر', sample: 'طلب عيّنة', inquiry: 'استفسار على منتج', message: 'رسالة' },
     verifyLine: 'منتجاتك ظاهرة للمشترين من الآن. أكمل ملفك لاستلام المدفوعات.', completeProfile: 'أكمل الملف',
     unlocks: 'يفتح بعد التحقق',
     payTitle: 'المدفوعات', payBody: 'استلم قيمة طلباتك بالريال مباشرة على حسابك البنكي.',
@@ -20,7 +20,7 @@ const T = {
   en: {
     eyebrow: 'Supplier dashboard', needs: 'Needs your response', activity: 'Your activity',
     offers: 'Active offers', products: 'Your products', messages: 'Messages', inquiries: 'Inquiries',
-    kinds: { rfq: 'Quote request', direct: 'Direct purchase', sample: 'Sample request', inquiry: 'Product inquiry' },
+    kinds: { rfq: 'Quote request', direct: 'Direct purchase', sample: 'Sample request', inquiry: 'Product inquiry', message: 'Message' },
     verifyLine: 'Your products are visible to buyers now. Complete your profile to get paid.', completeProfile: 'Complete profile',
     unlocks: 'Unlocks after verification',
     payTitle: 'Payments', payBody: 'Receive your order value in SAR straight to your bank account.',
@@ -29,7 +29,7 @@ const T = {
   zh: {
     eyebrow: '供应商面板', needs: '待您回应', activity: '您的活动',
     offers: '活跃报价', products: '您的产品', messages: '消息', inquiries: '咨询',
-    kinds: { rfq: '询价', direct: '直接采购', sample: '样品申请', inquiry: '产品咨询' },
+    kinds: { rfq: '询价', direct: '直接采购', sample: '样品申请', inquiry: '产品咨询', message: '消息' },
     verifyLine: '您的产品现已对买家可见。完成资料即可收款。', completeProfile: '完善资料',
     unlocks: '认证后解锁',
     payTitle: '收款', payBody: '订单款项以 SAR 直接到您的银行账户。',

@@ -31,12 +31,14 @@ export async function fetchSupplierActionItems(sb, supplierId) {
   const { data: prods } = await sb.from('products').select('id').eq('supplier_id', supplierId);
   const myProductIds = (prods || []).map((p) => p.id);
 
-  const [openReqs, myOffers, directReqs, samples, inquiries] = await Promise.all([
+  const [targetedReqs, myOffers, directReqs, samples, inquiries, msgRows] = await Promise.all([
+    // Quote requests directed at THIS supplier specifically (not the open pool —
+    // "needs your response" is what came TO this supplier). The open marketplace
+    // pool is a separate "browse opportunities" surface.
     sb.from('requests')
-      .select('id,title_ar,title_en,title_zh,buyer_id,status,quantity,unit,created_at,target_supplier_id')
+      .select('id,title_ar,title_en,title_zh,buyer_id,status,quantity,unit,created_at')
+      .eq('target_supplier_id', supplierId)
       .in('status', ['open', 'offers_received'])
-      .or('sourcing_mode.is.null,sourcing_mode.eq.direct')
-      .or(`target_supplier_id.is.null,target_supplier_id.eq.${supplierId}`)
       .then((r) => r.data || []),
     sb.from('offers')
       .select('id,request_id,status,created_at,requests(title_ar,title_en,title_zh,buyer_id)')
@@ -56,6 +58,12 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       .select('id,status,created_at,buyer_id,product_name,product_name_ar,product_name_en')
       .eq('supplier_id', supplierId)
       .then((r) => r.data || []),
+    // Inbound messages awaiting this supplier's reply (buyer → supplier, unread).
+    sb.from('messages')
+      .select('id,sender_id,content,created_at')
+      .eq('receiver_id', supplierId).eq('is_read', false)
+      .order('created_at', { ascending: true })
+      .then((r) => r.data || []),
   ]);
 
   // Requests I've already offered on leave the RFQ "needs_response" pool — they
@@ -63,8 +71,8 @@ export async function fetchSupplierActionItems(sb, supplierId) {
   const offeredReqIds = new Set((myOffers || []).map((o) => o.request_id));
   const items = [];
 
-  // (a) RFQ open pool — needs a response only if I haven't offered yet.
-  for (const r of openReqs) {
+  // (a) Quote requests targeted at this supplier — needs a response unless I offered.
+  for (const r of targetedReqs) {
     if (offeredReqIds.has(r.id)) continue;
     items.push({
       key: `rfq:${r.id}`, kind: 'rfq', bucket: 'needs_response',
@@ -119,6 +127,21 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       createdAt: q.created_at, waitingSince: q.created_at,
       title: q.product_name || q.product_name_ar || q.product_name_en || '',
       action: bucket === 'needs_response' ? 'reply_inquiry' : 'view_inquiry',
+    });
+  }
+
+  // (e) Inbound messages awaiting this supplier's reply — one item per conversation.
+  const bySender = new Map();
+  for (const m of msgRows) {
+    if (!bySender.has(m.sender_id)) bySender.set(m.sender_id, { first: m, last: m });
+    else bySender.get(m.sender_id).last = m;
+  }
+  for (const [sender, g] of bySender) {
+    items.push({
+      key: `msg:${sender}`, kind: 'message', bucket: 'needs_response',
+      sourceId: sender, requestId: null, buyerId: sender, status: 'unread',
+      createdAt: g.last.created_at, waitingSince: g.first.created_at,
+      title: (g.last.content || '').slice(0, 60), action: 'reply_message',
     });
   }
 
