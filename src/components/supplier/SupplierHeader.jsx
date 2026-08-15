@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import BrandLogo from '../BrandLogo';
 
 // Supplier-app header (decision #3): logo + bell + avatar. The hamburger is gone;
 // profile / verification / language / logout open from the avatar sheet. Rendered
@@ -29,9 +30,7 @@ export default function SupplierHeader({ lang = 'ar', setLang, companyName = '',
   return (
     <>
       <header style={{ background: 'var(--bg-raised, #fff)', borderBottom: '1px solid var(--border-subtle)', padding: '13px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 19, letterSpacing: '0.16em' }}>
-          <span style={{ fontFamily: 'var(--font-ar)', fontWeight: 600, letterSpacing: 0 }}>مَعبر</span>&nbsp;|&nbsp;MAABAR
-        </div>
+        <BrandLogo size="sm" align="flex-start" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 15, color: 'var(--text-disabled)' }}>
           <button onClick={onBell} aria-label="notifications" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', padding: 0 }}>
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
