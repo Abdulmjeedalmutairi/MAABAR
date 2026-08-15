@@ -94,6 +94,7 @@ import { loadProductCertifications, saveProductCertifications, emptyCertRow, CER
 import SupplierOnboardingSequence from '../components/supplier/SupplierOnboardingSequence';
 import ConnectFactoryPrompt from '../components/supplier/ConnectFactoryPrompt';
 import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
+import SupplierRequestsPanel from '../components/supplier/SupplierRequestsPanel';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -576,7 +577,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     }
   }, [product, activeTab, editingProduct]);
 
-  useEffect(() => { if (activeTab === 'requests') loadRequests(); }, [activeTab, activeCat]);
+  useEffect(() => { if (activeTab === 'browse-requests') loadRequests(); }, [activeTab, activeCat]);
 
   useEffect(() => { if (activeTab === 'direct-orders') { loadDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory(); } }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -3169,9 +3170,23 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           )}
 
           {/* ── REQUESTS ── */}
+          {/* Unified Requests tab (decision #1): status-classified action feed. */}
           {!isRestrictedSupplierTab && activeTab === 'requests' && (
             <div style={section}>
-              <BackBtn onClick={() => setActiveTab('overview')} label={t.back} />
+              <SupplierRequestsPanel sb={sb} supplierId={user.id} lang={lang}
+                onAction={(it) => setActiveTab(
+                  it.kind === 'direct' ? 'direct-orders'
+                    : it.kind === 'sample' ? 'samples'
+                      : it.kind === 'inquiry' ? 'product-inquiries'
+                        : it.bucket === 'needs_response' ? 'browse-requests' : 'offers'
+                )} />
+            </div>
+          )}
+
+          {/* Browse the open RFQ pool + submit offers (reached from the unified feed). */}
+          {!isRestrictedSupplierTab && activeTab === 'browse-requests' && (
+            <div style={section}>
+              <BackBtn onClick={() => setActiveTab('requests')} label={t.back} />
               <h2 style={{ fontSize: isAr ? 28 : 34, fontWeight: 300, marginBottom: 24, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.5 }}>
                 {isAr ? 'طلبات التجار' : lang === 'zh' ? '采购需求' : 'Trader Requests'}
               </h2>
