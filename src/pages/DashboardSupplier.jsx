@@ -385,8 +385,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
     { id: 'overview',     label: t.overview },
     { id: 'verification', label: t.verificationTab, badge: needsVerification ? '!' : null },
     { id: 'payout',       label: t.payoutTab, badge: needsPayoutSetup ? '!' : null },
-    { id: 'managed-matches', label: isAr ? 'الطلبات المطابقة لك' : lang === 'zh' ? '匹配给您的需求' : 'Matched requests for you' },
-    { id: 'requests',     label: isAr ? 'الطلبات المفتوحة' : lang === 'zh' ? '开放需求' : 'Open requests' },
+    { id: 'requests',     label: isAr ? 'الطلبات' : lang === 'zh' ? '需求' : 'Requests' },
     { id: 'direct-orders', label: isAr ? 'طلبات الشراء المباشر' : lang === 'zh' ? '直接采购订单' : 'Direct Purchase Orders', badge: (directOrders.length + paidDirectOrders.length) > 0 ? (directOrders.length + paidDirectOrders.length) : null },
     { id: 'my-products',  label: t.myProducts },
     { id: 'offers',       label: t.offers },
@@ -428,7 +427,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   // Keep bottom nav in sync when activeTab is set programmatically
   useEffect(() => {
     if (['overview'].includes(activeTab)) setActiveBottomTab('home');
-    else if (['requests', 'managed-matches'].includes(activeTab)) setActiveBottomTab('requests');
+    else if (['requests', 'browse-requests'].includes(activeTab)) setActiveBottomTab('requests');
     else if (['my-products', 'add-product'].includes(activeTab)) setActiveBottomTab('products');
     else if (['messages'].includes(activeTab)) setActiveBottomTab('messages');
     else if (activeTab === 'direct-orders') setActiveBottomTab('more');
