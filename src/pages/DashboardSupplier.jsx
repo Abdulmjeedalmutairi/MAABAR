@@ -5741,7 +5741,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
             id: 'more',
             icon: '⋯',
             label: isAr ? 'المزيد' : lang === 'zh' ? '更多' : 'More',
-            badge: (needsVerification || needsPayoutSetup) ? '!' : null,
+            badge: null,   // no red alert on the tab bar — the supplier has no error (decision #6)
             onClick: () => setMoreMenuOpen(true),
           },
         ].map(item => (
