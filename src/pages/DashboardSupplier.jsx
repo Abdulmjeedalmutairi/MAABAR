@@ -95,6 +95,7 @@ import ConnectFactoryPrompt from '../components/supplier/ConnectFactoryPrompt';
 import SupplierPayoutLockBanner from '../components/supplier/SupplierPayoutLockBanner';
 import SupplierRequestsPanel from '../components/supplier/SupplierRequestsPanel';
 import SupplierHomePanel from '../components/supplier/SupplierHomePanel';
+import SupplierHeader from '../components/supplier/SupplierHeader';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
 import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
@@ -190,7 +191,7 @@ const getUsdToSar = async () => {
   }
 };
 
-export default function DashboardSupplier({ user, profile, lang, displayCurrency, setDisplayCurrency, setProfile, exchangeRates }) {
+export default function DashboardSupplier({ user, profile, lang, setLang, setUser, displayCurrency, setDisplayCurrency, setProfile, exchangeRates }) {
   const viewerCurrency = normalizeDisplayCurrency(displayCurrency || DEFAULT_DISPLAY_CURRENCY);
   const nav      = useNavigate();
   const location = useLocation();
@@ -2613,6 +2614,17 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
   return (
     <div className="dashboard-wrap">
 
+      <SupplierHeader
+        lang={lang} setLang={setLang}
+        companyName={name}
+        subtitle={profile?.speciality || profile?.city || ''}
+        avatarUrl={settings?.avatar_url || profile?.avatar_url}
+        onProfile={() => setActiveTab('settings')}
+        onVerification={() => setActiveTab('verification')}
+        onBell={() => setActiveTab('messages')}
+        onLogout={async () => { try { await sb.auth.signOut(); } catch { /* ignore */ } window.location.href = '/'; }}
+      />
+
       {showOnboardingSequence && (
         <SupplierOnboardingSequence
           user={user}
@@ -2629,6 +2641,8 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
           HEADER
       ══════════════════════════════════════ */}
       <div className="dash-header-pad" style={{ background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
+        {/* Redundant on mobile (SupplierHeader + SupplierHomePanel cover it); kept for desktop until C10. */}
+        <div className="sup-hdr-identity">
         <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 20, fontWeight: 500 }}>{t.tag}</p>
         <h1 style={{ fontSize: isAr ? 34 : 40, fontWeight: 300, ...arFont, color: 'var(--text-primary)', letterSpacing: isAr ? 0 : -1, lineHeight: 1.2, marginBottom: 10 }}>
           {t.welcome} {name}
@@ -2651,6 +2665,7 @@ export default function DashboardSupplier({ user, profile, lang, displayCurrency
               <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{supplierMaabarId}</strong>
             </span>
           )}
+        </div>
         </div>
 
         {/* Desktop: full flat tab row */}
