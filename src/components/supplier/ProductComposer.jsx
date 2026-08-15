@@ -203,13 +203,11 @@ export const buildProductWritePayload = (rawProduct, supplierId, { asDraft = fal
     unit_weight_kg: product.unit_weight_kg ? parseFloat(product.unit_weight_kg) : null,
     package_dimensions: product.package_dimensions || null,
     sample_free_from_qty: product.sample_free_from_qty ? parseInt(product.sample_free_from_qty, 10) : null,
-    // Drafts stay unpublished (is_active=false) and are skipped by the
-    // auto-publish-on-verified trigger; a full save publishes (is_draft=false)
-    // ONLY if the supplier is already verified. A not-yet-verified supplier can
-    // now create products, but they stay is_active=false (staged) and go live via
-    // auto_publish_products_on_supplier_verified when the supplier is approved —
-    // so buyers never see a product from an unverified supplier.
-    is_active: (asDraft || !isVerified) ? false : true,
+    // Product visibility is decoupled from verification (verification gates only
+    // payout). A complete (non-draft) product is is_active=true — visible to
+    // buyers — from day one, regardless of whether the supplier is verified.
+    // Drafts stay unpublished; the supplier can still manually show/hide later.
+    is_active: asDraft ? false : true,
     is_draft: asDraft,
   };
 };
