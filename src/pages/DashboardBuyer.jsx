@@ -39,6 +39,7 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
+import TranslatedText from '../components/TranslatedText';
 import { startTelrPayment } from '../lib/telrPay';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
@@ -1875,7 +1876,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                         {isAr ? 'ملاحظة تجارية' : lang === 'zh' ? '商务备注' : 'Commercial note'}
                                       </p>
                                       <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                        {o.note}
+                                        <TranslatedText text={o.note} lang={lang} />
                                       </p>
                                     </div>
                                   )}

@@ -97,7 +97,7 @@ import SupplierHomePanel from '../components/supplier/SupplierHomePanel';
 import SupplierHeader from '../components/supplier/SupplierHeader';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
-import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
+import { buildTranslatedProductFields, translateTextToAllLanguages } from '../lib/requestTranslation';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
@@ -2252,8 +2252,10 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
         return;
       }
 
-      const noteTranslations = await translateOfferNote(note, lang);
       const offerCurrency = normalizeDisplayCurrency(o.currency || viewerCurrency);
+      // Save the offer with the SOURCE note only — no dependency on the external
+      // translator on this commercial path. A single-audience note is translated
+      // on the buyer's side at read time (TranslatedText, cached).
       const { error } = await runWithOptionalColumns({
         table: 'offers',
         payload: {
@@ -2267,10 +2269,9 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
           delivery_days: days,
           origin,
           note: note || null,
-          ...noteTranslations,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh', 'currency'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'currency'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
