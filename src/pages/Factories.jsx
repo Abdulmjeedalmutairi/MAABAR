@@ -61,15 +61,27 @@ export default function Factories({ lang = 'ar' }) {
     // factories past ~row 1000 showed 0 products and no cover image. Mirrors the
     // range-loop the products pages already use.
     const fetchAllProductMeta = async () => {
-      const all = [];
-      for (let from = 0; ; from += 1000) {
-        const { data: d, error } = await sb.from('factory_products')
+      const PAGE = 1000;
+      // The first page also returns the exact total, so the remaining pages can
+      // be fetched in PARALLEL rather than walked one blocking round-trip at a
+      // time (that serial walk was most of the 3-4s cold load).
+      const first = await sb.from('factory_products')
+        .select('factory_id, image, import_id', { count: 'exact' })
+        .order('factory_id', { ascending: true })
+        .range(0, PAGE - 1);
+      if (first.error || !first.data) return [];
+      const all = [...first.data];
+      const total = first.count ?? first.data.length;
+      const rest = [];
+      for (let from = PAGE; from < total; from += PAGE) {
+        rest.push(sb.from('factory_products')
           .select('factory_id, image, import_id')
           .order('factory_id', { ascending: true })
-          .range(from, from + 999);
-        if (error || !d || !d.length) break;
-        all.push(...d);
-        if (d.length < 1000) break;
+          .range(from, from + PAGE - 1));
+      }
+      if (rest.length) {
+        const pages = await Promise.all(rest);
+        for (const p of pages) { if (p.data) all.push(...p.data); }
       }
       return all;
     };
