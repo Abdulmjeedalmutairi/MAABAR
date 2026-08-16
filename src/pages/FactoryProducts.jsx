@@ -12,6 +12,7 @@ import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
 } from '../lib/factoryCategories';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
+import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
 
 const PAGE = 12;
 
@@ -142,54 +143,48 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   usePageTitle('suppliers', lang);
 
   const chips = useMemo(() => displayCategoriesForLang(lang), [lang]);
-  const [items, setItems] = useState([]);   // products joined with their factory
-  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [visible, setVisible] = useState(PAGE);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      // factory_products can exceed PostgREST's default 1000-row cap, so page
-      // through all of them — otherwise whole factories past row 1000 never show.
-      const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en, created_at';
-      const fetchAllProducts = async () => {
-        const all = [];
-        for (let from = 0; ; from += 1000) {
-          const { data, error } = await sb.from('factory_products').select(PROD_COLS)
-            .order('factory_id', { ascending: true }).range(from, from + 999);
-          if (error || !data || !data.length) break;
-          all.push(...data);
-          if (data.length < 1000) break;
-        }
-        return all;
-      };
-      const [{ data: facs }, prods] = await Promise.all([
-        sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
-        fetchAllProducts(),
-      ]);
-      if (!alive) return;
-      const facMap = {};
-      (facs || []).forEach((f) => { facMap[f.id] = f; });   // only ACTIVE factories (public view) → respects the draft gate
-      // Join, then precompute each product's normalized search text (_hay) once —
-      // names (ar/en/zh) + ref + description + factory name — so smart search stays
-      // fast across the full catalog on every keystroke.
-      const joined = (prods || [])
-        .map((p) => {
-          const factory = facMap[p.factory_id];
-          const _hay = normalize([
-            p.name_ar, p.name_en, p.name_zh, p.ref_code, p.description_ar, p.description_en,
-            factory && factory.company_name, factory && factory.company_name_latin,
-          ].filter(Boolean).join(' '));
-          return { ...p, factory, _hay };
-        })
-        .filter((p) => p.factory && isUrl(p.image));
-      setItems(joined);
-      setLoading(false);
-    })();
-    return () => { alive = false; };
-  }, []);
+  // Cached browse (stale-while-revalidate): the full catalog is fetched once per
+  // session and reused on every revisit instead of a full reload each time.
+  // Public + read-only — no local mutation to invalidate.
+  const { data, isLoading: loading } = useStaleWhileRevalidate('factory-products-all', async () => {
+    // factory_products can exceed PostgREST's default 1000-row cap, so page
+    // through all of them — otherwise whole factories past row 1000 never show.
+    const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en, created_at';
+    const fetchAllProducts = async () => {
+      const all = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: d, error } = await sb.from('factory_products').select(PROD_COLS)
+          .order('factory_id', { ascending: true }).range(from, from + 999);
+        if (error || !d || !d.length) break;
+        all.push(...d);
+        if (d.length < 1000) break;
+      }
+      return all;
+    };
+    const [{ data: facs }, prods] = await Promise.all([
+      sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
+      fetchAllProducts(),
+    ]);
+    const facMap = {};
+    (facs || []).forEach((f) => { facMap[f.id] = f; });   // only ACTIVE factories (public view) → respects the draft gate
+    // Join, then precompute each product's normalized search text (_hay) once —
+    // names (ar/en/zh) + ref + description + factory name — so smart search stays
+    // fast across the full catalog on every keystroke.
+    return (prods || [])
+      .map((p) => {
+        const factory = facMap[p.factory_id];
+        const _hay = normalize([
+          p.name_ar, p.name_en, p.name_zh, p.ref_code, p.description_ar, p.description_en,
+          factory && factory.company_name, factory && factory.company_name_latin,
+        ].filter(Boolean).join(' '));
+        return { ...p, factory, _hay };
+      })
+      .filter((p) => p.factory && isUrl(p.image));
+  });
+  const items = data || [];
 
   useEffect(() => { setVisible(PAGE); }, [activeKey, q]);
 
