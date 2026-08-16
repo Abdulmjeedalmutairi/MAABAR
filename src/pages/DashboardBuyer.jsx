@@ -1230,6 +1230,29 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                 </button>
               </div>
 
+              {/* Direct purchases — a clear, visible entry (not buried in "More"). */}
+              {directOrders.length > 0 && (
+                <button onClick={() => setActiveTab('direct-orders')}
+                  style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: isAr ? 'right' : 'left',
+                    background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)',
+                    [isAr ? 'borderRight' : 'borderLeft']: `3px solid ${directOrdersPayableCount > 0 ? 'var(--red, #C0503F)' : 'var(--bronze, #8B7355)'}`,
+                    borderRadius: 'var(--radius-lg)', padding: '13px 15px', marginBottom: 16, cursor: 'pointer' }}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'مشترياتي المباشرة' : 'My Direct Purchases'}
+                    </span>
+                    {directOrdersPayableCount > 0 && (
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--red, #C0503F)', fontWeight: 600, marginTop: 2, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {directOrdersPayableCount} {isAr ? 'بانتظار الدفع' : 'awaiting payment'}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {directOrders.length} <span style={{ color: 'var(--text-disabled)' }}>{isAr ? '· عرض ←' : '· view →'}</span>
+                  </span>
+                </button>
+              )}
+
               {/* Stats mini-strip */}
               {!loadingRequests && myRequests.length > 0 && (() => {
                 const needsAct = myRequests.filter(r => {
