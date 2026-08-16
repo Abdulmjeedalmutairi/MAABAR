@@ -290,48 +290,6 @@ function TrackingCard({ request, isAr }) {
   );
 }
 
-/* ─── PendingBanner ──────────────────────── */
-function PendingBanner({ action, isAr, onGo }) {
-  const styles = {
-    supplier_confirmed: { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.05)',  dot: 'var(--green)' },
-    ready_to_ship:      { border: 'rgba(160,136,80,0.35)',  bg: 'rgba(160,136,80,0.05)',  dot: 'var(--warn)' },
-    arrived:            { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
-    offers:             { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    managed_offer:      { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    messages:           { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    payment_sent:       { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    delivery:           { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
-  };
-  const s = styles[action.type] || styles.offers;
-  const title = (() => {
-    if (action.type === 'supplier_confirmed') return isAr ? `المورد جاهز — ادفع الآن · ${action.request?.title_ar || action.request?.title_en}` : `Supplier ready — pay now · ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'ready_to_ship')      return isAr ? `الشحنة جاهزة — ادفع الدفعة الثانية · ${action.request?.title_ar || action.request?.title_en}` : `Shipment ready — pay 2nd installment · ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'arrived')            return isAr ? `وصل الطلب — أكد الاستلام · ${action.request?.title_ar || action.request?.title_en}` : `Order arrived — confirm delivery · ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'offers')             return isAr ? `${action.count} عرض ينتظرك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'managed_offer')  return isAr ? `عرضك المنسّق جاهز — ${action.request?.title_ar || action.request?.title_en}` : `Your curated offer is ready — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'payment_sent')       return isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation';
-    if (action.type === 'delivery')           return isAr ? `تأكيد الاستلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'messages')           return isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`;
-    return '';
-  })();
-  return (
-    <div onClick={onGo} style={{
-      background: s.bg, border: `1px solid ${s.border}`,
-      borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      cursor: 'pointer', transition: 'opacity 0.15s', gap: 10,
-    }}
-      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
-        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{title}</p>
-      </div>
-      <span style={{ color: 'var(--text-disabled)', fontSize: 14, flexShrink: 0 }}>{isAr ? '←' : '→'}</span>
-    </div>
-  );
-}
-
 /* ─── TopSubTabs ─────────────────────────── */
 function TopSubTabs({ tabs, active, onSelect, isAr }) {
   return (
@@ -445,29 +403,6 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
         );
       })}
     </nav>
-  );
-}
-
-/* ─── Quick Action ───────────────────────── */
-function QuickAction({ title, sub, onClick, primary, isAr }) {
-  return (
-    <div onClick={onClick} style={{
-      padding: '24px',
-      background: primary ? 'var(--bg-raised)' : 'var(--bg-subtle)',
-      border: `1px solid ${primary ? 'var(--border-muted)' : 'var(--border-subtle)'}`,
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      borderRadius: 'var(--radius-lg)',
-    }}
-      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-      onMouseLeave={e => e.currentTarget.style.background = primary ? 'var(--bg-raised)' : 'var(--bg-subtle)'}>
-      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-        {title}
-      </p>
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.6 }}>
-        {sub}
-      </p>
-    </div>
   );
 }
 
