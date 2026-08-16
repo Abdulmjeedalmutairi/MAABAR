@@ -3580,7 +3580,7 @@ input:-webkit-autofill:active {
     display: flex;
     flex-wrap: wrap;
   }
-  .db-main-wrap {
+  .buyer-shell {
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 }

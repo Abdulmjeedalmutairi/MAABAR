@@ -1048,6 +1048,14 @@ export default function AIHub({ lang, user, profile }) {
   const openTool = (id) => { setActiveTool(id); setMenuOpen(false); };
   const closeTool = () => setActiveTool(null);
 
+  // The trader bottom-nav "+" sheet opens the idea-to-product tool via this event
+  // (the tool lives in this global widget, not on a route).
+  useEffect(() => {
+    const open = () => { setActiveTool('assistant'); setMenuOpen(false); };
+    window.addEventListener('maabar:open-idea', open);
+    return () => window.removeEventListener('maabar:open-idea', open);
+  }, []);
+
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const safeBottom = parseInt(
     typeof window !== 'undefined'

@@ -474,7 +474,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [reqTypeFilter, setReqTypeFilter] = useState('all'); // all | factory | managed | idea | direct
   const [expandedReq, setExpandedReq] = useState(null);      // request id whose card is expanded
   const [msgSubFilter, setMsgSubFilter] = useState('all');
-  const [moreOpen, setMoreOpen]         = useState(false);
 
   // Settings
   const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '', preferred_display_currency: displayCurrency || 'USD' });
@@ -2602,16 +2601,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           </div>
         </div>
       )}
-
-      <MobileBottomNav
-        activeTab={activeTab}
-        setActiveTab={(tab) => { setActiveTab(tab); setMoreOpen(false); }}
-        nav={nav}
-        isAr={isAr}
-        stats={stats}
-        moreOpen={moreOpen}
-        setMoreOpen={setMoreOpen}
-      />
 
       <Footer lang={lang} />
 
