@@ -1974,16 +1974,12 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     }
     setSaving(true);
     setProductSaveMsg('');
-    let translatedFields = {};
-    try {
-      translatedFields = await buildTranslatedProductFields({
-        nameAr: product.name_ar, nameEn: product.name_en, nameZh: product.name_zh,
-        descEn: product.desc_en, descAr: product.desc_ar, lang,
-      });
-    } catch (translationErr) {
-      console.error('addProduct translation error:', translationErr?.message || translationErr);
-    }
-    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
+    // Translation is enrichment, not a condition for a valid row: the write
+    // payload self-fills every empty language column from the source name
+    // (buildProductWritePayload's fallbackName), so insert immediately with the
+    // source text and translate in the background (below). A slow or failed Grok
+    // call can no longer delay — or block — publishing the product.
+    const payload = buildProductWritePayload(product, user.id, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
     const { data: insertedRows, error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -2016,6 +2012,18 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
         try { await saveVariantData(newProductId, variantData); }
         catch (vErr) { console.error('addProduct saveVariantData error:', vErr); }
       }
+
+      // Enrich the row with real translations in the background — best-effort.
+      // The product is already saved and valid (source-filled); a failed
+      // translation just leaves the fallback text, a successful one refreshes the list.
+      buildTranslatedProductFields({
+        nameAr: product.name_ar, nameEn: product.name_en, nameZh: product.name_zh,
+        descEn: product.desc_en, descAr: product.desc_ar, lang,
+      }).then((tf) => {
+        if (tf && Object.keys(tf).length) {
+          sb.from('products').update(tf).eq('id', newProductId).then(() => loadMyProducts(), (e) => console.error('addProduct translation update error:', e));
+        }
+      }, (e) => console.error('addProduct translation error:', e?.message || e));
     }
     setSaving(false);
     if (error) {
@@ -2041,16 +2049,10 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     if (!editingProduct) return;
     const isDraft = asDraft === true;
     setSaving(true);
-    let translatedFields = {};
-    try {
-      translatedFields = await buildTranslatedProductFields({
-        nameAr: editingProduct.name_ar, nameEn: editingProduct.name_en, nameZh: editingProduct.name_zh,
-        descEn: editingProduct.desc_en, descAr: editingProduct.desc_ar, lang,
-      });
-    } catch (translationErr) {
-      console.error('updateProduct translation error:', translationErr?.message || translationErr);
-    }
-    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields }, undefined, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
+    // Translation is enrichment, not a condition for a valid row (see addProduct):
+    // save the edit immediately with the source text — the payload self-fills empty
+    // language columns — and re-translate in the background below.
+    const payload = buildProductWritePayload(editingProduct, undefined, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
     delete payload.supplier_id;
     const { error } = await runWithOptionalColumns({
       table: 'products',
@@ -2079,6 +2081,17 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
         try { await saveVariantData(editingProduct.id, editVariantData); }
         catch (vErr) { console.error('updateProduct saveVariantData error:', vErr); }
       }
+
+      // Re-translate in the background — best-effort, never blocks the save.
+      const editedId = editingProduct.id;
+      buildTranslatedProductFields({
+        nameAr: editingProduct.name_ar, nameEn: editingProduct.name_en, nameZh: editingProduct.name_zh,
+        descEn: editingProduct.desc_en, descAr: editingProduct.desc_ar, lang,
+      }).then((tf) => {
+        if (tf && Object.keys(tf).length) {
+          sb.from('products').update(tf).eq('id', editedId).then(() => loadMyProducts(), (e) => console.error('updateProduct translation update error:', e));
+        }
+      }, (e) => console.error('updateProduct translation error:', e?.message || e));
     }
     setSaving(false);
     if (error) {
