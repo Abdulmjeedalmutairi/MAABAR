@@ -9,6 +9,7 @@ import {
   normalizeDisplayCurrency,
 } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
+import { readSwrCache, writeSwrCache } from '../lib/useStaleWhileRevalidate';
 import {
   getOfferEstimatedTotal,
   formatMoq,
@@ -631,7 +632,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   };
 
   const loadActiveOrders = async () => {
-    setLoadingActiveOrders(true);
+    // Hydrate from the session cache instantly, then revalidate (no loading flash
+    // on tab re-entry). Mutations re-call this loader, so the cache stays fresh.
+    const key = `buyer-active-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setActiveOrders(cached); else setLoadingActiveOrders(true);
     const ACTIVE_STATUSES = ['supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived'];
     // Exclude direct purchase orders — they have their own dedicated tab.
     const { data: reqs } = await sb
@@ -642,21 +647,23 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       .in('status', ACTIVE_STATUSES)
       .order('updated_at', { ascending: false })
       .limit(5);
+    let result = [];
     if (reqs && reqs.length > 0) {
-      const withOffers = await Promise.all(reqs.map(async (r) => {
+      result = await Promise.all(reqs.map(async (r) => {
         const { data: offers } = await sb.from('offers').select('*').eq('request_id', r.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
         const withProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
         return { ...r, offers: withProfiles || [] };
       }));
-      setActiveOrders(withOffers);
-    } else {
-      setActiveOrders([]);
     }
+    writeSwrCache(key, result);
+    setActiveOrders(result);
     setLoadingActiveOrders(false);
   };
 
   const loadMyRequests = async () => {
-    setLoadingRequests(true);
+    const key = `buyer-requests:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setMyRequests(cached); else setLoadingRequests(true);
     // Exclude direct purchase orders — they live in the dedicated direct-orders tab.
     const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).is('product_ref', null).order('created_at', { ascending: false });
     if (data) {
@@ -688,13 +695,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           lineItems: linesByRequest[request.id] || [],
         };
       }));
+      writeSwrCache(key, withOffers);
       setMyRequests(withOffers);
     }
     setLoadingRequests(false);
   };
 
   const loadMyDirectOrders = async () => {
-    setLoadingDirectOrders(true);
+    const key = `buyer-direct-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setDirectOrders(cached); else setLoadingDirectOrders(true);
 
     const ordersRes = await sb
       .from('requests')
@@ -706,6 +716,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     const refIds = [...new Set((ordersRes.data || []).map(r => r.product_ref).filter(Boolean))];
     if (refIds.length === 0) {
+      writeSwrCache(key, []);
       setDirectOrders([]);
       setLoadingDirectOrders(false);
       return;
@@ -722,7 +733,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     const productsById = (productsWithProfiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
-    setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
+    const directResult = (ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null }));
+    writeSwrCache(key, directResult);
+    setDirectOrders(directResult);
     setLoadingDirectOrders(false);
   };
 
@@ -891,33 +904,50 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   };
 
   const loadMySamples = async () => {
+    const key = `buyer-samples:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setSamples(cached);
     const { data } = await sb.from('samples')
       .select('*,products(name_ar,name_en,name_zh)')
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
-    if (data) setSamples(await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles'));
+    if (data) {
+      const result = await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles');
+      writeSwrCache(key, result);
+      setSamples(result);
+    }
   };
 
   const loadInbox = async () => {
+    const key = `buyer-inbox:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setInbox(cached);
     const { data } = await sb.from('messages')
       .select('*')
       .eq('receiver_id', user.id).order('created_at', { ascending: false });
     if (data) {
       const withProfiles = await attachDirectoryProfiles(sb, data, 'sender_id', 'profiles');
       const seen = new Set();
-      setInbox(withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; }));
+      const result = withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; });
+      writeSwrCache(key, result);
+      setInbox(result);
       await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('is_read', false);
       setStats(s => ({ ...s, messages: 0 }));
     }
   };
 
   const loadProductInquiries = async () => {
+    const key = `buyer-inquiries:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setProductInquiries(cached);
     try {
       const data = await fetchProductInquiryThreads(sb, { buyerId: user.id });
-      setProductInquiries(await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles'));
+      const result = await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles');
+      writeSwrCache(key, result);
+      setProductInquiries(result);
     } catch (error) {
       console.error('load buyer product inquiries error:', error);
-      setProductInquiries([]);
+      // keep cached/existing data on error instead of blanking the tab
     }
   };
 

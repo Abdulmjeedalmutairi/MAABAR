@@ -22,6 +22,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // key -> last successful data
 const _cache = new Map();
 
+// Imperative cache access — for loaders that keep their own setState pattern
+// (e.g. tab-driven dashboards) rather than using the hook. readSwrCache returns
+// the cached value or `undefined` on a miss; writeSwrCache stores one. Pattern:
+// hydrate from readSwrCache first (instant, no loading flash), then fetch and
+// writeSwrCache; invalidate the key after any mutation that changes it.
+export function readSwrCache(key) { return _cache.has(key) ? _cache.get(key) : undefined; }
+export function writeSwrCache(key, value) { _cache.set(key, value); }
+
 // Invalidate the cache. clearSwrCache() wipes everything (call on sign-out);
 // clearSwrCache(key) drops one entry (call after a mutation that changes it);
 // clearSwrCache((k) => boolean) drops every entry whose key matches.
