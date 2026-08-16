@@ -445,7 +445,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [inbox, setInbox]                 = useState([]);
   const [productInquiries, setProductInquiries] = useState([]);
   const [activeTab, setActiveTab]         = useState('overview');
-  const [pendingActions, setPendingActions] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [samples, setSamples] = useState([]);
   const [directOrders, setDirectOrders] = useState([]);
@@ -461,10 +460,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [reviewComment, setReviewComment]       = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [submittedReviewIds, setSubmittedReviewIds] = useState(new Set());
-
-  // Active orders for overview (supplier_confirmed → arrived)
-  const [activeOrders, setActiveOrders]         = useState([]);
-  const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
 
   // Edit/Delete request
   const [editReqModal, setEditReqModal]   = useState(null);
@@ -489,18 +484,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
     loadStats();
-    loadPendingActions();
-    loadActiveOrders();
     loadMyDirectOrders();
 
     // Realtime — refresh when offers/requests change
     const channel = sb.channel(`buyer-dash-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
-        loadStats(); loadPendingActions(); loadActiveOrders();
+        loadStats();
         if (activeTab === 'requests') loadMyRequests();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `buyer_id=eq.${user.id}` }, () => {
-        loadStats(); loadPendingActions(); loadActiveOrders(); loadMyDirectOrders();
+        loadStats(); loadMyDirectOrders();
         if (activeTab === 'requests') loadMyRequests();
       })
       .subscribe();
@@ -508,7 +501,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === 'overview') loadActiveOrders();
     if (activeTab === 'requests') loadMyRequests();
     if (activeTab === 'direct-orders') loadMyDirectOrders();
     if (activeTab === 'messages') loadInbox();
@@ -542,63 +534,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       sb.from('product_inquiries').select('id', { count: 'exact' }).eq('buyer_id', user.id),
     ]);
     setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0, productInquiries: productInquiries.count || 0 });
-  };
-
-  const loadPendingActions = async () => {
-    const actions = [];
-    // Exclude direct purchase orders — they live in the dedicated direct-orders tab.
-    const { data: reqs } = await sb.from('requests').select('*, offers(id,status)').eq('buyer_id', user.id).is('product_ref', null);
-    if (reqs) {
-      reqs.forEach(r => {
-        const pending = r.offers?.filter(o => o.status === 'pending') || [];
-        if (String(r.sourcing_mode || 'direct') === 'managed' && String(r.managed_status || '') === 'offer_ready') {
-          actions.push({ type: 'managed_offer', request: r });
-        } else if (pending.length > 0) {
-          actions.push({ type: 'offers', request: r, count: pending.length });
-        }
-        if (r.status === 'supplier_confirmed') actions.push({ type: 'supplier_confirmed', request: r });
-        if (r.status === 'paid')          actions.push({ type: 'payment_sent', request: r });
-        if (r.status === 'ready_to_ship') actions.push({ type: 'ready_to_ship', request: r });
-        if (r.status === 'shipping')      actions.push({ type: 'delivery', request: r });
-        if (r.status === 'arrived')       actions.push({ type: 'arrived', request: r });
-      });
-    }
-    const { data: msgs } = await sb.from('messages').select('id').eq('receiver_id', user.id).eq('is_read', false);
-    if (msgs?.length > 0) actions.push({ type: 'messages', count: msgs.length });
-    setPendingActions(actions);
-  };
-
-  const loadActiveOrders = async () => {
-    // Hydrate from the session cache instantly, then revalidate (no loading flash
-    // on tab re-entry). Mutations re-call this loader, so the cache stays fresh.
-    const key = `buyer-active-orders:${user.id}`;
-    const cached = readSwrCache(key);
-    if (cached !== undefined) setActiveOrders(cached); else setLoadingActiveOrders(true);
-    const ACTIVE_STATUSES = ['supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived'];
-    // Exclude direct purchase orders — they have their own dedicated tab.
-    const { data: reqs } = await sb
-      .from('requests')
-      .select('*')
-      .eq('buyer_id', user.id)
-      .is('product_ref', null)
-      .in('status', ACTIVE_STATUSES)
-      .order('updated_at', { ascending: false })
-      .limit(5);
-    let result = [];
-    if (reqs && reqs.length > 0) {
-      // Batch offers + profiles in two queries instead of one pair per request.
-      const ids = reqs.map((r) => r.id);
-      const { data: allOffers } = await sb.from('offers').select('*').in('request_id', ids).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
-      const withProfiles = await attachSupplierProfiles(sb, allOffers || [], 'supplier_id', 'profiles');
-      const byReq = (withProfiles || []).reduce((acc, o) => {
-        (acc[o.request_id] = acc[o.request_id] || []).push(o);
-        return acc;
-      }, {});
-      result = reqs.map((r) => ({ ...r, offers: byReq[r.id] || [] }));
-    }
-    writeSwrCache(key, result);
-    setActiveOrders(result);
-    setLoadingActiveOrders(false);
   };
 
   const loadMyRequests = async () => {
@@ -949,7 +884,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       ...req,
       offers: req.offers.map(o => o.id === offerId ? { ...o, status: 'rejected' } : o),
     }));
-    loadPendingActions();
     loadStats();
   };
 
@@ -1010,7 +944,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       });
     })();
 
-    loadMyRequests(); loadPendingActions();
+    loadMyRequests();
   };
 
   const confirmDelivery = async (requestId, supplierId, supplierName) => {
@@ -1059,7 +993,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       });
     } catch (e) { console.error('payout email error:', e); }
 
-    loadMyRequests(); loadPendingActions();
+    loadMyRequests();
     setReviewRating(0); setReviewComment('');
     setReviewModal({ supplierId, requestId, supplierName });
   };
@@ -1124,7 +1058,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       if (!window.confirm(isAr ? 'هل تريد حذف هذا الطلب؟' : 'Delete this request?')) return;
     }
     await sb.from('requests').delete().eq('id', r.id);
-    loadMyRequests(); loadPendingActions(); loadStats();
+    loadMyRequests(); loadStats();
   };
 
   const cancelRequest = async (r) => {
