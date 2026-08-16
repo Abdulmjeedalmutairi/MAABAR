@@ -252,6 +252,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [offerForms, setOfferForms]         = useState({});
   const [offers, setOffers]                 = useState({});
+  const [pendingOfferIds, setPendingOfferIds] = useState(() => new Set());   // requests whose offer is "sending" (optimistic)
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
@@ -2234,11 +2235,19 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       return;
     }
 
-    setSubmittingOfferId(requestId);
+    // Optimistic: close the form and mark the request as "sending" immediately.
+    // We never claim success — the offer flips to its real state only after the
+    // server confirms, and the form reopens (values intact) on error. No alert.
+    toggleOfferForm(requestId);
+    setSubmittingOfferId(null);
+    setPendingOfferIds(prev => { const n = new Set(prev); n.add(requestId); return n; });
+    const clearPending = () => setPendingOfferIds(prev => { const n = new Set(prev); n.delete(requestId); return n; });
+
     try {
       const { data: existing, error: existingError } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').limit(1).maybeSingle();
       if (existingError) throw existingError;
       if (existing) {
+        clearPending();
         alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request');
         return;
       }
@@ -2289,13 +2298,15 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
           },
         }),
       }).catch((e) => console.error('email error:', e));
-      alert(isAr ? 'تم إرسال عرضك!' : lang === 'zh' ? '报价已发送！' : 'Offer submitted!');
-      toggleOfferForm(requestId); loadRequests();
+      // Confirmed — reconcile: the real submitted offer replaces the "sending"
+      // state. This flip is the only success signal (no premature alert).
+      await loadRequests();
+      clearPending();
     } catch (error) {
       console.error('submitOffer error:', error);
+      clearPending();
+      toggleOfferForm(requestId);   // reopen the form (values preserved) to retry
       alert(isAr ? 'حدث خطأ أثناء إرسال العرض' : lang === 'zh' ? '发送报价时出错' : 'Error sending offer');
-    } finally {
-      setSubmittingOfferId(null);
     }
   };
 
@@ -3125,9 +3136,15 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
                     <button className="btn-outline" onClick={() => setSelectedRequest(r)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
   {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
 </button>
-                    <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
-                      {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
-                    </button>
+                    {pendingOfferIds.has(r.id) ? (
+                      <span className="btn-dark-sm" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', opacity: 0.7, whiteSpace: 'nowrap', cursor: 'default' }}>
+                        {isAr ? 'يُرسل…' : lang === 'zh' ? '发送中…' : 'Sending…'}
+                      </span>
+                    ) : (
+                      <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
+                        {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
+                      </button>
+                    )}
                   </div>
 
                   {offerForms[r.id] && (
