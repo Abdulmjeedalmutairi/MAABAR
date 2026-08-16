@@ -25,32 +25,21 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
   const description = String(form.description || '').trim();
   const qtyNum = parseInt(form.quantity, 10);
 
-  let translated = {};
-  try {
-    translated = await buildTranslatedRequestFields({ titleAr, titleEn, description, lang });
-  } catch (err) {
-    console.error('[createManagedRequest] translation failed, using source text:', err?.message || err);
-    translated = {
-      title_ar: titleAr || fallbackTitle,
-      title_en: titleEn || fallbackTitle,
-      title_zh: titleEn || titleAr || fallbackTitle,
-      description_ar: description,
-      description_en: description,
-      description_zh: description,
-    };
-  }
-
+  // Insert IMMEDIATELY with the source text — translation and the AI brief are
+  // enrichment, not conditions for a valid row. Every language column is
+  // source-filled here, so two slow AI round-trips no longer sit between the
+  // trader's tap and the success screen. Both enrichments run in the background.
   const payload = {
     buyer_id: user.id,
-    title_ar: translated.title_ar || titleAr || fallbackTitle,
-    title_en: translated.title_en || titleEn || fallbackTitle,
-    title_zh: translated.title_zh || titleEn || titleAr || fallbackTitle,
+    title_ar: titleAr || fallbackTitle,
+    title_en: titleEn || fallbackTitle,
+    title_zh: titleEn || titleAr || fallbackTitle,
     quantity: Number.isFinite(qtyNum) ? qtyNum : null,
     unit: form.unit || null,
     description,
-    description_ar: translated.description_ar || null,
-    description_en: translated.description_en || null,
-    description_zh: translated.description_zh || null,
+    description_ar: description || null,
+    description_en: description || null,
+    description_zh: description || null,
     category: form.category || 'other',
     status: 'open',
     budget_per_unit: form.budget_per_unit ? parseFloat(form.budget_per_unit) : null,
@@ -79,22 +68,46 @@ export async function createManagedRequest({ user, form, lang = 'ar', viewerCurr
     return { request: null, error: error || new Error('request insert failed') };
   }
 
-  // AI brief → managed_request_briefs → advance to admin_review. Best-effort:
-  // a brief failure never loses the request (it just waits in 'submitted').
-  try {
-    const brief = await generateManagedBriefWithAI({ request: payload, lang });
-    await sb.from('managed_request_briefs').upsert(
-      buildManagedBriefRow({ requestId: request.id, buyerId: user.id, brief }),
-      { onConflict: 'request_id' },
-    );
-    await sb.from('requests').update({
-      managed_status: 'admin_review',
-      managed_priority: brief.priority || 'normal',
-      managed_ai_ready_at: new Date().toISOString(),
-    }).eq('id', request.id);
-  } catch (briefErr) {
-    console.error('[createManagedRequest] managed brief setup error:', briefErr?.message || briefErr);
-  }
+  // (1) Background trilingual translation → update the row (best-effort).
+  (async () => {
+    try {
+      const translated = await buildTranslatedRequestFields({ titleAr, titleEn, description, lang });
+      const patch = {};
+      for (const k of ['title_ar', 'title_en', 'title_zh', 'description_ar', 'description_en', 'description_zh']) {
+        if (translated[k]) patch[k] = translated[k];
+      }
+      if (Object.keys(patch).length) {
+        await runWithOptionalColumns({
+          table: 'requests', payload: patch,
+          optionalKeys: ['description_ar', 'description_en', 'description_zh'],
+          execute: (p) => sb.from('requests').update(p).eq('id', request.id),
+        });
+      }
+    } catch (err) {
+      console.error('[createManagedRequest] background translation failed:', err?.message || err);
+    }
+  })();
+
+  // (2) Background AI brief → advance to admin_review. maabar-ai self-persists
+  // server-side when given requestId (so a closed tab can't lose the brief); we
+  // also upsert here as a fallback for environments where that edge upgrade isn't
+  // deployed yet. Both writes are idempotent (upsert on request_id).
+  (async () => {
+    try {
+      const brief = await generateManagedBriefWithAI({ request: payload, lang, requestId: request.id, buyerId: user.id });
+      await sb.from('managed_request_briefs').upsert(
+        buildManagedBriefRow({ requestId: request.id, buyerId: user.id, brief }),
+        { onConflict: 'request_id' },
+      );
+      await sb.from('requests').update({
+        managed_status: 'admin_review',
+        managed_priority: brief.priority || 'normal',
+        managed_ai_ready_at: new Date().toISOString(),
+      }).eq('id', request.id);
+    } catch (briefErr) {
+      console.error('[createManagedRequest] background brief setup error:', briefErr?.message || briefErr);
+    }
+  })();
 
   return { request, error: null };
 }

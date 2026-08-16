@@ -268,38 +268,21 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
 
     setSubmitting(true);
 
-    // Translate title and description to all 3 languages at write time
-    console.log('[submitNewRequest] calling buildTranslatedRequestFields, effectiveLang:', effectiveLang);
-    let translatedFields = {};
-    try {
-      translatedFields = await buildTranslatedRequestFields({
-        titleAr,
-        titleEn,
-        description: String(newReq.description || '').trim(),
-        lang: effectiveLang,
-      });
-    } catch (translationErr) {
-      console.error('[submitNewRequest] buildTranslatedRequestFields threw:', translationErr?.message || translationErr);
-      translatedFields = {
-        title_ar: titleAr || fallbackTitle,
-        title_en: titleEn || fallbackTitle,
-        title_zh: titleEn || titleAr || fallbackTitle,
-        description_ar: String(newReq.description || '').trim(),
-        description_en: String(newReq.description || '').trim(),
-        description_zh: String(newReq.description || '').trim(),
-      };
-    }
-
+    // Insert immediately with the SOURCE text — translation and the managed brief
+    // are background enrichment, not validity conditions (the payload source-fills
+    // every language column). Two AI round-trips no longer sit between the tap and
+    // the confirmation.
+    const description = String(newReq.description || '').trim();
     const payload = {
       buyer_id: user.id,
-      title_ar: translatedFields.title_ar || titleAr || fallbackTitle,
-      title_en: translatedFields.title_en || titleEn || fallbackTitle,
-      title_zh: translatedFields.title_zh || titleEn || titleAr || fallbackTitle,
+      title_ar: titleAr || fallbackTitle,
+      title_en: titleEn || fallbackTitle,
+      title_zh: titleEn || titleAr || fallbackTitle,
       quantity,
-      description: String(newReq.description || '').trim(),
-      description_ar: translatedFields.description_ar || null,
-      description_en: translatedFields.description_en || null,
-      description_zh: translatedFields.description_zh || null,
+      description,
+      description_ar: description || null,
+      description_en: description || null,
+      description_zh: description || null,
       category: newReq.category || 'other',
       status: 'open',
       budget_per_unit: newReq.budget_per_unit ? parseFloat(newReq.budget_per_unit) : null,
@@ -313,13 +296,6 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
       response_deadline: newReq.response_deadline || null,
     };
 
-    console.log('[submitNewRequest] title_zh before insert:', payload.title_zh);
-    // sourcing_mode, managed_status, managed_review_state, managed_priority,
-    // managed_ai_ready_at, response_deadline are all defined in
-    // supabase/migrations/202604012345_managed_sourcing_mvp.sql — writing them
-    // directly. The description_* columns still pass through
-    // runWithOptionalColumns for environments that haven't run the
-    // translation migration yet.
     const { data: insertedRequest, error, strippedColumns } = await runWithOptionalColumns({
       table: 'requests',
       payload,
@@ -330,24 +306,50 @@ export default function Requests({ lang, user, profile, displayCurrency, exchang
       console.warn('[submitNewRequest] Columns stripped (not in DB schema yet — run migration):', strippedColumns);
     }
 
-    if (!error && isManagedMode && insertedRequest?.id) {
-      try {
-        const brief = await generateManagedBriefWithAI({ request: payload, lang });
-        await sb.from('managed_request_briefs').upsert(buildManagedBriefRow({ requestId: insertedRequest.id, buyerId: user.id, brief }), { onConflict: 'request_id' });
-        await sb.from('requests').update({
-          managed_status: 'admin_review',
-          managed_priority: brief.priority || 'normal',
-          managed_ai_ready_at: new Date().toISOString(),
-        }).eq('id', insertedRequest.id);
-      } catch (managedError) {
-        console.error('managed request setup error:', managedError);
-      }
-    }
-
     setSubmitting(false);
     if (error) {
       alert(isAr ? 'حدث خطأ أثناء رفع الطلب' : lang === 'zh' ? '提交需求时出错' : 'Something went wrong while posting the request');
       return;
+    }
+
+    // Background trilingual translation → update the row (best-effort).
+    if (insertedRequest?.id) {
+      (async () => {
+        try {
+          const tf = await buildTranslatedRequestFields({ titleAr, titleEn, description, lang: effectiveLang });
+          const patch = {};
+          for (const k of ['title_ar', 'title_en', 'title_zh', 'description_ar', 'description_en', 'description_zh']) {
+            if (tf[k]) patch[k] = tf[k];
+          }
+          if (Object.keys(patch).length) {
+            await runWithOptionalColumns({
+              table: 'requests', payload: patch,
+              optionalKeys: ['description_ar', 'description_en', 'description_zh'],
+              execute: (p) => sb.from('requests').update(p).eq('id', insertedRequest.id),
+            });
+          }
+        } catch (translationErr) {
+          console.error('[submitNewRequest] background translation failed:', translationErr?.message || translationErr);
+        }
+      })();
+    }
+
+    // Background AI brief (managed only) → advance to admin_review. maabar-ai
+    // self-persists server-side (requestId); the client upsert is the pre-deploy fallback.
+    if (isManagedMode && insertedRequest?.id) {
+      (async () => {
+        try {
+          const brief = await generateManagedBriefWithAI({ request: payload, lang, requestId: insertedRequest.id, buyerId: user.id });
+          await sb.from('managed_request_briefs').upsert(buildManagedBriefRow({ requestId: insertedRequest.id, buyerId: user.id, brief }), { onConflict: 'request_id' });
+          await sb.from('requests').update({
+            managed_status: 'admin_review',
+            managed_priority: brief.priority || 'normal',
+            managed_ai_ready_at: new Date().toISOString(),
+          }).eq('id', insertedRequest.id);
+        } catch (managedError) {
+          console.error('managed request setup error:', managedError);
+        }
+      })();
     }
 
     alert(

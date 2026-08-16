@@ -150,6 +150,29 @@ body { background: #FAF8F5 !important; }
 
 button, a, [role="button"] { touch-action: manipulation; }
 
+/* ===== SKELETON (loading placeholders) ===== */
+@keyframes mb-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.mb-skeleton {
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-hover) 37%, var(--bg-subtle) 63%);
+  background-size: 400% 100%;
+  animation: mb-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mb-skeleton { animation: none; }
+}
+
+/* Inline spinner — for buttons showing an in-flight action without resizing. */
+@keyframes mb-spin { to { transform: rotate(360deg); } }
+.mb-spinner {
+  display: inline-block; width: 15px; height: 15px;
+  border: 2px solid rgba(217,195,155,0.30);
+  border-top-color: #D9C39B;               /* light bronze — reads on the dark button */
+  border-radius: 50%;
+  animation: mb-spin 0.7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .mb-spinner { animation-duration: 1.6s; } }
+
 /* ===== BASE ===== */
 html {
   scroll-behavior: smooth;

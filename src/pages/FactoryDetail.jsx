@@ -11,6 +11,9 @@ import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
 import { buildProductRef } from '../lib/factoryChat';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
+import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { fetchFactoryDetailData, factoryDetailKey } from '../lib/prefetchFactoryDetail';
+import { CardGridSkeleton } from '../components/Skeleton';
 
 const T = {
   ar: {
@@ -112,10 +115,15 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const c = T[lang] || T.ar;
   usePageTitle('suppliers', lang);
 
-  const [factory, setFactory] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [catalogs, setCatalogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Cached, stale-while-revalidate: revisiting a factory paints instantly from
+  // the session cache and refreshes in the background (no full-reload spinner).
+  const { data: pageData, isLoading: loading } = useStaleWhileRevalidate(
+    factoryDetailKey(id),
+    () => fetchFactoryDetailData(sb, id),
+  );
+  const factory = pageData?.factory || null;
+  const products = pageData?.products || [];
+  const catalogs = pageData?.catalogs || [];
   const [reqOpen, setReqOpen] = useState(false);
   const [searchParams] = useSearchParams();
   // Opened from the "Request a quote" button on the factories list (/factory/:id?request=1).
@@ -135,40 +143,9 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     nav(`/chat/f/${id}`, product ? { state: { product: buildProductRef(product) } } : undefined);
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
   useEffect(() => { setVisible(20); }, [activeCatalog, activeSection]);
 
-  async function load() {
-    setLoading(true);
-    const [{ data: f }, prods, { data: cats }] = await Promise.all([
-      sb.from('factory_directory_public').select('*').eq('id', id).maybeSingle(),
-      fetchAllFactoryProducts(id),
-      sb.from('factory_catalogs_public').select('*').eq('factory_id', id).order('product_count', { ascending: false }),
-    ]);
-    setFactory(f || null);
-    setProducts(prods);
-    setCatalogs(cats || []);
-    setLoading(false);
-  }
-
-  async function fetchAllFactoryProducts(factoryId) {
-    const pageSize = 1000;
-    const all = [];
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await sb.from('factory_products').select('*').eq('factory_id', factoryId)
-        .order('sort_order', { ascending: true }).range(from, from + pageSize - 1);
-      if (error || !data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < pageSize) break;
-    }
-    return all;
-  }
-
-
-  if (loading) return <div className="full-page"><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)' }}>{c.loading}</p></div></div>;
+  if (loading) return <div className="full-page"><div className="fx-wrap" style={{ paddingTop: 28 }}><CardGridSkeleton count={6} variant="product" minWidth={220} /></div></div>;
   if (!factory) return <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.notFound}</p></div></div>;
 
   const name = (factory.company_name_latin || '').trim() || factory.company_name || '';

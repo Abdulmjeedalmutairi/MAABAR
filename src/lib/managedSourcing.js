@@ -138,7 +138,7 @@ function mergePriority(buyerPriority, aiPriority) {
   return aiPriority === 'urgent' ? 'urgent' : 'normal';
 }
 
-export async function generateManagedBriefWithAI({ request, lang = 'ar' }) {
+export async function generateManagedBriefWithAI({ request, lang = 'ar', requestId = null, buyerId = null }) {
   const payload = {
     language: lang,
     title: pickByLang(request, 'title', lang),
@@ -148,6 +148,11 @@ export async function generateManagedBriefWithAI({ request, lang = 'ar' }) {
     budget: request?.budget_per_unit ?? null,
     budget_currency: request?.budget_currency || null,
     response_deadline: request?.response_deadline || null,
+    // When present, maabar-ai persists the brief + advances the request to
+    // admin_review server-side, so completion no longer depends on the trader's
+    // browser staying open.
+    requestId,
+    buyerId,
   };
 
   try {

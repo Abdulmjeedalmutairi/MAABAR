@@ -10,6 +10,9 @@ import {
   factoryTaglineForCode,
 } from '../lib/factoryCategories';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
+import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { prefetchFactoryDetail } from '../lib/prefetchFactoryDetail';
+import { CardGridSkeleton } from '../components/Skeleton';
 
 const PAGE = 9;   // "load more" batch
 
@@ -48,35 +51,71 @@ export default function Factories({ lang = 'ar' }) {
     (UI_CATEGORIES[lang] || UI_CATEGORIES.ar).forEach((cat) => { m[cat.val] = cat.label; });
     return m;
   }, [lang]);
-  const [factories, setFactories] = useState([]);
-  const [byFactory, setByFactory] = useState({});   // { id: { images, products, catalogs } }
-  const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(PAGE);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      const [{ data: facs }, { data: prods }] = await Promise.all([
-        sb.from('factory_directory_public').select('*').order('sort_order', { ascending: true }),
-        sb.from('factory_products').select('factory_id, image, import_id'),
-      ]);
-      if (!alive) return;
-      const agg = {};
-      (prods || []).forEach((p) => {
-        const a = agg[p.factory_id] || (agg[p.factory_id] = { images: [], imports: new Set(), products: 0 });
-        a.products += 1;
-        if (p.import_id) a.imports.add(p.import_id);
-        if (isUrl(p.image) && a.images.length < 5) a.images.push(p.image);
-      });
+  // Cached list (stale-while-revalidate): fetched once per session, instant on
+  // revisit + background refresh. Public read-only — nothing to invalidate.
+  const { data, isLoading: loading } = useStaleWhileRevalidate('factories-list', async () => {
+    // Fast path: the aggregation runs in the DB (factory_directory_with_stats) and
+    // returns ONE small row per factory instead of the whole product table. Falls
+    // back to the client aggregation below if the RPC isn't deployed yet.
+    const rpc = await sb.rpc('factory_directory_with_stats');
+    if (!rpc.error && Array.isArray(rpc.data)) {
+      const factories = [];
       const map = {};
-      Object.keys(agg).forEach((k) => { map[k] = { images: agg[k].images, products: agg[k].products, catalogs: agg[k].imports.size }; });
-      setByFactory(map);
-      setFactories(facs || []);
-      setLoading(false);
-    })();
-    return () => { alive = false; };
-  }, []);
+      rpc.data.forEach((row) => {
+        const f = row.factory;
+        if (!f) return;
+        factories.push(f);
+        map[f.id] = { images: row.cover_images || [], products: row.product_count || 0, catalogs: row.catalog_count || 0 };
+      });
+      return { factories, byFactory: map };
+    }
+
+    // Fallback — page through ALL product rows and aggregate on the client. A
+    // single select is capped at ~1000 by PostgREST, so page through in parallel.
+    const fetchAllProductMeta = async () => {
+      const PAGE = 1000;
+      // The first page also returns the exact total, so the remaining pages can
+      // be fetched in PARALLEL rather than walked one blocking round-trip at a
+      // time (that serial walk was most of the 3-4s cold load).
+      const first = await sb.from('factory_products')
+        .select('factory_id, image, import_id', { count: 'exact' })
+        .order('factory_id', { ascending: true })
+        .range(0, PAGE - 1);
+      if (first.error || !first.data) return [];
+      const all = [...first.data];
+      const total = first.count ?? first.data.length;
+      const rest = [];
+      for (let from = PAGE; from < total; from += PAGE) {
+        rest.push(sb.from('factory_products')
+          .select('factory_id, image, import_id')
+          .order('factory_id', { ascending: true })
+          .range(from, from + PAGE - 1));
+      }
+      if (rest.length) {
+        const pages = await Promise.all(rest);
+        for (const p of pages) { if (p.data) all.push(...p.data); }
+      }
+      return all;
+    };
+    const [{ data: facs }, prods] = await Promise.all([
+      sb.from('factory_directory_public').select('*').order('sort_order', { ascending: true }),
+      fetchAllProductMeta(),
+    ]);
+    const agg = {};
+    (prods || []).forEach((p) => {
+      const a = agg[p.factory_id] || (agg[p.factory_id] = { images: [], imports: new Set(), products: 0 });
+      a.products += 1;
+      if (p.import_id) a.imports.add(p.import_id);
+      if (isUrl(p.image) && a.images.length < 5) a.images.push(p.image);
+    });
+    const map = {};
+    Object.keys(agg).forEach((k) => { map[k] = { images: agg[k].images, products: agg[k].products, catalogs: agg[k].imports.size }; });
+    return { factories: facs || [], byFactory: map };
+  });
+  const factories = data?.factories || [];
+  const byFactory = data?.byFactory || {};
 
   useEffect(() => { setVisible(PAGE); }, [activeKey]);
 
@@ -111,7 +150,7 @@ export default function Factories({ lang = 'ar' }) {
         </div>
 
         {loading ? (
-          <p className={`fx-sub${arc}`}>{c.loading}</p>
+          <CardGridSkeleton count={8} variant="factory" minWidth={260} />
         ) : shown.length === 0 ? (
           <p className={`fx-sub${arc}`}>{c.empty}</p>
         ) : (
@@ -135,7 +174,8 @@ export default function Factories({ lang = 'ar' }) {
               if (f.founded_year) facts.push(`${c.since} ${f.founded_year}`);
 
               return (
-                <div key={f.id} className="fx-faccard reveal" style={{ '--i': i % PAGE }}>
+                <div key={f.id} className="fx-faccard reveal" style={{ '--i': i % PAGE }}
+                  onMouseEnter={() => prefetchFactoryDetail(f.id)} onFocus={() => prefetchFactoryDetail(f.id)}>
                   <div className="fx-fac-cover" onClick={() => nav(`/factory/${f.id}`)}>
                     {cover ? (
                       <img className="fx-fac-cover-img" src={cover} alt={name} loading="lazy" />

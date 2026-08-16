@@ -18,13 +18,15 @@
 
 export const ACTION_BUCKETS = ['needs_response', 'my_offers', 'accepted', 'finished'];
 
-const reqTitle = (r) => (r && (r.title_ar || r.title_en || r.title_zh)) || '';
-const prodTitle = (p) => (p && (p.name_ar || p.name_en || p.name_zh)) || '';
+// Prefer the viewer's language, then fall back — so an English/Chinese supplier
+// doesn't see Arabic titles for buyer requests that carry all three.
+const reqTitle = (r, lang) => (r && (r[`title_${lang}`] || r.title_en || r.title_ar || r.title_zh)) || '';
+const prodTitle = (p, lang) => (p && (p[`name_${lang}`] || p.name_en || p.name_ar || p.name_zh)) || '';
 const emptyCounts = () => ({ needs_response: 0, my_offers: 0, accepted: 0, finished: 0 });
 
 const DIRECT_STATUSES = ['pending_supplier_confirmation', 'supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived', 'delivered'];
 
-export async function fetchSupplierActionItems(sb, supplierId) {
+export async function fetchSupplierActionItems(sb, supplierId, lang = 'en') {
   if (!sb || !supplierId) return { items: [], counts: emptyCounts() };
 
   // Direct orders are `requests` pointing at one of the supplier's products.
@@ -78,7 +80,7 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       key: `rfq:${r.id}`, kind: 'rfq', bucket: 'needs_response',
       sourceId: r.id, requestId: r.id, buyerId: r.buyer_id, status: r.status,
       createdAt: r.created_at, waitingSince: r.created_at,
-      title: reqTitle(r), qty: r.quantity, unit: r.unit, action: 'submit_offer',
+      title: reqTitle(r, lang), qty: r.quantity, unit: r.unit, action: 'submit_offer',
     });
   }
 
@@ -89,7 +91,7 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       key: `offer:${o.id}`, kind: 'rfq', bucket,
       sourceId: o.id, requestId: o.request_id, buyerId: o.requests?.buyer_id, status: o.status,
       createdAt: o.created_at, waitingSince: o.created_at,
-      title: reqTitle(o.requests), action: bucket === 'my_offers' ? 'view_offer' : 'view_order',
+      title: reqTitle(o.requests, lang), action: bucket === 'my_offers' ? 'view_offer' : 'view_order',
     });
   }
 
@@ -101,7 +103,7 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       key: `direct:${r.id}`, kind: 'direct', bucket,
       sourceId: r.id, requestId: r.id, buyerId: r.buyer_id, status: r.status,
       createdAt: r.created_at, waitingSince: r.created_at,
-      title: reqTitle(r), qty: r.quantity, unit: r.unit,
+      title: reqTitle(r, lang), qty: r.quantity, unit: r.unit,
       action: bucket === 'needs_response' ? 'confirm_order' : 'view_order',
     });
   }
@@ -113,7 +115,7 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       key: `sample:${s.id}`, kind: 'sample', bucket,
       sourceId: s.id, requestId: null, buyerId: s.buyer_id, status: s.status,
       createdAt: s.created_at, waitingSince: s.created_at,
-      title: prodTitle(s.products), qty: s.quantity,
+      title: prodTitle(s.products, lang), qty: s.quantity,
       action: bucket === 'needs_response' ? 'approve_sample' : 'view_sample',
     });
   }
@@ -125,7 +127,7 @@ export async function fetchSupplierActionItems(sb, supplierId) {
       key: `inquiry:${q.id}`, kind: 'inquiry', bucket,
       sourceId: q.id, requestId: null, buyerId: q.buyer_id, status: q.status,
       createdAt: q.created_at, waitingSince: q.created_at,
-      title: q.product_name || q.product_name_ar || q.product_name_en || '',
+      title: q[`product_name_${lang}`] || q.product_name || q.product_name_en || q.product_name_ar || '',
       action: bucket === 'needs_response' ? 'reply_inquiry' : 'view_inquiry',
     });
   }

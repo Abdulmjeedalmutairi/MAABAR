@@ -4,6 +4,39 @@ import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
 import { fetchFactories, archiveFactory, deleteFactory } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
+import { sb } from '../../supabase';
+
+// A factory_products row is "priced" only when its verbatim price text is present
+// and not the extractor's not_found sentinel (mirrors isPriced on the public
+// products page). Everything else counts as unpriced — the factories we need to
+// contact for pricing.
+const isPricedText = (v) => !!(v && String(v).trim() && String(v).trim() !== 'not_found');
+
+// Per-factory { total, unpriced } from factory_products. Pages through the table
+// in parallel (the select is capped at ~1000 rows). Admin-only + infrequent, so
+// aggregating client-side is fine.
+async function fetchUnpricedStats() {
+  const PAGE = 1000;
+  const first = await sb.from('factory_products').select('factory_id, price', { count: 'exact' }).range(0, PAGE - 1);
+  if (first.error || !first.data) return {};
+  const all = [...first.data];
+  const total = first.count ?? first.data.length;
+  const rest = [];
+  for (let from = PAGE; from < total; from += PAGE) {
+    rest.push(sb.from('factory_products').select('factory_id, price').range(from, from + PAGE - 1));
+  }
+  if (rest.length) {
+    const pages = await Promise.all(rest);
+    for (const p of pages) { if (p.data) all.push(...p.data); }
+  }
+  const map = {};
+  all.forEach((p) => {
+    const m = map[p.factory_id] || (map[p.factory_id] = { total: 0, unpriced: 0 });
+    m.total += 1;
+    if (!isPricedText(p.price)) m.unpriced += 1;
+  });
+  return map;
+}
 
 const FH = "'Cormorant Garamond', Georgia, serif";
 const FB = "'Tajawal', sans-serif";
@@ -25,6 +58,11 @@ const CSS = (isAr) => `
   .af-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; font-family: ${FB}; }
   .af-pill.live { background: rgba(63,157,90,0.14); color: #3f9d5a; }
   .af-pill.hidden { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.5); }
+  .af-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .af-chip { border: 1px solid rgba(0,0,0,0.16); background: #fff; border-radius: 99px; padding: 6px 14px; font-size: 12.5px; cursor: pointer; font-family: ${FB}; color: rgba(0,0,0,0.6); }
+  .af-chip.on { background: rgba(0,0,0,0.85); color: #fff; border-color: rgba(0,0,0,0.85); }
+  .af-unpriced-note { font-family: ${FB}; font-size: 11.5px; color: #c0503f; margin-top: 3px; }
+  .af-mail { color: #c0503f; text-decoration: underline; }
   .af-actions { display: flex; gap: 6px; justify-content: ${isAr ? 'flex-start' : 'flex-end'}; flex-wrap: wrap; }
   .af-btn { border: 1px solid rgba(0,0,0,0.15); background: #fff; border-radius: 7px; padding: 6px 11px; font-size: 12px; cursor: pointer; font-family: ${FB}; color: rgba(0,0,0,0.7); }
   .af-btn:hover { background: rgba(0,0,0,0.03); }
@@ -48,6 +86,8 @@ export default function AdminFactories({ user, profile, lang }) {
   const [q, setQ] = useState('');
   const [busyId, setBusyId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [filter, setFilter] = useState('all');       // 'all' | 'unpriced'
+  const [priceStats, setPriceStats] = useState({});  // factory_id → { total, unpriced }
 
   const catLabel = useMemo(() => {
     const m = {};
@@ -57,13 +97,22 @@ export default function AdminFactories({ user, profile, lang }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setRows(await fetchFactories()); setError(''); }
+    try {
+      const [facs, stats] = await Promise.all([fetchFactories(), fetchUnpricedStats()]);
+      setRows(facs); setPriceStats(stats); setError('');
+    }
     catch (e) { setError(e.message || 'Query failed'); }
     setLoading(false);
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const unpricedFactoryCount = useMemo(
+    () => rows.filter((f) => (priceStats[f.id]?.unpriced || 0) > 0).length,
+    [rows, priceStats],
+  );
+
   const shown = rows.filter((f) => {
+    if (filter === 'unpriced' && !((priceStats[f.id]?.unpriced || 0) > 0)) return false;
     if (!q.trim()) return true;
     const s = q.trim().toLowerCase();
     return [f.company_name, f.company_name_latin, f.city].filter(Boolean).some((v) => v.toLowerCase().includes(s));
@@ -102,6 +151,15 @@ export default function AdminFactories({ user, profile, lang }) {
           <input className="af-search" value={q} onChange={(e) => setQ(e.target.value)}
             placeholder={isAr ? 'بحث بالاسم أو المدينة…' : 'Search by name or city…'} dir={isAr ? 'rtl' : 'ltr'} />
 
+          <div className="af-filters">
+            <button className={`af-chip ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>
+              {isAr ? 'الكل' : 'All'}
+            </button>
+            <button className={`af-chip ${filter === 'unpriced' ? 'on' : ''}`} onClick={() => setFilter('unpriced')}>
+              {isAr ? 'منتجات غير مسعّرة' : 'Unpriced products'}{unpricedFactoryCount ? ` · ${unpricedFactoryCount}` : ''}
+            </button>
+          </div>
+
           {error && <div className="af-error">{error}</div>}
 
           {loading ? (
@@ -119,6 +177,16 @@ export default function AdminFactories({ user, profile, lang }) {
                     </button>
                     {f.company_name_latin && f.company_name_latin !== f.company_name && (
                       <div className="af-sub2">{f.company_name_latin}</div>
+                    )}
+                    {(priceStats[f.id]?.unpriced || 0) > 0 && (
+                      <div className="af-unpriced-note">
+                        ⚠ {isAr
+                          ? `${priceStats[f.id].unpriced} من ${priceStats[f.id].total} منتج غير مسعّر`
+                          : `${priceStats[f.id].unpriced} of ${priceStats[f.id].total} products unpriced`}
+                        {f.email && (
+                          <> · <a className="af-mail" href={`mailto:${f.email}`}>{isAr ? 'راسله' : 'Email'}</a></>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="af-cell af-hide-sm">{catLabel[f.category] || f.category || '—'}{f.city ? ` · ${f.city}` : ''}</div>

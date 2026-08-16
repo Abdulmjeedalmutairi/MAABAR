@@ -9,6 +9,7 @@ import {
   normalizeDisplayCurrency,
 } from '../lib/displayCurrency';
 import { getPrimaryProductImage } from '../lib/productMedia';
+import { readSwrCache, writeSwrCache } from '../lib/useStaleWhileRevalidate';
 import {
   getOfferEstimatedTotal,
   formatMoq,
@@ -38,6 +39,7 @@ const SEND_EMAILS_URL = 'https://utzalmszfqfcofywfetv.supabase.co/functions/v1/s
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0emFsbXN6ZnFmY29meXdmZXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjE4NDAsImV4cCI6MjA4OTIzNzg0MH0.SSqFCeBRhKRIrS8oQasBkTsZxSv7uZGCT9pqfK-YmX8';
 import Footer from '../components/Footer';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
+import TranslatedText from '../components/TranslatedText';
 import { startTelrPayment } from '../lib/telrPay';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
@@ -631,7 +633,11 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   };
 
   const loadActiveOrders = async () => {
-    setLoadingActiveOrders(true);
+    // Hydrate from the session cache instantly, then revalidate (no loading flash
+    // on tab re-entry). Mutations re-call this loader, so the cache stays fresh.
+    const key = `buyer-active-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setActiveOrders(cached); else setLoadingActiveOrders(true);
     const ACTIVE_STATUSES = ['supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived'];
     // Exclude direct purchase orders — they have their own dedicated tab.
     const { data: reqs } = await sb
@@ -642,21 +648,27 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       .in('status', ACTIVE_STATUSES)
       .order('updated_at', { ascending: false })
       .limit(5);
+    let result = [];
     if (reqs && reqs.length > 0) {
-      const withOffers = await Promise.all(reqs.map(async (r) => {
-        const { data: offers } = await sb.from('offers').select('*').eq('request_id', r.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
-        const withProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
-        return { ...r, offers: withProfiles || [] };
-      }));
-      setActiveOrders(withOffers);
-    } else {
-      setActiveOrders([]);
+      // Batch offers + profiles in two queries instead of one pair per request.
+      const ids = reqs.map((r) => r.id);
+      const { data: allOffers } = await sb.from('offers').select('*').in('request_id', ids).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
+      const withProfiles = await attachSupplierProfiles(sb, allOffers || [], 'supplier_id', 'profiles');
+      const byReq = (withProfiles || []).reduce((acc, o) => {
+        (acc[o.request_id] = acc[o.request_id] || []).push(o);
+        return acc;
+      }, {});
+      result = reqs.map((r) => ({ ...r, offers: byReq[r.id] || [] }));
     }
+    writeSwrCache(key, result);
+    setActiveOrders(result);
     setLoadingActiveOrders(false);
   };
 
   const loadMyRequests = async () => {
-    setLoadingRequests(true);
+    const key = `buyer-requests:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setMyRequests(cached); else setLoadingRequests(true);
     // Exclude direct purchase orders — they live in the dedicated direct-orders tab.
     const { data } = await sb.from('requests').select('*').eq('buyer_id', user.id).is('product_ref', null).order('created_at', { ascending: false });
     if (data) {
@@ -678,23 +690,33 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         return acc;
       }, {});
 
-      const withOffers = await Promise.all(data.map(async (request) => {
-        const { data: offers } = await sb.from('offers').select('*').eq('request_id', request.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
-        const offersWithProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
-        return {
-          ...request,
-          offers: offersWithProfiles || [],
-          brief: briefByRequest[request.id] || null,
-          lineItems: linesByRequest[request.id] || [],
-        };
+      // Batch: ONE offers query for every request + ONE profile attach for every
+      // offer — instead of an N+1 storm (a separate offers + profiles round-trip
+      // per request, which froze the tab on buyers with many requests).
+      const { data: allOffers } = requestIds.length
+        ? await sb.from('offers').select('*').in('request_id', requestIds).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null')
+        : { data: [] };
+      const offersWithProfiles = await attachSupplierProfiles(sb, allOffers || [], 'supplier_id', 'profiles');
+      const offersByRequest = (offersWithProfiles || []).reduce((acc, offer) => {
+        (acc[offer.request_id] = acc[offer.request_id] || []).push(offer);
+        return acc;
+      }, {});
+      const withOffers = data.map((request) => ({
+        ...request,
+        offers: offersByRequest[request.id] || [],
+        brief: briefByRequest[request.id] || null,
+        lineItems: linesByRequest[request.id] || [],
       }));
+      writeSwrCache(key, withOffers);
       setMyRequests(withOffers);
     }
     setLoadingRequests(false);
   };
 
   const loadMyDirectOrders = async () => {
-    setLoadingDirectOrders(true);
+    const key = `buyer-direct-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setDirectOrders(cached); else setLoadingDirectOrders(true);
 
     const ordersRes = await sb
       .from('requests')
@@ -706,6 +728,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     const refIds = [...new Set((ordersRes.data || []).map(r => r.product_ref).filter(Boolean))];
     if (refIds.length === 0) {
+      writeSwrCache(key, []);
       setDirectOrders([]);
       setLoadingDirectOrders(false);
       return;
@@ -722,7 +745,9 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
 
     const productsById = (productsWithProfiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
-    setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
+    const directResult = (ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null }));
+    writeSwrCache(key, directResult);
+    setDirectOrders(directResult);
     setLoadingDirectOrders(false);
   };
 
@@ -891,33 +916,50 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   };
 
   const loadMySamples = async () => {
+    const key = `buyer-samples:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setSamples(cached);
     const { data } = await sb.from('samples')
       .select('*,products(name_ar,name_en,name_zh)')
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
-    if (data) setSamples(await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles'));
+    if (data) {
+      const result = await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles');
+      writeSwrCache(key, result);
+      setSamples(result);
+    }
   };
 
   const loadInbox = async () => {
+    const key = `buyer-inbox:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setInbox(cached);
     const { data } = await sb.from('messages')
       .select('*')
       .eq('receiver_id', user.id).order('created_at', { ascending: false });
     if (data) {
       const withProfiles = await attachDirectoryProfiles(sb, data, 'sender_id', 'profiles');
       const seen = new Set();
-      setInbox(withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; }));
+      const result = withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; });
+      writeSwrCache(key, result);
+      setInbox(result);
       await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('is_read', false);
       setStats(s => ({ ...s, messages: 0 }));
     }
   };
 
   const loadProductInquiries = async () => {
+    const key = `buyer-inquiries:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setProductInquiries(cached);
     try {
       const data = await fetchProductInquiryThreads(sb, { buyerId: user.id });
-      setProductInquiries(await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles'));
+      const result = await attachSupplierProfiles(sb, data, 'supplier_id', 'profiles');
+      writeSwrCache(key, result);
+      setProductInquiries(result);
     } catch (error) {
       console.error('load buyer product inquiries error:', error);
-      setProductInquiries([]);
+      // keep cached/existing data on error instead of blanking the tab
     }
   };
 
@@ -957,7 +999,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       return;
     }
 
-    await sb.from('notifications').insert({
+    sb.from('notifications').insert({
       user_id: supplierId,
       type: 'offer_rejected',
       title_ar: `تم رفض عرضك على الطلب: ${reqTitle}`,
@@ -965,7 +1007,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       title_zh: `您的报价已被拒绝: ${reqTitle}`,
       ref_id: requestId,
       is_read: false,
-    });
+    }).then(undefined, () => {});   // best-effort, background
 
     setMyRequests(prev => prev.map(req => req.id !== requestId ? req : {
       ...req,
@@ -1001,42 +1043,36 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       return;
     }
 
-    // All DB writes succeeded — now send notifications and emails
-    await sb.from('notifications').insert({
-      user_id: supplierId, type: 'offer_accepted',
-      title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
-      ref_id: offerId, is_read: false,
-    });
-    try {
-      const res = await fetch(SEND_EMAILS_URL, {
+    // All DB writes succeeded. Notifications + emails (the accepted supplier AND
+    // every rejected supplier) are best-effort — fire them in the background so
+    // the buyer's UI refreshes immediately instead of waiting on several email
+    // round-trips in sequence.
+    (() => {
+      sb.from('notifications').insert({
+        user_id: supplierId, type: 'offer_accepted',
+        title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
+        ref_id: offerId, is_read: false,
+      }).then(undefined, () => {});
+      fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({ type: 'offer_accepted', data: { recipientUserId: supplierId, name: 'Supplier', requestTitle: reqTitle } }),
-      });
-      if (!res.ok) {
-        console.error('offer_accepted email failed:', await res.text());
-      }
-    } catch (e) { console.error('email error:', e); }
-
-    // Notify and email each rejected supplier individually
-    if (allOffers?.length) {
-      await Promise.all(allOffers.map(async (o) => {
-        await sb.from('notifications').insert({
+      }).catch((e) => console.error('email error:', e));
+      (allOffers || []).forEach((o) => {
+        sb.from('notifications').insert({
           user_id: o.supplier_id, type: 'offer_rejected',
           title_ar: `تم اختيار عرض آخر على الطلب: ${reqTitle}`,
           title_en: `Another offer was selected for: ${reqTitle}`,
           title_zh: `已选择其他报价: ${reqTitle}`,
           ref_id: requestId, is_read: false,
-        });
-        try {
-          await fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle } }),
-          });
-        } catch (e) { console.error('email error:', e); }
-      }));
-    }
+        }).then(undefined, () => {});
+        fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle } }),
+        }).catch((e) => console.error('email error:', e));
+      });
+    })();
 
     loadMyRequests(); loadPendingActions();
   };
@@ -1851,7 +1887,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                                         {isAr ? 'ملاحظة تجارية' : lang === 'zh' ? '商务备注' : 'Commercial note'}
                                       </p>
                                       <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                                        {o.note}
+                                        <TranslatedText text={o.note} lang={lang} />
                                       </p>
                                     </div>
                                   )}

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_URL } from '../supabase';
 import { uploadWithProgress } from '../lib/uploadWithProgress';
+import { readSwrCache, writeSwrCache } from '../lib/useStaleWhileRevalidate';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import {
   DISPLAY_CURRENCIES,
@@ -96,7 +97,7 @@ import SupplierHomePanel from '../components/supplier/SupplierHomePanel';
 import SupplierHeader from '../components/supplier/SupplierHeader';
 import { runWithOptionalColumns } from '../lib/supabaseColumnFallback';
 import { sendMaabarEmail } from '../lib/maabarEmail';
-import { buildTranslatedProductFields, translateOfferNote, translateTextToAllLanguages } from '../lib/requestTranslation';
+import { buildTranslatedProductFields, translateTextToAllLanguages } from '../lib/requestTranslation';
 import {
   getOfferEstimatedTotal,
   getOfferProductSubtotal,
@@ -251,6 +252,8 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [offerForms, setOfferForms]         = useState({});
   const [offers, setOffers]                 = useState({});
+  const [pendingOfferIds, setPendingOfferIds] = useState(() => new Set());   // requests whose offer is "sending" (optimistic)
+  const [offerToast, setOfferToast] = useState('');   // brief "offer sent" confirmation, shown ONLY after the server confirms
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
@@ -606,14 +609,25 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   };
 
   const loadSamples = async () => {
+    const key = `sup-samples:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setSamples(cached);
     const { data } = await sb.from('samples').select('*,products(name_ar,name_en,name_zh)').eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setSamples(await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles'));
+    if (data) {
+      const result = await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles');
+      writeSwrCache(key, result);
+      setSamples(result);
+    }
   };
 
   const loadProductInquiries = async () => {
+    const key = `sup-inquiries:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setProductInquiries(cached);
     try {
       const data = await fetchProductInquiryThreads(sb, { supplierId: user.id });
       const inquiriesWithProfiles = await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles');
+      writeSwrCache(key, inquiriesWithProfiles);
       setProductInquiries(inquiriesWithProfiles);
       
       // نترجم الاستفسارات إذا لغة المورد مختلفة عن لغة النص
@@ -1292,29 +1306,42 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   };
 
   const loadMyOffers = async () => {
-    setLoadingOffers(true);
+    // Hydrate from the session cache instantly, then revalidate. Mutations
+    // re-call this loader, so the cache stays fresh (no explicit invalidation).
+    const key = `sup-offers:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) { setMyOffers(cached.offers); setCompletedPayments(new Set(cached.completed)); } else setLoadingOffers(true);
     const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status,shipping_company,estimated_delivery,quantity,description,payment_plan,category,profiles!requests_buyer_id_fkey(full_name,company_name))').eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setMyOffers(data);
     const { data: payData } = await sb.from('payments').select('request_id').eq('supplier_id', user.id).eq('status', 'completed');
-    setCompletedPayments(new Set((payData || []).map(p => p.request_id)));
+    if (data) {
+      const completed = (payData || []).map(p => p.request_id);
+      writeSwrCache(key, { offers: data, completed });
+      setMyOffers(data);
+      setCompletedPayments(new Set(completed));
+    }
     setLoadingOffers(false);
   };
 
   const loadMyProducts = async () => {
-    setLoadingProducts(true);
+    const key = `sup-products:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setMyProducts(cached); else setLoadingProducts(true);
     const { data } = await sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setMyProducts(data);
+    if (data) { writeSwrCache(key, data); setMyProducts(data); }
     setLoadingProducts(false);
   };
 
   const loadDirectOrders = async () => {
     if (!user) return;
-    setLoadingDirectOrders(true);
+    const key = `sup-direct-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setDirectOrders(cached); else setLoadingDirectOrders(true);
 
     const productsRes = await sb.from('products').select('id').eq('supplier_id', user.id);
     console.log('[loadDirectOrders] products query response:', productsRes);
     const myProductIds = (productsRes.data || []).map(p => p.id);
     if (myProductIds.length === 0) {
+      writeSwrCache(key, []);
       setDirectOrders([]);
       setLoadingDirectOrders(false);
       return;
@@ -1335,7 +1362,9 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     console.log('[loadDirectOrders] product details response:', productsByIdRes);
     const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
-    setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
+    const directResult = (ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null }));
+    writeSwrCache(key, directResult);
+    setDirectOrders(directResult);
     setLoadingDirectOrders(false);
   };
 
@@ -1358,7 +1387,10 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       return;
     }
 
-    const notifRes = await sb.from('notifications').insert({
+    // Notification + email are best-effort side effects — fire them in the
+    // background so the confirm responds instantly (not blocked on the email
+    // edge-function round-trip). The buyer still gets both a moment later.
+    sb.from('notifications').insert({
       user_id: request.buyer_id,
       type: 'supplier_confirmed',
       title_ar: `أكد المورد طلبك — يمكنك الدفع الآن: ${productName}`,
@@ -1366,23 +1398,15 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       title_zh: `供应商已确认您的订单 — 请付款：${productName}`,
       ref_id: request.id,
       is_read: false,
-    }).select().single();
-    console.log('[confirmDirectOrder] notification response:', notifRes);
-
-    try {
-      const r = await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          type: 'direct_order_confirmed',
-          data: { recipientUserId: request.buyer_id, productName, quantity: request.quantity },
-        }),
-      });
-      const body = await r.json().catch(() => null);
-      console.log('[confirmDirectOrder] email response:', { status: r.status, body });
-    } catch (emailError) {
-      console.error('[confirmDirectOrder] email error:', emailError);
-    }
+    }).then(undefined, () => {});
+    fetch(SEND_EMAILS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        type: 'direct_order_confirmed',
+        data: { recipientUserId: request.buyer_id, productName, quantity: request.quantity },
+      }),
+    }).catch((emailError) => console.error('[confirmDirectOrder] email error:', emailError));
 
     setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
     loadDirectOrders();
@@ -1655,11 +1679,16 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   };
 
   const loadInbox = async () => {
+    const key = `sup-inbox:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setInbox(cached);
     const { data } = await sb.from('messages').select('*').eq('receiver_id', user.id).order('created_at', { ascending: false });
     if (data) {
       const withProfiles = await attachDirectoryProfiles(sb, data, 'sender_id', 'profiles');
       const seen = new Set();
-      setInbox(withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; }));
+      const result = withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; });
+      writeSwrCache(key, result);
+      setInbox(result);
       await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('is_read', false);
       setStats(s => ({ ...s, messages: 0 }));
     }
@@ -1945,16 +1974,12 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     }
     setSaving(true);
     setProductSaveMsg('');
-    let translatedFields = {};
-    try {
-      translatedFields = await buildTranslatedProductFields({
-        nameAr: product.name_ar, nameEn: product.name_en, nameZh: product.name_zh,
-        descEn: product.desc_en, descAr: product.desc_ar, lang,
-      });
-    } catch (translationErr) {
-      console.error('addProduct translation error:', translationErr?.message || translationErr);
-    }
-    const payload = buildProductWritePayload({ ...product, ...translatedFields }, user.id, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
+    // Translation is enrichment, not a condition for a valid row: the write
+    // payload self-fills every empty language column from the source name
+    // (buildProductWritePayload's fallbackName), so insert immediately with the
+    // source text and translate in the background (below). A slow or failed Grok
+    // call can no longer delay — or block — publishing the product.
+    const payload = buildProductWritePayload(product, user.id, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
     const { data: insertedRows, error, strippedColumns } = await runWithOptionalColumns({
       table: 'products',
       payload,
@@ -1987,6 +2012,18 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
         try { await saveVariantData(newProductId, variantData); }
         catch (vErr) { console.error('addProduct saveVariantData error:', vErr); }
       }
+
+      // Enrich the row with real translations in the background — best-effort.
+      // The product is already saved and valid (source-filled); a failed
+      // translation just leaves the fallback text, a successful one refreshes the list.
+      buildTranslatedProductFields({
+        nameAr: product.name_ar, nameEn: product.name_en, nameZh: product.name_zh,
+        descEn: product.desc_en, descAr: product.desc_ar, lang,
+      }).then((tf) => {
+        if (tf && Object.keys(tf).length) {
+          sb.from('products').update(tf).eq('id', newProductId).then(() => loadMyProducts(), (e) => console.error('addProduct translation update error:', e));
+        }
+      }, (e) => console.error('addProduct translation error:', e?.message || e));
     }
     setSaving(false);
     if (error) {
@@ -2012,16 +2049,10 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     if (!editingProduct) return;
     const isDraft = asDraft === true;
     setSaving(true);
-    let translatedFields = {};
-    try {
-      translatedFields = await buildTranslatedProductFields({
-        nameAr: editingProduct.name_ar, nameEn: editingProduct.name_en, nameZh: editingProduct.name_zh,
-        descEn: editingProduct.desc_en, descAr: editingProduct.desc_ar, lang,
-      });
-    } catch (translationErr) {
-      console.error('updateProduct translation error:', translationErr?.message || translationErr);
-    }
-    const payload = buildProductWritePayload({ ...editingProduct, ...translatedFields }, undefined, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
+    // Translation is enrichment, not a condition for a valid row (see addProduct):
+    // save the edit immediately with the source text — the payload self-fills empty
+    // language columns — and re-translate in the background below.
+    const payload = buildProductWritePayload(editingProduct, undefined, { asDraft: isDraft, isVerified: supplierState.isVerifiedStatus });
     delete payload.supplier_id;
     const { error } = await runWithOptionalColumns({
       table: 'products',
@@ -2050,6 +2081,17 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
         try { await saveVariantData(editingProduct.id, editVariantData); }
         catch (vErr) { console.error('updateProduct saveVariantData error:', vErr); }
       }
+
+      // Re-translate in the background — best-effort, never blocks the save.
+      const editedId = editingProduct.id;
+      buildTranslatedProductFields({
+        nameAr: editingProduct.name_ar, nameEn: editingProduct.name_en, nameZh: editingProduct.name_zh,
+        descEn: editingProduct.desc_en, descAr: editingProduct.desc_ar, lang,
+      }).then((tf) => {
+        if (tf && Object.keys(tf).length) {
+          sb.from('products').update(tf).eq('id', editedId).then(() => loadMyProducts(), (e) => console.error('updateProduct translation update error:', e));
+        }
+      }, (e) => console.error('updateProduct translation error:', e?.message || e));
     }
     setSaving(false);
     if (error) {
@@ -2207,17 +2249,27 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       return;
     }
 
-    setSubmittingOfferId(requestId);
+    // Optimistic: close the form and mark the request as "sending" immediately.
+    // We never claim success — the offer flips to its real state only after the
+    // server confirms, and the form reopens (values intact) on error. No alert.
+    toggleOfferForm(requestId);
+    setSubmittingOfferId(null);
+    setPendingOfferIds(prev => { const n = new Set(prev); n.add(requestId); return n; });
+    const clearPending = () => setPendingOfferIds(prev => { const n = new Set(prev); n.delete(requestId); return n; });
+
     try {
       const { data: existing, error: existingError } = await sb.from('offers').select('id').eq('request_id', requestId).eq('supplier_id', user.id).not('status', 'eq', 'cancelled').limit(1).maybeSingle();
       if (existingError) throw existingError;
       if (existing) {
+        clearPending();
         alert(isAr ? 'لقد قدمت عرضاً على هذا الطلب مسبقاً' : lang === 'zh' ? '您已提交过此需求的报价' : 'You already submitted an offer on this request');
         return;
       }
 
-      const noteTranslations = await translateOfferNote(note, lang);
       const offerCurrency = normalizeDisplayCurrency(o.currency || viewerCurrency);
+      // Save the offer with the SOURCE note only — no dependency on the external
+      // translator on this commercial path. A single-audience note is translated
+      // on the buyer's side at read time (TranslatedText, cached).
       const { error } = await runWithOptionalColumns({
         table: 'offers',
         payload: {
@@ -2231,43 +2283,48 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
           delivery_days: days,
           origin,
           note: note || null,
-          ...noteTranslations,
           status: 'pending',
         },
-        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'note_ar', 'note_en', 'note_zh', 'currency'],
+        optionalKeys: ['shipping_cost', 'shipping_method', 'origin', 'currency'],
         execute: (nextPayload) => sb.from('offers').insert(nextPayload),
       });
       if (error) throw error;
 
       await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
-      await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
-      try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'new_offer',
-            data: {
-              recipientUserId: buyerId,
-              name: 'Trader',
-              requestTitle: requestItem?.title_ar || requestItem?.title_en || '',
-              supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
-              price,
-              shippingCost,
-              shippingMethod,
-              estimatedTotal,
-              deliveryDays: days,
-            },
-          }),
-        });
-      } catch (e) { console.error('email error:', e); }
-      alert(isAr ? 'تم إرسال عرضك!' : lang === 'zh' ? '报价已发送！' : 'Offer submitted!');
-      toggleOfferForm(requestId); loadRequests();
+      // Notification + email are best-effort side effects — fire them in the
+      // background so "Offer submitted!" is instant, not blocked on the
+      // notification insert + the (slow) email edge-function round-trip.
+      sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false }).then(undefined, () => {});
+      fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'new_offer',
+          data: {
+            recipientUserId: buyerId,
+            name: 'Trader',
+            requestTitle: requestItem?.title_ar || requestItem?.title_en || '',
+            supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
+            price,
+            shippingCost,
+            shippingMethod,
+            estimatedTotal,
+            deliveryDays: days,
+          },
+        }),
+      }).catch((e) => console.error('email error:', e));
+      // Confirmed — reconcile: the real submitted offer replaces the "sending"
+      // state, and NOW (after the server confirmed, never before) a clear,
+      // non-blocking toast tells the supplier it was sent.
+      await loadRequests();
+      clearPending();
+      setOfferToast(isAr ? '✓ تم إرسال عرضك' : lang === 'zh' ? '✓ 报价已发送' : '✓ Offer sent');
+      setTimeout(() => setOfferToast(''), 2800);
     } catch (error) {
       console.error('submitOffer error:', error);
+      clearPending();
+      toggleOfferForm(requestId);   // reopen the form (values preserved) to retry
       alert(isAr ? 'حدث خطأ أثناء إرسال العرض' : lang === 'zh' ? '发送报价时出错' : 'Error sending offer');
-    } finally {
-      setSubmittingOfferId(null);
     }
   };
 
@@ -2481,6 +2538,18 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
 
   return (
     <div className="dashboard-wrap">
+
+      {/* Non-blocking "offer sent" toast — shown only after the server confirms. */}
+      {offerToast && (
+        <div role="status" style={{
+          position: 'fixed', bottom: 92, left: '50%', transform: 'translateX(-50%)', zIndex: 1000,
+          background: 'var(--green, #2d7a4f)', color: '#fff', padding: '11px 20px', borderRadius: 'var(--radius-pill, 999px)',
+          fontSize: 13.5, fontWeight: 600, boxShadow: '0 6px 20px rgba(0,0,0,0.18)', maxWidth: '90vw', textAlign: 'center',
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', animation: 'fadeInDown 0.25s ease',
+        }}>
+          {offerToast}
+        </div>
+      )}
 
       <SupplierHeader
         lang={lang} setLang={setLang}
@@ -3097,9 +3166,19 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
                     <button className="btn-outline" onClick={() => setSelectedRequest(r)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
   {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
 </button>
-                    <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
-                      {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
-                    </button>
+                    {pendingOfferIds.has(r.id) ? (
+                      // Same button, same size, disabled — content becomes a spinner.
+                      // The label is kept invisible so the width never changes (no
+                      // layout jump); the spinner is centered over it.
+                      <button className="btn-dark-sm" disabled aria-label={isAr ? 'جاري إرسال العرض' : lang === 'zh' ? '正在发送报价' : 'Sending offer'} style={{ minHeight: 38, whiteSpace: 'nowrap', position: 'relative', cursor: 'default' }}>
+                        <span style={{ visibility: 'hidden' }}>{isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote'}</span>
+                        <span className="mb-spinner" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)' }} />
+                      </button>
+                    ) : (
+                      <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
+                        {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
+                      </button>
+                    )}
                   </div>
 
                   {offerForms[r.id] && (

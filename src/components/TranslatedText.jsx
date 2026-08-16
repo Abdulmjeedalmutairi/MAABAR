@@ -19,7 +19,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { detectSourceLang, translateText } from '../lib/aiTranslate';
+import { detectSourceLang, translateText, peekTranslation } from '../lib/aiTranslate';
 import { T } from '../lib/supplierDashboardConstants';
 
 export default function TranslatedText({
@@ -36,17 +36,25 @@ export default function TranslatedText({
   const sourceLang = detectSourceLang(trimmed);
   const needsTranslation = trimmed.length > 0 && sourceLang !== target;
 
-  const [translated, setTranslated] = useState(null); // null = not yet loaded
+  // Seed from the sync cache so an already-translated text paints correctly on
+  // the first render — no "original → translated" flash on revisits.
+  const [translated, setTranslated] = useState(
+    () => (needsTranslation ? peekTranslation(trimmed, target, sourceLang) : null),
+  );
   const [showOriginal, setShowOriginal] = useState(false);
   const [translationFailed, setTranslationFailed] = useState(false);
   const cancelledRef = useRef(false);
 
   useEffect(() => {
     cancelledRef.current = false;
-    setTranslated(null);
     setTranslationFailed(false);
 
-    if (!needsTranslation) return undefined;
+    if (!needsTranslation) { setTranslated(null); return undefined; }
+
+    // Cache hit → show it immediately and skip the API call entirely.
+    const cached = peekTranslation(trimmed, target, sourceLang);
+    setTranslated(cached);
+    if (cached != null) return undefined;
 
     (async () => {
       const { translated: result, error } = await translateText(trimmed, target, sourceLang);
