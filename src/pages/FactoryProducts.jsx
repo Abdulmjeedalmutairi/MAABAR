@@ -155,13 +155,22 @@ export default function FactoryProducts({ lang = 'ar', user }) {
     // through all of them — otherwise whole factories past row 1000 never show.
     const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en, created_at';
     const fetchAllProducts = async () => {
-      const all = [];
-      for (let from = 0; ; from += 1000) {
-        const { data: d, error } = await sb.from('factory_products').select(PROD_COLS)
-          .order('factory_id', { ascending: true }).range(from, from + 999);
-        if (error || !d || !d.length) break;
-        all.push(...d);
-        if (d.length < 1000) break;
+      const PAGE = 1000;
+      // Read the total off the first page, then fetch the rest concurrently
+      // instead of walking pages serially (the serial walk was most of the wait).
+      const first = await sb.from('factory_products').select(PROD_COLS, { count: 'exact' })
+        .order('factory_id', { ascending: true }).range(0, PAGE - 1);
+      if (first.error || !first.data) return [];
+      const all = [...first.data];
+      const total = first.count ?? first.data.length;
+      const rest = [];
+      for (let from = PAGE; from < total; from += PAGE) {
+        rest.push(sb.from('factory_products').select(PROD_COLS)
+          .order('factory_id', { ascending: true }).range(from, from + PAGE - 1));
+      }
+      if (rest.length) {
+        const pages = await Promise.all(rest);
+        for (const p of pages) { if (p.data) all.push(...p.data); }
       }
       return all;
     };
