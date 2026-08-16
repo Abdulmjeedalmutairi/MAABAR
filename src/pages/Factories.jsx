@@ -56,10 +56,24 @@ export default function Factories({ lang = 'ar' }) {
   // Cached list (stale-while-revalidate): fetched once per session, instant on
   // revisit + background refresh. Public read-only — nothing to invalidate.
   const { data, isLoading: loading } = useStaleWhileRevalidate('factories-list', async () => {
-    // Page through ALL product rows — a single select is capped at ~1000 by
-    // PostgREST, which silently truncated the per-factory aggregation so
-    // factories past ~row 1000 showed 0 products and no cover image. Mirrors the
-    // range-loop the products pages already use.
+    // Fast path: the aggregation runs in the DB (factory_directory_with_stats) and
+    // returns ONE small row per factory instead of the whole product table. Falls
+    // back to the client aggregation below if the RPC isn't deployed yet.
+    const rpc = await sb.rpc('factory_directory_with_stats');
+    if (!rpc.error && Array.isArray(rpc.data)) {
+      const factories = [];
+      const map = {};
+      rpc.data.forEach((row) => {
+        const f = row.factory;
+        if (!f) return;
+        factories.push(f);
+        map[f.id] = { images: row.cover_images || [], products: row.product_count || 0, catalogs: row.catalog_count || 0 };
+      });
+      return { factories, byFactory: map };
+    }
+
+    // Fallback — page through ALL product rows and aggregate on the client. A
+    // single select is capped at ~1000 by PostgREST, so page through in parallel.
     const fetchAllProductMeta = async () => {
       const PAGE = 1000;
       // The first page also returns the exact total, so the remaining pages can
