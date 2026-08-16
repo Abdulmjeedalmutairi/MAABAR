@@ -607,14 +607,25 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   };
 
   const loadSamples = async () => {
+    const key = `sup-samples:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setSamples(cached);
     const { data } = await sb.from('samples').select('*,products(name_ar,name_en,name_zh)').eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setSamples(await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles'));
+    if (data) {
+      const result = await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles');
+      writeSwrCache(key, result);
+      setSamples(result);
+    }
   };
 
   const loadProductInquiries = async () => {
+    const key = `sup-inquiries:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setProductInquiries(cached);
     try {
       const data = await fetchProductInquiryThreads(sb, { supplierId: user.id });
       const inquiriesWithProfiles = await attachDirectoryProfiles(sb, data, 'buyer_id', 'profiles');
+      writeSwrCache(key, inquiriesWithProfiles);
       setProductInquiries(inquiriesWithProfiles);
       
       // نترجم الاستفسارات إذا لغة المورد مختلفة عن لغة النص
@@ -1320,12 +1331,15 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
 
   const loadDirectOrders = async () => {
     if (!user) return;
-    setLoadingDirectOrders(true);
+    const key = `sup-direct-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setDirectOrders(cached); else setLoadingDirectOrders(true);
 
     const productsRes = await sb.from('products').select('id').eq('supplier_id', user.id);
     console.log('[loadDirectOrders] products query response:', productsRes);
     const myProductIds = (productsRes.data || []).map(p => p.id);
     if (myProductIds.length === 0) {
+      writeSwrCache(key, []);
       setDirectOrders([]);
       setLoadingDirectOrders(false);
       return;
@@ -1346,7 +1360,9 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     console.log('[loadDirectOrders] product details response:', productsByIdRes);
     const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
-    setDirectOrders((ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null })));
+    const directResult = (ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null }));
+    writeSwrCache(key, directResult);
+    setDirectOrders(directResult);
     setLoadingDirectOrders(false);
   };
 
@@ -1666,11 +1682,16 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   };
 
   const loadInbox = async () => {
+    const key = `sup-inbox:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setInbox(cached);
     const { data } = await sb.from('messages').select('*').eq('receiver_id', user.id).order('created_at', { ascending: false });
     if (data) {
       const withProfiles = await attachDirectoryProfiles(sb, data, 'sender_id', 'profiles');
       const seen = new Set();
-      setInbox(withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; }));
+      const result = withProfiles.filter(m => { if (seen.has(m.sender_id)) return false; seen.add(m.sender_id); return true; });
+      writeSwrCache(key, result);
+      setInbox(result);
       await sb.from('messages').update({ is_read: true }).eq('receiver_id', user.id).eq('is_read', false);
       setStats(s => ({ ...s, messages: 0 }));
     }
