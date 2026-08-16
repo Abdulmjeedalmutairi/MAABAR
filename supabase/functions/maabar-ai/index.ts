@@ -549,8 +549,55 @@ Rules:
         prompt,
         responseMimeType: 'application/json',
       });
+      const result = JSON.parse(text);
 
-      return json({ result: JSON.parse(text) });
+      // Self-persist when the caller supplies a requestId: build the brief row +
+      // advance the request to admin_review server-side, so completion no longer
+      // depends on the trader's browser staying open. Idempotent (upsert on
+      // request_id; status advance targets a fixed value). Uses the request's
+      // real buyer_id from the DB — never trusts the client-supplied one. The
+      // client also upserts as a fallback for pre-deploy environments; both
+      // writes converge on the same row.
+      const reqId = (payload as { requestId?: string }).requestId;
+      if (reqId) {
+        try {
+          const { data: reqRow } = await admin
+            .from('requests').select('id, buyer_id').eq('id', reqId).maybeSingle();
+          if (reqRow) {
+            const sbAll = (result.supplier_brief && typeof result.supplier_brief === 'object')
+              ? result.supplier_brief : null;
+            const sbText = sbAll
+              ? (sbAll[language] || sbAll.en || sbAll.ar || '')
+              : (typeof result.supplier_brief === 'string' ? result.supplier_brief : '');
+            const priority = result.priority === 'urgent' ? 'urgent' : 'normal';
+            await admin.from('managed_request_briefs').upsert({
+              request_id: reqId,
+              buyer_id: reqRow.buyer_id,
+              ai_status: 'ready',
+              admin_review_status: 'pending',
+              supplier_brief: sbText || result.cleaned_description || '',
+              admin_internal_notes: result.admin_internal_notes ?? null,
+              admin_follow_up_question: result.admin_follow_up_question ?? null,
+              priority,
+              extracted_specs: Array.isArray(result.extracted_specs) ? result.extracted_specs : [],
+              cleaned_description: result.cleaned_description || '',
+              category: result.category || 'other',
+              ai_confidence: ['high', 'medium', 'low'].includes(result.ai_confidence) ? result.ai_confidence : 'medium',
+              ai_output: { generated_at: nowIso, model: 'maabar-ai', prompt_version: 'managed_brief.v1', supplier_brief_all: sbAll },
+            }, { onConflict: 'request_id' });
+            await admin.from('requests').update({
+              managed_status: 'admin_review',
+              managed_priority: priority,
+              managed_ai_ready_at: nowIso,
+            }).eq('id', reqId);
+          }
+        } catch (persistErr) {
+          console.error('managed_brief self-persist error:', persistErr);
+          // Non-fatal — still return the brief so the client fallback can persist.
+        }
+      }
+
+      return json({ result });
     }
 
     if (body.task === 'company_romanization') {
