@@ -46,7 +46,7 @@ export default function SupplierHomePanel({ sb, supplierId, lang = 'ar', company
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { items } = await fetchSupplierActionItems(sb, supplierId);
+      const { items } = await fetchSupplierActionItems(sb, supplierId, lang);
       if (alive) setNeeds(sortByUrgency(items.filter((x) => x.bucket === 'needs_response')).slice(0, 3));
     })();
     return () => { alive = false; };

@@ -44,7 +44,7 @@ export default function SupplierRequestsPanel({ sb, supplierId, lang = 'ar', onA
     let alive = true;
     (async () => {
       setLoading(true);
-      const { items: it, counts: ct } = await fetchSupplierActionItems(sb, supplierId);
+      const { items: it, counts: ct } = await fetchSupplierActionItems(sb, supplierId, lang);
       if (!alive) return;
       setItems(it); setCounts(ct); setLoading(false);
       // Resolve counterparty names (supplier can read buyer profiles via the join
