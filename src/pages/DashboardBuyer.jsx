@@ -987,7 +987,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       return;
     }
 
-    await sb.from('notifications').insert({
+    sb.from('notifications').insert({
       user_id: supplierId,
       type: 'offer_rejected',
       title_ar: `تم رفض عرضك على الطلب: ${reqTitle}`,
@@ -995,7 +995,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       title_zh: `您的报价已被拒绝: ${reqTitle}`,
       ref_id: requestId,
       is_read: false,
-    });
+    }).then(undefined, () => {});   // best-effort, background
 
     setMyRequests(prev => prev.map(req => req.id !== requestId ? req : {
       ...req,
@@ -1031,42 +1031,36 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       return;
     }
 
-    // All DB writes succeeded — now send notifications and emails
-    await sb.from('notifications').insert({
-      user_id: supplierId, type: 'offer_accepted',
-      title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
-      ref_id: offerId, is_read: false,
-    });
-    try {
-      const res = await fetch(SEND_EMAILS_URL, {
+    // All DB writes succeeded. Notifications + emails (the accepted supplier AND
+    // every rejected supplier) are best-effort — fire them in the background so
+    // the buyer's UI refreshes immediately instead of waiting on several email
+    // round-trips in sequence.
+    (() => {
+      sb.from('notifications').insert({
+        user_id: supplierId, type: 'offer_accepted',
+        title_ar: 'تم قبول عرضك', title_en: 'Your offer has been accepted', title_zh: '您的报价已被接受',
+        ref_id: offerId, is_read: false,
+      }).then(undefined, () => {});
+      fetch(SEND_EMAILS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({ type: 'offer_accepted', data: { recipientUserId: supplierId, name: 'Supplier', requestTitle: reqTitle } }),
-      });
-      if (!res.ok) {
-        console.error('offer_accepted email failed:', await res.text());
-      }
-    } catch (e) { console.error('email error:', e); }
-
-    // Notify and email each rejected supplier individually
-    if (allOffers?.length) {
-      await Promise.all(allOffers.map(async (o) => {
-        await sb.from('notifications').insert({
+      }).catch((e) => console.error('email error:', e));
+      (allOffers || []).forEach((o) => {
+        sb.from('notifications').insert({
           user_id: o.supplier_id, type: 'offer_rejected',
           title_ar: `تم اختيار عرض آخر على الطلب: ${reqTitle}`,
           title_en: `Another offer was selected for: ${reqTitle}`,
           title_zh: `已选择其他报价: ${reqTitle}`,
           ref_id: requestId, is_read: false,
-        });
-        try {
-          await fetch(SEND_EMAILS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle } }),
-          });
-        } catch (e) { console.error('email error:', e); }
-      }));
-    }
+        }).then(undefined, () => {});
+        fetch(SEND_EMAILS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ type: 'offer_rejected', data: { recipientUserId: o.supplier_id, name: 'Supplier', requestTitle: reqTitle } }),
+        }).catch((e) => console.error('email error:', e));
+      });
+    })();
 
     loadMyRequests(); loadPendingActions();
   };

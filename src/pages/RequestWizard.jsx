@@ -195,21 +195,22 @@ export default function RequestWizard({ lang = 'ar', user, displayCurrency }) {
     setSubmitting(false);
     if (submitErr || !request?.id) { setError(t.errGeneric); return; }
 
+    // Both notification emails are best-effort — fire them in the background so
+    // the success screen appears the moment the request is created, not after
+    // two email round-trips.
     if (factoryId) {
-      try { await sb.functions.invoke('factory-request-email', { body: { requestId: request.id, factoryId } }); } catch { /* best-effort */ }
+      sb.functions.invoke('factory-request-email', { body: { requestId: request.id, factoryId } }).catch(() => { /* best-effort */ });
     }
     // Alert Maabar ops of the new managed request — with the trader's contact so
-    // the account manager can reach out on WhatsApp immediately. Best-effort.
-    try {
-      await sendMaabarEmail({ type: 'admin_new_request', data: {
-        requestId: request.request_ref || request.id,
-        titleAr: request.title_ar, titleEn: request.title_en,
-        category: request.category, quantity: request.quantity, unit: request.unit,
-        budget: request.budget_per_unit ? `${request.budget_per_unit} ${request.budget_currency || ''}` : null,
-        phone: request.contact_phone || String(form.phone || '').trim(),
-        buyerName: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || null,
-      } });
-    } catch { /* best-effort */ }
+    // the account manager can reach out on WhatsApp immediately.
+    sendMaabarEmail({ type: 'admin_new_request', data: {
+      requestId: request.request_ref || request.id,
+      titleAr: request.title_ar, titleEn: request.title_en,
+      category: request.category, quantity: request.quantity, unit: request.unit,
+      budget: request.budget_per_unit ? `${request.budget_per_unit} ${request.budget_currency || ''}` : null,
+      phone: request.contact_phone || String(form.phone || '').trim(),
+      buyerName: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || null,
+    } }).catch(() => { /* best-effort */ });
     try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     setSubmitted(request);
   }

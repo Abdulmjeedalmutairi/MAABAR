@@ -1385,7 +1385,10 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       return;
     }
 
-    const notifRes = await sb.from('notifications').insert({
+    // Notification + email are best-effort side effects — fire them in the
+    // background so the confirm responds instantly (not blocked on the email
+    // edge-function round-trip). The buyer still gets both a moment later.
+    sb.from('notifications').insert({
       user_id: request.buyer_id,
       type: 'supplier_confirmed',
       title_ar: `أكد المورد طلبك — يمكنك الدفع الآن: ${productName}`,
@@ -1393,23 +1396,15 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       title_zh: `供应商已确认您的订单 — 请付款：${productName}`,
       ref_id: request.id,
       is_read: false,
-    }).select().single();
-    console.log('[confirmDirectOrder] notification response:', notifRes);
-
-    try {
-      const r = await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          type: 'direct_order_confirmed',
-          data: { recipientUserId: request.buyer_id, productName, quantity: request.quantity },
-        }),
-      });
-      const body = await r.json().catch(() => null);
-      console.log('[confirmDirectOrder] email response:', { status: r.status, body });
-    } catch (emailError) {
-      console.error('[confirmDirectOrder] email error:', emailError);
-    }
+    }).then(undefined, () => {});
+    fetch(SEND_EMAILS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        type: 'direct_order_confirmed',
+        data: { recipientUserId: request.buyer_id, productName, quantity: request.quantity },
+      }),
+    }).catch((emailError) => console.error('[confirmDirectOrder] email error:', emailError));
 
     setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
     loadDirectOrders();
@@ -2272,27 +2267,28 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       if (error) throw error;
 
       await sb.from('requests').update({ status: 'offers_received' }).eq('id', requestId).eq('status', 'open');
-      await sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false });
-      try {
-        await fetch(SEND_EMAILS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: 'new_offer',
-            data: {
-              recipientUserId: buyerId,
-              name: 'Trader',
-              requestTitle: requestItem?.title_ar || requestItem?.title_en || '',
-              supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
-              price,
-              shippingCost,
-              shippingMethod,
-              estimatedTotal,
-              deliveryDays: days,
-            },
-          }),
-        });
-      } catch (e) { console.error('email error:', e); }
+      // Notification + email are best-effort side effects — fire them in the
+      // background so "Offer submitted!" is instant, not blocked on the
+      // notification insert + the (slow) email edge-function round-trip.
+      sb.from('notifications').insert({ user_id: buyerId, type: 'new_offer', title_ar: 'وصلك عرض جديد على طلبك', title_en: 'You received a new offer', title_zh: '您收到了新报价', ref_id: requestId, is_read: false }).then(undefined, () => {});
+      fetch(SEND_EMAILS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          type: 'new_offer',
+          data: {
+            recipientUserId: buyerId,
+            name: 'Trader',
+            requestTitle: requestItem?.title_ar || requestItem?.title_en || '',
+            supplierName: profile?.company_name || user?.email?.split('@')[0] || 'Supplier',
+            price,
+            shippingCost,
+            shippingMethod,
+            estimatedTotal,
+            deliveryDays: days,
+          },
+        }),
+      }).catch((e) => console.error('email error:', e));
       alert(isAr ? 'تم إرسال عرضك!' : lang === 'zh' ? '报价已发送！' : 'Offer submitted!');
       toggleOfferForm(requestId); loadRequests();
     } catch (error) {
