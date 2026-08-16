@@ -43,6 +43,34 @@ export function detectSourceLang(text) {
  * @param {'ar'|'en'|'zh'} [sourceLangHint] - skip detection if known
  * @returns {Promise<{translated: string, sourceLang: string, error: string|null}>}
  */
+/**
+ * Synchronous cache peek — returns the already-cached translation (in-memory or
+ * localStorage) or null, WITHOUT any API call. Lets a component render a cached
+ * translation on first paint instead of flashing the original then swapping in.
+ * @returns {string|null}
+ */
+export function peekTranslation(text, targetLang, sourceLangHint) {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return null;
+  const target = SUPPORTED.includes(targetLang) ? targetLang : 'en';
+  const source = SUPPORTED.includes(sourceLangHint) ? sourceLangHint : detectSourceLang(trimmed);
+  if (source === target) return null;
+
+  const cacheKey = `${source}|${target}|${trimmed}`;
+  if (cache.has(cacheKey)) {
+    const hit = cache.get(cacheKey);
+    return hit && !hit.error ? hit.translated : null;
+  }
+  try {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORE_PREFIX}${cacheKey}`) : null;
+    if (saved != null) {
+      cache.set(cacheKey, { translated: saved, sourceLang: source, error: null });
+      return saved;
+    }
+  } catch { /* storage unavailable — treat as a miss */ }
+  return null;
+}
+
 export async function translateText(text, targetLang, sourceLangHint) {
   const trimmed = (text || '').trim();
   if (!trimmed) return { translated: '', sourceLang: targetLang || 'en', error: null };
