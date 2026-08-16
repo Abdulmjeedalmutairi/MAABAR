@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { sb as supabase } from '../supabase';
 import { readSwrCache, writeSwrCache } from './useStaleWhileRevalidate';
 
 // Single source of truth for the /factory/:id detail payload — used BOTH by the
