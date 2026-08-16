@@ -650,11 +650,15 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       .limit(5);
     let result = [];
     if (reqs && reqs.length > 0) {
-      result = await Promise.all(reqs.map(async (r) => {
-        const { data: offers } = await sb.from('offers').select('*').eq('request_id', r.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
-        const withProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
-        return { ...r, offers: withProfiles || [] };
-      }));
+      // Batch offers + profiles in two queries instead of one pair per request.
+      const ids = reqs.map((r) => r.id);
+      const { data: allOffers } = await sb.from('offers').select('*').in('request_id', ids).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
+      const withProfiles = await attachSupplierProfiles(sb, allOffers || [], 'supplier_id', 'profiles');
+      const byReq = (withProfiles || []).reduce((acc, o) => {
+        (acc[o.request_id] = acc[o.request_id] || []).push(o);
+        return acc;
+      }, {});
+      result = reqs.map((r) => ({ ...r, offers: byReq[r.id] || [] }));
     }
     writeSwrCache(key, result);
     setActiveOrders(result);
@@ -686,15 +690,22 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
         return acc;
       }, {});
 
-      const withOffers = await Promise.all(data.map(async (request) => {
-        const { data: offers } = await sb.from('offers').select('*').eq('request_id', request.id).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
-        const offersWithProfiles = await attachSupplierProfiles(sb, offers || [], 'supplier_id', 'profiles');
-        return {
-          ...request,
-          offers: offersWithProfiles || [],
-          brief: briefByRequest[request.id] || null,
-          lineItems: linesByRequest[request.id] || [],
-        };
+      // Batch: ONE offers query for every request + ONE profile attach for every
+      // offer — instead of an N+1 storm (a separate offers + profiles round-trip
+      // per request, which froze the tab on buyers with many requests).
+      const { data: allOffers } = requestIds.length
+        ? await sb.from('offers').select('*').in('request_id', requestIds).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null')
+        : { data: [] };
+      const offersWithProfiles = await attachSupplierProfiles(sb, allOffers || [], 'supplier_id', 'profiles');
+      const offersByRequest = (offersWithProfiles || []).reduce((acc, offer) => {
+        (acc[offer.request_id] = acc[offer.request_id] || []).push(offer);
+        return acc;
+      }, {});
+      const withOffers = data.map((request) => ({
+        ...request,
+        offers: offersByRequest[request.id] || [],
+        brief: briefByRequest[request.id] || null,
+        lineItems: linesByRequest[request.id] || [],
       }));
       writeSwrCache(key, withOffers);
       setMyRequests(withOffers);
