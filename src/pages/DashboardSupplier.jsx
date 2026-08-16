@@ -253,6 +253,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   const [offerForms, setOfferForms]         = useState({});
   const [offers, setOffers]                 = useState({});
   const [pendingOfferIds, setPendingOfferIds] = useState(() => new Set());   // requests whose offer is "sending" (optimistic)
+  const [offerToast, setOfferToast] = useState('');   // brief "offer sent" confirmation, shown ONLY after the server confirms
   const [submittingOfferId, setSubmittingOfferId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
@@ -2300,9 +2301,12 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
         }),
       }).catch((e) => console.error('email error:', e));
       // Confirmed — reconcile: the real submitted offer replaces the "sending"
-      // state. This flip is the only success signal (no premature alert).
+      // state, and NOW (after the server confirmed, never before) a clear,
+      // non-blocking toast tells the supplier it was sent.
       await loadRequests();
       clearPending();
+      setOfferToast(isAr ? '✓ تم إرسال عرضك' : lang === 'zh' ? '✓ 报价已发送' : '✓ Offer sent');
+      setTimeout(() => setOfferToast(''), 2800);
     } catch (error) {
       console.error('submitOffer error:', error);
       clearPending();
@@ -2521,6 +2525,18 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
 
   return (
     <div className="dashboard-wrap">
+
+      {/* Non-blocking "offer sent" toast — shown only after the server confirms. */}
+      {offerToast && (
+        <div role="status" style={{
+          position: 'fixed', bottom: 92, left: '50%', transform: 'translateX(-50%)', zIndex: 1000,
+          background: 'var(--green, #2d7a4f)', color: '#fff', padding: '11px 20px', borderRadius: 'var(--radius-pill, 999px)',
+          fontSize: 13.5, fontWeight: 600, boxShadow: '0 6px 20px rgba(0,0,0,0.18)', maxWidth: '90vw', textAlign: 'center',
+          fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', animation: 'fadeInDown 0.25s ease',
+        }}>
+          {offerToast}
+        </div>
+      )}
 
       <SupplierHeader
         lang={lang} setLang={setLang}
