@@ -12,6 +12,7 @@ import {
 } from './lib/displayCurrency';
 import { sendMaabarEmail } from './lib/maabarEmail';
 import { fetchMyFactory } from './lib/catalogImport';
+import { clearSwrCache } from './lib/useStaleWhileRevalidate';
 import {
   getSupplierOnboardingState,
   getSupplierPrimaryRoute,
@@ -524,6 +525,7 @@ function App() {
       if (event === 'SIGNED_OUT' || !session?.user) {
         currentUserIdRef.current = null;
         setProfile(null); setLoading(false);
+        clearSwrCache();   // never leak the previous user's cached data to the next
         if (window._profileChannel) { sb.removeChannel(window._profileChannel); window._profileChannel = null; }
         return;
       }
