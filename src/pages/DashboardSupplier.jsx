@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sb, SUPABASE_URL } from '../supabase';
 import { uploadWithProgress } from '../lib/uploadWithProgress';
+import { readSwrCache, writeSwrCache } from '../lib/useStaleWhileRevalidate';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import {
   DISPLAY_CURRENCIES,
@@ -1292,18 +1293,28 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   };
 
   const loadMyOffers = async () => {
-    setLoadingOffers(true);
+    // Hydrate from the session cache instantly, then revalidate. Mutations
+    // re-call this loader, so the cache stays fresh (no explicit invalidation).
+    const key = `sup-offers:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) { setMyOffers(cached.offers); setCompletedPayments(new Set(cached.completed)); } else setLoadingOffers(true);
     const { data } = await sb.from('offers').select('*,requests(title_ar,title_en,title_zh,buyer_id,status,tracking_number,shipping_status,shipping_company,estimated_delivery,quantity,description,payment_plan,category,profiles!requests_buyer_id_fkey(full_name,company_name))').eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setMyOffers(data);
     const { data: payData } = await sb.from('payments').select('request_id').eq('supplier_id', user.id).eq('status', 'completed');
-    setCompletedPayments(new Set((payData || []).map(p => p.request_id)));
+    if (data) {
+      const completed = (payData || []).map(p => p.request_id);
+      writeSwrCache(key, { offers: data, completed });
+      setMyOffers(data);
+      setCompletedPayments(new Set(completed));
+    }
     setLoadingOffers(false);
   };
 
   const loadMyProducts = async () => {
-    setLoadingProducts(true);
+    const key = `sup-products:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setMyProducts(cached); else setLoadingProducts(true);
     const { data } = await sb.from('products').select(`*, ${PRODUCT_TIER_EMBED}`).eq('supplier_id', user.id).order('created_at', { ascending: false });
-    if (data) setMyProducts(data);
+    if (data) { writeSwrCache(key, data); setMyProducts(data); }
     setLoadingProducts(false);
   };
 
