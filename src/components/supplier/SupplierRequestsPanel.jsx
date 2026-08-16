@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchSupplierActionItems, sortByUrgency, waitingLabel, ACTION_BUCKETS } from '../../lib/supplierActionItems';
+import TranslatedText from '../TranslatedText';
 
 // Unified supplier Requests tab (decision #1): everything that needs the supplier's
 // response in ONE place, classified by STATUS (chips) — not by object type. Each
@@ -96,7 +97,7 @@ export default function SupplierRequestsPanel({ sb, supplierId, lang = 'ar', onA
               borderRadius: 'var(--radius-lg)', padding: '15px 16px', marginBottom: 10, cursor: 'pointer' }}>
             <span style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--bronze, #8B7355)', fontWeight: 600, display: 'block', marginBottom: 5, ...arFont }}>{c.kinds[it.kind]}</span>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45, ...arFont }}>{it.title || (names[it.buyerId] || c.trader)}</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45, ...arFont }}>{it.title ? <TranslatedText text={it.title} lang={lang} /> : (names[it.buyerId] || c.trader)}</h3>
               <span style={{ fontSize: 11.5, color: urgent ? 'var(--bronze, #8B7355)' : 'var(--text-disabled)', whiteSpace: 'nowrap', fontWeight: urgent ? 600 : 400, ...arFont }}>
                 {urgent ? waitingLabel(it.waitingSince, lang) : ''}
               </span>
