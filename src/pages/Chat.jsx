@@ -443,13 +443,20 @@ export default function Chat({ lang, user, profile }) {
     };
     setMessages((current) => [...current, tempMessage]);
 
-    await sb.from('messages').insert({
+    const { error: sendErr } = await sb.from('messages').insert({
       sender_id: user.id,
       receiver_id: partnerId,
       content: text,
     });
 
-    await sb.from('notifications').insert({
+    // The bubble is already on screen; free the composer the moment the message
+    // itself is stored. The recipient's notification + email are best-effort
+    // side-effects — never hold the sender's input on their round-trip.
+    setSending(false);
+    loadMessages();
+    if (sendErr) return;
+
+    sb.from('notifications').insert({
       user_id: partnerId,
       type: 'new_message',
       title_ar: 'رسالة جديدة من مَعبر',
@@ -457,28 +464,21 @@ export default function Chat({ lang, user, profile }) {
       title_zh: '新消息',
       ref_id: user.id,
       is_read: false,
-    });
+    }).then(undefined, (e) => console.error('notification error:', e));
 
-    try {
-      await fetch(SEND_EMAILS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          type: 'new_message',
-          data: {
-            recipientUserId: partnerId,
-            senderId: user.id,
-            senderName: profile?.company_name || profile?.full_name || user.email?.split('@')[0] || 'Maabar',
-            preview: text.length > 80 ? `${text.slice(0, 80)}...` : text,
-          },
-        }),
-      });
-    } catch (error) {
-      console.error('email error:', error);
-    }
-
-    setSending(false);
-    loadMessages();
+    fetch(SEND_EMAILS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        type: 'new_message',
+        data: {
+          recipientUserId: partnerId,
+          senderId: user.id,
+          senderName: profile?.company_name || profile?.full_name || user.email?.split('@')[0] || 'Maabar',
+          preview: text.length > 80 ? `${text.slice(0, 80)}...` : text,
+        },
+      }),
+    }).catch((error) => console.error('email error:', error));
   };
 
   const uploadFile = async (file, type) => {
