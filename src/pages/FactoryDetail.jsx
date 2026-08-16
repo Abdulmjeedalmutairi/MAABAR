@@ -11,6 +11,7 @@ import RequestQuoteModal from '../components/factory/RequestQuoteModal';
 import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCategories';
 import { buildProductRef } from '../lib/factoryChat';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
+import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
 
 const T = {
   ar: {
@@ -112,10 +113,22 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const c = T[lang] || T.ar;
   usePageTitle('suppliers', lang);
 
-  const [factory, setFactory] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [catalogs, setCatalogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Cached, stale-while-revalidate: revisiting a factory paints instantly from
+  // the session cache and refreshes in the background (no full-reload spinner).
+  const { data: pageData, isLoading: loading } = useStaleWhileRevalidate(
+    `factory-detail:${id}`,
+    async () => {
+      const [{ data: f }, prods, { data: cats }] = await Promise.all([
+        sb.from('factory_directory_public').select('*').eq('id', id).maybeSingle(),
+        fetchAllFactoryProducts(id),
+        sb.from('factory_catalogs_public').select('*').eq('factory_id', id).order('product_count', { ascending: false }),
+      ]);
+      return { factory: f || null, products: prods, catalogs: cats || [] };
+    },
+  );
+  const factory = pageData?.factory || null;
+  const products = pageData?.products || [];
+  const catalogs = pageData?.catalogs || [];
   const [reqOpen, setReqOpen] = useState(false);
   const [searchParams] = useSearchParams();
   // Opened from the "Request a quote" button on the factories list (/factory/:id?request=1).
@@ -135,24 +148,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
     nav(`/chat/f/${id}`, product ? { state: { product: buildProductRef(product) } } : undefined);
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
   useEffect(() => { setVisible(20); }, [activeCatalog, activeSection]);
-
-  async function load() {
-    setLoading(true);
-    const [{ data: f }, prods, { data: cats }] = await Promise.all([
-      sb.from('factory_directory_public').select('*').eq('id', id).maybeSingle(),
-      fetchAllFactoryProducts(id),
-      sb.from('factory_catalogs_public').select('*').eq('factory_id', id).order('product_count', { ascending: false }),
-    ]);
-    setFactory(f || null);
-    setProducts(prods);
-    setCatalogs(cats || []);
-    setLoading(false);
-  }
 
   async function fetchAllFactoryProducts(factoryId) {
     const pageSize = 1000;
