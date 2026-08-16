@@ -10,6 +10,7 @@ import {
   factoryTaglineForCode,
 } from '../lib/factoryCategories';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
+import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
 
 const PAGE = 9;   // "load more" batch
 
@@ -48,35 +49,28 @@ export default function Factories({ lang = 'ar' }) {
     (UI_CATEGORIES[lang] || UI_CATEGORIES.ar).forEach((cat) => { m[cat.val] = cat.label; });
     return m;
   }, [lang]);
-  const [factories, setFactories] = useState([]);
-  const [byFactory, setByFactory] = useState({});   // { id: { images, products, catalogs } }
-  const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(PAGE);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      const [{ data: facs }, { data: prods }] = await Promise.all([
-        sb.from('factory_directory_public').select('*').order('sort_order', { ascending: true }),
-        sb.from('factory_products').select('factory_id, image, import_id'),
-      ]);
-      if (!alive) return;
-      const agg = {};
-      (prods || []).forEach((p) => {
-        const a = agg[p.factory_id] || (agg[p.factory_id] = { images: [], imports: new Set(), products: 0 });
-        a.products += 1;
-        if (p.import_id) a.imports.add(p.import_id);
-        if (isUrl(p.image) && a.images.length < 5) a.images.push(p.image);
-      });
-      const map = {};
-      Object.keys(agg).forEach((k) => { map[k] = { images: agg[k].images, products: agg[k].products, catalogs: agg[k].imports.size }; });
-      setByFactory(map);
-      setFactories(facs || []);
-      setLoading(false);
-    })();
-    return () => { alive = false; };
-  }, []);
+  // Cached list (stale-while-revalidate): fetched once per session, instant on
+  // revisit + background refresh. Public read-only — nothing to invalidate.
+  const { data, isLoading: loading } = useStaleWhileRevalidate('factories-list', async () => {
+    const [{ data: facs }, { data: prods }] = await Promise.all([
+      sb.from('factory_directory_public').select('*').order('sort_order', { ascending: true }),
+      sb.from('factory_products').select('factory_id, image, import_id'),
+    ]);
+    const agg = {};
+    (prods || []).forEach((p) => {
+      const a = agg[p.factory_id] || (agg[p.factory_id] = { images: [], imports: new Set(), products: 0 });
+      a.products += 1;
+      if (p.import_id) a.imports.add(p.import_id);
+      if (isUrl(p.image) && a.images.length < 5) a.images.push(p.image);
+    });
+    const map = {};
+    Object.keys(agg).forEach((k) => { map[k] = { images: agg[k].images, products: agg[k].products, catalogs: agg[k].imports.size }; });
+    return { factories: facs || [], byFactory: map };
+  });
+  const factories = data?.factories || [];
+  const byFactory = data?.byFactory || {};
 
   useEffect(() => { setVisible(PAGE); }, [activeKey]);
 
