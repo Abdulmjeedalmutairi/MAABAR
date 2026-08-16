@@ -51,7 +51,7 @@ export default function SupplierRequestsPanel({ sb, supplierId, lang = 'ar', onA
       // used elsewhere in the dashboard).
       const ids = [...new Set(it.map((x) => x.buyerId).filter(Boolean))];
       if (ids.length) {
-        const { data } = await sb.from('profiles').select('id, full_name, company_name').in('id', ids);
+        const { data } = await sb.from('profile_directory').select('id, full_name, company_name').in('id', ids);
         if (alive && data) setNames(data.reduce((a, p) => ({ ...a, [p.id]: p.company_name || p.full_name }), {}));
       }
     })();
