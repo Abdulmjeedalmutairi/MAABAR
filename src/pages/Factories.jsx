@@ -55,9 +55,26 @@ export default function Factories({ lang = 'ar' }) {
   // Cached list (stale-while-revalidate): fetched once per session, instant on
   // revisit + background refresh. Public read-only — nothing to invalidate.
   const { data, isLoading: loading } = useStaleWhileRevalidate('factories-list', async () => {
-    const [{ data: facs }, { data: prods }] = await Promise.all([
+    // Page through ALL product rows — a single select is capped at ~1000 by
+    // PostgREST, which silently truncated the per-factory aggregation so
+    // factories past ~row 1000 showed 0 products and no cover image. Mirrors the
+    // range-loop the products pages already use.
+    const fetchAllProductMeta = async () => {
+      const all = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: d, error } = await sb.from('factory_products')
+          .select('factory_id, image, import_id')
+          .order('factory_id', { ascending: true })
+          .range(from, from + 999);
+        if (error || !d || !d.length) break;
+        all.push(...d);
+        if (d.length < 1000) break;
+      }
+      return all;
+    };
+    const [{ data: facs }, prods] = await Promise.all([
       sb.from('factory_directory_public').select('*').order('sort_order', { ascending: true }),
-      sb.from('factory_products').select('factory_id, image, import_id'),
+      fetchAllProductMeta(),
     ]);
     const agg = {};
     (prods || []).forEach((p) => {
