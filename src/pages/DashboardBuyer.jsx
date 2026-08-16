@@ -40,6 +40,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 import Footer from '../components/Footer';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import TranslatedText from '../components/TranslatedText';
+import BuyerHomePanel from '../components/buyer/BuyerHomePanel';
 import { startTelrPayment } from '../lib/telrPay';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
@@ -1326,127 +1327,19 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
-
-              {/* Stats strip */}
-              <div style={{ display: 'flex', gap: 0, marginBottom: 28, borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                {[
-                  { label: isAr ? 'تحتاج إجراء' : 'Needs Action', value: pendingActions.filter(a => ['supplier_confirmed','arrived','ready_to_ship','offers'].includes(a.type)).length, red: true, onClick: () => setActiveTab('requests') },
-                  { label: isAr ? 'طلبات نشطة' : 'Active', value: stats.requests, onClick: () => setActiveTab('requests') },
-                  { label: isAr ? 'رسائل جديدة' : 'Messages', value: stats.messages, onClick: () => setActiveTab('messages') },
-                ].map((s, i) => (
-                  <div key={i} onClick={s.onClick} style={{
-                    flex: 1, padding: '18px 20px', cursor: 'pointer',
-                    background: 'var(--bg-subtle)',
-                    borderRight: i < 2 ? '1px solid var(--border-subtle)' : 'none',
-                    transition: 'background 0.15s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-raised)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-subtle)'}>
-                    <p style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8, fontWeight: 500 }}>{s.label}</p>
-                    <p style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? 'var(--red)' : 'var(--text-primary)' }}>{s.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pending action banners */}
-              {pendingActions.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, fontWeight: 500 }}>
-                    {isAr ? `يحتاج انتباهك (${pendingActions.length})` : `Needs Attention (${pendingActions.length})`}
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {pendingActions.map((action, i) => (
-                      <PendingBanner
-                        key={i}
-                        action={action}
-                        isAr={isAr}
-                        onGo={() => {
-                          if (action.type === 'messages') { setActiveTab('messages'); return; }
-                          if (action.type === 'managed_offer' && action.request?.id) {
-                            nav(`/managed-order/${action.request.id}`);
-                          } else if (action.request?.id) {
-                            nav(`/dashboard?tab=requests&request=${action.request.id}`, { replace: true });
-                          } else {
-                            setActiveTab('requests');
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Active orders mini-cards */}
-              {(loadingActiveOrders || activeOrders.length > 0) && (
-                <div style={{ marginBottom: 40 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-                    <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', fontWeight: 500 }}>
-                      {isAr ? 'طلبات نشطة' : 'Active Orders'}
-                    </p>
-                    {activeOrders.length > 0 && (
-                      <button onClick={() => setActiveTab('requests')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', padding: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {isAr ? 'عرض الكل' : 'View all'}
-                      </button>
-                    )}
-                  </div>
-                  {loadingActiveOrders && (
-                    <div style={{ height: 80, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }} />
-                  )}
-                  {!loadingActiveOrders && activeOrders.slice(0, 3).map((r, idx) => {
-                    const acceptedOffer = r.offers?.find(o => o.status === 'accepted');
-                    return (
-                      <div key={r.id} onClick={() => nav(`/dashboard?tab=requests&request=${r.id}`, { replace: true })}
-                        style={{ borderTop: idx === 0 ? '1px solid var(--border-subtle)' : 'none', borderBottom: '1px solid var(--border-subtle)', padding: '16px 0', cursor: 'pointer', transition: 'opacity 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = '0.72'}
-                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                        {/* Title + status badge */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-                          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.3, flex: 1, minWidth: 0 }}>
-                            {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
-                          </p>
-                          <span style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)', flexShrink: 0 }}>
-                            {isAr ? (STATUS_AR[r.status] || r.status) : (STATUS_EN[r.status] || r.status)}
-                          </span>
-                        </div>
-                        {/* Supplier name */}
-                        {acceptedOffer?.profiles?.company_name && (
-                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                            {acceptedOffer.profiles.company_name}
-                          </p>
-                        )}
-                        {/* Timeline */}
-                        <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />
-                        {/* Payment plan badges */}
-                        {acceptedOffer && <PaymentPlanRow request={r} offer={acceptedOffer} isAr={isAr} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Quick actions */}
-              <div style={{ marginBottom: 40 }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
-                  {isAr ? 'الإجراءات السريعة' : 'Quick Actions'}
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                  <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary isAr={isAr} />
-                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/requests')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/requests')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'} sub={isAr ? 'تابع الطلبات، العروض، والدفع' : 'Track requests, offers, and payment steps'} onClick={() => setActiveTab('requests')} isAr={isAr} />
-                </div>
-              </div>
-
-              <button onClick={() => nav('/')} style={{
-                background: 'none', border: 'none',
-                color: 'var(--text-disabled)', fontSize: 11,
-                cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase',
-                padding: 0, transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
-                {isAr ? 'العودة للرئيسية ←' : '← Back to Home'}
-              </button>
+              <BuyerHomePanel
+                sb={sb}
+                buyerId={user.id}
+                lang={lang}
+                name={name}
+                messagesCount={stats.messages}
+                onOpenRequests={() => setActiveTab('requests')}
+                onOpenProducts={() => nav('/products')}
+                onOpenSuppliers={() => nav('/factories')}
+                onNewManaged={() => nav('/request')}
+                onOpenManaged={(id) => nav('/managed-order/' + id)}
+                onOpenMessages={() => setActiveTab('messages')}
+              />
             </div>
           )}
 
