@@ -3137,9 +3137,13 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   {isAr ? 'التفاصيل' : lang === 'zh' ? '详情' : 'Details'}
 </button>
                     {pendingOfferIds.has(r.id) ? (
-                      <span className="btn-dark-sm" style={{ minHeight: 38, display: 'inline-flex', alignItems: 'center', opacity: 0.7, whiteSpace: 'nowrap', cursor: 'default' }}>
-                        {isAr ? 'يُرسل…' : lang === 'zh' ? '发送中…' : 'Sending…'}
-                      </span>
+                      // Same button, same size, disabled — content becomes a spinner.
+                      // The label is kept invisible so the width never changes (no
+                      // layout jump); the spinner is centered over it.
+                      <button className="btn-dark-sm" disabled aria-label={isAr ? 'جاري إرسال العرض' : lang === 'zh' ? '正在发送报价' : 'Sending offer'} style={{ minHeight: 38, whiteSpace: 'nowrap', position: 'relative', cursor: 'default' }}>
+                        <span style={{ visibility: 'hidden' }}>{isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote'}</span>
+                        <span className="mb-spinner" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)' }} />
+                      </button>
                     ) : (
                       <button className="btn-dark-sm" onClick={() => toggleOfferForm(r.id)} style={{ minHeight: 38, whiteSpace: 'nowrap' }}>
                         {offerForms[r.id] ? (isAr ? 'إغلاق' : lang === 'zh' ? '关闭' : 'Close') : (isAr ? 'قدم عرضك' : lang === 'zh' ? '提交报价' : 'Submit Quote')}
