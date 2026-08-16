@@ -11,6 +11,7 @@ import {
 } from '../lib/factoryCategories';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
 import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { prefetchFactoryDetail } from '../lib/prefetchFactoryDetail';
 import { CardGridSkeleton } from '../components/Skeleton';
 
 const PAGE = 9;   // "load more" batch
@@ -147,7 +148,8 @@ export default function Factories({ lang = 'ar' }) {
               if (f.founded_year) facts.push(`${c.since} ${f.founded_year}`);
 
               return (
-                <div key={f.id} className="fx-faccard reveal" style={{ '--i': i % PAGE }}>
+                <div key={f.id} className="fx-faccard reveal" style={{ '--i': i % PAGE }}
+                  onMouseEnter={() => prefetchFactoryDetail(f.id)} onFocus={() => prefetchFactoryDetail(f.id)}>
                   <div className="fx-fac-cover" onClick={() => nav(`/factory/${f.id}`)}>
                     {cover ? (
                       <img className="fx-fac-cover-img" src={cover} alt={name} loading="lazy" />

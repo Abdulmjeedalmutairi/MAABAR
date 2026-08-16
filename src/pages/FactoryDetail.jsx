@@ -12,6 +12,7 @@ import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCat
 import { buildProductRef } from '../lib/factoryChat';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
 import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { fetchFactoryDetailData, factoryDetailKey } from '../lib/prefetchFactoryDetail';
 import { CardGridSkeleton } from '../components/Skeleton';
 
 const T = {
@@ -117,15 +118,8 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   // Cached, stale-while-revalidate: revisiting a factory paints instantly from
   // the session cache and refreshes in the background (no full-reload spinner).
   const { data: pageData, isLoading: loading } = useStaleWhileRevalidate(
-    `factory-detail:${id}`,
-    async () => {
-      const [{ data: f }, prods, { data: cats }] = await Promise.all([
-        sb.from('factory_directory_public').select('*').eq('id', id).maybeSingle(),
-        fetchAllFactoryProducts(id),
-        sb.from('factory_catalogs_public').select('*').eq('factory_id', id).order('product_count', { ascending: false }),
-      ]);
-      return { factory: f || null, products: prods, catalogs: cats || [] };
-    },
+    factoryDetailKey(id),
+    () => fetchFactoryDetailData(sb, id),
   );
   const factory = pageData?.factory || null;
   const products = pageData?.products || [];
@@ -150,20 +144,6 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   }
 
   useEffect(() => { setVisible(20); }, [activeCatalog, activeSection]);
-
-  async function fetchAllFactoryProducts(factoryId) {
-    const pageSize = 1000;
-    const all = [];
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await sb.from('factory_products').select('*').eq('factory_id', factoryId)
-        .order('sort_order', { ascending: true }).range(from, from + pageSize - 1);
-      if (error || !data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < pageSize) break;
-    }
-    return all;
-  }
-
 
   if (loading) return <div className="full-page"><div className="fx-wrap" style={{ paddingTop: 28 }}><CardGridSkeleton count={6} variant="product" minWidth={220} /></div></div>;
   if (!factory) return <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.notFound}</p></div></div>;
