@@ -13,6 +13,7 @@ import {
 } from '../lib/factoryCategories';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
 import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { CardGridSkeleton } from '../components/Skeleton';
 
 const PAGE = 12;
 
@@ -257,7 +258,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
         </div>
 
         {loading ? (
-          <p className={`fx-sub${arc}`}>{c.loading}</p>
+          <CardGridSkeleton count={9} variant="product" minWidth={200} />
         ) : shown.length === 0 ? (
           <p className={`fx-sub${arc}`}>{c.empty}</p>
         ) : (

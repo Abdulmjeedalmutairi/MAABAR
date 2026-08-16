@@ -11,6 +11,7 @@ import {
 } from '../lib/factoryCategories';
 import { UI_CATEGORIES } from '../lib/supplierDashboardConstants';
 import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { CardGridSkeleton } from '../components/Skeleton';
 
 const PAGE = 9;   // "load more" batch
 
@@ -105,7 +106,7 @@ export default function Factories({ lang = 'ar' }) {
         </div>
 
         {loading ? (
-          <p className={`fx-sub${arc}`}>{c.loading}</p>
+          <CardGridSkeleton count={8} variant="factory" minWidth={260} />
         ) : shown.length === 0 ? (
           <p className={`fx-sub${arc}`}>{c.empty}</p>
         ) : (

@@ -12,6 +12,7 @@ import { displayCategoryForCode, factoryTaglineForCode } from '../lib/factoryCat
 import { buildProductRef } from '../lib/factoryChat';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
 import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
+import { CardGridSkeleton } from '../components/Skeleton';
 
 const T = {
   ar: {
@@ -164,7 +165,7 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   }
 
 
-  if (loading) return <div className="full-page"><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)' }}>{c.loading}</p></div></div>;
+  if (loading) return <div className="full-page"><div className="fx-wrap" style={{ paddingTop: 28 }}><CardGridSkeleton count={6} variant="product" minWidth={220} /></div></div>;
   if (!factory) return <div className="full-page" dir={isAr ? 'rtl' : 'ltr'}><div className="fx-wrap"><p style={{ color: 'var(--text-secondary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>{c.notFound}</p></div></div>;
 
   const name = (factory.company_name_latin || '').trim() || factory.company_name || '';

@@ -150,6 +150,18 @@ body { background: #FAF8F5 !important; }
 
 button, a, [role="button"] { touch-action: manipulation; }
 
+/* ===== SKELETON (loading placeholders) ===== */
+@keyframes mb-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.mb-skeleton {
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-hover) 37%, var(--bg-subtle) 63%);
+  background-size: 400% 100%;
+  animation: mb-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mb-skeleton { animation: none; }
+}
+
 /* ===== BASE ===== */
 html {
   scroll-behavior: smooth;
