@@ -138,13 +138,34 @@ export async function cancelImport(importId) {
 
 // Delete an import entirely: the row (staged products cascade) + its storage
 // objects (source PDF + extracted images). Storage cleanup is best-effort.
+//
+// CRITICAL: product images live at factory-images/{importId}/… and APPROVED
+// factory_products.image / gallery_images point straight at them. Deleting an
+// import must NOT wipe images that approved products still reference, or the
+// live factory page shows broken "?" icons. So we keep every image any
+// factory_products row (from this import) points at, and remove only the rest.
 export async function deleteImport(importId) {
   try {
-    const [{ data: imgs }] = await Promise.all([
-      sb.storage.from('factory-images').list(importId, { limit: 1000 }),
-    ]);
+    // Object names (relative to the bucket) still referenced by approved products.
+    const referenced = new Set();
+    const addUrl = (u) => {
+      if (!u) return;
+      const m = String(u).match(/\/factory-images\/(.+)$/);
+      if (m) referenced.add(m[1]);
+    };
+    const { data: kept } = await sb.from('factory_products')
+      .select('image, gallery_images').eq('import_id', importId);
+    (kept || []).forEach((p) => {
+      addUrl(p.image);
+      (Array.isArray(p.gallery_images) ? p.gallery_images : []).forEach(addUrl);
+    });
+
+    const { data: imgs } = await sb.storage.from('factory-images').list(importId, { limit: 1000 });
     if (imgs?.length) {
-      await sb.storage.from('factory-images').remove(imgs.map((f) => `${importId}/${f.name}`));
+      const toRemove = imgs
+        .map((f) => `${importId}/${f.name}`)
+        .filter((path) => !referenced.has(path));
+      if (toRemove.length) await sb.storage.from('factory-images').remove(toRemove);
     }
     await sb.storage.from('factory-catalogs').remove([`${importId}/source.pdf`]);
   } catch { /* best-effort storage cleanup */ }
