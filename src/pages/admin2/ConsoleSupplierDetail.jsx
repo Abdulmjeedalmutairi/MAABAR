@@ -7,6 +7,7 @@ import { CatalogsTab, RequestsTab, MessagesTab } from './SupplierMoreTabs';
 import InviteModal from './InviteModal';
 import { fetchFactory, fetchFactoryProducts, updateFactory, deleteFactory, assistField } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
+import { logAdminAction } from '../../lib/adminAudit';
 import { sb } from '../../supabase';
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
@@ -67,6 +68,27 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
 
   const flash = (m) => { setToast(m); setTimeout(() => setToast(''), 1900); };
   const copy = (t, m) => { try { navigator.clipboard.writeText(t); flash(m); } catch { /* noop */ } };
+
+  // Un-claim a factory so a registration path can be re-tested: clear the owner
+  // link + reactivate (admins bypass the linked_supplier_id guard trigger).
+  // The seeded supplier account + its products are NOT touched — re-test with a
+  // fresh account. claim_slug is kept so the same claim link stays valid.
+  const resetClaim = async () => {
+    if (!fac?.linked_supplier_id) return;
+    if (!window.confirm(isAr
+      ? 'إعادة تعيين المصنع؟ سيُلغى ربط المالك ويعود المصنع قابلًا للمطالبة من جديد (للاختبار). لن يُحذف حساب المورد ولا منتجاته.'
+      : 'Reset this factory? The owner link is cleared and it becomes claimable again (for testing). The supplier account and its products are NOT deleted.')) return;
+    const before = { linked_supplier_id: fac.linked_supplier_id, is_active: fac.is_active };
+    const { error } = await sb.from('factory_directory')
+      .update({ linked_supplier_id: null, is_active: true, updated_at: new Date().toISOString(), updated_by: user.id })
+      .eq('id', id);
+    if (error) { flash(isAr ? 'تعذّر إعادة التعيين' : 'Reset failed'); return; }
+    try {
+      await logAdminAction({ actorId: user.id, action: 'factory_reset_claim', entityType: 'factory', entityId: id, beforeState: before, afterState: { linked_supplier_id: null, is_active: true } });
+    } catch { /* audit best-effort */ }
+    await load();
+    flash(isAr ? 'أُعيد التعيين — أصبح قابلًا للمطالبة' : 'Reset — claimable again');
+  };
   const publicUrl = `${window.location.origin}/factory/${id}`;
 
   if (err) {
@@ -127,6 +149,13 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
               <button className="ac-btn ac-btn-sm ac-btn-primary" onClick={() => setInvite(true)}>
                 {isAr ? 'إرسال دعوة' : 'Send invitation'}
               </button>
+              {fac.linked_supplier_id && (
+                <button className="ac-btn ac-btn-sm" onClick={resetClaim}
+                  style={{ color: '#B0740F', borderColor: 'rgba(176,116,15,0.32)' }}
+                  title={isAr ? 'إلغاء المطالبة لإعادة الاختبار' : 'Un-claim for re-testing'}>
+                  {isAr ? '↩ إعادة تعيين' : '↩ Reset claim'}
+                </button>
+              )}
             </div>
           </div>
         </div>
