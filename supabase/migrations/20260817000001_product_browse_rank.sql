@@ -52,19 +52,20 @@ $$;
 
 -- New products (e.g. from a catalog import) get a provisional rank at the very end
 -- so they show up immediately; the next refresh re-interleaves them properly.
+create sequence if not exists public.factory_products_provisional_seq;
+
 create or replace function public.set_provisional_browse_rank()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   if new.browse_rank is null then
-    new.browse_rank := 8000000000 + coalesce(nextval('factory_products_provisional_seq'), 0);
+    new.browse_rank := 8000000000 + coalesce(nextval('public.factory_products_provisional_seq'), 0);
   end if;
   return new;
 end
 $$;
-
-create sequence if not exists public.factory_products_provisional_seq;
 
 drop trigger if exists trg_factory_products_provisional_rank on public.factory_products;
 create trigger trg_factory_products_provisional_rank
