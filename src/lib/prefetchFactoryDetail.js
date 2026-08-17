@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { sb as supabase } from '../supabase';
 import { readSwrCache, writeSwrCache } from './useStaleWhileRevalidate';
 
 // Single source of truth for the /factory/:id detail payload — used BOTH by the
@@ -7,16 +7,24 @@ import { readSwrCache, writeSwrCache } from './useStaleWhileRevalidate';
 
 export const factoryDetailKey = (id) => `factory-detail:${id}`;
 
-// factory_products is capped at 1000 rows/query by PostgREST — page through it.
+// factory_products is capped at 1000 rows/query by PostgREST. Read the total off
+// the first page, then fetch any remaining pages in PARALLEL (a big factory — e.g.
+// 1156 products — no longer walks pages one serial round-trip at a time).
 async function fetchAllFactoryProducts(sb, factoryId) {
   const pageSize = 1000;
-  const all = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await sb.from('factory_products').select('*').eq('factory_id', factoryId)
-      .order('sort_order', { ascending: true }).range(from, from + pageSize - 1);
-    if (error || !data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < pageSize) break;
+  const first = await sb.from('factory_products').select('*', { count: 'exact' }).eq('factory_id', factoryId)
+    .order('sort_order', { ascending: true }).range(0, pageSize - 1);
+  if (first.error || !first.data) return [];
+  const all = [...first.data];
+  const total = first.count ?? first.data.length;
+  const rest = [];
+  for (let from = pageSize; from < total; from += pageSize) {
+    rest.push(sb.from('factory_products').select('*').eq('factory_id', factoryId)
+      .order('sort_order', { ascending: true }).range(from, from + pageSize - 1));
+  }
+  if (rest.length) {
+    const pages = await Promise.all(rest);
+    for (const p of pages) { if (p.data) all.push(...p.data); }
   }
   return all;
 }

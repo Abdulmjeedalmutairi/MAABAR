@@ -34,6 +34,7 @@ import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import DashboardBuyer from './pages/DashboardBuyer';
+import BuyerBottomNav from './components/buyer/BuyerBottomNav';
 import DashboardSupplier from './pages/DashboardSupplier';
 import DashboardFactory from './pages/DashboardFactory';
 import FactoryThreadEntry from './pages/FactoryThreadEntry';
@@ -347,6 +348,9 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
   const isSupplierAccessPage = location.pathname === '/supplier-access';
   const isLTRPage = isAuthCallbackPage || isSupplierAccessPage;
   const pageDir = isLTRPage ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr');
+  // Persistent trader bottom-nav shell — a logged-in buyer gets the fixed mobile
+  // bottom nav across all their pages (dashboard, products, factories, managed order).
+  const isBuyerShell = !!user && profile?.role === 'buyer' && !isChromelessPage;
   const supplierState = profile?.role === 'supplier' ? getSupplierOnboardingState(profile, user) : null;
   const supplierPrimaryRoute = profile?.role === 'supplier' ? getSupplierPrimaryRoute(profile, user) : '/dashboard';
 
@@ -366,7 +370,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
   };
 
   return (
-    <div dir={pageDir} className="app-shell">
+    <div dir={pageDir} className={`app-shell${isBuyerShell ? ' buyer-shell' : ''}`}>
       {/* The supplier dashboard renders its own header (SupplierHeader), so the global Navbar is hidden there. */}
       {!isChromelessPage && !(profile?.role === 'supplier' && location.pathname === '/dashboard') && <Navbar {...sharedProps} logoOnly={isSupplierAccessPage} />}
       <Routes>
@@ -470,6 +474,7 @@ function AppContent({ lang, profile, user, sharedProps, loading, profileError, s
       {!isChromelessPage && (!user || profile?.role === 'buyer') && (
         <AIHub lang={lang} user={user} profile={profile} />
       )}
+      {isBuyerShell && <BuyerBottomNav lang={lang} />}
     </div>
   );
 }

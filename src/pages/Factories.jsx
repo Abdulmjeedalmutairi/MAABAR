@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
 import useReveal from '../hooks/useReveal';
-import CertPills from '../components/CertPills';
 import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -21,16 +20,22 @@ const T = {
         cats: 'كتالوجات', prods: 'منتج', moq: 'الحد الأدنى', oem: 'OEM/ODM', oemYes: 'متوفر',
         rec: 'موصى به', ver: 'موثّق', exports: 'يصدّر إلى', since: 'منذ',
         view: 'عرض المصنع', quote: 'اطلب عرض سعر', more: 'تحميل المزيد',
+        prodsBtn: 'عرض المنتجات', profileBtn: 'عرض الملف',
+        trustB: 'جميع المصانع والموردين مُوثّقون ومختارون بعناية', trustS: 'نختار لك الموثوق لتستورد بثقة',
         empty: 'لا توجد مصانع في هذه الفئة بعد.', loading: 'جارٍ التحميل…' },
   en: { title: 'Factories', sub: 'Deal directly with factories in China and import at the best prices.',
         cats: 'catalogs', prods: 'products', moq: 'MOQ', oem: 'OEM/ODM', oemYes: 'available',
         rec: 'Recommended', ver: 'Verified', exports: 'Exports to', since: 'Est.',
         view: 'View factory', quote: 'Request a quote', more: 'Load more',
+        prodsBtn: 'View products', profileBtn: 'View profile',
+        trustB: 'Every factory & supplier is verified and hand-picked', trustS: 'we pick the trusted ones so you import with confidence',
         empty: 'No factories in this category yet.', loading: 'Loading…' },
   zh: { title: '工厂', sub: '直接对接中国工厂，以最优价格进口。',
         cats: '目录', prods: '产品', moq: '起订量', oem: 'OEM/ODM', oemYes: '可提供',
         rec: '推荐', ver: '已核实', exports: '出口至', since: '成立',
         view: '查看工厂', quote: '请求报价', more: '加载更多',
+        prodsBtn: '查看产品', profileBtn: '查看资料',
+        trustB: '所有工厂与供应商均经过核实与甄选', trustS: '我们为您甄选可信来源，让您放心进口',
         empty: '该类别暂无工厂。', loading: '加载中…' },
 };
 
@@ -115,7 +120,6 @@ export default function Factories({ lang = 'ar' }) {
     return { factories: facs || [], byFactory: map };
   });
   const factories = data?.factories || [];
-  const byFactory = data?.byFactory || {};
 
   useEffect(() => { setVisible(PAGE); }, [activeKey]);
 
@@ -129,7 +133,6 @@ export default function Factories({ lang = 'ar' }) {
   const shown = filtered.slice(0, visible);
   const nf = (v) => (v && v !== 'not_found' ? v : '');
   const resolveName = (f) => nf(f.company_name_latin).trim() || f.company_name || '';
-  const flagFor = (country) => (/(china|中国)/i.test(country || '') ? '🇨🇳' : '');
   const revealRef = useReveal([lang, activeKey, shown.length]);
 
   return (
@@ -156,73 +159,49 @@ export default function Factories({ lang = 'ar' }) {
         ) : (
           <div className="fx-faclist" ref={revealRef}>
             {shown.map((f, i) => {
-              const meta = byFactory[f.id] || { images: [], products: 0, catalogs: 0 };
-              // The factory's profile picture IS the big display image (fallback: a product photo).
-              const cover = isUrl(f.profile_image) ? f.profile_image : (meta.images[0] || null);
+              const logo = isUrl(f.profile_image) ? f.profile_image : null;
               const name = resolveName(f);
               const desc = nf(f.description_ar && isAr ? f.description_ar : lang === 'zh' ? f.description_zh : f.description_en)
                 || nf(f.description_ar) || factoryTaglineForCode(f.category, lang);
               const loc = [nf(f.city), nf(f.country)].filter(Boolean).join(isAr ? '، ' : ', ');
-              const stats = [
-                meta.catalogs ? { n: meta.catalogs, l: c.cats } : null,
-                meta.products ? { n: meta.products, l: c.prods } : null,
-                nf(f.moq_note) ? { n: nf(f.moq_note), l: c.moq, small: true } : null,
-                f.private_label ? { n: c.oem, l: c.oemYes, small: true } : null,
-              ].filter(Boolean).slice(0, 4);
-              const facts = [];
-              if (nf(f.export_markets)) facts.push(`${c.exports} ${f.export_markets}`);
-              if (f.founded_year) facts.push(`${c.since} ${f.founded_year}`);
+              const cat = catLabel[f.category];
 
               return (
                 <div key={f.id} className="fx-faccard reveal" style={{ '--i': i % PAGE }}
                   onMouseEnter={() => prefetchFactoryDetail(f.id)} onFocus={() => prefetchFactoryDetail(f.id)}>
-                  <div className="fx-fac-cover" onClick={() => nav(`/factory/${f.id}`)}>
-                    {cover ? (
-                      <img className="fx-fac-cover-img" src={cover} alt={name} loading="lazy" />
-                    ) : (
-                      <span className="fx-fac-cover-initial">{(name || '?')[0]}</span>
-                    )}
-                    <div className="fx-fac-badges">
-                      {f.is_featured && <span className={`fx-fac-badge rec${arc}`}>★ {c.rec}</span>}
-                      {f.is_verified && <span className={`fx-fac-badge ver${arc}`}>✓ {c.ver}</span>}
+                  <div className="fx-fac-top" onClick={() => nav(`/factory/${f.id}`)}>
+                    <div className="fx-fac-logo">
+                      {logo
+                        ? <img src={logo} alt={name} loading="lazy" />
+                        : <span className="fx-fac-logo-initial">{(name || '?')[0]}</span>}
+                    </div>
+                    <div className="fx-fac-content">
+                      <div className={`fx-fac-badges${arc}`}>
+                        {cat && <span className="fx-fac-cat">{cat}</span>}
+                        {f.is_featured && <span className={`fx-fac-badge rec${arc}`}>★ {c.rec}</span>}
+                        {f.is_verified && <span className={`fx-fac-badge ver${arc}`}>✓ {c.ver}</span>}
+                      </div>
+                      <h3 className={`fx-fac-name${arc}`}>{name || '—'}</h3>
+                      {loc && (
+                        <p className={`fx-fac-loc${arc}`}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9A8F80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+                          <span>{loc}</span>
+                        </p>
+                      )}
+                      {desc && <p className={`fx-fac-desc${arc}`}>{desc}</p>}
                     </div>
                   </div>
 
-                  <div className="fx-fac-body">
-                    <h3 className={`fx-fac-name${arc}`} onClick={() => nav(`/factory/${f.id}`)}>
-                      {name} {flagFor(f.country)}
-                    </h3>
-                    {loc && <p className={`fx-fac-loc${arc}`}>{loc}</p>}
-                    <p className={`fx-fac-desc${arc}`}>{desc}</p>
-
-                    {catLabel[f.category] && (
-                      <div className={`fx-fac-catrow${arc}`}>
-                        <span className="fx-fac-cat">{catLabel[f.category]}</span>
-                      </div>
-                    )}
-
-                    {stats.length > 0 && (
-                      <div className="fx-fac-stats">
-                        {stats.map((s, j) => (
-                          <div className="fx-fac-stat" key={j}>
-                            <span className={`fx-fac-stat-n${s.small ? ' sm' : ''}`}>{s.n}</span>
-                            <span className="fx-fac-stat-l">{s.l}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <CertPills certs={f.certifications} lang={lang} max={4} style={{ marginTop: 8 }} />
-                    {facts.length > 0 && (
-                      <div className={`fx-fac-chips${arc}`}>
-                        {facts.map((t, j) => <span className="fx-fac-chip" key={j}>{t}</span>)}
-                      </div>
-                    )}
-
-                    <div className="fx-fac-actions">
-                      <button className={`fx-fac-btn${arc}`} onClick={() => nav(`/factory/${f.id}`)}>{c.view}</button>
-                      <button className={`fx-fac-btn primary${arc}`} onClick={() => nav(`/factory/${f.id}?request=1`)}>{c.quote}</button>
-                    </div>
+                  <div className="fx-fac-footer">
+                    <button className={`fx-fac-footbtn${arc}`} onClick={() => nav(`/factory/${f.id}?focus=products`)}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" /></svg>
+                      <span>{c.prodsBtn}</span>
+                    </button>
+                    <span className="fx-fac-footdiv" />
+                    <button className={`fx-fac-footbtn${arc}`} onClick={() => nav(`/factory/${f.id}`)}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v5h5M9 3h6l5 5v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /></svg>
+                      <span>{c.profileBtn}</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -232,6 +211,18 @@ export default function Factories({ lang = 'ar' }) {
 
         {!loading && filtered.length > visible && (
           <button className={`fx-loadmore${arc}`} onClick={() => setVisible((v) => v + PAGE)}>{c.more}</button>
+        )}
+
+        {!loading && shown.length > 0 && (
+          <div className={`fx-fac-trust${arc}`}>
+            <div className="fx-fac-trust-ic">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5E7256" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>
+            </div>
+            <div>
+              <p className="fx-fac-trust-b">{c.trustB}</p>
+              <p className="fx-fac-trust-s">{c.trustS}</p>
+            </div>
+          </div>
         )}
       </div>
       <Footer lang={lang} />

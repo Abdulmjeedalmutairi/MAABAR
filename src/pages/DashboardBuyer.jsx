@@ -40,6 +40,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 import Footer from '../components/Footer';
 import OrderInvoiceModal from '../components/OrderInvoiceModal';
 import TranslatedText from '../components/TranslatedText';
+import BuyerHomePanel from '../components/buyer/BuyerHomePanel';
 import { startTelrPayment } from '../lib/telrPay';
 import { isManagedRequest, requestType } from '../lib/managedSourcing';
 
@@ -289,48 +290,6 @@ function TrackingCard({ request, isAr }) {
   );
 }
 
-/* ─── PendingBanner ──────────────────────── */
-function PendingBanner({ action, isAr, onGo }) {
-  const styles = {
-    supplier_confirmed: { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.05)',  dot: 'var(--green)' },
-    ready_to_ship:      { border: 'rgba(160,136,80,0.35)',  bg: 'rgba(160,136,80,0.05)',  dot: 'var(--warn)' },
-    arrived:            { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
-    offers:             { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    managed_offer:      { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    messages:           { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    payment_sent:       { border: 'var(--border-subtle)',   bg: 'var(--bg-subtle)',        dot: 'var(--text-disabled)' },
-    delivery:           { border: 'rgba(45,122,79,0.35)',  bg: 'rgba(45,122,79,0.04)',  dot: 'var(--green)' },
-  };
-  const s = styles[action.type] || styles.offers;
-  const title = (() => {
-    if (action.type === 'supplier_confirmed') return isAr ? `المورد جاهز — ادفع الآن · ${action.request?.title_ar || action.request?.title_en}` : `Supplier ready — pay now · ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'ready_to_ship')      return isAr ? `الشحنة جاهزة — ادفع الدفعة الثانية · ${action.request?.title_ar || action.request?.title_en}` : `Shipment ready — pay 2nd installment · ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'arrived')            return isAr ? `وصل الطلب — أكد الاستلام · ${action.request?.title_ar || action.request?.title_en}` : `Order arrived — confirm delivery · ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'offers')             return isAr ? `${action.count} عرض ينتظرك — ${action.request?.title_ar || action.request?.title_en}` : `${action.count} offer(s) waiting — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'managed_offer')  return isAr ? `عرضك المنسّق جاهز — ${action.request?.title_ar || action.request?.title_en}` : `Your curated offer is ready — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'payment_sent')       return isAr ? 'تم الدفع — في انتظار تجهيز المورد' : 'Payment sent — Awaiting preparation';
-    if (action.type === 'delivery')           return isAr ? `تأكيد الاستلام — ${action.request?.title_ar || action.request?.title_en}` : `Confirm delivery — ${action.request?.title_en || action.request?.title_ar}`;
-    if (action.type === 'messages')           return isAr ? `${action.count} رسالة غير مقروءة` : `${action.count} unread message(s)`;
-    return '';
-  })();
-  return (
-    <div onClick={onGo} style={{
-      background: s.bg, border: `1px solid ${s.border}`,
-      borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      cursor: 'pointer', transition: 'opacity 0.15s', gap: 10,
-    }}
-      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
-        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.5 }}>{title}</p>
-      </div>
-      <span style={{ color: 'var(--text-disabled)', fontSize: 14, flexShrink: 0 }}>{isAr ? '←' : '→'}</span>
-    </div>
-  );
-}
-
 /* ─── TopSubTabs ─────────────────────────── */
 function TopSubTabs({ tabs, active, onSelect, isAr }) {
   return (
@@ -447,29 +406,6 @@ function MobileBottomNav({ activeTab, setActiveTab, nav, isAr, stats, moreOpen, 
   );
 }
 
-/* ─── Quick Action ───────────────────────── */
-function QuickAction({ title, sub, onClick, primary, isAr }) {
-  return (
-    <div onClick={onClick} style={{
-      padding: '24px',
-      background: primary ? 'var(--bg-raised)' : 'var(--bg-subtle)',
-      border: `1px solid ${primary ? 'var(--border-muted)' : 'var(--border-subtle)'}`,
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      borderRadius: 'var(--radius-lg)',
-    }}
-      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-      onMouseLeave={e => e.currentTarget.style.background = primary ? 'var(--bg-raised)' : 'var(--bg-subtle)'}>
-      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 8, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-        {title}
-      </p>
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.6 }}>
-        {sub}
-      </p>
-    </div>
-  );
-}
-
 /* ─── Back Button ────────────────────────── */
 function BackBtn({ onClick, isAr }) {
   return (
@@ -509,7 +445,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [inbox, setInbox]                 = useState([]);
   const [productInquiries, setProductInquiries] = useState([]);
   const [activeTab, setActiveTab]         = useState('overview');
-  const [pendingActions, setPendingActions] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [samples, setSamples] = useState([]);
   const [directOrders, setDirectOrders] = useState([]);
@@ -526,10 +461,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [submittingReview, setSubmittingReview] = useState(false);
   const [submittedReviewIds, setSubmittedReviewIds] = useState(new Set());
 
-  // Active orders for overview (supplier_confirmed → arrived)
-  const [activeOrders, setActiveOrders]         = useState([]);
-  const [loadingActiveOrders, setLoadingActiveOrders] = useState(false);
-
   // Edit/Delete request
   const [editReqModal, setEditReqModal]   = useState(null);
   const [editReqForm, setEditReqForm]     = useState({});
@@ -543,7 +474,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   const [reqTypeFilter, setReqTypeFilter] = useState('all'); // all | factory | managed | idea | direct
   const [expandedReq, setExpandedReq] = useState(null);      // request id whose card is expanded
   const [msgSubFilter, setMsgSubFilter] = useState('all');
-  const [moreOpen, setMoreOpen]         = useState(false);
 
   // Settings
   const [settings, setSettings]         = useState({ full_name: '', phone: '', city: '', company_name: '', preferred_display_currency: displayCurrency || 'USD' });
@@ -553,18 +483,16 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   useEffect(() => {
     if (!user) { nav('/login/buyer'); return; }
     loadStats();
-    loadPendingActions();
-    loadActiveOrders();
     loadMyDirectOrders();
 
     // Realtime — refresh when offers/requests change
     const channel = sb.channel(`buyer-dash-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
-        loadStats(); loadPendingActions(); loadActiveOrders();
+        loadStats();
         if (activeTab === 'requests') loadMyRequests();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `buyer_id=eq.${user.id}` }, () => {
-        loadStats(); loadPendingActions(); loadActiveOrders(); loadMyDirectOrders();
+        loadStats(); loadMyDirectOrders();
         if (activeTab === 'requests') loadMyRequests();
       })
       .subscribe();
@@ -572,7 +500,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === 'overview') loadActiveOrders();
     if (activeTab === 'requests') loadMyRequests();
     if (activeTab === 'direct-orders') loadMyDirectOrders();
     if (activeTab === 'messages') loadInbox();
@@ -606,63 +533,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       sb.from('product_inquiries').select('id', { count: 'exact' }).eq('buyer_id', user.id),
     ]);
     setStats({ requests: requests.count || 0, messages: messages.count || 0, offers: offers.count || 0, productInquiries: productInquiries.count || 0 });
-  };
-
-  const loadPendingActions = async () => {
-    const actions = [];
-    // Exclude direct purchase orders — they live in the dedicated direct-orders tab.
-    const { data: reqs } = await sb.from('requests').select('*, offers(id,status)').eq('buyer_id', user.id).is('product_ref', null);
-    if (reqs) {
-      reqs.forEach(r => {
-        const pending = r.offers?.filter(o => o.status === 'pending') || [];
-        if (String(r.sourcing_mode || 'direct') === 'managed' && String(r.managed_status || '') === 'offer_ready') {
-          actions.push({ type: 'managed_offer', request: r });
-        } else if (pending.length > 0) {
-          actions.push({ type: 'offers', request: r, count: pending.length });
-        }
-        if (r.status === 'supplier_confirmed') actions.push({ type: 'supplier_confirmed', request: r });
-        if (r.status === 'paid')          actions.push({ type: 'payment_sent', request: r });
-        if (r.status === 'ready_to_ship') actions.push({ type: 'ready_to_ship', request: r });
-        if (r.status === 'shipping')      actions.push({ type: 'delivery', request: r });
-        if (r.status === 'arrived')       actions.push({ type: 'arrived', request: r });
-      });
-    }
-    const { data: msgs } = await sb.from('messages').select('id').eq('receiver_id', user.id).eq('is_read', false);
-    if (msgs?.length > 0) actions.push({ type: 'messages', count: msgs.length });
-    setPendingActions(actions);
-  };
-
-  const loadActiveOrders = async () => {
-    // Hydrate from the session cache instantly, then revalidate (no loading flash
-    // on tab re-entry). Mutations re-call this loader, so the cache stays fresh.
-    const key = `buyer-active-orders:${user.id}`;
-    const cached = readSwrCache(key);
-    if (cached !== undefined) setActiveOrders(cached); else setLoadingActiveOrders(true);
-    const ACTIVE_STATUSES = ['supplier_confirmed', 'paid', 'ready_to_ship', 'shipping', 'arrived'];
-    // Exclude direct purchase orders — they have their own dedicated tab.
-    const { data: reqs } = await sb
-      .from('requests')
-      .select('*')
-      .eq('buyer_id', user.id)
-      .is('product_ref', null)
-      .in('status', ACTIVE_STATUSES)
-      .order('updated_at', { ascending: false })
-      .limit(5);
-    let result = [];
-    if (reqs && reqs.length > 0) {
-      // Batch offers + profiles in two queries instead of one pair per request.
-      const ids = reqs.map((r) => r.id);
-      const { data: allOffers } = await sb.from('offers').select('*').in('request_id', ids).or('managed_visibility.eq.buyer_visible,managed_visibility.is.null');
-      const withProfiles = await attachSupplierProfiles(sb, allOffers || [], 'supplier_id', 'profiles');
-      const byReq = (withProfiles || []).reduce((acc, o) => {
-        (acc[o.request_id] = acc[o.request_id] || []).push(o);
-        return acc;
-      }, {});
-      result = reqs.map((r) => ({ ...r, offers: byReq[r.id] || [] }));
-    }
-    writeSwrCache(key, result);
-    setActiveOrders(result);
-    setLoadingActiveOrders(false);
   };
 
   const loadMyRequests = async () => {
@@ -1013,7 +883,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       ...req,
       offers: req.offers.map(o => o.id === offerId ? { ...o, status: 'rejected' } : o),
     }));
-    loadPendingActions();
     loadStats();
   };
 
@@ -1074,7 +943,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       });
     })();
 
-    loadMyRequests(); loadPendingActions();
+    loadMyRequests();
   };
 
   const confirmDelivery = async (requestId, supplierId, supplierName) => {
@@ -1123,7 +992,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       });
     } catch (e) { console.error('payout email error:', e); }
 
-    loadMyRequests(); loadPendingActions();
+    loadMyRequests();
     setReviewRating(0); setReviewComment('');
     setReviewModal({ supplierId, requestId, supplierName });
   };
@@ -1188,7 +1057,7 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
       if (!window.confirm(isAr ? 'هل تريد حذف هذا الطلب؟' : 'Delete this request?')) return;
     }
     await sb.from('requests').delete().eq('id', r.id);
-    loadMyRequests(); loadPendingActions(); loadStats();
+    loadMyRequests(); loadStats();
   };
 
   const cancelRequest = async (r) => {
@@ -1326,127 +1195,19 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div style={section}>
-
-              {/* Stats strip */}
-              <div style={{ display: 'flex', gap: 0, marginBottom: 28, borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                {[
-                  { label: isAr ? 'تحتاج إجراء' : 'Needs Action', value: pendingActions.filter(a => ['supplier_confirmed','arrived','ready_to_ship','offers'].includes(a.type)).length, red: true, onClick: () => setActiveTab('requests') },
-                  { label: isAr ? 'طلبات نشطة' : 'Active', value: stats.requests, onClick: () => setActiveTab('requests') },
-                  { label: isAr ? 'رسائل جديدة' : 'Messages', value: stats.messages, onClick: () => setActiveTab('messages') },
-                ].map((s, i) => (
-                  <div key={i} onClick={s.onClick} style={{
-                    flex: 1, padding: '18px 20px', cursor: 'pointer',
-                    background: 'var(--bg-subtle)',
-                    borderRight: i < 2 ? '1px solid var(--border-subtle)' : 'none',
-                    transition: 'background 0.15s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-raised)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-subtle)'}>
-                    <p style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 8, fontWeight: 500 }}>{s.label}</p>
-                    <p style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1', color: s.red && s.value > 0 ? 'var(--red)' : 'var(--text-primary)' }}>{s.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pending action banners */}
-              {pendingActions.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 12, fontWeight: 500 }}>
-                    {isAr ? `يحتاج انتباهك (${pendingActions.length})` : `Needs Attention (${pendingActions.length})`}
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {pendingActions.map((action, i) => (
-                      <PendingBanner
-                        key={i}
-                        action={action}
-                        isAr={isAr}
-                        onGo={() => {
-                          if (action.type === 'messages') { setActiveTab('messages'); return; }
-                          if (action.type === 'managed_offer' && action.request?.id) {
-                            nav(`/managed-order/${action.request.id}`);
-                          } else if (action.request?.id) {
-                            nav(`/dashboard?tab=requests&request=${action.request.id}`, { replace: true });
-                          } else {
-                            setActiveTab('requests');
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Active orders mini-cards */}
-              {(loadingActiveOrders || activeOrders.length > 0) && (
-                <div style={{ marginBottom: 40 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-                    <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', fontWeight: 500 }}>
-                      {isAr ? 'طلبات نشطة' : 'Active Orders'}
-                    </p>
-                    {activeOrders.length > 0 && (
-                      <button onClick={() => setActiveTab('requests')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', padding: 0, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                        {isAr ? 'عرض الكل' : 'View all'}
-                      </button>
-                    )}
-                  </div>
-                  {loadingActiveOrders && (
-                    <div style={{ height: 80, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }} />
-                  )}
-                  {!loadingActiveOrders && activeOrders.slice(0, 3).map((r, idx) => {
-                    const acceptedOffer = r.offers?.find(o => o.status === 'accepted');
-                    return (
-                      <div key={r.id} onClick={() => nav(`/dashboard?tab=requests&request=${r.id}`, { replace: true })}
-                        style={{ borderTop: idx === 0 ? '1px solid var(--border-subtle)' : 'none', borderBottom: '1px solid var(--border-subtle)', padding: '16px 0', cursor: 'pointer', transition: 'opacity 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = '0.72'}
-                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                        {/* Title + status badge */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-                          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)', lineHeight: 1.3, flex: 1, minWidth: 0 }}>
-                            {isAr ? r.title_ar || r.title_en : r.title_en || r.title_ar}
-                          </p>
-                          <span style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 'var(--radius-chip)', border: '1px solid var(--border-subtle)', color: 'var(--text-disabled)', flexShrink: 0 }}>
-                            {isAr ? (STATUS_AR[r.status] || r.status) : (STATUS_EN[r.status] || r.status)}
-                          </span>
-                        </div>
-                        {/* Supplier name */}
-                        {acceptedOffer?.profiles?.company_name && (
-                          <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginBottom: 4, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
-                            {acceptedOffer.profiles.company_name}
-                          </p>
-                        )}
-                        {/* Timeline */}
-                        <StatusTimeline status={r.shipping_status || r.status} isAr={isAr} />
-                        {/* Payment plan badges */}
-                        {acceptedOffer && <PaymentPlanRow request={r} offer={acceptedOffer} isAr={isAr} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Quick actions */}
-              <div style={{ marginBottom: 40 }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14, fontWeight: 500 }}>
-                  {isAr ? 'الإجراءات السريعة' : 'Quick Actions'}
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                  <QuickAction title={isAr ? 'تصفح المنتجات' : 'Browse Products'} sub={isAr ? 'استكشف منتجات الموردين الصينيين' : 'Explore Chinese supplier products'} onClick={() => nav('/products')} primary isAr={isAr} />
-                  <QuickAction title={isAr ? 'رفع طلب قياسي'  : 'Post Standard RFQ'} sub={isAr ? 'لمنتج واضح وتحتاج عروض مباشرة' : 'For a known product and direct offers'} onClick={() => nav('/requests')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'Private Label / Custom' : 'Private Label / Custom'} sub={isAr ? 'إذا تحتاج تصنيع خاص أو علامة خاصة' : 'For OEM, ODM, or custom manufacturing'} onClick={() => nav('/requests')} isAr={isAr} />
-                  <QuickAction title={isAr ? 'طلباتي'         : 'My Requests'} sub={isAr ? 'تابع الطلبات، العروض، والدفع' : 'Track requests, offers, and payment steps'} onClick={() => setActiveTab('requests')} isAr={isAr} />
-                </div>
-              </div>
-
-              <button onClick={() => nav('/')} style={{
-                background: 'none', border: 'none',
-                color: 'var(--text-disabled)', fontSize: 11,
-                cursor: 'pointer', letterSpacing: 2, textTransform: 'uppercase',
-                padding: 0, transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}>
-                {isAr ? 'العودة للرئيسية ←' : '← Back to Home'}
-              </button>
+              <BuyerHomePanel
+                sb={sb}
+                buyerId={user.id}
+                lang={lang}
+                name={name}
+                messagesCount={stats.messages}
+                onOpenRequests={() => setActiveTab('requests')}
+                onOpenProducts={() => nav('/products')}
+                onOpenSuppliers={() => nav('/factories')}
+                onNewManaged={() => nav('/request')}
+                onOpenManaged={(id) => nav('/managed-order/' + id)}
+                onOpenMessages={() => setActiveTab('messages')}
+              />
             </div>
           )}
 
@@ -1468,6 +1229,29 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
                   {isAr ? '+ طلب جديد' : '+ New Request'}
                 </button>
               </div>
+
+              {/* Direct purchases — a clear, visible entry (not buried in "More"). */}
+              {directOrders.length > 0 && (
+                <button onClick={() => setActiveTab('direct-orders')}
+                  style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: isAr ? 'right' : 'left',
+                    background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)',
+                    [isAr ? 'borderRight' : 'borderLeft']: `3px solid ${directOrdersPayableCount > 0 ? 'var(--red, #C0503F)' : 'var(--bronze, #8B7355)'}`,
+                    borderRadius: 'var(--radius-lg)', padding: '13px 15px', marginBottom: 16, cursor: 'pointer' }}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                      {isAr ? 'مشترياتي المباشرة' : 'My Direct Purchases'}
+                    </span>
+                    {directOrdersPayableCount > 0 && (
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--red, #C0503F)', fontWeight: 600, marginTop: 2, fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                        {directOrdersPayableCount} {isAr ? 'بانتظار الدفع' : 'awaiting payment'}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)' }}>
+                    {directOrders.length} <span style={{ color: 'var(--text-disabled)' }}>{isAr ? '· عرض ←' : '· view →'}</span>
+                  </span>
+                </button>
+              )}
 
               {/* Stats mini-strip */}
               {!loadingRequests && myRequests.length > 0 && (() => {
@@ -2840,16 +2624,6 @@ export default function DashboardBuyer({ user, profile, lang, displayCurrency, s
           </div>
         </div>
       )}
-
-      <MobileBottomNav
-        activeTab={activeTab}
-        setActiveTab={(tab) => { setActiveTab(tab); setMoreOpen(false); }}
-        nav={nav}
-        isAr={isAr}
-        stats={stats}
-        moreOpen={moreOpen}
-        setMoreOpen={setMoreOpen}
-      />
 
       <Footer lang={lang} />
 

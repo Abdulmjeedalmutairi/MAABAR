@@ -179,6 +179,27 @@ serve(async (req) => {
       .update({ status: isSecond ? 'shipping' : 'paid', ...(isSecond ? { shipping_status: 'shipping' } : {}), payment_id: inserted.id })
       .eq('id', targetRequestId);
 
+    // Managed order: its invoice already carries request_id (set at offer time) and
+    // has no supplier, so neither the NULL-request claim (which flips the invoice to
+    // 'paid') nor the supplier payout flow ran. Without this, the tracker's offer
+    // stage never closes (offer.status stays != 'paid', so the pay button keeps
+    // showing) and managed_status never leaves 'offer_ready'. Mark the invoice paid
+    // and advance the tracker off the offer stage — forward only, never regressing a
+    // stage an admin already advanced by hand.
+    if (invoiceId) {
+      const { data: mreq } = await admin.from('requests')
+        .select('sourcing_mode, managed_status').eq('id', targetRequestId).maybeSingle();
+      if (mreq && String(mreq.sourcing_mode || '').toLowerCase() === 'managed') {
+        await admin.from('order_invoices').update({ status: 'paid' }).eq('id', invoiceId);
+        if (String(mreq.managed_status || '').toLowerCase() === 'offer_ready') {
+          const isFull = paid >= totalCharged - 0.01;
+          await admin.from('requests')
+            .update({ managed_status: isFull ? 'in_production' : 'deposit_paid' })
+            .eq('id', targetRequestId);
+        }
+      }
+    }
+
     if (!isSecond && supplierId) {
       const isFull = paid >= totalCharged - 0.01;
       const amt = `${paid} SAR`;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import usePageTitle from '../hooks/usePageTitle';
 import Footer from '../components/Footer';
@@ -128,6 +128,15 @@ export default function FactoryDetail({ lang = 'ar', user, displayCurrency }) {
   const [searchParams] = useSearchParams();
   // Opened from the "Request a quote" button on the factories list (/factory/:id?request=1).
   useEffect(() => { if (searchParams.get('request') === '1') setReqOpen(true); }, [searchParams]);
+  // Opened from "عرض المنتجات" on the factories list (/factory/:id?focus=products):
+  // scroll to the products section once it's loaded — mirrors the mobile card.
+  const scrolledToProducts = useRef(false);
+  useEffect(() => {
+    if (searchParams.get('focus') === 'products' && !scrolledToProducts.current && products.length) {
+      scrolledToProducts.current = true;
+      setTimeout(() => document.getElementById('fp-prods')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    }
+  }, [searchParams, products.length]);
   const [activeCatalog, setActiveCatalog] = useState(null); // import_id filter
   const [activeSection, setActiveSection] = useState(null); // section filter (Amazon-style)
   const [visible, setVisible] = useState(20);

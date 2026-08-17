@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { sb } from '../supabase';
 import { getFactoryClaimPreview, claimFactoryBySlug } from '../lib/factoryClaim';
+import { DISPLAY_CURRENCIES } from '../lib/displayCurrency';
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
 
@@ -25,6 +26,13 @@ const T = {
     checkEmail: 'Check your email to confirm, then reopen this link.', working: 'Working…', loading: 'Loading…',
     errPhone: 'Enter a valid international phone number.', errCreds: 'Wrong phone/email or password.',
     notfound: 'This claim link is not valid.',
+    claimedOk: 'Welcome aboard!', priceTitle: 'Price your products',
+    priceSub: 'Set prices so Saudi buyers can order — you can fine-tune each product anytime in your dashboard.',
+    unpricedCount: (n) => `${n} ${n === 1 ? 'product has' : 'products have'} no price yet`,
+    allPriced: 'All your products are priced.', pricePh: 'Approx. price / unit',
+    applyBtn: 'Apply to unpriced products', appliedOk: 'Prices applied ✓ — fine-tune each product later.',
+    perUnit: '/ unit', noPrice: 'No price', pricedTag: 'Priced', toDashboard: 'Go to my dashboard →',
+    priceErr: 'Enter a valid price.',
   },
   zh: {
     tagline: '中国 → 沙特采购平台',
@@ -45,6 +53,13 @@ const T = {
     checkEmail: '请查收邮件确认，然后重新打开此链接。', working: '处理中…', loading: '加载中…',
     errPhone: '请输入有效的国际手机号。', errCreds: '手机号/邮箱或密码错误。',
     notfound: '此认领链接无效。',
+    claimedOk: '欢迎加入！', priceTitle: '为您的产品定价',
+    priceSub: '设定价格，沙特买家即可下单 — 您随时可在后台逐个调整。',
+    unpricedCount: (n) => `${n} 个产品尚未定价`,
+    allPriced: '您的所有产品都已定价。', pricePh: '参考单价',
+    applyBtn: '应用到未定价产品', appliedOk: '已应用 ✓ — 稍后可逐个调整。',
+    perUnit: '/ 件', noPrice: '未定价', pricedTag: '已定价', toDashboard: '进入我的后台 →',
+    priceErr: '请输入有效价格。',
   },
 };
 
@@ -61,6 +76,13 @@ export default function ClaimFactory() {
   const [phone, setPhone] = useState('');
   const [pass, setPass] = useState('');
   const [msg, setMsg] = useState('');
+  // Post-claim pricing step
+  const [step, setStep] = useState('claim');   // 'claim' | 'price'
+  const [myProducts, setMyProducts] = useState([]);
+  const [uPrice, setUPrice] = useState('');
+  const [uCurrency, setUCurrency] = useState('USD');
+  const [applying, setApplying] = useState(false);
+  const [applied, setApplied] = useState(false);
   const t = T[lang];
 
   useEffect(() => {
@@ -103,8 +125,55 @@ export default function ClaimFactory() {
   };
   const doClaim = async () => {
     setErr(''); setBusy(true);
-    try { await claimFactoryBySlug(slug); nav('/dashboard'); }
-    catch (e) { setErr(e.message || 'claim failed'); setBusy(false); }
+    try {
+      await claimFactoryBySlug(slug);
+      // Show the factory their seeded products + a pricing nudge BEFORE the
+      // dashboard — the fastest path to a buyer-ready catalog.
+      await loadMyProducts();
+      setStep('price');
+      setBusy(false);
+    } catch (e) { setErr(e.message || 'claim failed'); setBusy(false); }
+  };
+
+  // The factory's own products (seeded from the directory on claim) + a priced
+  // flag (has a product-level pricing tier). Used by the post-claim price step.
+  const loadMyProducts = async () => {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { data: prods } = await sb.from('products')
+      .select('id, name_en, name_zh, name_ar, currency, moq, image_url')
+      .eq('supplier_id', user.id).eq('is_draft', false)
+      .order('created_at', { ascending: true });
+    const list = prods || [];
+    const ids = list.map((p) => p.id);
+    let priced = new Set();
+    if (ids.length) {
+      const { data: tiers } = await sb.from('product_pricing_tiers')
+        .select('product_id').in('product_id', ids).is('variant_id', null);
+      priced = new Set((tiers || []).map((r) => r.product_id));
+    }
+    setMyProducts(list.map((p) => ({ ...p, priced: priced.has(p.id) })));
+  };
+
+  // One uniform starting price for every UNPRICED product (non-destructive: it
+  // never touches products that already carry a price). 3 batched writes.
+  const applyUniform = async () => {
+    const price = parseFloat(uPrice);
+    if (!Number.isFinite(price) || price <= 0) { setErr(t.priceErr); return; }
+    setErr(''); setApplying(true);
+    const targets = myProducts.filter((p) => !p.priced);
+    const ids = targets.map((p) => p.id);
+    try {
+      if (ids.length) {
+        await sb.from('products').update({ currency: uCurrency }).in('id', ids);
+        await sb.from('product_pricing_tiers').delete().in('product_id', ids).is('variant_id', null);
+        const rows = targets.map((p) => ({ product_id: p.id, variant_id: null, qty_from: p.moq || 1, qty_to: null, unit_price: price }));
+        await sb.from('product_pricing_tiers').insert(rows);
+      }
+      setMyProducts((prev) => prev.map((p) => (p.priced ? p : { ...p, priced: true, currency: uCurrency, unit_price: price })));
+      setApplied(true);
+    } catch (e) { setErr(e.message || 'failed'); }
+    setApplying(false);
   };
 
   const shell = (children) => (
@@ -141,6 +210,58 @@ export default function ClaimFactory() {
     ...(pre.section_count > 0 ? [{ n: pre.section_count, l: t.categories }] : []),
     ...(nf(pre.export_markets) ? [{ n: nf(pre.export_markets), l: t.export }] : []),
   ].slice(0, 4);
+
+  // ── Post-claim: price your products ──────────────────────────────────────
+  if (step === 'price') {
+    const unpriced = myProducts.filter((p) => !p.priced).length;
+    const pname = (p) => (lang === 'zh' ? (p.name_zh || p.name_en) : (p.name_en || p.name_zh)) || p.name_ar || '—';
+    return shell(
+      <>
+        <div className="cf-hero-head">
+          <h1 className="cf-welcome">🎉 {t.claimedOk}</h1>
+          <h2 className="cf-name">{t.priceTitle}</h2>
+        </div>
+        <p className="cf-desc">{t.priceSub}</p>
+
+        <div className="cf-price-card">
+          {unpriced > 0 ? (
+            <>
+              <div className="cf-price-hint">💰 {t.unpricedCount(unpriced)}</div>
+              <div className="cf-price-row">
+                <input className="cf-input" type="number" min="0" inputMode="decimal" placeholder={t.pricePh} value={uPrice} onChange={(e) => setUPrice(e.target.value)} dir="ltr" />
+                <select className="cf-input cf-cur" value={uCurrency} onChange={(e) => setUCurrency(e.target.value)}>
+                  {DISPLAY_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <button className="cf-btn cf-primary" onClick={applyUniform} disabled={applying || !uPrice}>{applying ? t.working : t.applyBtn}</button>
+              {applied && <p className="cf-msg">{t.appliedOk}</p>}
+            </>
+          ) : (
+            <div className="cf-price-hint">✅ {t.allPriced}</div>
+          )}
+        </div>
+
+        <div className="cf-prodlist">
+          {myProducts.map((p) => (
+            <div className="cf-prod" key={p.id}>
+              <div className="cf-prod-img" style={p.image_url ? { backgroundImage: `url(${p.image_url})` } : {}} />
+              <div className="cf-prod-body">
+                <div className="cf-prod-name">{pname(p)}</div>
+                <div className={`cf-prod-price ${p.priced ? 'on' : 'off'}`}>
+                  {p.priced ? (p.unit_price ? `${p.unit_price} ${p.currency || uCurrency} ${t.perUnit}` : t.pricedTag) : t.noPrice}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="cf-cta" style={{ marginTop: 18 }}>
+          <button className="cf-btn cf-primary" onClick={() => nav('/dashboard')}>{t.toDashboard}</button>
+        </div>
+        {err && <p className="cf-err">{err}</p>}
+      </>
+    );
+  }
 
   return shell(
     <>
@@ -272,5 +393,18 @@ const CSS = `
 .cf-msg { color:#2D6A4F; font-size:12.5px; margin:6px 0 0; }
 .cf-claimed { color:#B0740F; font-size:13.5px; line-height:1.6; }
 .cf-foot { text-align:center; font-size:11px; color:#B8B3A8; margin-top:30px; }
+.cf-price-card { margin-top:20px; background:#fff; border:1px solid #ECE7DF; border-radius:16px; padding:18px; box-shadow:0 8px 28px rgba(26,24,20,.05); }
+.cf-price-hint { font-size:13.5px; font-weight:700; color:#1A1814; margin-bottom:12px; text-align:center; }
+.cf-price-row { display:flex; gap:8px; margin-bottom:12px; }
+.cf-price-row .cf-input { margin-bottom:0; }
+.cf-cur { max-width:96px; }
+.cf-prodlist { margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+.cf-prod { display:flex; gap:11px; align-items:center; background:#fff; border:1px solid #ECE7DF; border-radius:12px; padding:10px; }
+.cf-prod-img { width:44px; height:44px; border-radius:9px; background:#F0EBE3 center/cover no-repeat; flex-shrink:0; }
+.cf-prod-body { flex:1; min-width:0; }
+.cf-prod-name { font-size:13px; font-weight:600; color:#1A1814; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cf-prod-price { font-size:11.5px; font-weight:600; margin-top:2px; direction:ltr; }
+.cf-prod-price.on { color:#2D6A4F; }
+.cf-prod-price.off { color:#B0740F; }
 @media (max-width:520px){ .cf-hero{ grid-template-columns:1fr; } .cf-hero-img{ min-height:150px; } .cf-activity{ grid-template-columns:1fr; } }
 `;

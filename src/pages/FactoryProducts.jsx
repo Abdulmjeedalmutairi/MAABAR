@@ -145,79 +145,59 @@ export default function FactoryProducts({ lang = 'ar', user }) {
 
   const chips = useMemo(() => displayCategoriesForLang(lang), [lang]);
   const [q, setQ] = useState('');
-  const [visible, setVisible] = useState(PAGE);
-
-  // Cached browse (stale-while-revalidate): the full catalog is fetched once per
-  // session and reused on every revisit instead of a full reload each time.
-  // Public + read-only — no local mutation to invalidate.
-  const { data, isLoading: loading } = useStaleWhileRevalidate('factory-products-all', async () => {
-    // factory_products can exceed PostgREST's default 1000-row cap, so page
-    // through all of them — otherwise whole factories past row 1000 never show.
-    const PROD_COLS = 'id, factory_id, name_ar, name_en, name_zh, image, moq, price, currency, customization_options, also_count, sort_order, ref_code, description_ar, description_en, created_at';
-    const fetchAllProducts = async () => {
-      const PAGE = 1000;
-      // Read the total off the first page, then fetch the rest concurrently
-      // instead of walking pages serially (the serial walk was most of the wait).
-      const first = await sb.from('factory_products').select(PROD_COLS, { count: 'exact' })
-        .order('factory_id', { ascending: true }).range(0, PAGE - 1);
-      if (first.error || !first.data) return [];
-      const all = [...first.data];
-      const total = first.count ?? first.data.length;
-      const rest = [];
-      for (let from = PAGE; from < total; from += PAGE) {
-        rest.push(sb.from('factory_products').select(PROD_COLS)
-          .order('factory_id', { ascending: true }).range(from, from + PAGE - 1));
-      }
-      if (rest.length) {
-        const pages = await Promise.all(rest);
-        for (const p of pages) { if (p.data) all.push(...p.data); }
-      }
-      return all;
-    };
-    const [{ data: facs }, prods] = await Promise.all([
-      sb.from('factory_directory_public').select('id, company_name, company_name_latin, category, certifications, private_label'),
-      fetchAllProducts(),
-    ]);
-    const facMap = {};
-    (facs || []).forEach((f) => { facMap[f.id] = f; });   // only ACTIVE factories (public view) → respects the draft gate
-    // Join, then precompute each product's normalized search text (_hay) once —
-    // names (ar/en/zh) + ref + description + factory name — so smart search stays
-    // fast across the full catalog on every keystroke.
-    return (prods || [])
-      .map((p) => {
-        const factory = facMap[p.factory_id];
-        const _hay = normalize([
-          p.name_ar, p.name_en, p.name_zh, p.ref_code, p.description_ar, p.description_en,
-          factory && factory.company_name, factory && factory.company_name_latin,
-        ].filter(Boolean).join(' '));
-        return { ...p, factory, _hay };
-      })
-      .filter((p) => p.factory && isUrl(p.image));
-  });
-  const items = data || [];
-
-  useEffect(() => { setVisible(PAGE); }, [activeKey, q]);
+  const [dq, setDq] = useState('');   // debounced search — one server call per pause
+  useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 300); return () => clearTimeout(t); }, [q]);
 
   const activeCat = getFactoryDisplayCategory(activeKey);
-  const filtered = useMemo(() => {
-    let list = items;
-    if (activeCat && !activeCat.all) {
-      const codes = codesForDisplayCategory(activeKey);
-      list = list.filter((p) => codes.includes(p.factory.category));
-    }
-    // Smart search: normalize the query the same way, split into tokens, and
-    // require every token to appear in the product's precomputed search text.
-    const tokens = normalize(q).split(' ').filter(Boolean);
-    if (tokens.length) list = list.filter((p) => searchMatches(p._hay, tokens));
-    return orderProducts(list);   // priced-first, then newest
-  }, [items, activeCat, activeKey, q]);
+  const categories = useMemo(
+    () => (activeCat && !activeCat.all ? codesForDisplayCategory(activeKey) : null),
+    [activeCat, activeKey],
+  );
 
-  const shown = filtered.slice(0, visible);
-  // Open a product's detail, passing the FULL filtered list so its prev/next
-  // arrows walk exactly what the user was browsing (cross-factory here).
+  // Tier 2 — server-side paginated browse (browse_products RPC): fetch a page of 40
+  // already filtered + ordered on the server, load more on demand. No full-catalog
+  // pull, no client-side ordering.
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 40;
+
+  const fetchPage = async (after) => {
+    const { data, error } = await sb.rpc('browse_products', {
+      p_categories: categories, p_search: dq || null, p_after: after, p_limit: PAGE_SIZE,
+    });
+    return error ? [] : (data || []);
+  };
+
+  // Reset + load page 1 whenever the category or debounced search changes.
+  useEffect(() => {
+    let alive = true;
+    setLoading(true); setItems([]); setHasMore(true);
+    (async () => {
+      const rows = await fetchPage(null);
+      if (!alive) return;
+      setItems(rows);
+      setHasMore(rows.length === PAGE_SIZE);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [categories, dq]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || !items.length) return;
+    setLoadingMore(true);
+    const rows = await fetchPage(items[items.length - 1].browse_rank);
+    setItems((prev) => [...prev, ...rows]);
+    setHasMore(rows.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
+
+  const shown = items;
+  // Prev/next in the detail view walk exactly the pages loaded so far.
   const openProduct = (p) => nav(`/factory/${p.factory_id}/product/${p.id}`,
-    { state: { siblings: filtered.map((x) => ({ id: x.id, fid: x.factory_id })) } });
-  const revealRef = useReveal([lang, activeKey, q, shown.length]);
+    { state: { siblings: items.map((x) => ({ id: x.id, fid: x.factory_id })) } });
+  const revealRef = useReveal([lang, activeKey, dq, shown.length]);
   const pName = (p) => (isAr ? (nf(p.name_ar) || nf(p.name_en)) : lang === 'zh' ? (nf(p.name_zh) || nf(p.name_en)) : (nf(p.name_en) || nf(p.name_ar))) || '—';
   const fName = (p) => nf(p.factory.company_name_latin) || nf(p.factory.company_name) || '';
   // Catalog price (verbatim + currency unless already shown). null → "On request".
@@ -300,8 +280,8 @@ export default function FactoryProducts({ lang = 'ar', user }) {
           </div>
         )}
 
-        {!loading && filtered.length > visible && (
-          <button className={`fx-loadmore${arc}`} onClick={() => setVisible((v) => v + PAGE)}>{c.more}</button>
+        {!loading && hasMore && shown.length > 0 && (
+          <button className={`fx-loadmore${arc}`} onClick={loadMore} disabled={loadingMore}>{loadingMore ? '…' : c.more}</button>
         )}
       </div>
       <Footer lang={lang} />
