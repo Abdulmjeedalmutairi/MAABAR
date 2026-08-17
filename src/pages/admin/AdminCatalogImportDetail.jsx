@@ -10,7 +10,7 @@ import {
   approveProduct, bulkApproveHighConfidence, approveAllPending, skipProduct, finalizeImport,
   archiveFactory, deleteFactory, triggerExtraction, workerConfigured, updateImportNotes,
   cancelImport, deleteImport, assistField, assistAsk, updateImportFields, updateStagedProduct,
-  uploadProfileImage, updateImportMode, uploadPriceFile, triggerPriceMatch,
+  uploadProfileImage, updateImportMode, uploadPriceFile, triggerPriceMatch, matchPricesFromText,
 } from '../../lib/catalogImport';
 import { UI_CATEGORIES } from '../../lib/supplierDashboardConstants';
 
@@ -423,6 +423,7 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
 
   // ── Separate price file — upload + Gemini match, then an easy price review ──
   const [priceFile, setPriceFile] = useState(null);
+  const [priceText, setPriceText] = useState('');   // pasted price list (Gemini text match)
   const [matching, setMatching] = useState(false);
   const [priceMsg, setPriceMsg] = useState({ ok: false, text: '' });
   const [priceEdits, setPriceEdits] = useState({});   // { [pid]: { price, currency } }
@@ -457,6 +458,31 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
       setPriceMsg({ ok: true, text: isAr
         ? `طوبقت الأسعار لـ ${res.matched} من ${res.total} منتج${res.unmatched ? ` (${res.unmatched} بدون سعر)` : ''}.`
         : `Matched ${res.matched} of ${res.total} products${res.unmatched ? ` (${res.unmatched} left unpriced)` : ''}.` });
+    } catch (e) { setPriceMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
+    setMatching(false);
+  };
+
+  // Paste a free-text price list (e.g. from WhatsApp) → Gemini matches each price
+  // to a product by name/ref → fill the review table (priceEdits) for save.
+  const runTextPriceMatch = async () => {
+    if (!priceText.trim() || matching) return;
+    setMatching(true); setPriceMsg({ ok: false, text: '' });
+    try {
+      const prodList = products.map((p, i) => {
+        const nm = p.extracted_json?.product_name || {};
+        const name = (nm && typeof nm === 'object') ? (nm.en || nm.ar || '') : String(nm || '');
+        const ref = p.extracted_json?.ref_code && p.extracted_json.ref_code !== 'not_found' ? p.extracted_json.ref_code : '';
+        return { idx: i, name, ref };
+      });
+      const res = await matchPricesFromText(prodList, priceText);
+      const matches = res?.matches || [];
+      const edits = {};
+      matches.forEach((m) => { const p = products[m.idx]; if (p) edits[p.id] = { price: m.price, currency: m.currency || '' }; });
+      setPriceEdits((e) => ({ ...e, ...edits }));
+      setPriceOpen(true);
+      setPriceMsg({ ok: true, text: isAr
+        ? `طوبقت ${matches.length} من ${products.length} منتج. راجع الأسعار بالأسفل واحفظ.`
+        : `Matched ${matches.length} of ${products.length}. Review below and save.` });
     } catch (e) { setPriceMsg({ ok: false, text: (isAr ? 'خطأ: ' : 'Error: ') + (e.message || '') }); }
     setMatching(false);
   };
@@ -867,6 +893,21 @@ export default function AdminCatalogImportDetail({ user, profile, lang }) {
                       {priceOpen ? (isAr ? 'إخفاء الأسعار' : 'Hide prices') : (isAr ? 'مراجعة الأسعار' : 'Review prices')}
                     </button>
                   )}
+                </div>
+
+                {/* Or paste the prices as free text — Gemini matches by name (ranges OK). Optional/skippable. */}
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  <p className="ci-hint" style={{ margin: '0 0 8px' }}>
+                    {isAr ? '✨ أو الصق الأسعار نصًّا (مثلاً من واتساب) ويطابقها جيميني بالاسم — النطاقات مقبولة. يمكنك التخطّي والتسعير لاحقاً.'
+                          : '✨ Or paste prices as text (e.g. from WhatsApp) — Gemini matches by name; ranges are fine. You can skip and price later.'}
+                  </p>
+                  <textarea value={priceText} onChange={(e) => setPriceText(e.target.value)} dir="ltr"
+                    placeholder={'Soap dispenser: $4-$6.5\nWater dispenser: $1.1-$4\nFood chopper: $1.5-$10'}
+                    style={{ width: '100%', minHeight: 90, boxSizing: 'border-box', fontFamily: FB, fontSize: 12.5, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.12)', resize: 'vertical' }} />
+                  <button className="ci-btn-primary" style={{ marginTop: 8 }} onClick={runTextPriceMatch}
+                    disabled={!priceText.trim() || matching || !workerConfigured()}>
+                    {matching ? (isAr ? 'جارٍ المطابقة…' : 'Matching…') : (isAr ? '✨ مطابقة النص' : '✨ Match text')}
+                  </button>
                 </div>
                 {!workerConfigured() && (
                   <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#b8860b', fontFamily: FB }}>

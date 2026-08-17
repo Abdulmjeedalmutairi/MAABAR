@@ -497,5 +497,72 @@ def match_prices():
                     "unmatched": len(prods) - matched}), 200
 
 
+# ── Match a FREE-TEXT price list to a caller-supplied product list ────────────
+# Stateless: the caller sends products [{idx,name,ref}] + price_text (e.g. pasted
+# from a WhatsApp message), Gemini matches by ref/name, and we return the matches
+# by idx. The CALLER applies them (to a staging import OR to live factory_products),
+# so one endpoint serves both the import flow and the supplier-file flow.
+@app.route("/match-prices-text", methods=["POST", "OPTIONS"])
+def match_prices_text():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    if not _is_admin(token):
+        return jsonify({"error": "forbidden"}), 403
+
+    body = request.get_json(silent=True) or {}
+    products = body.get("products") or []
+    price_text = str(body.get("price_text") or "").strip()
+    if not products:
+        return jsonify({"error": "products required"}), 400
+    if not price_text:
+        return jsonify({"error": "price_text required"}), 400
+
+    catalog = [{"idx": int(p.get("idx", i)),
+                "name": str(p.get("name") or "")[:200],
+                "ref": str(p.get("ref") or "")[:80]}
+               for i, p in enumerate(products)]
+
+    prompt = (
+        "You are matching a factory PRICE LIST to a list of PRODUCTS. "
+        "For EACH product in PRODUCTS, find its price in the PRICE LIST below and return it. Rules:\n"
+        "- Match by model/ref_code FIRST (strongest signal), then by product name (fuzzy is fine).\n"
+        "- Return the price VERBATIM as written, keeping any unit or range (e.g. '12.50', '$4-$6.5', 'USD 8/set').\n"
+        "- currency: the ISO code if determinable (USD, CNY, SAR, EUR, ...), else ''.\n"
+        "- If you cannot CONFIDENTLY match a product, OMIT it (do NOT guess).\n"
+        "- Use each product's idx exactly as given.\n\n"
+        "PRODUCTS:\n" + json.dumps(catalog, ensure_ascii=False)[:20000] +
+        "\n\nPRICE LIST (text):\n" + price_text[:8000]
+    )
+
+    try:
+        raw = _gemini(prompt, json_schema=MATCH_SCHEMA, max_tokens=32768)
+    except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
+        return jsonify({"error": f"matching failed: {str(e)[:300]}"}), 500
+
+    try:
+        matches = (json.loads((raw or "").strip() or "{}") or {}).get("matches") or []
+    except Exception:  # noqa: BLE001 — truncated JSON: salvage what we can
+        matches = _salvage_matches(raw)
+
+    valid_idx = {c["idx"] for c in catalog}
+    out, seen = [], set()
+    for m in matches:
+        try:
+            i = int(m.get("idx"))
+        except (TypeError, ValueError):
+            continue
+        if i not in valid_idx or i in seen:
+            continue
+        price = str(m.get("price") or "").strip()
+        if not price:
+            continue
+        seen.add(i)
+        out.append({"idx": i, "price": price, "currency": str(m.get("currency") or "").strip()})
+
+    return jsonify({"ok": True, "matches": out, "matched": len(out), "total": len(catalog)}), 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8080")))

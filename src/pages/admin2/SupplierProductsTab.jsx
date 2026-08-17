@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { fetchFactoryProducts, updateFactoryProduct, deleteFactoryProduct, fetchFactories, setAllFactoryProductsPrice } from '../../lib/catalogImport';
+import { fetchFactoryProducts, updateFactoryProduct, deleteFactoryProduct, fetchFactories, setAllFactoryProductsPrice, matchPricesFromText } from '../../lib/catalogImport';
 
 const nf = (v) => (v && v !== 'not_found' ? String(v).trim() : '');
 const CURRENCIES = ['', 'USD', 'CNY', 'SAR', 'AED', 'EUR'];
@@ -43,6 +43,27 @@ export default function SupplierProductsTab({ factoryId, lang, isAr, flash }) {
     if (!s) return rows;
     return rows.filter((p) => [p.name_ar, p.name_en, p.ref_code, p.section_ar, p.section_en].filter(Boolean).join(' ').toLowerCase().includes(s));
   }, [rows, q]);
+
+  // Paste a free-text price list → Gemini matches each price to its product by
+  // name/ref → we write the matched price/currency to each factory_products row.
+  const applyTextPrices = async (text) => {
+    if (!text.trim() || !rows?.length) return;
+    setBusy(true);
+    try {
+      const products = rows.map((p, i) => ({ idx: i, name: nf(p.name_en) || nf(p.name_ar) || nf(p.name_zh), ref: nf(p.ref_code) }));
+      const res = await matchPricesFromText(products, text);
+      const matches = res?.matches || [];
+      if (!matches.length) { flash(isAr ? 'لم يُطابق أي سعر — راجع الأسماء' : 'No prices matched — check names'); setBusy(false); return; }
+      await Promise.all(matches.map((m) => {
+        const p = rows[m.idx];
+        return p ? updateFactoryProduct(p.id, { price: m.price, currency: m.currency || p.currency || null }) : Promise.resolve();
+      }));
+      setRows((rs) => rs.map((p, i) => { const m = matches.find((x) => x.idx === i); return m ? { ...p, price: m.price, currency: m.currency || p.currency } : p; }));
+      flash(isAr ? `طُوبقت ${matches.length} من ${rows.length} أسعار` : `Matched ${matches.length} of ${rows.length}`);
+      setBulk(null);
+    } catch { flash(isAr ? 'تعذّرت المطابقة' : 'Match failed'); }
+    setBusy(false);
+  };
 
   const toggle = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const allSelected = filtered.length > 0 && filtered.every((p) => sel.has(p.id));
@@ -93,6 +114,11 @@ export default function SupplierProductsTab({ factoryId, lang, isAr, flash }) {
             {isAr ? 'سعر موحّد للكل' : 'Uniform price'}
           </button>
         )}
+        {rows.length > 0 && (
+          <button className="ac-btn ac-btn-sm" onClick={() => setBulk('textPrice')} title={isAr ? 'الصق قائمة أسعار (واتساب) ويطابقها Gemini بكل منتج' : 'Paste a price list — Gemini matches each to its product'}>
+            {isAr ? '✨ مطابقة أسعار بالنص' : '✨ Match prices (text)'}
+          </button>
+        )}
         <span style={{ fontSize: 12.5, color: 'var(--ac-faint)' }}>{isAr ? `${filtered.length} منتج` : `${filtered.length} products`}</span>
       </div>
 
@@ -141,6 +167,7 @@ export default function SupplierProductsTab({ factoryId, lang, isAr, flash }) {
         </div>
       )}
 
+      {bulk === 'textPrice' && <TextPriceModal isAr={isAr} busy={busy} onClose={() => setBulk(null)} onApply={applyTextPrices} />}
       {edit && <EditModal p={edit} isAr={isAr} onClose={() => setEdit(null)} onSave={async (patch) => { await applyPatch([edit.id], patch); setEdit(null); }} />}
       {bulk === 'price' && <BulkPriceModal count={sel.size} isAr={isAr} onClose={() => setBulk(null)} onApply={async (patch) => { await applyPatch([...sel], patch); setBulk(null); }} />}
       {bulk === 'priceAll' && <BulkPriceModal count={rows.length} allProducts isAr={isAr} onClose={() => setBulk(null)}
@@ -157,6 +184,29 @@ export default function SupplierProductsTab({ factoryId, lang, isAr, flash }) {
       {bulk === 'move' && <BulkMoveModal count={sel.size} isAr={isAr} currentId={factoryId} onClose={() => setBulk(null)}
         onApply={async (targetId) => { const ids = [...sel]; await Promise.all(ids.map((id) => updateFactoryProduct(id, { factory_id: targetId }))); setRows((rs) => rs.filter((p) => !sel.has(p.id))); clearSel(); setBulk(null); flash(isAr ? 'تم النقل' : 'Moved'); }} />}
     </div>
+  );
+}
+
+// ── Text price matching (Gemini) ─────────────────────────────────────────────
+function TextPriceModal({ isAr, busy, onClose, onApply }) {
+  const [text, setText] = useState('');
+  return (
+    <Modal title={isAr ? '✨ مطابقة أسعار بالنص' : '✨ Match prices from text'} onClose={onClose}>
+      <p style={{ fontSize: 12.5, color: 'var(--ac-faint)', margin: '0 0 10px', lineHeight: 1.6 }}>
+        {isAr
+          ? 'الصق قائمة الأسعار (مثلاً من واتساب) وسيطابق Gemini كل سعر بمنتجه بالاسم. النطاقات مقبولة (مثل $4-$6.5).'
+          : 'Paste the price list (e.g. from WhatsApp). Gemini matches each price to its product by name. Ranges are fine (e.g. $4-$6.5).'}
+      </p>
+      <textarea className="ac-textarea" style={{ minHeight: 150, direction: 'ltr', textAlign: 'left' }}
+        placeholder={'Soap dispenser: $4-$6.5\nWater dispenser: $1.1-$4\nFood chopper: $1.5-$10'}
+        value={text} onChange={(e) => setText(e.target.value)} />
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+        <button className="ac-btn" onClick={onClose}>{isAr ? 'إلغاء' : 'Cancel'}</button>
+        <button className="ac-btn ac-btn-primary" disabled={busy || !text.trim()} onClick={() => onApply(text)}>
+          {busy ? (isAr ? 'جارٍ المطابقة…' : 'Matching…') : (isAr ? 'مطابقة' : 'Match')}
+        </button>
+      </div>
+    </Modal>
   );
 }
 
