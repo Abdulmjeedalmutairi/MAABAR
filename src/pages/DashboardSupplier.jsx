@@ -1481,7 +1481,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       title_zh: `供应商无法接受订单：${productName}`,
       ref_id: request.id,
       is_read: false,
-    }).select().single();
+    });   // no .select() — the row is the buyer's; supplier readback is RLS-blocked (would 42501)
     console.log('[rejectDirectOrder] notification response:', notifRes);
 
     try {
@@ -1651,7 +1651,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
       title_zh: `您的订单已发货 — 跟踪号：${num}`,
       ref_id: request.id,
       is_read: false,
-    }).select().single();
+    });   // no .select() — cross-user notification row; readback is RLS-blocked (would 42501)
     console.log('[submitDirectTracking] notification response:', notifRes);
 
     try {
