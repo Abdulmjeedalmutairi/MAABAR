@@ -219,7 +219,15 @@ export default function FactoryRequestView() {
       <div style={wrap}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <span style={{ fontSize: 18, fontWeight: 600, color: '#1a1814' }}>مَعبر · Maabar</span>
-          <button style={link} onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}>{lang === 'en' ? '中文' : 'EN'}</button>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {['en', 'zh'].map((l) => (
+              <button key={l} onClick={() => setLang(l)} style={{
+                background: lang === l ? '#1a1814' : '#fff', color: lang === l ? '#fff' : '#6b6560',
+                border: `1px solid ${lang === l ? '#1a1814' : '#e2ddd3'}`, borderRadius: 99,
+                padding: '6px 15px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>{l === 'en' ? 'EN' : '中文'}</button>
+            ))}
+          </div>
         </div>
 
         {loading ? (

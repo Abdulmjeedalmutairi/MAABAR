@@ -9,7 +9,8 @@ const digits = (v) => (v || '').replace(/[^\d]/g, '');
 export default function InviteModal({ factoryId, request, isAr, onClose, flash }) {
   const [fac, setFac] = useState(null);
   const [tpl, setTpl] = useState(request ? 'quote' : 'new_message');
-  const [msgLang, setMsgLang] = useState('en');
+  // Factories are Chinese — default the outgoing message to 中文 (admin can switch to EN).
+  const [msgLang, setMsgLang] = useState('zh');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
 
