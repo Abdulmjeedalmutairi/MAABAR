@@ -213,6 +213,15 @@ export async function triggerPriceMatch(importId) {
   return callWorker('/match-prices', { import_id: importId });
 }
 
+// Match a FREE-TEXT price list (pasted, e.g. from a WhatsApp message) to a
+// caller-supplied product list via Gemini on the worker. Stateless — the caller
+// applies the returned prices to its own rows (staging import OR live products).
+//   products : [{ idx, name, ref }]
+//   returns  : { ok, matches: [{ idx, price, currency }], matched, total }
+export async function matchPricesFromText(products, priceText) {
+  return callWorker('/match-prices-text', { products: products || [], price_text: (priceText || '').trim() });
+}
+
 // Update the per-catalog guidance (used to re-curate with new instructions).
 export async function updateImportNotes(importId, notes) {
   const { error } = await sb.from('factory_catalog_imports')
