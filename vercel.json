@@ -1,5 +1,17 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/f/:slug",
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(WhatsApp|whatsapp|facebookexternalhit|MicroMessenger|Pinterest|Embedly|Iframely|SkypeUriPreview|vkShare|Snapchat|[Bb]ot|[Cc]rawler|[Ss]pider|[Pp]review).*" }],
+      "destination": "/og/f.html"
+    },
+    {
+      "source": "/claim/:slug",
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(WhatsApp|whatsapp|facebookexternalhit|MicroMessenger|Pinterest|Embedly|Iframely|SkypeUriPreview|vkShare|Snapchat|[Bb]ot|[Cc]rawler|[Ss]pider|[Pp]review).*" }],
+      "destination": "/og/claim.html"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/.well-known/apple-app-site-association",
