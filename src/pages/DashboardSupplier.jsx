@@ -225,6 +225,8 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
   const [invoiceOrder, setInvoiceOrder] = useState(null);   // { requestId, order } for the invoice modal
   const [directOrderActioning, setDirectOrderActioning] = useState({});
   const [directOrdersNowMs, setDirectOrdersNowMs] = useState(() => Date.now());
+  const [confirmedDirectOrders, setConfirmedDirectOrders] = useState([]);
+  const [loadingConfirmedDirectOrders, setLoadingConfirmedDirectOrders] = useState(false);
   const [paidDirectOrders, setPaidDirectOrders] = useState([]);
   const [loadingPaidDirectOrders, setLoadingPaidDirectOrders] = useState(false);
   const [directShippingActioning, setDirectShippingActioning] = useState({});
@@ -412,7 +414,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
 
   useEffect(() => {
     if (!user) { nav('/login/supplier'); return; }
-    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory();
+    loadStats(); loadPendingTracking(); loadRejectedOffers(); loadDirectOrders(); loadConfirmedDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -577,7 +579,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
 
   useEffect(() => { if (activeTab === 'browse-requests') loadRequests(); }, [activeTab, activeCat]);
 
-  useEffect(() => { if (activeTab === 'direct-orders') { loadDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory(); } }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (activeTab === 'direct-orders') { loadDirectOrders(); loadConfirmedDirectOrders(); loadPaidDirectOrders(); loadDirectOrdersHistory(); } }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (activeTab !== 'direct-orders') return;
@@ -1368,6 +1370,44 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
     setLoadingDirectOrders(false);
   };
 
+  // Confirmed-but-not-yet-paid: read-only for the supplier (the buyer must pay
+  // next). Without this the order vanishes from the supplier's view between
+  // 'confirm' and the buyer's payment.
+  const loadConfirmedDirectOrders = async () => {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const key = `sup-confirmed-direct-orders:${user.id}`;
+    const cached = readSwrCache(key);
+    if (cached !== undefined) setConfirmedDirectOrders(cached); else setLoadingConfirmedDirectOrders(true);
+
+    const productsRes = await sb.from('products').select('id').eq('supplier_id', user.id);
+    const myProductIds = (productsRes.data || []).map(p => p.id);
+    if (myProductIds.length === 0) {
+      writeSwrCache(key, []);
+      setConfirmedDirectOrders([]);
+      setLoadingConfirmedDirectOrders(false);
+      return;
+    }
+
+    const ordersRes = await sb
+      .from('requests')
+      .select('*, profiles!requests_buyer_id_fkey(full_name, company_name)')
+      .eq('status', 'supplier_confirmed')
+      .in('product_ref', myProductIds)
+      .order('updated_at', { ascending: false });
+
+    const refIds = [...new Set((ordersRes.data || []).map(r => r.product_ref).filter(Boolean))];
+    const productsByIdRes = refIds.length
+      ? await sb.from('products').select(`id, name_ar, name_en, name_zh, currency, ${PRODUCT_TIER_EMBED}`).in('id', refIds)
+      : { data: [], error: null };
+    const productsById = (productsByIdRes.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+    const result = (ordersRes.data || []).map(r => ({ ...r, product: productsById[r.product_ref] || null }));
+    writeSwrCache(key, result);
+    setConfirmedDirectOrders(result);
+    setLoadingConfirmedDirectOrders(false);
+  };
+
   const confirmDirectOrder = async (request) => {
     if (!request?.id || !request?.buyer_id) return;
     setDirectOrderActioning(prev => ({ ...prev, [request.id]: 'confirming' }));
@@ -1410,6 +1450,7 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
 
     setDirectOrderActioning(prev => ({ ...prev, [request.id]: null }));
     loadDirectOrders();
+    loadConfirmedDirectOrders();   // moved pending → confirmed; surface it in its new section
   };
 
   const rejectDirectOrder = async (request) => {
@@ -3444,6 +3485,60 @@ export default function DashboardSupplier({ user, profile, lang, setLang, setUse
                   </div>
                 );
               })}
+
+              {/* ── Confirmed — awaiting buyer payment (read-only) ─────── */}
+              <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid var(--border-subtle)' }}>
+                <h3 style={{ fontSize: isAr ? 18 : 20, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont, letterSpacing: isAr ? 0 : -0.2 }}>
+                  {isAr ? 'بانتظار دفع التاجر' : lang === 'zh' ? '等待买家付款' : 'Awaiting Buyer Payment'}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 18, ...arFont, lineHeight: 1.7 }}>
+                  {isAr
+                    ? 'أكدت الطلب — بانتظار إكمال التاجر للدفع. سينتقل إلى «مدفوع» لتجهيز الشحن.'
+                    : lang === 'zh'
+                      ? '您已确认订单 — 等待买家付款。付款后将移至"已付款"以便您备货发货。'
+                      : 'You confirmed the order — waiting for the buyer to pay. It then moves to "Paid" for you to prepare shipping.'}
+                </p>
+
+                {loadingConfirmedDirectOrders && [1, 2].map(i => <SkeletonCard key={`confirmed-skel-${i}`} />)}
+                {!loadingConfirmedDirectOrders && confirmedDirectOrders.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '36px 0' }}>
+                    <p style={{ color: 'var(--text-disabled)', fontSize: 13, ...arFont }}>
+                      {isAr ? 'لا توجد طلبات مؤكدة بانتظار الدفع' : lang === 'zh' ? '暂无等待付款的已确认订单' : 'No confirmed orders awaiting payment'}
+                    </p>
+                  </div>
+                )}
+
+                {!loadingConfirmedDirectOrders && confirmedDirectOrders.map(r => {
+                  const productName = r.product
+                    ? (lang === 'zh' ? (r.product.name_zh || r.product.name_en || r.product.name_ar) : lang === 'en' ? (r.product.name_en || r.product.name_ar || r.product.name_zh) : (r.product.name_ar || r.product.name_en || r.product.name_zh))
+                    : getTitle(r);
+                  const buyerName = r.profiles?.company_name || r.profiles?.full_name || (isAr ? 'تاجر' : lang === 'zh' ? '采购商' : 'Trader');
+                  const productPrice = deriveProductPriceFrom(r.product);
+                  return (
+                    <div key={`confirmed-${r.id}`} style={{ marginBottom: 12, border: '1px solid rgba(45,122,79,0.22)', background: 'rgba(45,122,79,0.03)', borderRadius: 'var(--radius-lg)', padding: '18px 22px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 'var(--radius-pill)', background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.2)', color: 'var(--green)', letterSpacing: 0.4 }}>
+                          {isAr ? 'مؤكد — بانتظار الدفع' : lang === 'zh' ? '已确认 — 等待付款' : 'Confirmed — Awaiting Payment'}
+                        </span>
+                        <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>{fmtDate(r.updated_at || r.created_at)}</span>
+                      </div>
+                      <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)', ...arFont }}>{productName}</h3>
+                      <div style={{ display: 'flex', gap: 16, color: 'var(--text-secondary)', fontSize: 12, flexWrap: 'wrap', ...arFont }}>
+                        <span>{isAr ? 'التاجر:' : lang === 'zh' ? '买家：' : 'Buyer:'} {buyerName}</span>
+                        <span>{isAr ? 'الكمية:' : lang === 'zh' ? '数量：' : 'Qty:'} {r.quantity || '—'}</span>
+                        {productPrice && (
+                          <span style={{ direction: 'ltr' }}>{productPrice.toFixed(2)} {r.product?.currency || 'USD'} / unit</span>
+                        )}
+                      </div>
+                      {r.buyer_id && (
+                        <button className="btn-outline" onClick={() => nav(`/chat/${r.buyer_id}`)} style={{ marginTop: 12, minHeight: 34, ...arFont }}>
+                          {isAr ? 'تواصل مع التاجر' : lang === 'zh' ? '联系买家' : 'Chat with Buyer'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* ── Paid orders awaiting tracking (Step 5) ─────────────── */}
               <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid var(--border-subtle)' }}>
