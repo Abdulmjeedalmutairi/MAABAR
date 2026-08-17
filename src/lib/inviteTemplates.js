@@ -14,6 +14,26 @@ export const TEMPLATES = [
 ];
 
 export const BODY = {
+  // Arabic bodies are for STAFF comprehension only (the "read as" gloss in
+  // InviteModal) — they are never sent to a factory. Send stays en/zh.
+  ar: {
+    new_message: (v) => v.reg
+      ? `مرحبًا ${v.factory}،\n\nلديك رسالة جديدة من مشترٍ سعودي على معبر. افتح لوحتك للرد:\n${v.cta}\n\nمعبر`
+      : `مرحبًا ${v.factory}،\n\nمشترٍ سعودي على معبر مهتمّ بمنتجاتك. صفحة مصنعك جاهزة — طالِب بها للرد واستقبال الطلبات:\n${v.cta}\n\nمعبر — جسرك إلى المشترين السعوديين.`,
+    quote: (v) => `مرحبًا ${v.factory}،\n\nلديك طلب تسعير جديد من مشترٍ سعودي:\n• المنتج: ${v.product || '-'}\n• الكمية: ${v.qty || '-'}\n\n${v.reg ? 'افتح لوحتك للرد الآن:' : 'رُدّ مباشرة من صفحة مصنعك الجاهزة:'}\n${v.cta}\n\nمعبر`,
+    discover: (v) => v.reg
+      ? `مرحبًا ${v.factory}،\n\nصفحة مصنعك ظاهرة على معبر. أضِف أفضل منتجاتك وصورك ليجدك المشترون السعوديون — المصانع ذات الصفحات المكتملة تصلها طلبات أكثر:\n${v.cta}\n\nمعبر`
+      : `مرحبًا ${v.factory}،\n\nطالِب بصفحة مصنعك الجاهزة على معبر وأضِف منتجاتك ليجدك المشترون السعوديون ويطلبوا منك:\n${v.cta}\n\nمعبر`,
+    complete: (v) => v.reg
+      ? `مرحبًا ${v.factory}،\n\nأكمِل ملفك على معبر لجذب مزيد من المشترين السعوديين — أضِف المنتجات والصور والشهادات:\n${v.cta}\n\nمعبر`
+      : `مرحبًا ${v.factory}،\n\nصفحة مصنعك جاهزة على معبر. طالِب بها وأضِف بعض التفاصيل لجذب المشترين السعوديين:\n${v.cta}\n\nمعبر`,
+    reminder: (v) => v.reg
+      ? `مرحبًا ${v.factory}،\n\nتذكير سريع — مشترون سعوديون بانتظار ردّك على معبر. افتح لوحتك للرد:\n${v.cta}\n\nمعبر`
+      : `مرحبًا ${v.factory}،\n\nتذكير سريع — مشترون سعوديون بالانتظار على معبر. طالِب بصفحتك للرد:\n${v.cta}\n\nمعبر`,
+    catalog: (v) => v.reg
+      ? `مرحبًا ${v.factory}،\n\nكتالوجك ظاهر الآن على معبر — منتجاتك مرئية للمشترين السعوديين. أدِرها من لوحتك:\n${v.cta}\n\nمعبر`
+      : `مرحبًا ${v.factory}،\n\nنشرنا كتالوجك على معبر — منتجاتك مرئية الآن للمشترين السعوديين. طالِب بصفحتك لإدارتها:\n${v.cta}\n\nمعبر`,
+  },
   en: {
     new_message: (v) => v.reg
       ? `Hi ${v.factory},\n\nYou have a new message from a Saudi buyer on MAABAR. Open your dashboard to reply:\n${v.cta}\n\nMAABAR`
@@ -53,6 +73,7 @@ export const BODY = {
 };
 
 export const SUBJECT = {
+  ar: { new_message: 'رسالة جديدة على معبر', quote: 'طلب تسعير جديد', discover: 'ليجدك المشترون السعوديون', complete: 'أكمِل صفحتك على معبر', reminder: 'مشترون بانتظارك على معبر', catalog: 'كتالوجك ظاهر على معبر' },
   en: { new_message: 'A new message on MAABAR', quote: 'New quote request', discover: 'Get discovered by Saudi buyers', complete: 'Complete your MAABAR page', reminder: 'Buyers are waiting on MAABAR', catalog: 'Your catalog is live on MAABAR' },
   zh: { new_message: 'MAABAR 上有新消息', quote: '新报价请求', discover: '让沙特买家发现您', complete: '完善您的 MAABAR 主页', reminder: '买家正在 MAABAR 等待', catalog: '您的目录已上线 MAABAR' },
 };

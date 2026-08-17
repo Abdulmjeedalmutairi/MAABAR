@@ -12,6 +12,9 @@ export default function InviteModal({ factoryId, request, isAr, onClose, flash }
   const [tpl, setTpl] = useState(request ? 'quote' : 'new_message');
   // Factories are Chinese — default the outgoing message to 中文 (admin can switch to EN).
   const [msgLang, setMsgLang] = useState('zh');
+  // Staff read-gloss: shows the SAME template in Arabic/English so staff understand
+  // what they're sending. Never sent — the message goes out in msgLang (zh/en).
+  const [readLang, setReadLang] = useState('ar');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [inviteSlug, setInviteSlug] = useState('');   // per-request /f/:slug (quote flow)
@@ -85,8 +88,11 @@ export default function InviteModal({ factoryId, request, isAr, onClose, flash }
               {isAr ? 'عرض كل القوالب ↗' : 'View all templates ↗'}
             </button>
           </div>
-          <div className="ac-langs" style={{ display: 'flex', gap: 4 }}>
-            {['en', 'zh'].map((l) => <button key={l} className={`ac-chip${msgLang === l ? ' on' : ''}`} style={{ height: 28 }} onClick={() => setMsgLang(l)}>{l === 'en' ? 'EN' : '中文'}</button>)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10.5, color: 'var(--ac-faint)' }}>{isAr ? 'يُرسَل بـ' : 'Send in'}</span>
+            <div className="ac-langs" style={{ display: 'flex', gap: 4 }}>
+              {['en', 'zh'].map((l) => <button key={l} className={`ac-chip${msgLang === l ? ' on' : ''}`} style={{ height: 28 }} onClick={() => setMsgLang(l)}>{l === 'en' ? 'EN' : '中文'}</button>)}
+            </div>
           </div>
         </div>
 
@@ -105,6 +111,21 @@ export default function InviteModal({ factoryId, request, isAr, onClose, flash }
                   : (isAr ? '● غير مسجّل — الزر يوجّه لرابط المطالبة' : '● Not registered — CTA links to the claim page')}
             </p>
             <textarea className="ac-textarea" style={{ minHeight: 170, direction: 'ltr', textAlign: 'left' }} value={text} onChange={(e) => setText(e.target.value)} />
+
+            {/* Staff read-gloss: the same template in Arabic/English so staff know
+                what they're sending. Read-only — never sent (send stays msgLang). */}
+            <div style={{ marginTop: 10, background: 'var(--ac-bg-subtle, rgba(127,127,127,0.06))', border: '1px solid var(--ac-border, rgba(127,127,127,0.18))', borderRadius: 8, padding: '9px 11px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 10.5, color: 'var(--ac-faint)' }}>{isAr ? '🔎 للفهم فقط — لا يُرسَل' : '🔎 For staff — not sent'}</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {['ar', 'en'].map((l) => <button key={l} className={`ac-chip${readLang === l ? ' on' : ''}`} style={{ height: 24, fontSize: 11 }} onClick={() => setReadLang(l)}>{l === 'ar' ? 'ع' : 'EN'}</button>)}
+                </div>
+              </div>
+              <p style={{ margin: 0, fontSize: 12, lineHeight: 1.7, whiteSpace: 'pre-wrap', direction: readLang === 'ar' ? 'rtl' : 'ltr', textAlign: readLang === 'ar' ? 'right' : 'left', color: 'var(--ac-faint)' }}>
+                {BODY[readLang][tpl](vars)}
+              </p>
+            </div>
+
             <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <button className="ac-btn" onClick={copy}>{isAr ? 'نسخ' : 'Copy'}</button>
               <button className="ac-btn" onClick={openWa} disabled={!phone} style={{ opacity: phone ? 1 : 0.5 }}>WhatsApp</button>

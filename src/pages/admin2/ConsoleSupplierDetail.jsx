@@ -142,8 +142,8 @@ export default function ConsoleSupplierDetail({ user, profile, lang }) {
               <button className="ac-btn ac-btn-sm" onClick={() => copy(publicUrl, isAr ? 'نُسخ الرابط' : 'URL copied')}>{isAr ? 'نسخ الرابط' : 'Copy URL'}</button>
               {fac.claim_slug && <button className="ac-btn ac-btn-sm" onClick={() => copy(`${window.location.origin}/claim/${fac.claim_slug}`, isAr ? 'نُسخ رابط المطالبة' : 'Claim link copied')}>{isAr ? 'رابط المطالبة' : 'Claim link'}</button>}
               <button className="ac-btn ac-btn-sm" onClick={() => window.open(publicUrl, '_blank')}>{isAr ? 'الصفحة العامة' : 'Public page'}</button>
-              <button className="ac-btn ac-btn-sm" disabled={!digits(fac.phone)} style={{ opacity: digits(fac.phone) ? 1 : 0.5 }}
-                onClick={() => digits(fac.phone) && window.open(`https://wa.me/${digits(fac.phone)}`, '_blank')}>WhatsApp</button>
+              <button className="ac-btn ac-btn-sm" onClick={() => setInvite(true)}
+                title={isAr ? 'راسل المصنع بقالب جاهز' : 'Message the factory with a ready template'}>WhatsApp</button>
               <button className="ac-btn ac-btn-sm" disabled={!nf(fac.email)} style={{ opacity: nf(fac.email) ? 1 : 0.5 }}
                 onClick={() => nf(fac.email) && window.open(`mailto:${fac.email}`)}>{isAr ? 'إيميل' : 'Email'}</button>
               <button className="ac-btn ac-btn-sm ac-btn-primary" onClick={() => setInvite(true)}>
