@@ -7,6 +7,7 @@ import ProductChips from '../components/ProductChips';
 import NegotiablePill from '../components/NegotiablePill';
 import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
+import { logProductEvent } from '../lib/productEvents';
 import { sb } from '../supabase';
 import {
   displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -131,6 +132,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   async function handleMessage(product) {
     if (!user) { nav('/login'); return; }
     if (msgBusy) return;
+    logProductEvent(product, 'chat');
     setMsgBusy(true);
     try {
       const threadId = await startFactoryThread(product.factory_id);
@@ -195,8 +197,11 @@ export default function FactoryProducts({ lang = 'ar', user }) {
 
   const shown = items;
   // Prev/next in the detail view walk exactly the pages loaded so far.
-  const openProduct = (p) => nav(`/factory/${p.factory_id}/product/${p.id}`,
-    { state: { siblings: items.map((x) => ({ id: x.id, fid: x.factory_id })) } });
+  const openProduct = (p) => {
+    logProductEvent(p, 'click');
+    nav(`/factory/${p.factory_id}/product/${p.id}`,
+      { state: { siblings: items.map((x) => ({ id: x.id, fid: x.factory_id })) } });
+  };
   const revealRef = useReveal([lang, activeKey, dq, shown.length]);
   const pName = (p) => (isAr ? (nf(p.name_ar) || nf(p.name_en)) : lang === 'zh' ? (nf(p.name_zh) || nf(p.name_en)) : (nf(p.name_en) || nf(p.name_ar))) || '—';
   const fName = (p) => nf(p.factory.company_name_latin) || nf(p.factory.company_name) || '';
@@ -266,7 +271,7 @@ export default function FactoryProducts({ lang = 'ar', user }) {
                   {nf(p.moq) && <p className={`fp-pcard-moq${arc}`}>{c.moq}: {p.moq}</p>}
                   {(p._variantExtra || p.also_count) > 0 && <MoreOptionsBadge count={p._variantExtra || p.also_count} lang={lang} style={{ marginTop: 4 }} />}
                   <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                    <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => nav(`/factory/${p.factory_id}?request=1`)}>{c.quote}</button>
+                    <button className={`fp-pcard-btn${arc}`} style={{ flex: 1, marginTop: 0 }} onClick={() => { logProductEvent(p, 'quote'); nav(`/factory/${p.factory_id}?request=1`); }}>{c.quote}</button>
                     <button type="button" onClick={() => handleMessage(p)} disabled={msgBusy}
                       style={{ flex: 1, marginTop: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                         padding: '9px', borderRadius: 'var(--radius-control)', border: '1px solid var(--border-strong)', background: 'transparent',
