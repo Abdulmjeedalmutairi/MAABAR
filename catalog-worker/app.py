@@ -87,6 +87,19 @@ def _is_admin(token: str) -> bool:
         return False
 
 
+def _is_authed(token: str) -> bool:
+    """Any valid Supabase access token (not necessarily admin) — for buyer-facing
+    endpoints like /embed-query. Limits the embedding cost to logged-in users."""
+    if not token or not SERVICE_KEY:
+        return False
+    try:
+        u = requests.get(f"{SUPABASE_URL}/auth/v1/user",
+                         headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {token}"}, timeout=15)
+        return u.ok and bool((u.json() or {}).get("id"))
+    except requests.RequestException:
+        return False
+
+
 @app.get("/")
 def health():
     return jsonify({"service": "catalog-worker", "ok": True,
@@ -562,6 +575,105 @@ def match_prices_text():
         out.append({"idx": i, "price": price, "currency": str(m.get("currency") or "").strip()})
 
     return jsonify({"ok": True, "matches": out, "matched": len(out), "total": len(catalog)}), 200
+
+
+# ── Semantic search: product embeddings (Gemini text-embedding-004, 768 dims) ──
+EMBED_MODEL = os.environ.get("GEMINI_EMBED_MODEL", "text-embedding-004")
+
+
+def _embed(texts):
+    """Embed a list (or one) of texts → list of 768-float vectors. Cheap: an
+    embedding call, NOT a chat completion."""
+    from google import genai
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    res = client.models.embed_content(model=EMBED_MODEL, contents=texts)
+    return [list(e.values) for e in res.embeddings]
+
+
+def _vec_literal(values):
+    return "[" + ",".join(f"{float(v):.6f}" for v in values) + "]"
+
+
+def _product_text(p):
+    parts = [p.get("name_en"), p.get("name_ar"), p.get("spec_material"),
+             p.get("spec_color_options"), p.get("spec_dimensions"),
+             p.get("spec_customization")]
+    return " · ".join(str(x) for x in parts if x and str(x).strip() and x != "not_found")[:1200]
+
+
+@app.route("/embed-products", methods=["POST", "OPTIONS"])
+def embed_products():
+    """Backfill / refresh product embeddings. Processes up to `limit` products
+    that have no embedding yet (or all, if force=true) and returns how many are
+    left — call repeatedly until remaining = 0."""
+    if request.method == "OPTIONS":
+        return ("", 204)
+    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    if not _is_admin(token):
+        return jsonify({"error": "forbidden"}), 403
+
+    body = request.get_json(silent=True) or {}
+    limit = max(1, min(int(body.get("limit") or 300), 500))
+    force = bool(body.get("force"))
+
+    flt = "" if force else "&embedding=is.null"
+    r = requests.get(
+        f"{SUPABASE_URL}/rest/v1/factory_products"
+        f"?select=id,name_en,name_ar,spec_material,spec_color_options,spec_dimensions,spec_customization"
+        f"{flt}&order=created_at.desc&limit={limit}",
+        headers=SR_HEADERS, timeout=60)
+    prods = r.json() if r.ok else []
+    if not prods:
+        return jsonify({"ok": True, "embedded": 0, "remaining": 0}), 200
+
+    texts = [_product_text(p) for p in prods]
+    try:
+        vecs = _embed(texts)
+    except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
+        return jsonify({"error": f"embedding failed: {str(e)[:300]}"}), 500
+
+    supa = ci.Supa(SUPABASE_URL, SERVICE_KEY)
+    now = datetime.now(timezone.utc).isoformat()
+    done = 0
+    for p, v in zip(prods, vecs):
+        try:
+            supa.update("factory_products", p["id"], {"embedding": _vec_literal(v), "embedded_at": now})
+            done += 1
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+
+    # remaining still-unembedded count (0 when force)
+    remaining = 0
+    if not force:
+        rc = requests.get(
+            f"{SUPABASE_URL}/rest/v1/factory_products?select=id&embedding=is.null&limit=1",
+            headers={**SR_HEADERS, "Prefer": "count=exact"}, timeout=30)
+        cr = rc.headers.get("content-range", "")
+        remaining = int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
+
+    return jsonify({"ok": True, "embedded": done, "remaining": remaining}), 200
+
+
+@app.route("/embed-query", methods=["POST", "OPTIONS"])
+def embed_query():
+    """Embed a search string → the query vector the client passes to
+    search_products_semantic. Public (needs a JWT — same as browse)."""
+    if request.method == "OPTIONS":
+        return ("", 204)
+    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    if not _is_authed(token):
+        return jsonify({"error": "unauthorized"}), 401
+    body = request.get_json(silent=True) or {}
+    text = str(body.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text required"}), 400
+    try:
+        v = _embed([text[:400]])[0]
+    except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
+        return jsonify({"error": f"embedding failed: {str(e)[:300]}"}), 500
+    return jsonify({"ok": True, "embedding": v}), 200
 
 
 if __name__ == "__main__":
