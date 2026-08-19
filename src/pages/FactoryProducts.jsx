@@ -150,6 +150,26 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const [dq, setDq] = useState('');   // debounced search — one server call per pause
   useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 300); return () => clearTimeout(t); }, [q]);
 
+  // Typeahead suggestions — cheap keyword match on product names (no AI, no RPC:
+  // factory_products is public-read). Completes terms + jumps straight to a
+  // product. (Synonyms like كنب→أريكة are handled by the semantic search on submit.)
+  const [suggestions, setSuggestions] = useState([]);
+  const [sugOpen, setSugOpen] = useState(false);
+  useEffect(() => {
+    const term = q.trim().replace(/[%,]/g, ' ');
+    if (term.length < 2) { setSuggestions([]); return undefined; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data } = await sb.from('factory_products')
+        .select('id, name_en, name_ar, factory_id, image')
+        .or(`name_en.ilike.%${term}%,name_ar.ilike.%${term}%`)
+        .not('image', 'is', null)
+        .limit(7);
+      if (!cancelled) setSuggestions(data || []);
+    }, 180);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [q]);
+
   const activeCat = getFactoryDisplayCategory(activeKey);
   const categories = useMemo(
     () => (activeCat && !activeCat.all ? codesForDisplayCategory(activeKey) : null),
@@ -220,8 +240,31 @@ export default function FactoryProducts({ lang = 'ar', user }) {
         <h1 className={`fx-h1${arc}`}>{c.title}</h1>
         <p className={`fx-sub${arc}`}>{c.sub}</p>
 
-        <input className="fp-psearch" value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder={c.search} dir={isAr ? 'rtl' : 'ltr'} />
+        <div style={{ position: 'relative' }} onBlur={() => setTimeout(() => setSugOpen(false), 150)}>
+          <input className="fp-psearch" value={q}
+            onChange={(e) => { setQ(e.target.value); setSugOpen(true); }}
+            onFocus={() => setSugOpen(true)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setSugOpen(false); }}
+            placeholder={c.search} dir={isAr ? 'rtl' : 'ltr'} />
+          {sugOpen && suggestions.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', insetInlineStart: 0, insetInlineEnd: 0, zIndex: 30, marginTop: 4,
+              background: 'var(--surface-raised, #fff)', border: '1px solid var(--border)', borderRadius: 12,
+              boxShadow: '0 12px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
+              {suggestions.map((sp) => (
+                <button key={sp.id} type="button" onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setSugOpen(false); openProduct(sp); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px',
+                    background: 'none', border: 'none', borderBottom: '1px solid var(--border-soft, rgba(0,0,0,0.05))',
+                    cursor: 'pointer', flexDirection: isAr ? 'row-reverse' : 'row', textAlign: isAr ? 'right' : 'left' }}>
+                  {sp.image ? <img src={sp.image} alt="" loading="lazy"
+                    style={{ width: 34, height: 34, borderRadius: 7, objectFit: 'cover', flexShrink: 0 }} /> : null}
+                  <span style={{ flex: 1, fontSize: 13.5, color: 'var(--text-primary)', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-sans)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pName(sp)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="fx-filterbar">
           {chips.map((ch) => (
