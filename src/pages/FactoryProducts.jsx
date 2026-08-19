@@ -10,8 +10,9 @@ import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { logProductEvent } from '../lib/productEvents';
 import { sb } from '../supabase';
 import {
-  displayCategoriesForLang, getFactoryDisplayCategory, codesForDisplayCategory,
+  presentDisplayCategories, getFactoryDisplayCategory, codesForDisplayCategory,
 } from '../lib/factoryCategories';
+import CategoryFilterBar from '../components/CategoryFilterBar';
 import { catalogPriceToSAR } from '../lib/displayCurrency';
 import { useStaleWhileRevalidate } from '../lib/useStaleWhileRevalidate';
 import { CardGridSkeleton } from '../components/Skeleton';
@@ -145,7 +146,21 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const c = T[lang] || T.ar;
   usePageTitle('suppliers', lang);
 
-  const chips = useMemo(() => displayCategoriesForLang(lang), [lang]);
+  // Data-driven category set: fetch the real codes that actually have active
+  // factories, so the bar shows only live categories (empty ones like medical
+  // vanish; new ones like sports/misc appear) — no static list to maintain.
+  const [presentCodes, setPresentCodes] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await sb.from('factory_directory_public')
+        .select('category').eq('is_active', true);
+      if (!alive || !data) return;
+      setPresentCodes(new Set(data.map((r) => r.category).filter(Boolean)));
+    })();
+    return () => { alive = false; };
+  }, []);
+  const chips = useMemo(() => presentDisplayCategories(lang, presentCodes), [lang, presentCodes]);
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');   // debounced search — one server call per pause
   useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 300); return () => clearTimeout(t); }, [q]);
@@ -266,15 +281,12 @@ export default function FactoryProducts({ lang = 'ar', user }) {
           )}
         </div>
 
-        <div className="fx-filterbar">
-          {chips.map((ch) => (
-            <button key={ch.key} type="button"
-              className={`fx-chip${activeKey === ch.key ? ' on' : ''}${arc}`}
-              onClick={() => setSearchParams(ch.key === 'all' ? {} : { cat: ch.key })}>
-              {ch.label}
-            </button>
-          ))}
-        </div>
+        <CategoryFilterBar
+          chips={chips}
+          activeKey={activeKey}
+          lang={lang}
+          onSelect={(key) => setSearchParams(key === 'all' ? {} : { cat: key })}
+        />
 
         {/* Curated-selection note — these are examples; suppliers offer more */}
         <div style={{

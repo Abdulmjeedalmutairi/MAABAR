@@ -1368,6 +1368,38 @@ footer {
 .fx-filterbar::-webkit-scrollbar { display: none; }
 .fx-filterbar .fx-chip { flex-shrink: 0; }
 
+/* ── Category filter — text tabs + "All categories" mega-panel ── */
+.fx-catnav { display: flex; align-items: stretch; gap: 8px; border-bottom: 1px solid var(--border); margin: 6px 0 10px; }
+.fx-tabs { display: flex; gap: 2px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.fx-tabs::-webkit-scrollbar { display: none; }
+.fx-tab { position: relative; flex: 0 0 auto; padding: 11px 14px; background: none; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 14px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; transition: color 0.15s ease; }
+.fx-catnav.ar .fx-tab { font-family: var(--font-ar); }
+.fx-tab:hover { color: var(--text-primary); }
+.fx-tab.on { color: var(--text-primary); font-weight: 800; }
+.fx-tab.on::after { content: ''; position: absolute; inset-inline: 12px; bottom: -1px; height: 2.5px; background: #8B7355; border-radius: 3px; }
+.fx-allbtn { flex: 0 0 auto; align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; background: none; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 13px; font-weight: 700; color: #8B7355; transition: opacity 0.15s ease; }
+.fx-catnav.ar .fx-allbtn { font-family: var(--font-ar); }
+.fx-allbtn:hover { opacity: 0.72; }
+.fx-cat-ic { display: block; flex-shrink: 0; }
+
+.fx-panel-ov { position: fixed; inset: 0; z-index: 1000; background: rgba(26,24,20,0.5); backdrop-filter: blur(2px); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+.fx-panel { width: 100%; max-width: 780px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 24px 60px rgba(26,24,20,0.24); padding: 22px; }
+.fx-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.fx-panel-head h3 { margin: 0; font-family: var(--font-sans); font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.fx-panel[dir="rtl"] .fx-panel-head h3 { font-family: var(--font-ar); }
+.fx-panel-x { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text-secondary); font-size: 14px; }
+.fx-panel-x:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.fx-catcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.fx-catcard { display: flex; gap: 11px; align-items: flex-start; padding: 13px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; text-align: start; }
+.fx-catcard:hover { border-color: #8B7355; box-shadow: var(--accent-shadow); transform: translateY(-2px); }
+.fx-catcard.on { border-color: #8B7355; background: rgba(139,115,85,0.07); }
+.fx-catcard .fx-cat-ic { color: #8B7355; margin-top: 1px; }
+.fx-catcard-t { display: flex; flex-direction: column; min-width: 0; }
+.fx-catcard-n { font-family: var(--font-sans); font-size: 13.5px; font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 3px; }
+.fx-catcard-d { font-family: var(--font-sans); font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+.fx-panel[dir="rtl"] .fx-catcard-n, .fx-panel[dir="rtl"] .fx-catcard-d { font-family: var(--font-ar); }
+@media (max-width: 640px) { .fx-catcards { grid-template-columns: repeat(2, 1fr); } }
+
 /* Factory cards — matched to the mobile FactoriesScreen: compact horizontal
    card (small logo + content) with a two-action footer, in a single centered
    column. */
