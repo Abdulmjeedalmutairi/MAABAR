@@ -8,6 +8,7 @@ import NegotiablePill from '../components/NegotiablePill';
 import MoreOptionsBadge from '../components/MoreOptionsBadge';
 import { startFactoryThread, buildProductRef } from '../lib/factoryThreads';
 import { logProductEvent } from '../lib/productEvents';
+import { embedQuery, semanticSearch } from '../lib/semanticSearch';
 import { sb } from '../supabase';
 import {
   presentDisplayCategories, getFactoryDisplayCategory, codesForDisplayCategory,
@@ -200,20 +201,35 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 40;
 
-  const fetchPage = async (after) => {
+  // Query embedding for the active search (logged-in users only). null → keyword
+  // mode (browse_products), so anonymous visitors still search by keyword. Cached
+  // per search term so "load more" reuses the vector instead of re-embedding.
+  const [semVec, setSemVec] = useState(null);
+
+  const fetchBrowse = async (after) => {
     const { data, error } = await sb.rpc('browse_products', {
       p_categories: categories, p_search: dq || null, p_after: after, p_limit: PAGE_SIZE,
     });
     return error ? [] : (data || []);
   };
 
-  // Reset + load page 1 whenever the category or debounced search changes.
+  // Reset + load page 1 whenever the category or debounced search changes. On a
+  // search, try semantic first (synonyms/dialect); fall back to keyword browse.
   useEffect(() => {
     let alive = true;
-    setLoading(true); setItems([]); setHasMore(true);
+    setLoading(true); setItems([]); setHasMore(true); setSemVec(null);
     (async () => {
-      const rows = await fetchPage(null);
+      let vec = dq ? await embedQuery(dq) : null;
       if (!alive) return;
+      let rows = vec
+        ? await semanticSearch({ embedding: vec, search: dq, categories, limit: PAGE_SIZE, offset: 0 })
+        : null;
+      // Fall back to keyword browse when semantic isn't available, errored, or
+      // returned nothing (e.g. embeddings not backfilled yet). Clear the vector so
+      // "load more" keeps using the browse cursor, not empty semantic pages.
+      if (rows == null || (dq && rows.length === 0)) { vec = null; rows = await fetchBrowse(null); }
+      if (!alive) return;
+      setSemVec(vec);
       setItems(rows);
       setHasMore(rows.length === PAGE_SIZE);
       setLoading(false);
@@ -224,7 +240,12 @@ export default function FactoryProducts({ lang = 'ar', user }) {
   const loadMore = async () => {
     if (loadingMore || !hasMore || !items.length) return;
     setLoadingMore(true);
-    const rows = await fetchPage(items[items.length - 1].browse_rank);
+    // Semantic mode paginates by offset; keyword/browse mode by the rank cursor.
+    let rows = semVec
+      ? await semanticSearch({ embedding: semVec, search: dq, categories, limit: PAGE_SIZE, offset: items.length })
+      : null;
+    if (rows == null && !semVec) rows = await fetchBrowse(items[items.length - 1].browse_rank);
+    rows = rows || [];
     setItems((prev) => [...prev, ...rows]);
     setHasMore(rows.length === PAGE_SIZE);
     setLoadingMore(false);
