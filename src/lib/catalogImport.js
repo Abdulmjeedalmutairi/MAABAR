@@ -264,6 +264,20 @@ async function callWorker(path, payload) {
   return res.json();
 }
 
+// Backfill product embeddings for semantic search — calls the worker in batches
+// (each embeds up to ~300 products with a null embedding) until none are left.
+// onProgress({ embedded, remaining }) fires after each batch. Admin only.
+export async function embedProductsBackfill({ onProgress } = {}) {
+  let total = 0;
+  for (let i = 0; i < 200; i++) {          // hard cap — guards a stuck remaining
+    const r = await callWorker('/embed-products', { limit: 300 });
+    total += r.embedded || 0;
+    if (onProgress) onProgress({ embedded: total, remaining: r.remaining || 0 });
+    if (!r.remaining || !r.embedded) break;
+  }
+  return total;
+}
+
 // Gemini assist — suggest a field's value (uses the whole context + product image),
 // or answer a question about this factory/catalog. Both run on the worker (key stays server-side).
 export function assistField({ field, context, imageUrl }) {

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/admin/AdminShell';
 import AdminRouteGuard from '../../components/admin/AdminRouteGuard';
-import { fetchImports, createImport, triggerExtraction, workerConfigured, hashFile, findImportByHash } from '../../lib/catalogImport';
+import { fetchImports, createImport, triggerExtraction, workerConfigured, hashFile, findImportByHash, embedProductsBackfill } from '../../lib/catalogImport';
 
 const FONT_HEADING = "'Cormorant Garamond', Georgia, serif";
 const FONT_BODY = "'Tajawal', sans-serif";
@@ -80,6 +80,23 @@ export default function AdminCatalogImport({ user, profile, lang }) {
   const [dupChecking, setDupChecking] = useState(false);
   const [dup, setDup] = useState(null);   // prior import of the same file, or null
   const fileRef = useRef(null);
+  const [embedding, setEmbedding] = useState(false);
+  const [embedMsg, setEmbedMsg] = useState('');
+
+  async function rebuildSemanticIndex() {
+    if (embedding) return;
+    setEmbedding(true); setEmbedMsg(isAr ? 'جارٍ الفهرسة…' : 'Indexing…');
+    try {
+      await embedProductsBackfill({
+        onProgress: ({ embedded, remaining }) => setEmbedMsg(
+          isAr ? `${embedded} مُفهرَس · ${remaining} متبقٍ` : `${embedded} indexed · ${remaining} left`),
+      });
+      setEmbedMsg(isAr ? 'اكتمل فهرس البحث ✓' : 'Search index complete ✓');
+    } catch (e) {
+      setEmbedMsg((isAr ? 'تعذّرت الفهرسة: ' : 'Indexing failed: ') + (e.message || ''));
+    }
+    setEmbedding(false);
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -145,12 +162,28 @@ export default function AdminCatalogImport({ user, profile, lang }) {
               </p>
             </div>
             <div style={{ textAlign: isAr ? 'left' : 'right' }}>
-              <button
-                onClick={openModal}
-                style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT_BODY }}>
-                {isAr ? '+ استيراد كتالوج جديد' : '+ New catalog import'}
-              </button>
+              <div style={{ display: 'flex', gap: 8, justifyContent: isAr ? 'flex-start' : 'flex-end', flexWrap: 'wrap' }}>
+                {workerConfigured() && (
+                  <button
+                    onClick={rebuildSemanticIndex}
+                    disabled={embedding}
+                    title={isAr ? 'يُنشئ متجهات البحث الدلالي للمنتجات الجديدة (يربط المرادفات مثل كنب↔أريكة)'
+                                : 'Builds semantic-search vectors for new products (bridges synonyms like كنب↔Sofa)'}
+                    style={{ background: '#fff', color: '#1a1814', border: '1px solid #d9d2c4', borderRadius: 8, padding: '10px 16px',
+                      fontSize: 13, fontWeight: 600, cursor: embedding ? 'default' : 'pointer', opacity: embedding ? 0.6 : 1, fontFamily: FONT_BODY }}>
+                    {embedding ? (isAr ? '… جارٍ الفهرسة' : '… Indexing') : (isAr ? '⟳ فهرسة البحث الدلالي' : '⟳ Rebuild search index')}
+                  </button>
+                )}
+                <button
+                  onClick={openModal}
+                  style={{ background: '#1a1814', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT_BODY }}>
+                  {isAr ? '+ استيراد كتالوج جديد' : '+ New catalog import'}
+                </button>
+              </div>
+              {embedMsg && (
+                <p style={{ margin: '6px 0 0', fontSize: 11, color: '#6b6357', fontFamily: FONT_BODY }}>{embedMsg}</p>
+              )}
               {!workerConfigured() && (
                 <p style={{ margin: '6px 0 0', fontSize: 11, color: '#b8860b', fontFamily: FONT_BODY }}>
                   {isAr ? 'خادم الاستخراج غير مُعدّ بعد — سيُرفع الملف ويبقى بانتظار الاستخراج.' : 'Extraction worker not configured — the file uploads and waits.'}
